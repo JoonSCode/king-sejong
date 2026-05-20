@@ -2,8 +2,8 @@
   "format": "uigwe.wrapper-request/v0.1-draft",
   "mode": "auto",
   "profile": "auto",
-  "executor_handoff": "ralph",
-  "brief": "Use the approved wrapper design packet to generate the decompose-only planning bundle and prepare the default RalphExecutor handoff artifacts.",
+  "executor_handoff": "seungjeongwon",
+  "brief": "Use the approved wrapper design packet to generate the decompose-only planning bundle and route execution through Seungjeongwon.",
   "artifacts": {
     "design_packet_path": "docs/sejong/examples/brownfield-decompose-only/design.packet.json"
   },
@@ -11,7 +11,7 @@
   "consumer_handoff": "none",
   "notes": [
     "Prefer the strongest valid entry mode.",
-    "Prepare the default Ralph-backed execution handoff after planning completes.",
+    "Request the default Seungjeongwon execution path after planning completes.",
     "Do not mutate existing packet or goal-tree formats."
   ]
 }

@@ -1,14 +1,14 @@
-# Uigwe RalphExecutor
+# Uigwe RalphExecutor Compatibility
 
 **Status:** Draft
 
 ## Purpose
 
-`RalphExecutor` is the optional Ralph-compatible execution implementation for Uigwe.
+`RalphExecutor` is the advanced compatibility path for existing Ralph-style Uigwe handoff artifacts.
 
-It takes a validated Uigwe planning bundle and hands execution to a Ralph-capable agent harness that can forward the generated Ralph prompt without reopening planning by default.
+Normal King Sejong execution should use [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md). This document exists for environments that already have a separate Ralph loop or need to migrate earlier `ralph-executor.*` artifacts.
 
-For native King Sejong execution, prefer [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md).
+When used, the compatibility path takes a validated Uigwe planning bundle and hands execution to a Ralph-capable agent harness that can forward the generated Ralph prompt without reopening planning by default.
 
 ## Canonical Backend
 

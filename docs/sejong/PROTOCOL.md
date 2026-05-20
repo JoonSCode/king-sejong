@@ -366,12 +366,12 @@ For substantial execution, Uigwe now distinguishes:
 
 Recommended default:
 
-- `RalphExecutor`
+- `Seungjeongwon`
 
 Reference docs:
 
 - `EXECUTOR.md`
-- `RALPH_EXECUTOR.md`
+- `SEUNGJEONGWON_EXECUTOR.md`
 
 Wrapper surface drafts:
 

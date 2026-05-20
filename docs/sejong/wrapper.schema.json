@@ -43,6 +43,7 @@
       "type": "string",
       "enum": [
         "none",
+        "seungjeongwon",
         "ralph"
       ]
     },
@@ -147,7 +148,10 @@
           "if": {
             "properties": {
               "executor_handoff": {
-                "const": "ralph"
+                "enum": [
+                  "seungjeongwon",
+                  "ralph"
+                ]
               }
             }
           },
@@ -266,7 +270,10 @@
           "if": {
             "properties": {
               "executor_handoff": {
-                "const": "ralph"
+                "enum": [
+                  "seungjeongwon",
+                  "ralph"
+                ]
               }
             },
             "required": [

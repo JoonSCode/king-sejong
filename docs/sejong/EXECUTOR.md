@@ -78,7 +78,7 @@ Use:
 - **executor layer** as the formal post-planning handoff
 - **Codex consumer** as a lower-level direct execution contract
 - **Seungjeongwon** as the native execution implementation for substantial work
-- **RalphExecutor** as an optional compatibility handoff for Ralph-capable hosts
+- **RalphExecutor** only as an advanced compatibility handoff for earlier Ralph-style artifacts
 
 In this model:
 
@@ -98,14 +98,14 @@ The canonical native backend is:
 
 - the included repo-local `seungjeongwon` skill
 
-Ralph-compatible handoff remains available, but it is no longer required for King Sejong execution.
+Legacy handoff compatibility remains available, but it is not required for King Sejong execution.
 
 Current implementation draft:
 
 - `.agents/skills/seungjeongwon/SKILL.md`
   - executes approved scopes or validated Uigwe bundles directly in Codex
 - `scripts/prepare_ralph_executor.py`
-  - emits a machine-readable request plus a ready-to-run Ralph-compatible handoff prompt when that path is useful
+  - emits machine-readable legacy handoff artifacts when that path is explicitly useful
 
 ## Executor Variants
 
@@ -129,18 +129,16 @@ Best for:
 
 Best for:
 
-- ambiguous or substantial execution
-- long-running work
-- persistence and verification
-- iterative completion pressure
-- compatibility with existing Ralph-capable environments
+- compatibility with existing Ralph-style environments
+- migrating earlier RalphExecutor artifacts
+- explicit user requests for that handoff shape
 
 ### `DirectExecutor`
 
 Best for:
 
 - small, clear, low-risk leaf sets
-- direct execution without the heavier Ralph loop
+- direct execution without a heavier execution loop
 
 ### `TeamExecutor`
 
@@ -187,4 +185,4 @@ After this file:
 
 1. `SEUNGJEONGWON_EXECUTOR.md`
 2. `CODEX_CONSUMER.md`
-3. `RALPH_EXECUTOR.md` when Ralph-compatible handoff is needed
+3. `RALPH_EXECUTOR.md` only when legacy handoff compatibility is needed

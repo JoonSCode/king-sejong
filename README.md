@@ -23,7 +23,26 @@ Recommended names:
 - Invocation: `$sejong`
 - Repository slug: `king-sejong`
 
-## Install
+## Quick Install
+
+For the current repository:
+
+```bash
+tmp=$(mktemp -d)
+git clone --depth 1 https://github.com/JoonSCode/king-sejong.git "$tmp/king-sejong"
+bash "$tmp/king-sejong/scripts/install-sejong.sh" "$PWD"
+bash "$tmp/king-sejong/scripts/install-sejong.sh" --verify "$PWD"
+rm -rf "$tmp"
+```
+
+Agent-assisted install prompt:
+
+```text
+Install King Sejong into this repository from https://github.com/JoonSCode/king-sejong.
+Run scripts/install-sejong.sh against the current repo, then verify the install with --verify.
+```
+
+## Manual Install
 
 Clone this repository, then install the bundle into the repository where you want to use it:
 
@@ -39,6 +58,12 @@ To replace an existing install:
 bash scripts/install-sejong.sh --force /path/to/your-repo
 ```
 
+To check an existing install without copying files:
+
+```bash
+bash scripts/install-sejong.sh --verify /path/to/your-repo
+```
+
 The installer copies these managed paths into the target repository:
 
 - `.agents/skills/sejong/`
@@ -47,6 +72,18 @@ The installer copies these managed paths into the target repository:
 - `docs/sejong/`
 
 Keep those paths together. The skills are intentionally small and load their routing, planning, schema, and handoff contracts from `docs/sejong`.
+
+## Compatibility
+
+King Sejong is distributed as repo-local Codex skills, not as an npm package, Python package, or standalone CLI.
+
+| Host | Support | Notes |
+| --- | --- | --- |
+| Codex with repo-local `.agents/skills` | Supported | Primary target. |
+| Codex-style hosts that read `.agents/skills` and repo docs | Possible | Install the same managed paths and verify behavior in that host. |
+| OpenCode, Claude Code, Gemini CLI, Cursor | Not packaged yet | Their plugin/extension formats need separate adapters. |
+
+If you use several agent harnesses, install King Sejong separately for each harness once an adapter exists.
 
 ## Codex And Execution
 
@@ -62,37 +99,32 @@ Execution is part of Sejong's job, and King Sejong includes its own executor:
 
 - `Seungjeongwon` / `승정원`
 
-Seungjeongwon is King Sejong's native Ralph-loop implementation. It executes approved scopes or validated Uigwe bundles, verifies the result, and reports evidence.
+Seungjeongwon is King Sejong's native execution loop. It executes approved scopes or validated Uigwe bundles, verifies the result, and reports evidence.
 
 Sejong can finish work in two ways:
 
 - direct execution in the current Codex session when the task is clear enough
 - native Seungjeongwon execution when a plan or bundle needs implementation and verification
 
-Ralph-compatible handoff is still supported for environments that already use a separate Ralph loop, but Ralph is no longer required for Sejong to execute work.
-
 What is included:
 
 - direct-action routing for clear implementation and verification work
 - `Seungjeongwon` native executor skill
 - Seungjeongwon execution contract
-- `RalphExecutor` docs and schema
-- `prepare_ralph_executor.py`
-- example `ralph-executor.request/result` artifacts
-- optional handoff wording that can be passed to a Ralph-capable Codex environment
+- schema and example validation helpers
+- install and verify script for managed repo-local paths
 
 What is not included:
 
 - a guarantee that non-Codex hosts understand the handoff automatically
-
-Sejong works for research, decision support, planning, execution, and verification without Ralph.
+- adapters for OpenCode, Claude Code, Gemini CLI, or Cursor
 
 ## Work Loop
 
 Sejong can run the full arc when the user asks for an outcome:
 
 ```text
-research -> decision -> Uigwe plan -> Seungjeongwon execute -> verify -> record evidence
+JangYeongsil research -> Jiphyeonjeon decision -> Uigwe planning -> Seungjeongwon execution -> verification -> Sillok evidence
 ```
 
 It should only stop early when the next step truly needs missing evidence, a user decision, or an approval gate.
@@ -122,7 +154,7 @@ $uigwe decompose-only docs/specs/approved-design.md
 | `research-brief` | The facts, history, or evidence are still unclear. | Known facts, inferences, unknowns, next decision. |
 | `decision-brief` | The main job is choosing between options. | Options, rejected paths, recommendation, risks. |
 | `uigwe-plan` | A durable planning bundle is useful. | Uigwe packets, `spec.md`, `rationale.md`, `goal-tree.json`. |
-| `executor-handoff` | A validated bundle needs execution. | Seungjeongwon execution, optionally Ralph-compatible handoff artifacts. |
+| `executor-handoff` | A validated bundle needs execution. | Seungjeongwon execution and verification feedback. |
 | `direct-action` | The task is clear enough to do now. | Completed work plus verification evidence. |
 
 Court-inspired aliases are supported as user-facing language:
@@ -139,7 +171,6 @@ Court-inspired aliases are supported as user-facing language:
 - [Uigwe protocol](docs/sejong/PROTOCOL.md)
 - [Uigwe wrapper](docs/sejong/WRAPPER.md)
 - [Seungjeongwon executor](docs/sejong/SEUNGJEONGWON_EXECUTOR.md)
-- [RalphExecutor handoff](docs/sejong/RALPH_EXECUTOR.md)
 - [Bundle validator](docs/sejong/BUNDLE_VALIDATOR.md)
 
 ## License

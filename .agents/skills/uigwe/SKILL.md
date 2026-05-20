@@ -102,12 +102,13 @@ Read only what is needed, in this order:
 1. `../../../docs/sejong/WRAPPER.md`
 2. `../../../docs/sejong/PROTOCOL.md`
 3. `../../../docs/sejong/EXECUTOR.md` when you need post-planning ownership or handoff semantics
-4. `../../../docs/sejong/RALPH_EXECUTOR.md` when you need the default Ralph-backed handoff path or root-level execution artifact semantics
+4. `../../../docs/sejong/SEUNGJEONGWON_EXECUTOR.md` when the user wants implementation and verification after planning
 5. `../../../docs/sejong/SCORING_AND_GATES.md` when you need numeric defaults or re-entry thresholds
 6. `../../../docs/sejong/BUNDLE_VALIDATOR.md` when you need bundle validation or report shape
 7. `../../../docs/sejong/SUMMARY_PROJECTION.md` when you need the human-facing summary projection
 8. `../../../docs/sejong/CODEX_CONSUMER.md` only if direct consumer handoff is requested or executor/consumer boundary text is changing
-9. `../../../docs/sejong/examples/README.md` only if you need reference examples
+9. `../../../docs/sejong/RALPH_EXECUTOR.md` only for advanced compatibility with existing Ralph-style handoff artifacts
+10. `../../../docs/sejong/examples/README.md` only if you need reference examples
 
 ## When To Use
 
@@ -226,17 +227,11 @@ If the user explicitly wants execution after planning:
 
 1. Finish planning first
 2. Confirm the plan bundle is consumer-ready and safe to hand off
-3. Prefer `../../../docs/sejong/RALPH_EXECUTOR.md` for substantial work
-4. Use `../../../docs/sejong/scripts/prepare_ralph_executor.py` to generate `ralph-executor.request.json` plus the ready-to-run `ralph-next-step.md` handoff prompt for a Ralph-backed AI agent harness
-5. Present only these generated user choices after handoff preparation, preserving their numbering exactly:
-   - `1. Run now here` -> continue in the current session without making the user type a command
-   - `3. Run in another session or terminal` -> `$ralph follow <bundle_dir>/ralph-next-step.md`
-6. Do not renumber or invent a local `2` option; mirror the generated handoff surface as-is
-7. If the user chooses `1`, continue in the current session by invoking the Ralph handoff immediately
-8. If the user chooses `3`, return the same copyable `$ralph follow <bundle_dir>/ralph-next-step.md` command plus the handoff artifact paths
-9. Treat root-level `ralph-executor.request.json` and `ralph-next-step.md` as the latest active handoff for the bundle
-10. Treat root-level `ralph-executor.result.json` and `codex-consumer-feedback.json` as the durable result and feedback targets for the current attempt unless a harness policy explicitly overrides them
-11. Follow `../../../docs/sejong/CODEX_CONSUMER.md` only when a lower-level direct consumer path is explicitly desired
+3. Prefer Seungjeongwon for substantial work inside King Sejong
+4. Execute dependency-ready leaves or the approved scope, then verify before reporting completion
+5. Emit execution feedback with changed files, verification evidence, blockers, and recommended Uigwe re-entry if needed
+6. Use `../../../docs/sejong/RALPH_EXECUTOR.md` and `../../../docs/sejong/scripts/prepare_ralph_executor.py` only when the user explicitly needs legacy Ralph-style handoff artifacts
+7. Follow `../../../docs/sejong/CODEX_CONSUMER.md` only when a lower-level direct consumer path is explicitly desired
 
 If the execution-side change is to Uigwe itself, prefer benchmark-gated completion by running:
 

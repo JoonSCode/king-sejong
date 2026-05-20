@@ -2,7 +2,7 @@
   "format": "uigwe.wrapper-result/v0.1-draft",
   "resolved_mode": "decompose-only",
   "resolved_profile": "brownfield",
-  "executor_handoff": "ralph",
+  "executor_handoff": "seungjeongwon",
   "status": "completed",
   "artifacts": {
     "design_packet_path": "docs/sejong/examples/brownfield-decompose-only/design.packet.json",
@@ -11,18 +11,12 @@
     "spec_path": "docs/sejong/examples/brownfield-decompose-only/spec.md",
     "rationale_path": "docs/sejong/examples/brownfield-decompose-only/rationale.md"
   },
-  "executor_artifacts": {
-    "executor_request_path": "docs/sejong/examples/brownfield-decompose-only/ralph-executor.request.json",
-    "handoff_prompt_path": "docs/sejong/examples/brownfield-decompose-only/ralph-next-step.md",
-    "execution_feedback_path": "docs/sejong/examples/brownfield-decompose-only/codex-consumer-feedback.json",
-    "executor_result_path": "docs/sejong/examples/brownfield-decompose-only/ralph-executor.result.json"
-  },
   "consumer_handoff": "none",
   "planner_reentry_needed": false,
   "blockers": [],
   "notes": [
     "Wrapper resolved directly to decompose-only because an approved design packet was present.",
-    "Wrapper prepared the default RalphExecutor handoff after planning without claiming execution success.",
+    "Wrapper requested the default Seungjeongwon execution path after planning without claiming execution success.",
     "Canonical planning truth remains in the generated Uigwe artifacts."
   ]
 }

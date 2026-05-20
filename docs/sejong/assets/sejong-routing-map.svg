@@ -70,5 +70,5 @@
   <path d="M 730 316 C 778 378 795 417 838 417" class="arrow"/>
   <path d="M 730 340 C 775 455 792 516 838 516" class="arrow"/>
 
-  <text x="74" y="558" class="small">Install as a repo-local pair: .agents/skills/sejong + .agents/skills/uigwe + docs/sejong.</text>
+  <text x="74" y="558" class="small">Install repo-local skills: sejong + uigwe + seungjeongwon + docs/sejong.</text>
 </svg>

@@ -38,7 +38,7 @@ Instead, it is a thin orchestration surface that:
 
 `Sejong` may route a broad request into the wrapper, but the wrapper must still preserve Uigwe's stage ownership. User-facing Sejong language must not rename or skip Uigwe's live stages: `1단계: 기획 명확화`, `2단계: 설계 명확화`, and `3단계: 실행 계획화`.
 
-When Sejong routes to formal planning, the wrapper should resolve `full`, `design-to-plan`, or `decompose-only` exactly as it would for Uigwe. When Sejong routes to execution, the wrapper should prepare RalphExecutor handoff metadata only after the Uigwe bundle is valid.
+When Sejong routes to formal planning, the wrapper should resolve `full`, `design-to-plan`, or `decompose-only` exactly as it would for Uigwe. When Sejong routes to execution, the wrapper should record Seungjeongwon handoff metadata only after the Uigwe bundle is valid.
 
 ## Boundary Rules
 
@@ -73,7 +73,7 @@ In those user-facing messages, the wrapper should prefer plain-language stage de
 
 - accept the validated Uigwe bundle after planning
 - preserve the bundle as the source of truth for execution
-- hand off execution to a backend such as `RalphExecutor`
+- hand off execution to Seungjeongwon
 - return execution feedback or re-entry recommendations
 
 The wrapper must not absorb planner or consumer logic into its own contract.
@@ -155,7 +155,7 @@ The result includes:
 - generated artifact paths
 - requested executor handoff
 - requested direct consumer handoff
-- prepared executor handoff artifact paths when `executor_handoff = ralph` and handoff preparation succeeds
+- prepared executor handoff artifact paths when legacy `executor_handoff = ralph` handoff preparation succeeds
 - whether planner re-entry was needed
 - high-level notes or blockers
 
@@ -191,13 +191,15 @@ The wrapper should always echo the selected routing fields in both the request a
 
 After planning completes:
 
-- prepare executor handoff artifacts only when `executor_handoff = ralph`
+- route substantial execution to Seungjeongwon when `executor_handoff = seungjeongwon`
+- prepare legacy executor handoff artifacts only when `executor_handoff = ralph`
 - request a lower-level direct consumer lane only when `consumer_handoff = codex`
 - keep those two active post-planning lanes mutually exclusive
 
 Allowed executor handoff values:
 
 - `none`
+- `seungjeongwon`
 - `ralph`
 
 Allowed direct consumer handoff values:
@@ -207,7 +209,8 @@ Allowed direct consumer handoff values:
 
 Operational recommendation:
 
-- use `executor_handoff = ralph` as the default substantial-work execution path after planning
+- use `executor_handoff = seungjeongwon` as the default substantial-work execution path after planning
+- use `executor_handoff = ralph` only for legacy Ralph-style compatibility
 - use `consumer_handoff = codex` only when a lower-level direct consumer lane is explicitly desired
 - use `executor_handoff = none` and `consumer_handoff = none` when planning should stop without execution preparation
 
@@ -216,6 +219,7 @@ Even when either handoff is requested, the wrapper should not claim execution su
 It may only report:
 
 - planning completed and executor handoff prepared
+- planning completed and Seungjeongwon execution requested
 - planning completed and direct consumer handoff requested
 - planning blocked before handoff
 

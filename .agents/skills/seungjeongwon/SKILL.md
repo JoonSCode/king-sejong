@@ -9,7 +9,7 @@ description: Use when a user invokes Seungjeongwon/승정원 or when Sejong need
 
 Use it to carry an approved scope or validated Uigwe bundle through implementation, verification, evidence capture, and execution feedback.
 
-It is included with King Sejong. It does not require an external `$ralph` runtime, although it can prepare or consume Ralph-compatible handoff artifacts when a separate Ralph loop is installed.
+It is included with King Sejong and is the normal execution path. Legacy Ralph-style handoff artifacts are only an advanced compatibility path.
 
 ## Load Order
 
@@ -18,7 +18,7 @@ Read only what is needed:
 1. `../../../docs/sejong/SEUNGJEONGWON_EXECUTOR.md`
 2. `../../../docs/sejong/CODEX_CONSUMER.md` when executing Uigwe leaves directly
 3. `../../../docs/sejong/BUNDLE_VALIDATOR.md` when a bundle path is provided
-4. `../../../docs/sejong/RALPH_EXECUTOR.md` only for Ralph-compatible handoff or migration behavior
+4. `../../../docs/sejong/RALPH_EXECUTOR.md` only for legacy handoff or migration behavior
 
 ## Execution Protocol
 
@@ -40,5 +40,5 @@ Read only what is needed:
 
 - Do not invent new scope beyond the approved bundle or explicit user request.
 - Do not treat a plan as executed until implementation and verification are done.
-- Do not require Ralph for normal execution.
-- Use Ralph-compatible handoff only when the user explicitly benefits from a separate long-running loop.
+- Keep normal execution inside Seungjeongwon.
+- Use legacy handoff compatibility only when the user explicitly benefits from another long-running loop.

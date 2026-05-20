@@ -26,7 +26,7 @@ New user-facing invocations should use `$sejong`; the source-of-truth routing co
 - Route formal planning through Uigwe's `1단계: 기획 명확화`, `2단계: 설계 명확화`, and `3단계: 실행 계획화`.
 - Execute clear work directly through Codex when planning is not needed.
 - Route execution through Seungjeongwon after a scope or bundle is approved.
-- Use Ralph-compatible handoff only when a separate Ralph loop is explicitly useful.
+- Keep legacy handoff compatibility out of the normal public path.
 - Verify execution before claiming an end-to-end Sejong request is complete.
 
 ## Examples

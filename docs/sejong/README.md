@@ -3,7 +3,11 @@
 Sejong is the all-in-one user-facing front door for broad agent work.
 It can research, decide, plan, execute, verify, and record evidence instead of forcing every request through formal planning.
 
+Use `sejong` when the request is broad and the agent should choose whether to research, decide, plan, execute, verify, or record evidence.
+
 Uigwe is the formal planning protocol inside Sejong. Use it when the output should be a durable planning bundle with packets, rationale, and executable leaves.
+In live chat usage, Uigwe is supposed to do that interactively.
+Progress should be presented as approximate readiness such as `기획 준비도 68%`, paired with the main weak areas.
 
 ## Installed Layout
 
@@ -24,7 +28,7 @@ For normal use:
 2. Read [PROTOCOL.md](PROTOCOL.md) to understand Uigwe's planning model.
 3. Read [WRAPPER.md](WRAPPER.md) if you want machine-consumable packet flow.
 4. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
-5. Read [RALPH_EXECUTOR.md](RALPH_EXECUTOR.md) only when you need Ralph-compatible handoff artifacts.
+5. Read [RALPH_EXECUTOR.md](RALPH_EXECUTOR.md) only when you need legacy Ralph-style compatibility artifacts.
 
 ## Practical Usage
 

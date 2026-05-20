@@ -4,7 +4,7 @@
 
 ## Purpose
 
-`Seungjeongwon` / `승정원` is King Sejong's native executor and Ralph-loop implementation.
+`Seungjeongwon` / `승정원` is King Sejong's native executor.
 
 It exists so `/sejong` can be a real all-in-one work surface:
 
@@ -35,25 +35,15 @@ When a Uigwe bundle exists, Seungjeongwon treats these files as authoritative:
 
 It does not reopen planning unless execution discovers a contradiction.
 
-## Relationship To Ralph
+## Execution Default
 
-Seungjeongwon is our Ralph-loop implementation for King Sejong.
-
-Ralph is no longer required for King Sejong to execute work.
-
-Ralph-compatible artifacts remain useful when:
-
-- the workspace already has a separate Ralph loop installed
-- the user wants execution to continue in another session
-- a long-running task benefits from a separate persistent completion loop
-
-In that case, Seungjeongwon may prepare or consume Ralph-compatible handoff artifacts through `RALPH_EXECUTOR.md`.
-
-But the native default is:
+The native default is:
 
 - execute in Codex through Seungjeongwon
 - verify in Codex
 - report execution feedback directly
+
+Legacy Ralph-style artifacts remain documented in `RALPH_EXECUTOR.md` for migration or compatibility cases, but they are not part of the normal King Sejong path.
 
 ## Execution Inputs
 
@@ -112,13 +102,13 @@ Acceptable evidence includes:
 - git status and commit evidence when closeout is requested
 - explicit blocker evidence when completion is not possible
 
-## When To Use Ralph-Compatible Handoff
+## Advanced Compatibility
 
-Use Ralph-compatible handoff only when it adds value:
+Use legacy handoff compatibility only when it adds value:
 
 - the user wants work to continue outside the current session
 - the task is long-running and needs a separate persistent loop
-- an existing environment already provides `$ralph`
+- an existing environment already provides another execution loop
 - compatibility with earlier RalphExecutor artifacts matters
 
 Otherwise, execute natively through Seungjeongwon.
