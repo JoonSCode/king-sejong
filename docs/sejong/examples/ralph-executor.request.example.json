@@ -1,0 +1,92 @@
+{
+  "format": "uigwe.ralph-executor-request/v0.4-draft",
+  "executor_type": "ralph",
+  "backend": "codex-native-ralph-skill",
+  "bundle_root_path": "docs/sejong/examples/brownfield-decompose-only",
+  "bundle": {
+    "plan_packet_path": "docs/sejong/examples/brownfield-decompose-only/plan.packet.json",
+    "goal_tree_path": "docs/sejong/examples/brownfield-decompose-only/goal-tree.json",
+    "spec_path": "docs/sejong/examples/brownfield-decompose-only/spec.md",
+    "rationale_path": "docs/sejong/examples/brownfield-decompose-only/rationale.md",
+    "planning_summary_path": ""
+  },
+  "attempt_id": "ralph-attempt-001",
+  "attempt_number": 1,
+  "request_generated_at": "2026-05-20T00:00:00Z",
+  "request_status": "active",
+  "bundle_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "planning_context": {
+    "resolved_mode": "decompose-only",
+    "resolved_profile": "brownfield",
+    "selected_plan_id": "plan_public_example",
+    "selected_plan_title": "Execute the public brownfield example",
+    "selected_plan_summary": "Use the included brownfield bundle as the source of truth for a Ralph-backed execution handoff."
+  },
+  "execution_scope": {
+    "selection_mode": "all_executable_leaves",
+    "executable_leaf_ids": [
+      "leaf_update_docs",
+      "leaf_validate_examples"
+    ],
+    "ordered_leaf_ids": [
+      "leaf_update_docs",
+      "leaf_validate_examples"
+    ]
+  },
+  "source_of_truth": [
+    "plan_packet",
+    "goal_tree",
+    "spec",
+    "rationale"
+  ],
+  "allow_replanning": false,
+  "git_policy": {
+    "mode": "no_commit",
+    "verification_strategy": "tiered_changed_scope",
+    "require_clean_start": false,
+    "require_clean_finish": true,
+    "target_repo_paths": [
+      "."
+    ],
+    "parent_gitlink_policy": "none"
+  },
+  "allowed_reentry_targets": [
+    "local_reexploration",
+    "brainstorming",
+    "deep_interview",
+    "human_review"
+  ],
+  "execution_rules": [
+    "Treat the Uigwe bundle as the source of truth.",
+    "Execute only the executable leaves included in execution_scope.",
+    "Escalate contradictions through the allowed re-entry targets instead of guessing."
+  ],
+  "output_expectations": [
+    "Report completed, blocked, or invalidated leaf ids.",
+    "Capture verification evidence.",
+    "List modified files or generated artifacts."
+  ],
+  "recommended_next_command": "$ralph follow docs/sejong/examples/brownfield-decompose-only/ralph-next-step.md",
+  "next_step_options": {
+    "1": {
+      "label": "Run now here",
+      "description": "Continue in the current session by handing this prompt to Ralph immediately.",
+      "action_type": "run_now"
+    },
+    "3": {
+      "label": "Run in another session or terminal",
+      "description": "Use the copyable handoff command later.",
+      "action_type": "show_command",
+      "command": "$ralph follow docs/sejong/examples/brownfield-decompose-only/ralph-next-step.md"
+    }
+  },
+  "next_step_message": "1. Run now here\n3. Run in another session or terminal\n`$ralph follow docs/sejong/examples/brownfield-decompose-only/ralph-next-step.md`",
+  "suggested_handoff_prompt_path": "docs/sejong/examples/brownfield-decompose-only/ralph-next-step.md",
+  "suggested_execution_feedback_path": "docs/sejong/examples/brownfield-decompose-only/codex-consumer-feedback.json",
+  "suggested_result_path": "docs/sejong/examples/brownfield-decompose-only/ralph-executor.result.json",
+  "notes": [
+    "This is a public example request.",
+    "It uses no_commit so installation examples do not imply repository mutation."
+  ],
+  "handoff_prompt": "# Ralph Execution Handoff\n\nUse `docs/sejong/examples/brownfield-decompose-only` as the source-of-truth Uigwe bundle. Execute only the listed leaves, capture verification evidence, and recommend Uigwe re-entry if the bundle contradicts the target repository."
+}

@@ -1,0 +1,360 @@
+{
+  "format": "uigwe.goal-tree/v0.1-draft",
+  "metadata": {
+    "profile": "greenfield",
+    "generated_at": "2026-03-25T14:20:00Z",
+    "source_packets": [
+      "docs/sejong/examples/greenfield-full-flow/intent.packet.json",
+      "docs/sejong/examples/greenfield-full-flow/design.packet.json"
+    ]
+  },
+  "selected_plan": {
+    "id": "plan_async_interview_mvp",
+    "title": "Deliver the first async interview practice MVP",
+    "summary": "Build a small browser-based experience for session setup, answer capture, rubric feedback, and saved results."
+  },
+  "retained_alternatives": [
+    {
+      "id": "approach_chat_only",
+      "title": "Chat-only prototype",
+      "summary": "Use a single conversational surface with minimal structure and looser reports.",
+      "pros": [
+        "Very fast to launch"
+      ],
+      "cons": [
+        "Weaker measurement and repeatability"
+      ],
+      "status": "retained_alt"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "goal_mvp",
+      "type": "goal",
+      "title": "Launch the async interview practice MVP",
+      "description": "Deliver a browser-based MVP that validates demand for structured async interview practice.",
+      "parent_ids": [],
+      "depends_on": [],
+      "why": "The team needs evidence of user value before investing in live or mobile-first versions.",
+      "acceptance_criteria": [
+        "A user can complete a session",
+        "A user receives saved rubric-based feedback"
+      ],
+      "constraints": [
+        "Keep the first release browser-based",
+        "Do not add live coaching"
+      ],
+      "assumptions": [
+        "Typed answers are enough for the first validation cycle"
+      ],
+      "risks": [
+        "Feedback quality may be too weak to feel useful"
+      ],
+      "alternatives": [
+        "Chat-only prototype",
+        "Mobile-first prototype"
+      ],
+      "score": {
+        "goal_contribution": 0.98,
+        "confidence": 0.82,
+        "verification_clarity": 0.78,
+        "dependency_simplicity": 0.67,
+        "cost": 0.42,
+        "risk": 0.44
+      },
+      "status": "selected"
+    },
+    {
+      "id": "subgoal_domain",
+      "type": "subgoal",
+      "title": "Stabilize the session and feedback model",
+      "description": "Define the contract for sessions, answers, and rubric summaries.",
+      "parent_ids": [
+        "goal_mvp"
+      ],
+      "depends_on": [],
+      "why": "Execution depends on a stable representation of session state and saved feedback.",
+      "acceptance_criteria": [
+        "Session and summary models cover MVP needs"
+      ],
+      "constraints": [
+        "Support saved history"
+      ],
+      "assumptions": [
+        "The domain can stay simple in the MVP"
+      ],
+      "risks": [
+        "Premature complexity in the data model"
+      ],
+      "alternatives": [
+        "Ad-hoc session shape"
+      ],
+      "score": {
+        "goal_contribution": 0.9,
+        "confidence": 0.87,
+        "verification_clarity": 0.83,
+        "dependency_simplicity": 0.9,
+        "cost": 0.2,
+        "risk": 0.21
+      },
+      "status": "selected"
+    },
+    {
+      "id": "subgoal_product_flow",
+      "type": "subgoal",
+      "title": "Ship a complete user path from setup to review",
+      "description": "Provide a browser flow that goes from session setup through answer capture to report review.",
+      "parent_ids": [
+        "goal_mvp"
+      ],
+      "depends_on": [
+        "subgoal_domain"
+      ],
+      "why": "The value of the MVP depends on an end-to-end path, not isolated components.",
+      "acceptance_criteria": [
+        "Users can start, complete, and revisit a session"
+      ],
+      "constraints": [
+        "Keep setup friction low"
+      ],
+      "assumptions": [
+        "A short guided session is enough to test value"
+      ],
+      "risks": [
+        "Users may drop off before feedback"
+      ],
+      "alternatives": [
+        "Free-form chat session"
+      ],
+      "score": {
+        "goal_contribution": 0.93,
+        "confidence": 0.79,
+        "verification_clarity": 0.82,
+        "dependency_simplicity": 0.69,
+        "cost": 0.33,
+        "risk": 0.39
+      },
+      "status": "selected"
+    },
+    {
+      "id": "task_domain_contract",
+      "type": "task",
+      "title": "Define session and feedback domain contracts",
+      "description": "Model the interview session, question sequence, saved result, and rubric summary structures.",
+      "parent_ids": [
+        "subgoal_domain"
+      ],
+      "depends_on": [],
+      "why": "The rest of the MVP depends on having stable session and feedback shapes.",
+      "acceptance_criteria": [
+        "Session and summary data structures are defined"
+      ],
+      "constraints": [
+        "Support saved history without over-design"
+      ],
+      "assumptions": [
+        "The first iteration can use a minimal but explicit schema"
+      ],
+      "risks": [
+        "Over-modeling the MVP"
+      ],
+      "alternatives": [
+        "Ad-hoc local state only"
+      ],
+      "score": {
+        "goal_contribution": 0.84,
+        "confidence": 0.9,
+        "verification_clarity": 0.88,
+        "dependency_simplicity": 0.93,
+        "cost": 0.18,
+        "risk": 0.17
+      },
+      "status": "executable_leaf",
+      "done_criteria": [
+        "Domain model covers session, answer, and feedback summary",
+        "Storage shape supports saved history"
+      ],
+      "file_scope": [
+        "apps/async-interview/src/domain/*"
+      ],
+      "verification": [
+        {
+          "type": "review",
+          "description": "Review that the domain contract supports the selected approach."
+        }
+      ],
+      "risk_level": "medium",
+      "consumer_hints": {
+        "preferred_role": "executor",
+        "needs_critic": false,
+        "needs_verifier": true,
+        "can_run_parallel": false,
+        "expected_artifacts": [
+          "domain model files"
+        ]
+      }
+    },
+    {
+      "id": "task_session_flow",
+      "type": "task",
+      "title": "Implement the browser session flow",
+      "description": "Create the user flow for role selection, question progression, and answer capture.",
+      "parent_ids": [
+        "subgoal_product_flow"
+      ],
+      "depends_on": [
+        "task_domain_contract"
+      ],
+      "why": "The MVP needs a complete path from session start to completed answers.",
+      "acceptance_criteria": [
+        "A user can start and complete a short session"
+      ],
+      "constraints": [
+        "Keep the setup flow short"
+      ],
+      "assumptions": [
+        "A browser flow is sufficient for initial testing"
+      ],
+      "risks": [
+        "Users may drop off before finishing the session"
+      ],
+      "alternatives": [
+        "Single-screen chat flow"
+      ],
+      "score": {
+        "goal_contribution": 0.86,
+        "confidence": 0.83,
+        "verification_clarity": 0.84,
+        "dependency_simplicity": 0.76,
+        "cost": 0.31,
+        "risk": 0.29
+      },
+      "status": "executable_leaf",
+      "done_criteria": [
+        "Users can move through the session flow",
+        "Answers are captured in the domain model"
+      ],
+      "file_scope": [
+        "apps/async-interview/src/app/*",
+        "apps/async-interview/src/components/*"
+      ],
+      "verification": [
+        {
+          "type": "manual",
+          "description": "Walk through the session flow in the browser."
+        }
+      ],
+      "risk_level": "medium",
+      "consumer_hints": {
+        "preferred_role": "executor",
+        "needs_critic": false,
+        "needs_verifier": true,
+        "can_run_parallel": false,
+        "expected_artifacts": [
+          "session flow UI"
+        ]
+      }
+    },
+    {
+      "id": "task_feedback_and_history",
+      "type": "task",
+      "title": "Implement feedback generation and saved session history",
+      "description": "Generate a rubric summary for a completed session and make saved reports reviewable later.",
+      "parent_ids": [
+        "subgoal_product_flow"
+      ],
+      "depends_on": [
+        "task_domain_contract",
+        "task_session_flow"
+      ],
+      "why": "Feedback and saved recall are the main proof of value for the MVP.",
+      "acceptance_criteria": [
+        "Completed sessions produce saved feedback summaries",
+        "Past session summaries can be revisited"
+      ],
+      "constraints": [
+        "Feedback format must stay structured"
+      ],
+      "assumptions": [
+        "Rubric-based summaries can feel useful in the MVP"
+      ],
+      "risks": [
+        "Feedback may feel generic",
+        "History may expose weak session structure"
+      ],
+      "alternatives": [
+        "Immediate inline answer feedback only"
+      ],
+      "score": {
+        "goal_contribution": 0.9,
+        "confidence": 0.74,
+        "verification_clarity": 0.83,
+        "dependency_simplicity": 0.62,
+        "cost": 0.42,
+        "risk": 0.47
+      },
+      "status": "executable_leaf",
+      "done_criteria": [
+        "Saved summaries exist for completed sessions",
+        "A user can revisit a saved report"
+      ],
+      "file_scope": [
+        "apps/async-interview/src/services/*",
+        "apps/async-interview/src/app/history/*"
+      ],
+      "verification": [
+        {
+          "type": "integration",
+          "description": "Complete a session and reopen the saved summary."
+        }
+      ],
+      "risk_level": "high",
+      "consumer_hints": {
+        "preferred_role": "executor",
+        "needs_critic": true,
+        "needs_verifier": true,
+        "can_run_parallel": false,
+        "expected_artifacts": [
+          "feedback service",
+          "history view"
+        ]
+      }
+    }
+  ],
+  "dependency_edges": [
+    {
+      "from": "subgoal_product_flow",
+      "to": "subgoal_domain",
+      "type": "depends_on"
+    },
+    {
+      "from": "task_session_flow",
+      "to": "task_domain_contract",
+      "type": "depends_on"
+    },
+    {
+      "from": "task_feedback_and_history",
+      "to": "task_domain_contract",
+      "type": "depends_on"
+    },
+    {
+      "from": "task_feedback_and_history",
+      "to": "task_session_flow",
+      "type": "depends_on"
+    }
+  ],
+  "risk_summary": [
+    {
+      "id": "risk_feedback_quality",
+      "description": "The rubric evaluator may produce weak feedback without tighter structure.",
+      "severity": "high",
+      "mitigation": "Use explicit rubric templates and sample-session testing."
+    },
+    {
+      "id": "risk_setup_friction",
+      "description": "Too much setup may reduce first-session completion.",
+      "severity": "medium",
+      "mitigation": "Keep the setup flow short and template-driven."
+    }
+  ]
+}

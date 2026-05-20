@@ -1,0 +1,4 @@
+interface:
+  display_name: "Uigwe"
+  short_description: "Turn goals into planning bundles"
+  default_prompt: "Use $uigwe to turn this goal into a reviewable planning bundle."

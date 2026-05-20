@@ -1,0 +1,21 @@
+{
+  "format": "uigwe.wrapper-result/v0.1-draft",
+  "resolved_mode": "decompose-only",
+  "resolved_profile": "brownfield",
+  "executor_handoff": "none",
+  "status": "completed",
+  "artifacts": {
+    "design_packet_path": "docs/sejong/examples/brownfield-decompose-only/design.packet.json",
+    "plan_packet_path": "docs/sejong/examples/brownfield-decompose-only/plan.packet.json",
+    "goal_tree_path": "docs/sejong/examples/brownfield-decompose-only/goal-tree.json",
+    "spec_path": "docs/sejong/examples/brownfield-decompose-only/spec.md",
+    "rationale_path": "docs/sejong/examples/brownfield-decompose-only/rationale.md"
+  },
+  "consumer_handoff": "none",
+  "planner_reentry_needed": false,
+  "blockers": [],
+  "notes": [
+    "This public example starts from an approved design packet.",
+    "Planning completed without claiming execution success."
+  ]
+}

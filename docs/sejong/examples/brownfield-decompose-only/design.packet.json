@@ -1,0 +1,98 @@
+{
+  "format": "uigwe.design-packet/v0.1-draft",
+  "packet_type": "design",
+  "profile": "brownfield",
+  "generated_at": "2026-03-25T14:30:00Z",
+  "source_packets": [
+    "existing-approved-design"
+  ],
+  "problem_frame": "The Uigwe docs now need a wrapper-facing surface, but the wrapper should sit on top of the existing protocol rather than mutate the planner core.",
+  "selected_approach": {
+    "id": "approach_docs_first_wrapper",
+    "title": "Documentation-first wrapper contract",
+    "summary": "Define the wrapper entry, output contract, and boundary rules in docs first so implementation can follow a stable protocol surface later.",
+    "pros": [
+      "Protects the protocol boundary",
+      "Fits the current documentation-first state of the project",
+      "Keeps planner and wrapper responsibilities separate"
+    ],
+    "cons": [
+      "Does not produce an immediately runnable wrapper"
+    ],
+    "status": "selected"
+  },
+  "alternatives": [
+    {
+      "id": "approach_docs_first_wrapper",
+      "title": "Documentation-first wrapper contract",
+      "summary": "Define the wrapper entry, output contract, and boundary rules in docs first so implementation can follow a stable protocol surface later.",
+      "pros": [
+        "Protects the protocol boundary",
+        "Fits the current project state"
+      ],
+      "cons": [
+        "No immediate runnable wrapper"
+      ],
+      "status": "selected"
+    },
+    {
+      "id": "approach_skill_immediately",
+      "title": "Implement a wrapper skill immediately",
+      "summary": "Jump straight to a wrapper skill without documenting the consumer-facing interface first.",
+      "pros": [
+        "Potentially faster visible result"
+      ],
+      "cons": [
+        "High risk of locking in the wrong contract",
+        "Would mix protocol design with surface implementation"
+      ],
+      "status": "rejected"
+    },
+    {
+      "id": "approach_protocol_only",
+      "title": "Keep everything inside PROTOCOL.md only",
+      "summary": "Avoid a dedicated wrapper surface and extend the protocol doc with invocation guidance.",
+      "pros": [
+        "Minimal document sprawl"
+      ],
+      "cons": [
+        "Weak separation between planner core and wrapper surface"
+      ],
+      "status": "retained_alt"
+    }
+  ],
+  "tradeoffs": [
+    "The selected approach favors contract stability over immediate execution.",
+    "The rejected skill-first path is faster in the short term but risks hardcoding premature assumptions.",
+    "The retained protocol-only alternative is simpler, but weaker as a future integration surface."
+  ],
+  "key_decisions": [
+    "Do not mutate packet or goal-tree contracts as part of wrapper planning.",
+    "Treat the wrapper as a consumer-facing layer on top of Uigwe, not part of the planner core.",
+    "Document boundaries first, then implementation later."
+  ],
+  "assumptions": [
+    "The current Uigwe docs are stable enough to support a dedicated wrapper document.",
+    "A wrapper will eventually need a formal input/output contract."
+  ],
+  "risks": [
+    {
+      "id": "risk_boundary_blur",
+      "description": "The wrapper spec may accidentally duplicate or redefine protocol responsibilities.",
+      "severity": "high",
+      "mitigation": "Keep explicit planner vs wrapper boundary text in the draft."
+    },
+    {
+      "id": "risk_doc_fragmentation",
+      "description": "Adding wrapper docs may fragment the Uigwe package if linked poorly.",
+      "severity": "medium",
+      "mitigation": "Update the docs index and cross-link protocol and wrapper surfaces."
+    }
+  ],
+  "validation_plan": [
+    "Check that wrapper docs do not redefine protocol artifacts.",
+    "Verify that the proposed wrapper surface is linkable from the existing Uigwe docs index.",
+    "Review whether a future implementer could build the wrapper from the documented contract."
+  ],
+  "approval_status": "approved"
+}

@@ -1,0 +1,16 @@
+{
+  "format": "uigwe.wrapper-request/v0.1-draft",
+  "mode": "decompose-only",
+  "profile": "brownfield",
+  "executor_handoff": "none",
+  "brief": "Turn an approved wrapper design packet into executable documentation leaves.",
+  "artifacts": {
+    "design_packet_path": "docs/sejong/examples/brownfield-decompose-only/design.packet.json"
+  },
+  "output_dir": "docs/sejong/examples/brownfield-decompose-only",
+  "consumer_handoff": "none",
+  "notes": [
+    "Public example for a decompose-only brownfield Uigwe flow.",
+    "The design packet is treated as approved input, not a newly generated planning artifact."
+  ]
+}

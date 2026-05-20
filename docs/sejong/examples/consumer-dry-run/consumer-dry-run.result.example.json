@@ -1,0 +1,98 @@
+{
+  "format": "uigwe.consumer-dry-run-result/v0.1-draft",
+  "metadata": {
+    "run_id": "consumer-dry-run-leaves-001",
+    "generated_at": "2026-03-26T09:30:00Z",
+    "consumer": "codex",
+    "plan_id": "plan_codex_consumer_dry_run_v1",
+    "goal_tree_path": "docs/sejong/examples/goal-tree.example.json",
+    "leaf_scope": "limited",
+    "leaf_limit_count": 2
+  },
+  "selection": {
+    "selection_mode": "explicit",
+    "selected_node_ids": [
+      "consumer_leaf_schema_doc",
+      "consumer_leaf_feedback_contract"
+    ],
+    "selection_note": "Use one leaf that validates the wrapper shape and one leaf that validates the existing feedback contract."
+  },
+  "consumer_feedback": {
+    "format": "uigwe.codex-consumer-feedback/v0.2-draft",
+    "metadata": {
+      "profile": "brownfield",
+      "generated_at": "2026-03-26T09:30:00Z",
+      "consumer": "codex",
+      "plan_id": "plan_codex_consumer_dry_run_v1",
+      "goal_tree_path": "docs/sejong/examples/goal-tree.example.json",
+      "attempt_id": "ralph-attempt-001",
+      "attempt_number": 1,
+      "bundle_fingerprint": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "executor_result_path": "docs/sejong/examples/ralph-executor.result.example.json"
+    },
+    "summary": {
+      "completed_count": 1,
+      "blocked_count": 1,
+      "invalidated_count": 0,
+      "requires_planner_reentry": true,
+      "recommended_reentry_target": "local_reexploration"
+    },
+    "leaf_updates": [
+      {
+        "node_id": "consumer_leaf_schema_doc",
+        "previous_status": "executable_leaf",
+        "new_status": "completed",
+        "execution_lane": "single_subagent",
+        "artifacts": [
+          "docs/sejong/consumer-dry-run-result.schema.json",
+          "docs/sejong/examples/consumer-dry-run/consumer-dry-run.result.template.json"
+        ],
+        "evidence": [
+          {
+            "type": "syntax",
+            "description": "The wrapper result schema and template are valid JSON."
+          },
+          {
+            "type": "review",
+            "description": "The result wrapper stays aligned to the existing Codex consumer contract."
+          }
+        ],
+        "notes": "This leaf confirmed the dry-run scaffold can stay thin and contract-driven.",
+        "recommended_reentry_target": "none"
+      },
+      {
+        "node_id": "consumer_leaf_feedback_contract",
+        "previous_status": "executable_leaf",
+        "new_status": "blocked",
+        "execution_lane": "reviewed_subagent",
+        "artifacts": [
+          "docs/sejong/codex-consumer-feedback.schema.json",
+          "docs/sejong/examples/codex-consumer-feedback.example.json"
+        ],
+        "evidence": [
+          {
+            "type": "review",
+            "description": "The existing feedback schema already captures leaf status, evidence, and re-entry advice."
+          }
+        ],
+        "notes": "The dry run remained limited and stopped after confirming the feedback contract was sufficient.",
+        "recommended_reentry_target": "local_reexploration"
+      }
+    ],
+    "escalations": [
+      {
+        "reason": "The limited leaf set was enough for a scaffold, but not enough to claim full consumer readiness.",
+        "severity": "low",
+        "related_node_ids": [
+          "consumer_leaf_feedback_contract"
+        ],
+        "recommended_reentry_target": "local_reexploration"
+      }
+    ]
+  },
+  "notes": [
+    "This is a limited dry-run example, not a release-readiness claim.",
+    "Use the nested consumer feedback object as the authoritative leaf-level record.",
+    "Do not extrapolate full consumer readiness from a two-leaf sample."
+  ]
+}

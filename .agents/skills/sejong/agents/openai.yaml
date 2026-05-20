@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sejong"
+  short_description: "Route broad work into the right lane"
+  default_prompt: "Use $sejong to route this broad request into research, decision, planning, handoff, or direct action."

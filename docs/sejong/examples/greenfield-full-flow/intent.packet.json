@@ -1,0 +1,59 @@
+{
+  "format": "uigwe.intent-packet/v0.1-draft",
+  "packet_type": "intent",
+  "profile": "greenfield",
+  "generated_at": "2026-03-25T14:00:00Z",
+  "source_packets": [],
+  "goal": "Build a browser-based MVP for async interview practice with rubric-based feedback.",
+  "why_now": "The team needs to validate whether people find structured async practice valuable before investing in live coaching or mobile apps.",
+  "in_scope": [
+    "Create an interview session from a target role",
+    "Guide a user through a short sequence of practice questions",
+    "Generate rubric-based feedback after the session",
+    "Save and review past session summaries"
+  ],
+  "non_goals": [
+    "Live voice conversation",
+    "Coach marketplace features",
+    "Enterprise analytics"
+  ],
+  "decision_boundaries": [
+    {
+      "decision": "Choose the web framework and component library",
+      "allowed_without_confirmation": true,
+      "notes": "Framework choice may be made without asking as long as it supports the selected approach."
+    },
+    {
+      "decision": "Change the product from async practice to live coaching",
+      "allowed_without_confirmation": false,
+      "notes": "This would materially change the product concept."
+    }
+  ],
+  "constraints": [
+    "The first release should be small enough to build as an MVP",
+    "The experience should work in a browser without native app installation",
+    "Feedback must be structured enough to be testable"
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "ac_session_setup",
+      "description": "A user can start a practice session for a chosen role.",
+      "verification": "Manual product check"
+    },
+    {
+      "id": "ac_feedback_summary",
+      "description": "A completed session produces a rubric-based feedback summary.",
+      "verification": "Manual flow plus integration test"
+    },
+    {
+      "id": "ac_session_history",
+      "description": "A user can revisit a saved feedback summary.",
+      "verification": "Manual flow plus storage test"
+    }
+  ],
+  "open_questions": [
+    "Should the first MVP accept only typed answers, or also simple recorded audio uploads?",
+    "Should resume context be pasted manually or uploaded as a file?"
+  ],
+  "confidence": 0.77
+}

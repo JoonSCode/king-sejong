@@ -1,0 +1,362 @@
+{
+  "format": "uigwe.goal-tree/v0.1-draft",
+  "metadata": {
+    "profile": "brownfield",
+    "generated_at": "2026-03-25T14:40:00Z",
+    "source_packets": [
+      "docs/sejong/examples/brownfield-decompose-only/design.packet.json"
+    ]
+  },
+  "selected_plan": {
+    "id": "plan_wrapper_surface_docs",
+    "title": "Define the Uigwe wrapper surface without changing the core protocol",
+    "summary": "Add the documentation and contract pieces needed for a future wrapper while keeping the current planner and consumer artifacts stable."
+  },
+  "retained_alternatives": [
+    {
+      "id": "approach_protocol_only",
+      "title": "Keep everything inside PROTOCOL.md only",
+      "summary": "Avoid a dedicated wrapper document and extend protocol guidance instead.",
+      "pros": [
+        "Less document sprawl"
+      ],
+      "cons": [
+        "Weaker separation between planner and wrapper surface"
+      ],
+      "status": "retained_alt"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "goal_wrapper_surface",
+      "type": "goal",
+      "title": "Add a wrapper-facing surface to the existing Uigwe docs set",
+      "description": "Prepare a future wrapper entry point without destabilizing the current Uigwe protocol artifacts.",
+      "parent_ids": [],
+      "depends_on": [],
+      "why": "The next layer above Uigwe needs a stable invocation surface that does not blur the planner core.",
+      "acceptance_criteria": [
+        "The wrapper surface is documented",
+        "The wrapper surface is compatible with existing Uigwe artifacts"
+      ],
+      "constraints": [
+        "Do not redesign packet or goal-tree contracts",
+        "Fit cleanly into the existing docs package"
+      ],
+      "assumptions": [
+        "A wrapper layer will be implemented later",
+        "The current docs package is the right place to define the contract first"
+      ],
+      "risks": [
+        "Wrapper docs may accidentally duplicate protocol responsibilities"
+      ],
+      "alternatives": [
+        "Protocol-only guidance",
+        "Immediate wrapper skill implementation"
+      ],
+      "score": {
+        "goal_contribution": 0.95,
+        "confidence": 0.86,
+        "verification_clarity": 0.89,
+        "dependency_simplicity": 0.73,
+        "cost": 0.28,
+        "risk": 0.36
+      },
+      "status": "selected"
+    },
+    {
+      "id": "subgoal_contract_boundary",
+      "type": "subgoal",
+      "title": "Protect planner versus wrapper boundaries",
+      "description": "Make sure wrapper-facing artifacts sit on top of the protocol instead of mutating it.",
+      "parent_ids": [
+        "goal_wrapper_surface"
+      ],
+      "depends_on": [],
+      "why": "Boundary clarity is the main brownfield risk in this change.",
+      "acceptance_criteria": [
+        "Planner responsibilities stay inside protocol docs",
+        "Wrapper responsibilities stay in wrapper-facing artifacts"
+      ],
+      "constraints": [
+        "Do not redefine existing packet or goal-tree artifacts"
+      ],
+      "assumptions": [
+        "A dedicated wrapper document is clearer than protocol-only guidance"
+      ],
+      "risks": [
+        "Boundary blur between wrapper and protocol surfaces"
+      ],
+      "alternatives": [
+        "Protocol-only extension"
+      ],
+      "score": {
+        "goal_contribution": 0.9,
+        "confidence": 0.84,
+        "verification_clarity": 0.92,
+        "dependency_simplicity": 0.85,
+        "cost": 0.24,
+        "risk": 0.32
+      },
+      "status": "selected"
+    },
+    {
+      "id": "subgoal_docs_fit",
+      "type": "subgoal",
+      "title": "Integrate the wrapper surface into the existing docs package",
+      "description": "Make the wrapper discoverable and well linked inside the current Uigwe document set.",
+      "parent_ids": [
+        "goal_wrapper_surface"
+      ],
+      "depends_on": [
+        "subgoal_contract_boundary"
+      ],
+      "why": "Brownfield additions should fit the current package rather than feel bolted on.",
+      "acceptance_criteria": [
+        "Wrapper docs are discoverable from the existing index",
+        "Protocol and wrapper docs cross-link cleanly"
+      ],
+      "constraints": [
+        "Avoid duplicate definitions across docs"
+      ],
+      "assumptions": [
+        "The docs index is the primary discovery path"
+      ],
+      "risks": [
+        "Doc fragmentation"
+      ],
+      "alternatives": [
+        "Leave wrapper docs unlinked until implementation"
+      ],
+      "score": {
+        "goal_contribution": 0.85,
+        "confidence": 0.88,
+        "verification_clarity": 0.91,
+        "dependency_simplicity": 0.81,
+        "cost": 0.18,
+        "risk": 0.22
+      },
+      "status": "selected"
+    },
+    {
+      "id": "task_wrapper_doc",
+      "type": "task",
+      "title": "Write the wrapper surface draft",
+      "description": "Document wrapper purpose, entry modes, inputs, outputs, and non-goals.",
+      "parent_ids": [
+        "subgoal_contract_boundary"
+      ],
+      "depends_on": [],
+      "why": "A future wrapper needs a clear contract before implementation starts.",
+      "acceptance_criteria": [
+        "Wrapper responsibilities are documented",
+        "Planner and wrapper boundaries are explicit"
+      ],
+      "constraints": [
+        "Do not redefine the planner core"
+      ],
+      "assumptions": [
+        "A document-first wrapper surface is the right next step"
+      ],
+      "risks": [
+        "The draft may duplicate protocol responsibilities"
+      ],
+      "alternatives": [
+        "Protocol-only guidance"
+      ],
+      "score": {
+        "goal_contribution": 0.87,
+        "confidence": 0.82,
+        "verification_clarity": 0.9,
+        "dependency_simplicity": 0.88,
+        "cost": 0.23,
+        "risk": 0.34
+      },
+      "status": "executable_leaf",
+      "done_criteria": [
+        "Wrapper purpose, inputs, outputs, and non-goals are documented",
+        "Boundary rules are explicit"
+      ],
+      "file_scope": [
+        "docs/sejong/WRAPPER.md"
+      ],
+      "verification": [
+        {
+          "type": "review",
+          "description": "Confirm the wrapper doc does not redefine planner responsibilities."
+        }
+      ],
+      "risk_level": "high",
+      "consumer_hints": {
+        "preferred_role": "writer",
+        "needs_critic": true,
+        "needs_verifier": true,
+        "can_run_parallel": false,
+        "expected_artifacts": [
+          "wrapper draft doc"
+        ]
+      }
+    },
+    {
+      "id": "task_wrapper_schema",
+      "type": "task",
+      "title": "Define the wrapper input and output contract",
+      "description": "Draft a machine-facing schema for future wrapper requests and wrapper outputs.",
+      "parent_ids": [
+        "subgoal_contract_boundary"
+      ],
+      "depends_on": [
+        "task_wrapper_doc"
+      ],
+      "why": "The wrapper should pass through Uigwe artifacts without inventing a vague interface.",
+      "acceptance_criteria": [
+        "Wrapper fields are explicit",
+        "The contract points at existing Uigwe artifacts"
+      ],
+      "constraints": [
+        "Do not replace existing packet or goal-tree formats"
+      ],
+      "assumptions": [
+        "The wrapper will need a machine-facing surface"
+      ],
+      "risks": [
+        "The schema may accidentally overlap with existing packet contracts"
+      ],
+      "alternatives": [
+        "Doc-only contract"
+      ],
+      "score": {
+        "goal_contribution": 0.88,
+        "confidence": 0.79,
+        "verification_clarity": 0.93,
+        "dependency_simplicity": 0.74,
+        "cost": 0.3,
+        "risk": 0.4
+      },
+      "status": "executable_leaf",
+      "done_criteria": [
+        "Wrapper input and output fields are explicit",
+        "Existing Uigwe artifacts remain authoritative"
+      ],
+      "file_scope": [
+        "docs/sejong/wrapper.schema.json"
+      ],
+      "verification": [
+        {
+          "type": "review",
+          "description": "Check compatibility with packet and goal-tree contracts."
+        }
+      ],
+      "risk_level": "high",
+      "consumer_hints": {
+        "preferred_role": "writer",
+        "needs_critic": true,
+        "needs_verifier": true,
+        "can_run_parallel": false,
+        "expected_artifacts": [
+          "wrapper schema draft"
+        ]
+      }
+    },
+    {
+      "id": "task_docs_integration",
+      "type": "task",
+      "title": "Integrate the wrapper surface into the Uigwe docs package",
+      "description": "Update the Uigwe docs index and cross-links so the wrapper surface is discoverable and properly bounded.",
+      "parent_ids": [
+        "subgoal_docs_fit"
+      ],
+      "depends_on": [
+        "task_wrapper_doc",
+        "task_wrapper_schema"
+      ],
+      "why": "Brownfield additions should fit the existing docs package cleanly.",
+      "acceptance_criteria": [
+        "The docs index links to the wrapper surface",
+        "Cross-links do not duplicate protocol definitions"
+      ],
+      "constraints": [
+        "Keep the docs package coherent"
+      ],
+      "assumptions": [
+        "Index and protocol cross-links are enough for discoverability"
+      ],
+      "risks": [
+        "Fragmented navigation if links are incomplete"
+      ],
+      "alternatives": [
+        "Leave wrapper docs unlinked until implementation"
+      ],
+      "score": {
+        "goal_contribution": 0.83,
+        "confidence": 0.87,
+        "verification_clarity": 0.92,
+        "dependency_simplicity": 0.78,
+        "cost": 0.2,
+        "risk": 0.24
+      },
+      "status": "executable_leaf",
+      "done_criteria": [
+        "Uigwe docs index links to the wrapper surface",
+        "Cross-links point between wrapper and protocol artifacts where needed"
+      ],
+      "file_scope": [
+        "docs/INDEX.md",
+        "docs/sejong/PROTOCOL.md",
+        "docs/sejong/WRAPPER.md"
+      ],
+      "verification": [
+        {
+          "type": "review",
+          "description": "Confirm the wrapper surface is discoverable without duplicating protocol text."
+        }
+      ],
+      "risk_level": "medium",
+      "consumer_hints": {
+        "preferred_role": "writer",
+        "needs_critic": false,
+        "needs_verifier": true,
+        "can_run_parallel": false,
+        "expected_artifacts": [
+          "updated docs links"
+        ]
+      }
+    }
+  ],
+  "dependency_edges": [
+    {
+      "from": "subgoal_docs_fit",
+      "to": "subgoal_contract_boundary",
+      "type": "depends_on"
+    },
+    {
+      "from": "task_wrapper_schema",
+      "to": "task_wrapper_doc",
+      "type": "depends_on"
+    },
+    {
+      "from": "task_docs_integration",
+      "to": "task_wrapper_doc",
+      "type": "depends_on"
+    },
+    {
+      "from": "task_docs_integration",
+      "to": "task_wrapper_schema",
+      "type": "depends_on"
+    }
+  ],
+  "risk_summary": [
+    {
+      "id": "risk_boundary_blur",
+      "description": "The wrapper spec may accidentally redefine core protocol responsibilities.",
+      "severity": "high",
+      "mitigation": "Add explicit planner vs wrapper boundary language."
+    },
+    {
+      "id": "risk_doc_fragmentation",
+      "description": "The new surface may fragment the docs package if linked poorly.",
+      "severity": "medium",
+      "mitigation": "Update the docs index and cross-link from protocol surfaces."
+    }
+  ]
+}

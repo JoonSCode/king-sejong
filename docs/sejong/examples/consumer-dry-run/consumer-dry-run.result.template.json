@@ -1,0 +1,77 @@
+{
+  "format": "uigwe.consumer-dry-run-result/v0.1-draft",
+  "metadata": {
+    "run_id": "pending-run-id",
+    "generated_at": "2026-03-26T00:00:00Z",
+    "consumer": "codex",
+    "plan_id": "pending-plan-id",
+    "goal_tree_path": "docs/sejong/examples/goal-tree.example.json",
+    "leaf_scope": "limited",
+    "leaf_limit_count": 2
+  },
+  "selection": {
+    "selection_mode": "explicit",
+    "selected_node_ids": [
+      "pending_leaf_1",
+      "pending_leaf_2"
+    ],
+    "selection_note": "Choose a small leaf set that covers the dry-run outcomes you want to record."
+  },
+  "consumer_feedback": {
+    "format": "uigwe.codex-consumer-feedback/v0.2-draft",
+    "metadata": {
+      "profile": "brownfield",
+      "generated_at": "2026-03-26T00:00:00Z",
+      "consumer": "codex",
+      "plan_id": "pending-plan-id",
+      "goal_tree_path": "docs/sejong/examples/goal-tree.example.json",
+      "attempt_id": "ralph-attempt-001",
+      "attempt_number": 1,
+      "bundle_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "executor_result_path": "docs/sejong/examples/ralph-executor.result.example.json"
+    },
+    "summary": {
+      "completed_count": 1,
+      "blocked_count": 1,
+      "invalidated_count": 0,
+      "requires_planner_reentry": true,
+      "recommended_reentry_target": "local_reexploration"
+    },
+    "leaf_updates": [
+      {
+        "node_id": "pending_leaf_1",
+        "previous_status": "executable_leaf",
+        "new_status": "completed",
+        "execution_lane": "direct_session",
+        "artifacts": [],
+        "evidence": [],
+        "notes": "Replace with the observed leaf outcome.",
+        "recommended_reentry_target": "none"
+      },
+      {
+        "node_id": "pending_leaf_2",
+        "previous_status": "executable_leaf",
+        "new_status": "blocked",
+        "execution_lane": "reviewed_subagent",
+        "artifacts": [],
+        "evidence": [],
+        "notes": "Replace with the observed leaf outcome.",
+        "recommended_reentry_target": "local_reexploration"
+      }
+    ],
+    "escalations": [
+      {
+        "reason": "Replace with the observed blocker or escalation reason.",
+        "severity": "low",
+        "related_node_ids": [
+          "pending_leaf_2"
+        ],
+        "recommended_reentry_target": "local_reexploration"
+      }
+    ]
+  },
+  "notes": [
+    "Keep the leaf set intentionally small.",
+    "Use the nested consumer feedback object as the canonical execution record."
+  ]
+}

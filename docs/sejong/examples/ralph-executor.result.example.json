@@ -1,0 +1,36 @@
+{
+  "format": "uigwe.ralph-executor-result/v0.4-draft",
+  "executor_type": "ralph",
+  "backend": "codex-native-ralph-skill",
+  "attempt_id": "ralph-attempt-001",
+  "attempt_number": 1,
+  "trigger": "follow_command",
+  "started_at": "2026-05-20T00:01:00Z",
+  "finished_at": "2026-05-20T00:05:00Z",
+  "status": "completed",
+  "bundle": {
+    "plan_packet_path": "docs/sejong/examples/brownfield-decompose-only/plan.packet.json",
+    "goal_tree_path": "docs/sejong/examples/brownfield-decompose-only/goal-tree.json",
+    "spec_path": "docs/sejong/examples/brownfield-decompose-only/spec.md",
+    "rationale_path": "docs/sejong/examples/brownfield-decompose-only/rationale.md",
+    "planning_summary_path": ""
+  },
+  "bundle_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "execution_feedback_path": "docs/sejong/examples/codex-consumer-feedback.example.json",
+  "recommended_reentry_target": "none",
+  "git_policy": {
+    "mode": "no_commit",
+    "verification_strategy": "tiered_changed_scope",
+    "require_clean_start": false,
+    "require_clean_finish": true,
+    "target_repo_paths": [
+      "."
+    ],
+    "parent_gitlink_policy": "none"
+  },
+  "handoff_artifact_disposition": "retained",
+  "notes": [
+    "Ralph completed the public example without commit-producing git evidence.",
+    "The bundle remained the execution source of truth."
+  ]
+}

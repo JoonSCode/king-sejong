@@ -1,0 +1,412 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/uigwe/goal-tree.schema.json",
+  "title": "Uigwe Goal Tree Schema Draft",
+  "description": "Draft machine-facing contract for Uigwe goal graphs.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "uigwe.goal-tree/v0.1-draft"
+    },
+    "metadata": {
+      "$ref": "#/$defs/Metadata"
+    },
+    "selected_plan": {
+      "$ref": "#/$defs/PlanSummary"
+    },
+    "retained_alternatives": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Alternative"
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Node"
+      }
+    },
+    "dependency_edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/DependencyEdge"
+      }
+    },
+    "risk_summary": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RiskSummary"
+      }
+    }
+  },
+  "required": [
+    "format",
+    "metadata",
+    "selected_plan",
+    "retained_alternatives",
+    "nodes",
+    "dependency_edges",
+    "risk_summary"
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      }
+    },
+    "Profile": {
+      "type": "string",
+      "enum": [
+        "greenfield",
+        "brownfield"
+      ]
+    },
+    "Metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "profile": {
+          "$ref": "#/$defs/Profile"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_packets": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "profile",
+        "generated_at",
+        "source_packets"
+      ]
+    },
+    "PlanSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "title": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "summary": {
+          "$ref": "#/$defs/NonEmptyString"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "summary"
+      ]
+    },
+    "Alternative": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "title": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "summary": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "pros": {
+          "$ref": "#/$defs/StringList"
+        },
+        "cons": {
+          "$ref": "#/$defs/StringList"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "selected",
+            "retained_alt",
+            "rejected"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "summary",
+        "status"
+      ]
+    },
+    "Score": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "goal_contribution": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "verification_clarity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "dependency_simplicity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "cost": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "risk": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "goal_contribution",
+        "confidence",
+        "verification_clarity",
+        "dependency_simplicity",
+        "cost",
+        "risk"
+      ]
+    },
+    "NodeStatus": {
+      "type": "string",
+      "enum": [
+        "candidate",
+        "selected",
+        "retained_alt",
+        "executable_leaf",
+        "dispatched",
+        "completed",
+        "blocked",
+        "invalidated"
+      ]
+    },
+    "NodeType": {
+      "type": "string",
+      "enum": [
+        "goal",
+        "subgoal",
+        "task"
+      ]
+    },
+    "VerificationCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "description": {
+          "$ref": "#/$defs/NonEmptyString"
+        }
+      },
+      "required": [
+        "type",
+        "description"
+      ]
+    },
+    "ConsumerHints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "preferred_role": {
+          "type": "string"
+        },
+        "needs_critic": {
+          "type": "boolean"
+        },
+        "needs_verifier": {
+          "type": "boolean"
+        },
+        "can_run_parallel": {
+          "type": "boolean"
+        },
+        "expected_artifacts": {
+          "$ref": "#/$defs/StringList"
+        }
+      }
+    },
+    "Node": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "type": {
+          "$ref": "#/$defs/NodeType"
+        },
+        "title": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "description": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "parent_ids": {
+          "$ref": "#/$defs/StringList"
+        },
+        "depends_on": {
+          "$ref": "#/$defs/StringList"
+        },
+        "why": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "acceptance_criteria": {
+          "$ref": "#/$defs/StringList"
+        },
+        "constraints": {
+          "$ref": "#/$defs/StringList"
+        },
+        "assumptions": {
+          "$ref": "#/$defs/StringList"
+        },
+        "risks": {
+          "$ref": "#/$defs/StringList"
+        },
+        "alternatives": {
+          "$ref": "#/$defs/StringList"
+        },
+        "score": {
+          "$ref": "#/$defs/Score"
+        },
+        "status": {
+          "$ref": "#/$defs/NodeStatus"
+        },
+        "done_criteria": {
+          "$ref": "#/$defs/StringList"
+        },
+        "file_scope": {
+          "$ref": "#/$defs/StringList"
+        },
+        "verification": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VerificationCheck"
+          }
+        },
+        "risk_level": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "consumer_hints": {
+          "$ref": "#/$defs/ConsumerHints"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "title",
+        "description",
+        "parent_ids",
+        "depends_on",
+        "why",
+        "acceptance_criteria",
+        "constraints",
+        "assumptions",
+        "risks",
+        "alternatives",
+        "score",
+        "status"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "task"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "done_criteria",
+              "file_scope",
+              "verification",
+              "risk_level"
+            ]
+          }
+        }
+      ]
+    },
+    "DependencyEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "to": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "depends_on",
+            "blocks",
+            "supports"
+          ]
+        }
+      },
+      "required": [
+        "from",
+        "to",
+        "type"
+      ]
+    },
+    "RiskSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "description": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "mitigation": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "severity"
+      ]
+    }
+  }
+}

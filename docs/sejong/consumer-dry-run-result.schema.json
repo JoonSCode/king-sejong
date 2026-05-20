@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/uigwe/consumer-dry-run-result.schema.json",
+  "title": "Uigwe Codex Consumer Dry-Run Result Schema Draft",
+  "description": "Draft schema for limited Codex consumer dry-run results over Uigwe executable leaves.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "uigwe.consumer-dry-run-result/v0.1-draft"
+    },
+    "metadata": {
+      "$ref": "#/$defs/Metadata"
+    },
+    "selection": {
+      "$ref": "#/$defs/Selection"
+    },
+    "consumer_feedback": {
+      "$ref": "https://kinno.dev/schemas/uigwe/codex-consumer-feedback.schema.json"
+    },
+    "notes": {
+      "$ref": "#/$defs/StringList"
+    }
+  },
+  "required": [
+    "format",
+    "metadata",
+    "selection",
+    "consumer_feedback",
+    "notes"
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      }
+    },
+    "Metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "consumer": {
+          "const": "codex"
+        },
+        "plan_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "goal_tree_path": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "leaf_scope": {
+          "const": "limited"
+        },
+        "leaf_limit_count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "run_id",
+        "generated_at",
+        "consumer",
+        "plan_id",
+        "goal_tree_path",
+        "leaf_scope",
+        "leaf_limit_count"
+      ]
+    },
+    "Selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "selection_mode": {
+          "type": "string",
+          "enum": [
+            "explicit",
+            "file_scope",
+            "risk_slice"
+          ]
+        },
+        "selected_node_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/NonEmptyString"
+          }
+        },
+        "selection_note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "selection_mode",
+        "selected_node_ids",
+        "selection_note"
+      ]
+    }
+  }
+}

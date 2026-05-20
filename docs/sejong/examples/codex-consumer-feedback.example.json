@@ -1,0 +1,72 @@
+{
+  "format": "uigwe.codex-consumer-feedback/v0.2-draft",
+  "metadata": {
+    "profile": "brownfield",
+    "generated_at": "2026-04-09T16:52:00Z",
+    "consumer": "codex",
+    "plan_id": "plan_wrapper_docs_surface",
+    "goal_tree_path": "docs/sejong/examples/brownfield-decompose-only/goal-tree.json",
+    "attempt_id": "ralph-attempt-001",
+    "attempt_number": 1,
+    "bundle_fingerprint": "sha256:5c0d03a6472637a59928a28a7a2d9700315be01d0873ad0e34bd165c4d2ffead",
+    "executor_result_path": "docs/sejong/examples/ralph-executor.result.example.json"
+  },
+  "summary": {
+    "completed_count": 1,
+    "blocked_count": 1,
+    "invalidated_count": 0,
+    "requires_planner_reentry": true,
+    "recommended_reentry_target": "local_reexploration"
+  },
+  "leaf_updates": [
+    {
+      "node_id": "leaf_wrapper_contract_doc",
+      "previous_status": "executable_leaf",
+      "new_status": "completed",
+      "execution_lane": "single_subagent",
+      "artifacts": [
+        "docs/sejong/WRAPPER.md"
+      ],
+      "commit_group_ids": [
+        "cg-wrapper-docs-contract"
+      ],
+      "evidence": [
+        {
+          "type": "doc_review",
+          "description": "Updated WRAPPER.md keeps wrapper responsibilities separate from planner and consumer logic."
+        },
+        {
+          "type": "review",
+          "description": "Wrapper contract wording aligns with the selected plan and bundle source-of-truth files."
+        }
+      ],
+      "notes": "The leaf completed cleanly without requiring critic review.",
+      "recommended_reentry_target": "none"
+    },
+    {
+      "node_id": "leaf_boundary_handoff_alignment",
+      "previous_status": "executable_leaf",
+      "new_status": "blocked",
+      "execution_lane": "reviewed_subagent",
+      "artifacts": [],
+      "evidence": [
+        {
+          "type": "review",
+          "description": "Protocol and consumer docs still need a narrower ownership split around execution-lifecycle wording."
+        }
+      ],
+      "notes": "The consumer can continue after planner clarifies whether lifecycle recovery belongs in executor guidance or consumer-specific guidance.",
+      "recommended_reentry_target": "local_reexploration"
+    }
+  ],
+  "escalations": [
+    {
+      "reason": "The blocked leaf exposed unclear ownership between executor-level lifecycle text and consumer-specific recovery behavior.",
+      "severity": "medium",
+      "related_node_ids": [
+        "leaf_boundary_handoff_alignment"
+      ],
+      "recommended_reentry_target": "local_reexploration"
+    }
+  ]
+}

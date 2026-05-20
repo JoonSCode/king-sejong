@@ -1,0 +1,14 @@
+{
+  "format": "uigwe.wrapper-request/v0.1-draft",
+  "mode": "full",
+  "profile": "greenfield",
+  "executor_handoff": "none",
+  "brief": "Create a complete planning bundle for an async interview practice MVP.",
+  "artifacts": {},
+  "output_dir": "docs/sejong/examples/greenfield-full-flow",
+  "consumer_handoff": "none",
+  "notes": [
+    "Public example for a full greenfield Uigwe flow.",
+    "No execution handoff is requested in this example."
+  ]
+}

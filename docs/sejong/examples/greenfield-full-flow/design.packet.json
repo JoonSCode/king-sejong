@@ -1,0 +1,99 @@
+{
+  "format": "uigwe.design-packet/v0.1-draft",
+  "packet_type": "design",
+  "profile": "greenfield",
+  "generated_at": "2026-03-25T14:10:00Z",
+  "source_packets": [
+    "docs/sejong/examples/greenfield-full-flow/intent.packet.json"
+  ],
+  "problem_frame": "The MVP needs enough structure to feel like interview practice while staying lightweight enough to validate demand quickly.",
+  "selected_approach": {
+    "id": "approach_web_serverless",
+    "title": "Web-first MVP with a serverless feedback pipeline",
+    "summary": "Use a browser-based session flow with structured question state and a lightweight serverless backend that evaluates completed sessions.",
+    "pros": [
+      "Fastest validation path for a solo or small team",
+      "Supports saved history and feedback reports cleanly",
+      "Keeps the architecture open for later mobile clients"
+    ],
+    "cons": [
+      "Still requires backend evaluation orchestration",
+      "Less immersive than a live or voice-first experience"
+    ],
+    "status": "selected"
+  },
+  "alternatives": [
+    {
+      "id": "approach_web_serverless",
+      "title": "Web-first MVP with a serverless feedback pipeline",
+      "summary": "Use a browser-based session flow with structured question state and a lightweight serverless backend that evaluates completed sessions.",
+      "pros": [
+        "Fastest validation path for a solo or small team",
+        "Supports saved history and feedback reports cleanly"
+      ],
+      "cons": [
+        "Requires backend evaluation orchestration"
+      ],
+      "status": "selected"
+    },
+    {
+      "id": "approach_chat_only",
+      "title": "Chat-only prototype",
+      "summary": "Use a single conversational surface with minimal session structure and looser feedback output.",
+      "pros": [
+        "Very fast to launch"
+      ],
+      "cons": [
+        "Weaker repeatability",
+        "Harder to compare feedback across sessions"
+      ],
+      "status": "retained_alt"
+    },
+    {
+      "id": "approach_mobile_first",
+      "title": "Native mobile-first prototype",
+      "summary": "Build the first version as a mobile app to emphasize daily practice and notifications.",
+      "pros": [
+        "Could improve habit formation later"
+      ],
+      "cons": [
+        "Too much product and platform cost for first validation"
+      ],
+      "status": "rejected"
+    }
+  ],
+  "tradeoffs": [
+    "The selected approach trades immersion for faster validation and stronger structure.",
+    "The chat-only alternative is faster but makes it harder to measure rubric quality consistently.",
+    "The mobile-first path may be valuable later, but it is premature for initial demand testing."
+  ],
+  "key_decisions": [
+    "Use a browser-based session flow rather than a live or native-first experience.",
+    "Model the session as structured questions with saved results rather than a free-form conversation transcript.",
+    "Generate feedback after session completion rather than during every answer."
+  ],
+  "assumptions": [
+    "Typed answers are enough for the first validation cycle.",
+    "Users value structured feedback over full interview realism in an MVP."
+  ],
+  "risks": [
+    {
+      "id": "risk_feedback_quality",
+      "description": "Feedback may feel generic if the rubric model is too weak.",
+      "severity": "high",
+      "mitigation": "Constrain the rubric output format and validate with example sessions."
+    },
+    {
+      "id": "risk_dropout",
+      "description": "Users may abandon sessions if the setup flow is too long.",
+      "severity": "medium",
+      "mitigation": "Keep the first session template short and reduce setup fields."
+    }
+  ],
+  "validation_plan": [
+    "Manually test the full session flow from setup to saved report.",
+    "Use sample sessions to evaluate rubric consistency.",
+    "Check whether users finish the first full interview without guidance."
+  ],
+  "approval_status": "approved"
+}

@@ -1,0 +1,162 @@
+{
+  "format": "uigwe.plan-packet/v0.1-draft",
+  "packet_type": "plan",
+  "profile": "brownfield",
+  "generated_at": "2026-03-25T14:40:00Z",
+  "source_packets": [
+    "docs/sejong/examples/brownfield-decompose-only/design.packet.json"
+  ],
+  "spec_path": "docs/sejong/examples/brownfield-decompose-only/spec.md",
+  "rationale_path": "docs/sejong/examples/brownfield-decompose-only/rationale.md",
+  "goal_tree_path": "docs/sejong/examples/brownfield-decompose-only/goal-tree.json",
+  "selected_plan": {
+    "id": "plan_wrapper_surface_docs",
+    "title": "Define the Uigwe wrapper surface without changing the core protocol",
+    "summary": "Add the documentation and contract pieces needed for a future wrapper while keeping the current planner and consumer artifacts stable."
+  },
+  "retained_alternatives": [
+    {
+      "id": "approach_protocol_only",
+      "title": "Keep everything inside PROTOCOL.md only",
+      "summary": "Avoid a dedicated wrapper document and extend protocol guidance instead.",
+      "pros": [
+        "Less document sprawl"
+      ],
+      "cons": [
+        "Weaker separation between planner and wrapper surface"
+      ],
+      "status": "retained_alt"
+    }
+  ],
+  "leaf_tasks": [
+    {
+      "id": "task_wrapper_doc",
+      "title": "Write the wrapper surface draft",
+      "description": "Document wrapper purpose, entry modes, inputs, outputs, and non-goals.",
+      "why": "A future wrapper needs a clear contract before implementation starts.",
+      "done_criteria": [
+        "Wrapper responsibilities are documented",
+        "Planner and wrapper boundaries are explicit"
+      ],
+      "file_scope": [
+        "docs/sejong/WRAPPER.md"
+      ],
+      "dependencies": [],
+      "verification": [
+        {
+          "type": "review",
+          "description": "Confirm the wrapper doc does not redefine core protocol responsibilities."
+        }
+      ],
+      "risk_level": "high",
+      "consumer_hints": {
+        "preferred_role": "writer",
+        "needs_critic": true,
+        "needs_verifier": true,
+        "can_run_parallel": false,
+        "expected_artifacts": [
+          "wrapper draft doc"
+        ]
+      }
+    },
+    {
+      "id": "task_wrapper_schema",
+      "title": "Define the wrapper input and output contract",
+      "description": "Draft a machine-facing schema for future wrapper requests and wrapper outputs.",
+      "why": "The wrapper should be able to pass through Uigwe packets and outputs without inventing a vague ad-hoc surface.",
+      "done_criteria": [
+        "Wrapper input and output fields are explicit",
+        "The contract refers to existing Uigwe artifacts rather than replacing them"
+      ],
+      "file_scope": [
+        "docs/sejong/wrapper.schema.json"
+      ],
+      "dependencies": [
+        "task_wrapper_doc"
+      ],
+      "verification": [
+        {
+          "type": "review",
+          "description": "Check the wrapper schema for compatibility with existing packet and goal-tree contracts."
+        }
+      ],
+      "risk_level": "high",
+      "consumer_hints": {
+        "preferred_role": "writer",
+        "needs_critic": true,
+        "needs_verifier": true,
+        "can_run_parallel": false,
+        "expected_artifacts": [
+          "wrapper schema draft"
+        ]
+      }
+    },
+    {
+      "id": "task_docs_integration",
+      "title": "Integrate the wrapper surface into the Uigwe docs package",
+      "description": "Update the Uigwe docs index and cross-links so the wrapper surface is discoverable and properly bounded.",
+      "why": "Brownfield work should fit the existing docs package cleanly instead of creating isolated artifacts.",
+      "done_criteria": [
+        "Uigwe docs index links to the wrapper surface",
+        "Cross-links point from protocol docs to wrapper docs where appropriate"
+      ],
+      "file_scope": [
+        "docs/INDEX.md",
+        "docs/sejong/PROTOCOL.md",
+        "docs/sejong/WRAPPER.md"
+      ],
+      "dependencies": [
+        "task_wrapper_doc",
+        "task_wrapper_schema"
+      ],
+      "verification": [
+        {
+          "type": "review",
+          "description": "Confirm the wrapper surface is discoverable without duplicating protocol definitions."
+        }
+      ],
+      "risk_level": "medium",
+      "consumer_hints": {
+        "preferred_role": "writer",
+        "needs_critic": false,
+        "needs_verifier": true,
+        "can_run_parallel": false,
+        "expected_artifacts": [
+          "updated index and cross-links"
+        ]
+      }
+    }
+  ],
+  "dependency_edges": [
+    {
+      "from": "task_wrapper_schema",
+      "to": "task_wrapper_doc",
+      "type": "depends_on"
+    },
+    {
+      "from": "task_docs_integration",
+      "to": "task_wrapper_doc",
+      "type": "depends_on"
+    },
+    {
+      "from": "task_docs_integration",
+      "to": "task_wrapper_schema",
+      "type": "depends_on"
+    }
+  ],
+  "risk_summary": [
+    {
+      "id": "risk_boundary_blur",
+      "description": "The wrapper spec may accidentally redefine core protocol responsibilities.",
+      "severity": "high",
+      "mitigation": "Add explicit planner vs wrapper boundary language."
+    },
+    {
+      "id": "risk_doc_fragmentation",
+      "description": "The new surface may fragment the docs package if linked poorly.",
+      "severity": "medium",
+      "mitigation": "Update the docs index and cross-link from protocol surfaces."
+    }
+  ],
+  "ready_for_consumer": true
+}

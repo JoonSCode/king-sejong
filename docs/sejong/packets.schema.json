@@ -1,0 +1,530 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/uigwe/packets.schema.json",
+  "title": "Uigwe Packet Schema Draft",
+  "description": "Draft contract for Uigwe stage packets.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/IntentPacket"
+    },
+    {
+      "$ref": "#/$defs/DesignPacket"
+    },
+    {
+      "$ref": "#/$defs/PlanPacket"
+    }
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      }
+    },
+    "Profile": {
+      "type": "string",
+      "enum": [
+        "greenfield",
+        "brownfield"
+      ]
+    },
+    "PacketMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "packet_type": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "profile": {
+          "$ref": "#/$defs/Profile"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_packets": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "format",
+        "packet_type",
+        "profile"
+      ]
+    },
+    "ApprovalStatus": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "waived"
+      ]
+    },
+    "Confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "DecisionBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "decision": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "allowed_without_confirmation": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "decision",
+        "allowed_without_confirmation"
+      ]
+    },
+    "AcceptanceCriterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "description": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "verification": {
+          "$ref": "#/$defs/NonEmptyString"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "verification"
+      ]
+    },
+    "Alternative": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "title": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "summary": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "pros": {
+          "$ref": "#/$defs/StringList"
+        },
+        "cons": {
+          "$ref": "#/$defs/StringList"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "selected",
+            "retained_alt",
+            "rejected"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "summary",
+        "status"
+      ]
+    },
+    "Risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "description": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "mitigation": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "severity"
+      ]
+    },
+    "VerificationCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "description": {
+          "$ref": "#/$defs/NonEmptyString"
+        }
+      },
+      "required": [
+        "type",
+        "description"
+      ]
+    },
+    "ConsumerHints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "preferred_role": {
+          "type": "string"
+        },
+        "needs_critic": {
+          "type": "boolean"
+        },
+        "needs_verifier": {
+          "type": "boolean"
+        },
+        "can_run_parallel": {
+          "type": "boolean"
+        },
+        "expected_artifacts": {
+          "$ref": "#/$defs/StringList"
+        }
+      }
+    },
+    "LeafTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "title": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "description": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "why": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "done_criteria": {
+          "$ref": "#/$defs/StringList"
+        },
+        "file_scope": {
+          "$ref": "#/$defs/StringList"
+        },
+        "dependencies": {
+          "$ref": "#/$defs/StringList"
+        },
+        "verification": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VerificationCheck"
+          }
+        },
+        "risk_level": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "consumer_hints": {
+          "$ref": "#/$defs/ConsumerHints"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "why",
+        "done_criteria",
+        "file_scope",
+        "dependencies",
+        "verification",
+        "risk_level"
+      ]
+    },
+    "DependencyEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "to": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "depends_on",
+            "blocks",
+            "supports"
+          ]
+        }
+      },
+      "required": [
+        "from",
+        "to",
+        "type"
+      ]
+    },
+    "IntentPacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "uigwe.intent-packet/v0.1-draft"
+        },
+        "packet_type": {
+          "const": "intent"
+        },
+        "profile": {
+          "$ref": "#/$defs/Profile"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_packets": {
+          "$ref": "#/$defs/StringList"
+        },
+        "goal": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "why_now": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "in_scope": {
+          "$ref": "#/$defs/StringList"
+        },
+        "non_goals": {
+          "$ref": "#/$defs/StringList"
+        },
+        "decision_boundaries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DecisionBoundary"
+          }
+        },
+        "constraints": {
+          "$ref": "#/$defs/StringList"
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AcceptanceCriterion"
+          }
+        },
+        "open_questions": {
+          "$ref": "#/$defs/StringList"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        }
+      },
+      "required": [
+        "format",
+        "packet_type",
+        "profile",
+        "goal",
+        "why_now",
+        "in_scope",
+        "non_goals",
+        "decision_boundaries",
+        "constraints",
+        "acceptance_criteria",
+        "open_questions",
+        "confidence"
+      ]
+    },
+    "DesignPacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "uigwe.design-packet/v0.1-draft"
+        },
+        "packet_type": {
+          "const": "design"
+        },
+        "profile": {
+          "$ref": "#/$defs/Profile"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_packets": {
+          "$ref": "#/$defs/StringList"
+        },
+        "problem_frame": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "selected_approach": {
+          "$ref": "#/$defs/Alternative"
+        },
+        "alternatives": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Alternative"
+          }
+        },
+        "tradeoffs": {
+          "$ref": "#/$defs/StringList"
+        },
+        "key_decisions": {
+          "$ref": "#/$defs/StringList"
+        },
+        "assumptions": {
+          "$ref": "#/$defs/StringList"
+        },
+        "risks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Risk"
+          }
+        },
+        "validation_plan": {
+          "$ref": "#/$defs/StringList"
+        },
+        "approval_status": {
+          "$ref": "#/$defs/ApprovalStatus"
+        }
+      },
+      "required": [
+        "format",
+        "packet_type",
+        "profile",
+        "problem_frame",
+        "selected_approach",
+        "alternatives",
+        "tradeoffs",
+        "key_decisions",
+        "assumptions",
+        "risks",
+        "validation_plan",
+        "approval_status"
+      ]
+    },
+    "PlanSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "title": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "summary": {
+          "$ref": "#/$defs/NonEmptyString"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "summary"
+      ]
+    },
+    "PlanPacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "uigwe.plan-packet/v0.1-draft"
+        },
+        "packet_type": {
+          "const": "plan"
+        },
+        "profile": {
+          "$ref": "#/$defs/Profile"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_packets": {
+          "$ref": "#/$defs/StringList"
+        },
+        "spec_path": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "rationale_path": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "goal_tree_path": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "selected_plan": {
+          "$ref": "#/$defs/PlanSummary"
+        },
+        "retained_alternatives": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Alternative"
+          }
+        },
+        "leaf_tasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LeafTask"
+          }
+        },
+        "dependency_edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DependencyEdge"
+          }
+        },
+        "risk_summary": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Risk"
+          }
+        },
+        "ready_for_consumer": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "format",
+        "packet_type",
+        "profile",
+        "spec_path",
+        "rationale_path",
+        "goal_tree_path",
+        "selected_plan",
+        "retained_alternatives",
+        "leaf_tasks",
+        "dependency_edges",
+        "risk_summary",
+        "ready_for_consumer"
+      ]
+    }
+  }
+}

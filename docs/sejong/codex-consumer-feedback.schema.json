@@ -1,0 +1,266 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/uigwe/codex-consumer-feedback.schema.json",
+  "title": "Uigwe Codex Consumer Feedback Schema Draft",
+  "description": "Draft machine-readable feedback contract for the default Uigwe Codex consumer.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "uigwe.codex-consumer-feedback/v0.2-draft"
+    },
+    "metadata": {
+      "$ref": "#/$defs/Metadata"
+    },
+    "summary": {
+      "$ref": "#/$defs/Summary"
+    },
+    "leaf_updates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/LeafUpdate"
+      }
+    },
+    "escalations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Escalation"
+      }
+    }
+  },
+  "required": [
+    "format",
+    "metadata",
+    "summary",
+    "leaf_updates",
+    "escalations"
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "DateTimeString": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "PositiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "BundleFingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      }
+    },
+    "Profile": {
+      "type": "string",
+      "enum": [
+        "greenfield",
+        "brownfield"
+      ]
+    },
+    "NodeStatus": {
+      "type": "string",
+      "enum": [
+        "candidate",
+        "selected",
+        "retained_alt",
+        "executable_leaf",
+        "dispatched",
+        "completed",
+        "blocked",
+        "invalidated"
+      ]
+    },
+    "ExecutionLane": {
+      "type": "string",
+      "enum": [
+        "direct_session",
+        "single_subagent",
+        "reviewed_subagent"
+      ]
+    },
+    "ReentryTarget": {
+      "type": "string",
+      "enum": [
+        "none",
+        "local_reexploration",
+        "brainstorming",
+        "deep_interview",
+        "human_review"
+      ]
+    },
+    "Metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "profile": {
+          "$ref": "#/$defs/Profile"
+        },
+        "generated_at": {
+          "$ref": "#/$defs/DateTimeString"
+        },
+        "consumer": {
+          "const": "codex"
+        },
+        "plan_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "goal_tree_path": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "attempt_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "attempt_number": {
+          "$ref": "#/$defs/PositiveInteger"
+        },
+        "bundle_fingerprint": {
+          "$ref": "#/$defs/BundleFingerprint"
+        },
+        "executor_result_path": {
+          "$ref": "#/$defs/NonEmptyString"
+        }
+      },
+      "required": [
+        "profile",
+        "generated_at",
+        "consumer",
+        "plan_id",
+        "goal_tree_path",
+        "attempt_id",
+        "attempt_number",
+        "bundle_fingerprint",
+        "executor_result_path"
+      ]
+    },
+    "Summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "completed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocked_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "invalidated_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requires_planner_reentry": {
+          "type": "boolean"
+        },
+        "recommended_reentry_target": {
+          "$ref": "#/$defs/ReentryTarget"
+        }
+      },
+      "required": [
+        "completed_count",
+        "blocked_count",
+        "invalidated_count",
+        "requires_planner_reentry",
+        "recommended_reentry_target"
+      ]
+    },
+    "EvidenceItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "description": {
+          "$ref": "#/$defs/NonEmptyString"
+        }
+      },
+      "required": [
+        "type",
+        "description"
+      ]
+    },
+    "LeafUpdate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "node_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "previous_status": {
+          "$ref": "#/$defs/NodeStatus"
+        },
+        "new_status": {
+          "$ref": "#/$defs/NodeStatus"
+        },
+        "execution_lane": {
+          "$ref": "#/$defs/ExecutionLane"
+        },
+        "artifacts": {
+          "$ref": "#/$defs/StringList"
+        },
+        "commit_group_ids": {
+          "$ref": "#/$defs/StringList"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceItem"
+          }
+        },
+        "notes": {
+          "type": "string"
+        },
+        "recommended_reentry_target": {
+          "$ref": "#/$defs/ReentryTarget"
+        }
+      },
+      "required": [
+        "node_id",
+        "previous_status",
+        "new_status",
+        "execution_lane",
+        "artifacts",
+        "evidence",
+        "recommended_reentry_target"
+      ]
+    },
+    "Escalation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "related_node_ids": {
+          "$ref": "#/$defs/StringList"
+        },
+        "recommended_reentry_target": {
+          "$ref": "#/$defs/ReentryTarget"
+        }
+      },
+      "required": [
+        "reason",
+        "severity",
+        "related_node_ids",
+        "recommended_reentry_target"
+      ]
+    }
+  }
+}

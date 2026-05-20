@@ -1,0 +1,345 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/uigwe/wrapper.schema.json",
+  "title": "Uigwe Wrapper Schema Draft",
+  "description": "Draft request and result contract for the Uigwe wrapper surface.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/WrapperRequest"
+    },
+    {
+      "$ref": "#/$defs/WrapperResult"
+    }
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      }
+    },
+    "Mode": {
+      "type": "string",
+      "enum": [
+        "auto",
+        "full",
+        "design-to-plan",
+        "decompose-only"
+      ]
+    },
+    "Profile": {
+      "type": "string",
+      "enum": [
+        "auto",
+        "greenfield",
+        "brownfield"
+      ]
+    },
+    "ExecutorHandoff": {
+      "type": "string",
+      "enum": [
+        "none",
+        "ralph"
+      ]
+    },
+    "ConsumerHandoff": {
+      "type": "string",
+      "enum": [
+        "none",
+        "codex"
+      ]
+    },
+    "ArtifactPaths": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "intent_packet_path": {
+          "type": "string"
+        },
+        "design_packet_path": {
+          "type": "string"
+        },
+        "plan_packet_path": {
+          "type": "string"
+        },
+        "goal_tree_path": {
+          "type": "string"
+        },
+        "spec_path": {
+          "type": "string"
+        },
+        "rationale_path": {
+          "type": "string"
+        }
+      }
+    },
+    "ExecutorArtifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "executor_request_path": {
+          "type": "string"
+        },
+        "handoff_prompt_path": {
+          "type": "string"
+        },
+        "execution_feedback_path": {
+          "type": "string"
+        },
+        "executor_result_path": {
+          "type": "string"
+        }
+      }
+    },
+    "Status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "blocked",
+        "needs_human_review"
+      ]
+    },
+    "WrapperRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "uigwe.wrapper-request/v0.1-draft"
+        },
+        "mode": {
+          "$ref": "#/$defs/Mode"
+        },
+        "profile": {
+          "$ref": "#/$defs/Profile"
+        },
+        "executor_handoff": {
+          "$ref": "#/$defs/ExecutorHandoff"
+        },
+        "brief": {
+          "type": "string"
+        },
+        "artifacts": {
+          "$ref": "#/$defs/ArtifactPaths"
+        },
+        "output_dir": {
+          "type": "string"
+        },
+        "consumer_handoff": {
+          "$ref": "#/$defs/ConsumerHandoff"
+        },
+        "notes": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "format",
+        "mode",
+        "profile",
+        "executor_handoff",
+        "consumer_handoff"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "executor_handoff": {
+                "const": "ralph"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "consumer_handoff": {
+                "const": "none"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "consumer_handoff": {
+                "const": "codex"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "executor_handoff": {
+                "const": "none"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "WrapperResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "uigwe.wrapper-result/v0.1-draft"
+        },
+        "resolved_mode": {
+          "$ref": "#/$defs/Mode"
+        },
+        "resolved_profile": {
+          "$ref": "#/$defs/Profile"
+        },
+        "executor_handoff": {
+          "$ref": "#/$defs/ExecutorHandoff"
+        },
+        "status": {
+          "$ref": "#/$defs/Status"
+        },
+        "artifacts": {
+          "$ref": "#/$defs/ArtifactPaths"
+        },
+        "executor_artifacts": {
+          "$ref": "#/$defs/ExecutorArtifacts"
+        },
+        "consumer_handoff": {
+          "$ref": "#/$defs/ConsumerHandoff"
+        },
+        "planner_reentry_needed": {
+          "type": "boolean"
+        },
+        "blockers": {
+          "$ref": "#/$defs/StringList"
+        },
+        "notes": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "format",
+        "resolved_mode",
+        "resolved_profile",
+        "executor_handoff",
+        "status",
+        "artifacts",
+        "consumer_handoff",
+        "planner_reentry_needed",
+        "blockers",
+        "notes"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "executor_handoff": {
+                "const": "ralph"
+              },
+              "status": {
+                "const": "completed"
+              }
+            },
+            "required": [
+              "executor_handoff",
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "executor_artifacts"
+            ],
+            "properties": {
+              "consumer_handoff": {
+                "const": "none"
+              },
+              "executor_artifacts": {
+                "required": [
+                  "executor_request_path",
+                  "handoff_prompt_path",
+                  "execution_feedback_path",
+                  "executor_result_path"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "executor_handoff": {
+                "const": "ralph"
+              }
+            },
+            "required": [
+              "executor_handoff"
+            ]
+          },
+          "then": {
+            "properties": {
+              "consumer_handoff": {
+                "const": "none"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "executor_handoff": {
+                "const": "ralph"
+              },
+              "status": {
+                "enum": [
+                  "blocked",
+                  "needs_human_review"
+                ]
+              }
+            },
+            "required": [
+              "executor_handoff",
+              "status"
+            ]
+          },
+          "then": {
+            "not": {
+              "required": [
+                "executor_artifacts"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "consumer_handoff": {
+                "const": "codex"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "executor_handoff": {
+                "const": "none"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "executor_handoff": {
+                "const": "none"
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "executor_artifacts"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

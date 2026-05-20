@@ -1,0 +1,274 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/uigwe/policy.defaults.schema.json",
+  "title": "Uigwe Policy Defaults Schema Draft",
+  "description": "Draft schema for Uigwe machine-facing default policy values.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "uigwe.policy-defaults/v0.1-draft"
+    },
+    "derived_metrics": {
+      "$ref": "#/$defs/DerivedMetrics"
+    },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "greenfield": {
+          "$ref": "#/$defs/ProfilePolicy"
+        },
+        "brownfield": {
+          "$ref": "#/$defs/ProfilePolicy"
+        }
+      },
+      "required": [
+        "greenfield",
+        "brownfield"
+      ]
+    }
+  },
+  "required": [
+    "format",
+    "derived_metrics",
+    "profiles"
+  ],
+  "$defs": {
+    "Weight": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "IntegerThreshold": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "DimensionWeights": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/Weight"
+      }
+    },
+    "CandidatePriorityMetric": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "formula": {
+          "const": "weighted_sum"
+        },
+        "notes": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "formula",
+        "notes"
+      ]
+    },
+    "DerivedMetric": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dimensions": {
+          "$ref": "#/$defs/DimensionWeights"
+        }
+      },
+      "required": [
+        "dimensions"
+      ]
+    },
+    "DerivedMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "candidate_priority_score": {
+          "$ref": "#/$defs/CandidatePriorityMetric"
+        },
+        "intent_readiness": {
+          "$ref": "#/$defs/DerivedMetric"
+        },
+        "design_readiness": {
+          "$ref": "#/$defs/DerivedMetric"
+        },
+        "leaf_readiness": {
+          "$ref": "#/$defs/DerivedMetric"
+        }
+      },
+      "required": [
+        "candidate_priority_score",
+        "intent_readiness",
+        "design_readiness",
+        "leaf_readiness"
+      ]
+    },
+    "CandidateScoreWeights": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "goal_contribution": {
+          "$ref": "#/$defs/Weight"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Weight"
+        },
+        "verification_clarity": {
+          "$ref": "#/$defs/Weight"
+        },
+        "dependency_simplicity": {
+          "$ref": "#/$defs/Weight"
+        },
+        "cost_efficiency": {
+          "$ref": "#/$defs/Weight"
+        },
+        "risk_efficiency": {
+          "$ref": "#/$defs/Weight"
+        }
+      },
+      "required": [
+        "goal_contribution",
+        "confidence",
+        "verification_clarity",
+        "dependency_simplicity",
+        "cost_efficiency",
+        "risk_efficiency"
+      ]
+    },
+    "ReadinessThresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "intent_to_brainstorming": {
+          "$ref": "#/$defs/Weight"
+        },
+        "design_to_decomposition": {
+          "$ref": "#/$defs/Weight"
+        },
+        "leaf_to_executable": {
+          "$ref": "#/$defs/Weight"
+        }
+      },
+      "required": [
+        "intent_to_brainstorming",
+        "design_to_decomposition",
+        "leaf_to_executable"
+      ]
+    },
+    "BeamWidths": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "0": {
+          "$ref": "#/$defs/IntegerThreshold"
+        },
+        "1": {
+          "$ref": "#/$defs/IntegerThreshold"
+        },
+        "2": {
+          "$ref": "#/$defs/IntegerThreshold"
+        },
+        "3+": {
+          "$ref": "#/$defs/IntegerThreshold"
+        }
+      },
+      "required": [
+        "0",
+        "1",
+        "2",
+        "3+"
+      ]
+    },
+    "FrontierPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "beam_width_by_depth": {
+          "$ref": "#/$defs/BeamWidths"
+        },
+        "retained_alternatives_by_depth": {
+          "$ref": "#/$defs/BeamWidths"
+        },
+        "max_candidates_per_node": {
+          "$ref": "#/$defs/IntegerThreshold"
+        },
+        "local_retry_limit": {
+          "$ref": "#/$defs/IntegerThreshold"
+        }
+      },
+      "required": [
+        "beam_width_by_depth",
+        "retained_alternatives_by_depth",
+        "max_candidates_per_node",
+        "local_retry_limit"
+      ]
+    },
+    "ReentryThresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "local_score_advantage": {
+          "$ref": "#/$defs/Weight"
+        },
+        "brainstorming_score_advantage": {
+          "$ref": "#/$defs/Weight"
+        },
+        "subtree_blocked_or_invalidated_ratio": {
+          "$ref": "#/$defs/Weight"
+        },
+        "upstream_assumption_invalidations": {
+          "$ref": "#/$defs/IntegerThreshold"
+        },
+        "max_brainstorming_reentries_before_deep_interview": {
+          "$ref": "#/$defs/IntegerThreshold"
+        },
+        "non_goal_contradictions_force_deep_interview": {
+          "type": "boolean"
+        },
+        "decision_boundary_contradictions_force_deep_interview": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "local_score_advantage",
+        "brainstorming_score_advantage",
+        "subtree_blocked_or_invalidated_ratio",
+        "upstream_assumption_invalidations",
+        "max_brainstorming_reentries_before_deep_interview",
+        "non_goal_contradictions_force_deep_interview",
+        "decision_boundary_contradictions_force_deep_interview"
+      ]
+    },
+    "ProfilePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "candidate_score_weights": {
+          "$ref": "#/$defs/CandidateScoreWeights"
+        },
+        "readiness_thresholds": {
+          "$ref": "#/$defs/ReadinessThresholds"
+        },
+        "frontier_policy": {
+          "$ref": "#/$defs/FrontierPolicy"
+        },
+        "reentry_thresholds": {
+          "$ref": "#/$defs/ReentryThresholds"
+        }
+      },
+      "required": [
+        "candidate_score_weights",
+        "readiness_thresholds",
+        "frontier_policy",
+        "reentry_thresholds"
+      ]
+    }
+  }
+}

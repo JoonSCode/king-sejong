@@ -1,0 +1,313 @@
+{
+  "format": "uigwe.goal-tree/v0.1-draft",
+  "metadata": {
+    "profile": "brownfield",
+    "generated_at": "2026-03-25T12:00:00Z",
+    "source_packets": [
+      "uigwe.intent-packet/v0.1-draft",
+      "uigwe.design-packet/v0.1-draft"
+    ]
+  },
+  "selected_plan": {
+    "id": "plan_codex_consumer_v1",
+    "title": "Deliver a first Codex consumer for Uigwe",
+    "summary": "Implement the first pluggable consumer that consumes executable leaves, respects dependencies, and applies selective critic plus broad verifier behavior."
+  },
+  "retained_alternatives": [
+    {
+      "id": "alt_manual_first",
+      "title": "Manual consumer first",
+      "summary": "Produce planning outputs first and defer all execution wiring.",
+      "pros": [
+        "Lower implementation risk",
+        "Shorter initial delivery"
+      ],
+      "cons": [
+        "No native Codex handoff",
+        "Weak validation of the consumer contract"
+      ],
+      "status": "retained_alt"
+    },
+    {
+      "id": "alt_team_consumer_first",
+      "title": "Team consumer first",
+      "summary": "Optimize for coordinated multi-agent execution before a single-session Codex lane exists.",
+      "pros": [
+        "Stronger scaling story"
+      ],
+      "cons": [
+        "Higher orchestration complexity",
+        "Too much indirection for the first release"
+      ],
+      "status": "retained_alt"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "goal_codex_consumer",
+      "type": "goal",
+      "title": "Ship a usable Codex consumer for Uigwe",
+      "description": "Provide a default consumer that can execute Uigwe leaves inside Codex without collapsing the protocol into an execution-only tool.",
+      "parent_ids": [],
+      "depends_on": [],
+      "why": "Uigwe needs a reference consumer to prove that Plan Packets are actionable.",
+      "acceptance_criteria": [
+        "Executable leaves can be dispatched in dependency order",
+        "High-risk leaves can opt into critic review",
+        "Leaves expose verification instructions suitable for a verifier lane"
+      ],
+      "constraints": [
+        "Consumer must remain pluggable",
+        "Planner and consumer responsibilities must stay separate"
+      ],
+      "assumptions": [
+        "Codex subagents are available for at least some execution paths"
+      ],
+      "risks": [
+        "Consumer contract may be underspecified for high-risk leaves"
+      ],
+      "alternatives": [
+        "Manual-only handoff",
+        "Team-first consumer"
+      ],
+      "score": {
+        "goal_contribution": 0.96,
+        "confidence": 0.82,
+        "verification_clarity": 0.8,
+        "dependency_simplicity": 0.63,
+        "cost": 0.45,
+        "risk": 0.41
+      },
+      "status": "selected"
+    },
+    {
+      "id": "subgoal_contract",
+      "type": "subgoal",
+      "title": "Define the consumer-facing leaf contract",
+      "description": "Specify the minimum fields and invariants required for a leaf to be executable by a Codex consumer.",
+      "parent_ids": [
+        "goal_codex_consumer"
+      ],
+      "depends_on": [],
+      "why": "The consumer cannot safely dispatch leaves unless the leaf contract is explicit.",
+      "acceptance_criteria": [
+        "Leaf fields cover scope, done criteria, dependencies, and verification",
+        "Contract is compatible with Plan Packet output"
+      ],
+      "constraints": [
+        "Do not force all leaves to use critic review"
+      ],
+      "assumptions": [
+        "File scope can be expressed as paths or ownership areas"
+      ],
+      "risks": [
+        "Too little structure causes execution ambiguity"
+      ],
+      "alternatives": [
+        "Loose natural-language leaf format",
+        "Strict schema-first leaf format"
+      ],
+      "score": {
+        "goal_contribution": 0.92,
+        "confidence": 0.88,
+        "verification_clarity": 0.84,
+        "dependency_simplicity": 0.91,
+        "cost": 0.2,
+        "risk": 0.28
+      },
+      "status": "selected"
+    },
+    {
+      "id": "subgoal_dispatch",
+      "type": "subgoal",
+      "title": "Define dispatch and review policy",
+      "description": "Capture how leaves are ordered, when parallel execution is safe, and when critic or verifier lanes are applied.",
+      "parent_ids": [
+        "goal_codex_consumer"
+      ],
+      "depends_on": [
+        "subgoal_contract"
+      ],
+      "why": "The consumer needs predictable dispatch behavior or it will erase Uigwe's planning guarantees.",
+      "acceptance_criteria": [
+        "Dependency ordering is explicit",
+        "Parallel-safe leaves are identifiable",
+        "Critic policy is selective and risk-based",
+        "Verifier policy is broadly applicable"
+      ],
+      "constraints": [
+        "Do not re-plan inside the consumer"
+      ],
+      "assumptions": [
+        "Some leaves can run in parallel without shared write scope"
+      ],
+      "risks": [
+        "Parallel dispatch can conflict on overlapping files"
+      ],
+      "alternatives": [
+        "Always serialize leaves",
+        "Always parallelize leaves"
+      ],
+      "score": {
+        "goal_contribution": 0.89,
+        "confidence": 0.78,
+        "verification_clarity": 0.86,
+        "dependency_simplicity": 0.67,
+        "cost": 0.39,
+        "risk": 0.43
+      },
+      "status": "selected"
+    },
+    {
+      "id": "task_schema_doc",
+      "type": "task",
+      "title": "Write the leaf contract into the packet schema",
+      "description": "Add consumer-facing leaf task fields to the Uigwe packet schema draft.",
+      "parent_ids": [
+        "subgoal_contract"
+      ],
+      "depends_on": [],
+      "why": "The contract should exist as machine-readable schema, not just prose.",
+      "acceptance_criteria": [
+        "Schema contains leaf task fields",
+        "Risk, verification, and consumer hints are represented"
+      ],
+      "constraints": [
+        "Keep the first schema draft small enough to evolve"
+      ],
+      "assumptions": [
+        "JSON Schema is an acceptable first contract format"
+      ],
+      "risks": [
+        "Over-modeling the first draft could slow iteration"
+      ],
+      "alternatives": [
+        "Markdown-only contract",
+        "Schema plus markdown"
+      ],
+      "score": {
+        "goal_contribution": 0.83,
+        "confidence": 0.9,
+        "verification_clarity": 0.95,
+        "dependency_simplicity": 0.94,
+        "cost": 0.16,
+        "risk": 0.18
+      },
+      "status": "executable_leaf",
+      "done_criteria": [
+        "Leaf task schema fields are added",
+        "Example leaf validates structurally against the contract"
+      ],
+      "file_scope": [
+        "docs/sejong/packets.schema.json"
+      ],
+      "verification": [
+        {
+          "type": "syntax",
+          "description": "JSON parses successfully"
+        },
+        {
+          "type": "review",
+          "description": "Leaf fields align with Codex consumer needs"
+        }
+      ],
+      "risk_level": "low",
+      "consumer_hints": {
+        "preferred_role": "writer",
+        "needs_critic": false,
+        "needs_verifier": true,
+        "can_run_parallel": true,
+        "expected_artifacts": [
+          "updated schema file"
+        ]
+      }
+    },
+    {
+      "id": "task_protocol_doc",
+      "type": "task",
+      "title": "Write the consumer policy into the protocol doc",
+      "description": "Document the dispatch rules, selective critic policy, and verifier expectations.",
+      "parent_ids": [
+        "subgoal_dispatch"
+      ],
+      "depends_on": [
+        "task_schema_doc"
+      ],
+      "why": "The protocol needs a human-readable explanation of how the consumer should behave.",
+      "acceptance_criteria": [
+        "Dispatch rules are explicit",
+        "Critic policy is selective",
+        "Verifier policy is broad by default"
+      ],
+      "constraints": [
+        "Do not blur planning and execution responsibilities"
+      ],
+      "assumptions": [
+        "A prose doc remains necessary even with a schema"
+      ],
+      "risks": [
+        "The doc may drift from the schema if they evolve independently"
+      ],
+      "alternatives": [
+        "Schema-only contract"
+      ],
+      "score": {
+        "goal_contribution": 0.8,
+        "confidence": 0.86,
+        "verification_clarity": 0.89,
+        "dependency_simplicity": 0.81,
+        "cost": 0.22,
+        "risk": 0.21
+      },
+      "status": "executable_leaf",
+      "done_criteria": [
+        "Protocol doc explains dispatch, critic, and verifier behavior"
+      ],
+      "file_scope": [
+        "docs/sejong/PROTOCOL.md"
+      ],
+      "verification": [
+        {
+          "type": "review",
+          "description": "Policy text is consistent with the packet contract"
+        }
+      ],
+      "risk_level": "medium",
+      "consumer_hints": {
+        "preferred_role": "writer",
+        "needs_critic": true,
+        "needs_verifier": true,
+        "can_run_parallel": false,
+        "expected_artifacts": [
+          "updated protocol doc"
+        ]
+      }
+    }
+  ],
+  "dependency_edges": [
+    {
+      "from": "subgoal_dispatch",
+      "to": "subgoal_contract",
+      "type": "depends_on"
+    },
+    {
+      "from": "task_protocol_doc",
+      "to": "task_schema_doc",
+      "type": "depends_on"
+    }
+  ],
+  "risk_summary": [
+    {
+      "id": "risk_contract_drift",
+      "description": "Protocol prose and packet schema may drift if versioned separately.",
+      "severity": "medium",
+      "mitigation": "Treat schema and protocol edits as one review unit."
+    },
+    {
+      "id": "risk_parallel_conflict",
+      "description": "Parallel leaf execution can overlap on write scope unless file ownership is explicit.",
+      "severity": "high",
+      "mitigation": "Require explicit file scope before a leaf can be marked parallel-safe."
+    }
+  ]
+}
