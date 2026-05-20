@@ -1,6 +1,8 @@
+![King Sejong banner](docs/sejong/assets/king-sejong-banner.png)
+
 # King Sejong
 
-![Sejong routing map](docs/sejong/assets/sejong-routing-map.svg)
+[Korean, Joseon-style](README.ko.md)
 
 King Sejong is an all-in-one repo-local skill bundle for **Codex** and Codex-style agent environments.
 
@@ -148,6 +150,8 @@ $uigwe decompose-only docs/specs/approved-design.md
 ```
 
 ## Routing Model
+
+![Sejong routing map](docs/sejong/assets/sejong-routing-map.svg)
 
 | Lane | Use When | Output |
 | --- | --- | --- |
