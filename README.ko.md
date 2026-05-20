@@ -90,7 +90,7 @@ King Sejong은 Codex repo-local skill로 나누는 물건이옵니다. npm, Pyth
 - Codex는 `$sejong`에 `.agents/skills/sejong/SKILL.md`를 읽사옵니다.
 - Codex는 `$uigwe`에 `.agents/skills/uigwe/SKILL.md`를 읽사옵니다.
 - Codex는 `$seungjeongwon`에 `.agents/skills/seungjeongwon/SKILL.md`를 읽사옵니다.
-- 일이 분명하면 Sejong의 `direct-action` 길로 곧장 실행하옵니다.
+- 일이 분명하면 Sejong이 의궤를 열지 않고 곧장 실행하옵니다.
 - 실행 뒤에는 검증과 증거를 남기는 계약을 문서로 두었사옵니다.
 
 실행은 Sejong의 직분 안에 있사오며, 이 꾸러미 안의 실행관은 이러하옵니다.
@@ -129,20 +129,21 @@ $uigwe decompose-only docs/specs/approved-design.md
 
 ## 길목
 
-![세종 길목 그림](docs/sejong/assets/sejong-routing-map.svg)
-
 | 길목 | 언제 쓰나이까 | 무엇을 내나이까 |
 | --- | --- | --- |
-| `research-brief` | 사실, 내력, 증거가 아직 흐릴 때 | 아는 것, 추정, 모르는 것, 다음 결정 |
-| `decision-brief` | 여러 길 가운데 하나를 골라야 할 때 | 선택지, 버린 길, 권하는 길, 위험 |
-| `uigwe-plan` | 오래 남길 기획 꾸러미가 필요할 때 | 의궤 packet, `spec.md`, `rationale.md`, `goal-tree.json` |
-| `executor-handoff` | 검증된 꾸러미를 실행해야 할 때 | 승정원 실행과 검증 보고 |
-| `direct-action` | 일이 이미 분명하여 곧장 해도 될 때 | 끝낸 일과 검증 증거 |
+| `장영실` / `JangYeongsil` | 사실, 내력, 증거가 아직 흐릴 때 | 아는 것, 추정, 모르는 것, 다음 결정 |
+| `집현전` / `Jiphyeonjeon` | 여러 길 가운데 하나를 골라야 할 때 | 선택지, 버린 길, 권하는 길, 위험 |
+| `의궤` / `Uigwe` | 오래 남길 기획 꾸러미가 필요할 때 | 의궤 packet, `spec.md`, `rationale.md`, `goal-tree.json` |
+| `승정원` / `Seungjeongwon` | 검증된 범위나 꾸러미를 실행해야 할 때 | 실행, 검증, 보고 |
+| `실록` / `Sillok` | 증거를 남겨야 할 때 | scorecard, 승격 기록, 결정의 내력 |
+| `단종` / `Danjong` | 한 선택지를 물리거나 폐해야 할 때 | 버린 까닭의 기록 |
+| `세종 직행` | 일이 이미 분명하여 곧장 해도 될 때 | 끝낸 일과 검증 증거 |
 
 조정의 이름은 사람에게 보이는 별칭이옵니다.
 
 - `JangYeongsil` / `장영실` -> 조사
 - `Jiphyeonjeon` / `집현전` -> 결정 보좌
+- `Uigwe` / `의궤` -> 기획
 - `Seungjeongwon` / `승정원` -> 실행
 - `Sillok` / `실록` -> 증거 기록
 - `Danjong` / `단종` -> 버리거나 물린 선택지

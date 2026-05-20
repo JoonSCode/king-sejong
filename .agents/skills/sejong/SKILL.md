@@ -12,16 +12,17 @@ It is not a shim over another skill. Its source-of-truth routing contract is `..
 ## Routing
 
 1. Load `../../../docs/sejong/ROUTER.md`.
-2. Classify the request into the next useful canonical lane.
-3. Execute the selected lane when enough context is available; do not stop at only naming the lane.
-4. If the user asked for an outcome rather than a single artifact, continue through downstream lanes until the work is executed, verified, or blocked on a real missing decision.
-5. Treat Korean court names as aliases only:
-   - `JangYeongsil` -> `research-brief`
-   - `Jiphyeonjeon` -> `decision-brief`
-   - `Seungjeongwon` -> `executor-handoff` through the native Seungjeongwon executor
+2. Classify the request into the next useful Sejong surface.
+3. Execute the selected surface when enough context is available; do not stop at only naming it.
+4. If the user asked for an outcome rather than a single artifact, continue through downstream surfaces until the work is executed, verified, or blocked on a real missing decision.
+5. Treat Korean court names as active user-facing surfaces:
+   - `JangYeongsil` -> research, experiment, and evidence gathering
+   - `Jiphyeonjeon` -> debate, option comparison, and decision support
+   - `Uigwe` -> formal planning with Uigwe modes and artifacts
+   - `Seungjeongwon` -> execution and verification through the native Seungjeongwon executor
    - `Sillok` -> evidence and promotion records
-   - `Danjong` -> retired or rejected option semantics, never an active lane
+   - `Danjong` -> retired or rejected option semantics, never an execution surface
 
-Canonical machine lanes are `research-brief`, `decision-brief`, `uigwe-plan`, `executor-handoff`, and `direct-action`. Execution and verification are required behavior for `direct-action` and for any completed `executor-handoff` path.
+Canonical internal surface ids are `jangyeongsil`, `jiphyeonjeon`, `uigwe`, `seungjeongwon`, and `sejong-direct`. Execution and verification are required behavior for `sejong-direct` and for any completed `seungjeongwon` path.
 
-Uigwe/의궤 remains the formal planning protocol and is used only when the routed lane selects formal planning. The canonical planning lane id is `uigwe-plan`; preserve Uigwe live-session gates when routing there.
+Uigwe/의궤 remains the formal planning protocol and is used only when the routed surface selects formal planning. Preserve Uigwe live-session gates when routing there.

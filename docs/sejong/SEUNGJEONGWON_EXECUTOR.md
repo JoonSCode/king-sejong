@@ -15,7 +15,7 @@ research -> decision -> Uigwe planning -> Seungjeongwon execution -> verificatio
 Seungjeongwon accepts either:
 
 - a validated Uigwe bundle
-- a clear direct-action scope selected by Sejong
+- a clear Sejong direct scope
 
 Then it carries the work through implementation, verification, and feedback.
 
@@ -76,7 +76,7 @@ For direct action:
 Seungjeongwon reports:
 
 - `status`: `completed`, `blocked`, `invalidated`, or `failed`
-- completed leaf ids or direct-action scope
+- completed leaf ids or Sejong direct scope
 - blocked or invalidated scope with reason
 - files changed or artifacts produced
 - verification evidence

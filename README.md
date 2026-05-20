@@ -94,7 +94,7 @@ This package is explicitly for Codex-style repo-local skills:
 - Codex loads `.agents/skills/sejong/SKILL.md` for `$sejong`.
 - Codex loads `.agents/skills/uigwe/SKILL.md` for `$uigwe`.
 - Codex loads `.agents/skills/seungjeongwon/SKILL.md` for `$seungjeongwon`.
-- Codex can execute clear tasks directly through Sejong's `direct-action` lane.
+- Codex can execute clear tasks directly through Sejong when formal planning is not needed.
 - The docs include Codex consumer contracts for downstream execution feedback.
 
 Execution is part of Sejong's job, and King Sejong includes its own executor:
@@ -110,7 +110,7 @@ Sejong can finish work in two ways:
 
 What is included:
 
-- direct-action routing for clear implementation and verification work
+- direct execution for clear implementation and verification work
 - `Seungjeongwon` native executor skill
 - Seungjeongwon execution contract
 - schema and example validation helpers
@@ -151,21 +151,22 @@ $uigwe decompose-only docs/specs/approved-design.md
 
 ## Routing Model
 
-![Sejong routing map](docs/sejong/assets/sejong-routing-map.svg)
-
-| Lane | Use When | Output |
+| Surface | Use When | Output |
 | --- | --- | --- |
-| `research-brief` | The facts, history, or evidence are still unclear. | Known facts, inferences, unknowns, next decision. |
-| `decision-brief` | The main job is choosing between options. | Options, rejected paths, recommendation, risks. |
-| `uigwe-plan` | A durable planning bundle is useful. | Uigwe packets, `spec.md`, `rationale.md`, `goal-tree.json`. |
-| `executor-handoff` | A validated bundle needs execution. | Seungjeongwon execution and verification feedback. |
-| `direct-action` | The task is clear enough to do now. | Completed work plus verification evidence. |
+| `JangYeongsil` / `장영실` | The facts, history, or evidence are still unclear. | Known facts, inferences, unknowns, next decision. |
+| `Jiphyeonjeon` / `집현전` | The main job is choosing between options. | Options, rejected paths, recommendation, risks. |
+| `Uigwe` / `의궤` | A durable planning bundle is useful. | Uigwe packets, `spec.md`, `rationale.md`, `goal-tree.json`. |
+| `Seungjeongwon` / `승정원` | A validated scope or bundle needs execution. | Execution, verification, and feedback. |
+| `Sillok` / `실록` | Evidence should be preserved. | Scorecards, promotion notes, decision history. |
+| `Danjong` / `단종` | An option should be rejected or retired. | Rejected-option record. |
+| `Sejong direct` | The task is clear enough to do now. | Completed work plus verification evidence. |
 
-Court-inspired aliases are supported as user-facing language:
+Court-inspired names are supported as user-facing language:
 
 - `JangYeongsil` -> research
 - `Jiphyeonjeon` -> decision support
-- `Seungjeongwon` -> executor handoff
+- `Uigwe` -> formal planning
+- `Seungjeongwon` -> execution
 - `Sillok` -> evidence records
 - `Danjong` -> rejected or retired options
 

@@ -27,7 +27,7 @@ Machine-readable re-entry target ids are `local_reexploration`, `brainstorming`,
 User-facing labels are `Intent Clarification`, `Design Exploration`, and `Execution Planning`.
 They are internal to this skill and do not require separately installed skills.
 
-Sejong's canonical machine planning lane id is `uigwe-plan`.
+Sejong's formal planning surface is `uigwe`.
 
 ## Live Session Contract
 
