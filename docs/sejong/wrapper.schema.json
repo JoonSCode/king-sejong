@@ -43,8 +43,7 @@
       "type": "string",
       "enum": [
         "none",
-        "seungjeongwon",
-        "ralph"
+        "seungjeongwon"
       ]
     },
     "ConsumerHandoff": {
@@ -148,10 +147,7 @@
           "if": {
             "properties": {
               "executor_handoff": {
-                "enum": [
-                  "seungjeongwon",
-                  "ralph"
-                ]
+                "const": "seungjeongwon"
               }
             }
           },
@@ -236,44 +232,7 @@
           "if": {
             "properties": {
               "executor_handoff": {
-                "const": "ralph"
-              },
-              "status": {
-                "const": "completed"
-              }
-            },
-            "required": [
-              "executor_handoff",
-              "status"
-            ]
-          },
-          "then": {
-            "required": [
-              "executor_artifacts"
-            ],
-            "properties": {
-              "consumer_handoff": {
-                "const": "none"
-              },
-              "executor_artifacts": {
-                "required": [
-                  "executor_request_path",
-                  "handoff_prompt_path",
-                  "execution_feedback_path",
-                  "executor_result_path"
-                ]
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "executor_handoff": {
-                "enum": [
-                  "seungjeongwon",
-                  "ralph"
-                ]
+                "const": "seungjeongwon"
               }
             },
             "required": [
@@ -285,32 +244,6 @@
               "consumer_handoff": {
                 "const": "none"
               }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "executor_handoff": {
-                "const": "ralph"
-              },
-              "status": {
-                "enum": [
-                  "blocked",
-                  "needs_human_review"
-                ]
-              }
-            },
-            "required": [
-              "executor_handoff",
-              "status"
-            ]
-          },
-          "then": {
-            "not": {
-              "required": [
-                "executor_artifacts"
-              ]
             }
           }
         },

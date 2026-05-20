@@ -25,10 +25,10 @@
       "consumer": "codex",
       "plan_id": "plan_codex_consumer_dry_run_v1",
       "goal_tree_path": "docs/sejong/examples/goal-tree.example.json",
-      "attempt_id": "ralph-attempt-001",
+      "attempt_id": "seungjeongwon-attempt-001",
       "attempt_number": 1,
       "bundle_fingerprint": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
-      "executor_result_path": "docs/sejong/examples/ralph-executor.result.example.json"
+      "executor_result_path": "docs/sejong/examples/seungjeongwon-execution.result.example.json"
     },
     "summary": {
       "completed_count": 1,

@@ -28,7 +28,6 @@ For normal use:
 2. Read [PROTOCOL.md](PROTOCOL.md) to understand Uigwe's planning model.
 3. Read [WRAPPER.md](WRAPPER.md) if you want machine-consumable packet flow.
 4. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
-5. Read [RALPH_EXECUTOR.md](RALPH_EXECUTOR.md) only when you need legacy Ralph-style compatibility artifacts.
 
 ## Practical Usage
 

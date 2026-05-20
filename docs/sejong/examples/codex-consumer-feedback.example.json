@@ -6,10 +6,10 @@
     "consumer": "codex",
     "plan_id": "plan_wrapper_docs_surface",
     "goal_tree_path": "docs/sejong/examples/brownfield-decompose-only/goal-tree.json",
-    "attempt_id": "ralph-attempt-001",
+    "attempt_id": "seungjeongwon-attempt-001",
     "attempt_number": 1,
     "bundle_fingerprint": "sha256:5c0d03a6472637a59928a28a7a2d9700315be01d0873ad0e34bd165c4d2ffead",
-    "executor_result_path": "docs/sejong/examples/ralph-executor.result.example.json"
+    "executor_result_path": "docs/sejong/examples/seungjeongwon-execution.result.example.json"
   },
   "summary": {
     "completed_count": 1,

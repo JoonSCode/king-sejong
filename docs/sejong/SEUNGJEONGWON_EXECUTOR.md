@@ -43,8 +43,6 @@ The native default is:
 - verify in Codex
 - report execution feedback directly
 
-Legacy Ralph-style artifacts remain documented in `RALPH_EXECUTOR.md` for migration or compatibility cases, but they are not part of the normal King Sejong path.
-
 ## Execution Inputs
 
 For a Uigwe bundle:
@@ -101,14 +99,3 @@ Acceptable evidence includes:
 - manual runtime check with clear observed result
 - git status and commit evidence when closeout is requested
 - explicit blocker evidence when completion is not possible
-
-## Advanced Compatibility
-
-Use legacy handoff compatibility only when it adds value:
-
-- the user wants work to continue outside the current session
-- the task is long-running and needs a separate persistent loop
-- an existing environment already provides another execution loop
-- compatibility with earlier RalphExecutor artifacts matters
-
-Otherwise, execute natively through Seungjeongwon.

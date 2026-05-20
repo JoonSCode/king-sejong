@@ -155,7 +155,6 @@ The result includes:
 - generated artifact paths
 - requested executor handoff
 - requested direct consumer handoff
-- prepared executor handoff artifact paths when legacy `executor_handoff = ralph` handoff preparation succeeds
 - whether planner re-entry was needed
 - high-level notes or blockers
 
@@ -192,7 +191,6 @@ The wrapper should always echo the selected routing fields in both the request a
 After planning completes:
 
 - route substantial execution to Seungjeongwon when `executor_handoff = seungjeongwon`
-- prepare legacy executor handoff artifacts only when `executor_handoff = ralph`
 - request a lower-level direct consumer lane only when `consumer_handoff = codex`
 - keep those two active post-planning lanes mutually exclusive
 
@@ -200,7 +198,6 @@ Allowed executor handoff values:
 
 - `none`
 - `seungjeongwon`
-- `ralph`
 
 Allowed direct consumer handoff values:
 
@@ -210,7 +207,6 @@ Allowed direct consumer handoff values:
 Operational recommendation:
 
 - use `executor_handoff = seungjeongwon` as the default substantial-work execution path after planning
-- use `executor_handoff = ralph` only for legacy Ralph-style compatibility
 - use `consumer_handoff = codex` only when a lower-level direct consumer lane is explicitly desired
 - use `executor_handoff = none` and `consumer_handoff = none` when planning should stop without execution preparation
 

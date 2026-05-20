@@ -107,8 +107,7 @@ Read only what is needed, in this order:
 6. `../../../docs/sejong/BUNDLE_VALIDATOR.md` when you need bundle validation or report shape
 7. `../../../docs/sejong/SUMMARY_PROJECTION.md` when you need the human-facing summary projection
 8. `../../../docs/sejong/CODEX_CONSUMER.md` only if direct consumer handoff is requested or executor/consumer boundary text is changing
-9. `../../../docs/sejong/RALPH_EXECUTOR.md` only for advanced compatibility with existing Ralph-style handoff artifacts
-10. `../../../docs/sejong/examples/README.md` only if you need reference examples
+9. `../../../docs/sejong/examples/README.md` only if you need reference examples
 
 ## When To Use
 
@@ -230,14 +229,7 @@ If the user explicitly wants execution after planning:
 3. Prefer Seungjeongwon for substantial work inside King Sejong
 4. Execute dependency-ready leaves or the approved scope, then verify before reporting completion
 5. Emit execution feedback with changed files, verification evidence, blockers, and recommended Uigwe re-entry if needed
-6. Use `../../../docs/sejong/RALPH_EXECUTOR.md` and `../../../docs/sejong/scripts/prepare_ralph_executor.py` only when the user explicitly needs legacy Ralph-style handoff artifacts
-7. Follow `../../../docs/sejong/CODEX_CONSUMER.md` only when a lower-level direct consumer path is explicitly desired
-
-If the execution-side change is to Uigwe itself, prefer benchmark-gated completion by running:
-
-```bash
-python3 docs/sejong/scripts/benchmark_executor_contracts.py --baseline-ref d3e1840 --write --require-targets
-```
+6. Follow `../../../docs/sejong/CODEX_CONSUMER.md` only when a lower-level direct consumer path is explicitly desired
 
 Do not invent a custom execution lane inside this skill.
 
