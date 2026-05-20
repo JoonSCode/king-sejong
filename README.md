@@ -126,7 +126,7 @@ What is not included:
 Sejong can run the full arc when the user asks for an outcome:
 
 ```text
-JangYeongsil research -> Jiphyeonjeon decision -> Uigwe planning -> Seungjeongwon execution -> verification -> Sillok evidence
+JangYeongsil research -> Jiphyeonjeon discussion -> Uigwe planning -> Seungjeongwon execution -> verification -> Sillok evidence
 ```
 
 It should only stop early when the next step truly needs missing evidence, a user decision, or an approval gate.
@@ -137,7 +137,7 @@ Use Sejong when the right workflow is not obvious yet:
 
 ```text
 $sejong research this and tell me whether it should become a plan
-$sejong compare these options and recommend the next lane
+$sejong discuss these options and recommend the next surface
 $sejong turn this approved design into executable work
 ```
 
@@ -154,7 +154,7 @@ $uigwe decompose-only docs/specs/approved-design.md
 | Surface | Use When | Output |
 | --- | --- | --- |
 | `JangYeongsil` / `장영실` | The facts, history, or evidence are still unclear. | Known facts, inferences, unknowns, next decision. |
-| `Jiphyeonjeon` / `집현전` | The main job is choosing between options. | Options, rejected paths, recommendation, risks. |
+| `Jiphyeonjeon` / `집현전` | The main job is discussing options and choosing a direction. | Arguments for and against, rejected paths, recommendation, risks. |
 | `Uigwe` / `의궤` | A durable planning bundle is useful. | Uigwe packets, `spec.md`, `rationale.md`, `goal-tree.json`. |
 | `Seungjeongwon` / `승정원` | A validated scope or bundle needs execution. | Execution, verification, and feedback. |
 | `Sillok` / `실록` | Evidence should be preserved. | Scorecards, promotion notes, decision history. |
@@ -164,11 +164,13 @@ $uigwe decompose-only docs/specs/approved-design.md
 Court-inspired names are supported as user-facing language:
 
 - `JangYeongsil` -> research
-- `Jiphyeonjeon` -> decision support
+- `Jiphyeonjeon` -> discussion, debate, and decision support
 - `Uigwe` -> formal planning
 - `Seungjeongwon` -> execution
 - `Sillok` -> evidence records
 - `Danjong` -> rejected or retired options
+
+Use `JangYeongsil` when evidence is missing, `Jiphyeonjeon` when evidence exists but the team needs discussion, and `Uigwe` when the selected direction should become a formal plan.
 
 ## Read More
 

@@ -28,13 +28,23 @@ Use Sejong language in public docs and user-facing responses. The English ids be
 | --- | --- | --- |
 | `Sejong` | chained or `sejong-direct` | All-in-one front door for research, planning, execution, verification, and evidence |
 | `JangYeongsil` / `장영실` | `jangyeongsil` | Research, experiment, evidence gathering, and unknown discovery |
-| `Jiphyeonjeon` / `집현전` | `jiphyeonjeon` | Debate, option comparison, recommendation, and decision support |
+| `Jiphyeonjeon` / `집현전` | `jiphyeonjeon` | Discussion, debate, option comparison, recommendation, and decision support |
 | `Uigwe` / `의궤` | `uigwe` | Formal planning with Uigwe modes and artifacts |
 | `Seungjeongwon` / `승정원` | `seungjeongwon` | Native execution and verification after a scope or bundle is approved |
 | `Sillok` / `실록` | evidence record | Scorecards, promotion notes, proof, and decision history |
 | `Danjong` / `단종` | retired option | Retired, rejected, or deposed options |
 
 Uigwe is the whole formal planning surface. It has entry modes such as `full`, `design-to-plan`, and `decompose-only`, but the Sejong surface name remains `uigwe`.
+
+## Boundary Rules
+
+The three pre-execution surfaces are intentionally different:
+
+- `JangYeongsil`: use when facts, history, evidence, external constraints, or experiments are still unclear. Its job is to discover and separate known, inferred, and unknown material.
+- `Jiphyeonjeon`: use when enough material exists to hold a discussion, but the direction is not settled. Its job is to weigh options, surface trade-offs, argue for and against paths, reject weaker alternatives, and recommend what to do next.
+- `Uigwe`: use when the direction is ready to become a durable planning bundle. Its job is not open-ended discussion; it turns clarified intent or a selected design into formal artifacts and executable leaves.
+
+In short: `JangYeongsil` gathers the evidence, `Jiphyeonjeon` discusses and decides, and `Uigwe` writes the formal plan.
 
 ## Internal Structure
 
@@ -44,7 +54,7 @@ Sejong actively owns the end-to-end loop and then calls the selected surface:
 | --- | --- | --- |
 | `Sejong` | All-in-one front door | choose the next surface, execute it, and continue when the user asked for an outcome |
 | `JangYeongsil` | Research surface | gather evidence and produce a research note |
-| `Jiphyeonjeon` | Decision surface | compare options and produce a decision note |
+| `Jiphyeonjeon` | Discussion and decision surface | compare options, argue trade-offs, and produce a decision note |
 | `Uigwe` | Formal planning protocol | run `full`, `design-to-plan`, or `decompose-only` |
 | `Seungjeongwon` | Native execution surface | execute and verify an approved scope or validated bundle |
 | `Sillok` | Evidence records | update scorecards, promotion notes, or decision history |
@@ -56,7 +66,7 @@ Sejong actively owns the end-to-end loop and then calls the selected surface:
 Do not stop at naming the surface. After classifying a request, execute the selected surface when enough context is available:
 
 1. `JangYeongsil`: inspect the available evidence, separate known/inferred/unknown facts, and name the next decision.
-2. `Jiphyeonjeon`: compare options, reject weaker paths with reasons, recommend one path, and name the next surface.
+2. `Jiphyeonjeon`: hold a structured discussion over the available options, argue for and against each serious path, reject weaker paths with reasons, recommend one path, and name the next surface.
 3. `Uigwe`: call into the Uigwe skill or protocol surface and preserve its live-session approval gates.
 4. `Seungjeongwon`: inspect the bundle, execute through Seungjeongwon, and require execution feedback before claiming completion.
 5. `Sejong direct`: state briefly that formal planning is not needed, perform the clear task, and verify the result.
@@ -65,7 +75,7 @@ Do not stop at naming the surface. After classifying a request, execute the sele
 If the user asked for an outcome such as "research, plan, and do it", Sejong may chain surfaces:
 
 ```text
-JangYeongsil research -> Jiphyeonjeon decision -> Uigwe planning -> Seungjeongwon execution -> verification -> Sillok evidence
+JangYeongsil research -> Jiphyeonjeon discussion -> Uigwe planning -> Seungjeongwon execution -> verification -> Sillok evidence
 ```
 
 Stop early only when missing evidence, a user decision, or an approval gate is genuinely required.
@@ -88,12 +98,22 @@ This surface is useful for the user's broad "만능/리서치" usage because it 
 
 ### `Jiphyeonjeon`
 
-Use when the task is about choosing a direction.
+Use when the task is about discussing options and choosing a direction.
+
+Common use cases:
+
+- "Should we do A or B?"
+- "Is this worth making?"
+- "Should this be a separate skill, part of Sejong, or retired?"
+- "Which architecture, naming, product, or workflow direction is stronger?"
+- "Given this research, should we plan, execute, or stop?"
+- "Which option should become Danjong?"
 
 Required output:
 
 - decision to make
 - options
+- arguments for and against serious options
 - rejected options and reasons
 - recommended option
 - confidence
@@ -101,6 +121,7 @@ Required output:
 - next surface
 
 This surface should be used before Uigwe planning when the main uncertainty is strategic rather than structural.
+If the missing part is evidence, route back to `JangYeongsil`; if the choice is settled and the next job is artifact generation, route to `Uigwe`.
 
 ### `Uigwe`
 
@@ -132,12 +153,12 @@ This protects Uigwe from becoming performative planning overhead while keeping e
 | --- | --- | --- |
 | "세종으로 기획 잡아줘", "Sejong으로 라우팅해줘" | `Uigwe` when a bundle is needed, otherwise the best Sejong surface | resolved by evidence |
 | "장영실처럼 조사해봐", "JangYeongsil로 실험/근거 봐줘" | `JangYeongsil` | none yet |
-| "집현전에서 토론해봐", "Jiphyeonjeon에서 선택지 비교해줘" | `Jiphyeonjeon` | none yet |
+| "집현전에서 논의해봐", "집현전에서 토론해봐", "Jiphyeonjeon에서 선택지 비교해줘" | `Jiphyeonjeon` | none yet |
 | "승정원으로 실행 넘겨", "Seungjeongwon handoff" | `Seungjeongwon` | existing bundle |
 | "실록에 남겨", "Sillok evidence" | evidence or promotion record | none |
 | "단종 처리해", "Danjong archive" | `Jiphyeonjeon` rejected or retired option | none yet |
 | "조사해봐", "히스토리 긁어봐", "근거 확인해봐" | `JangYeongsil` | none yet |
-| "어떤 선택이 맞아?", "분화할까?", "할 만해?" | `Jiphyeonjeon` | none yet |
+| "어떤 선택이 맞아?", "분화할까?", "할 만해?", "논의해보자" | `Jiphyeonjeon` | none yet |
 | vague product or system goal | `Uigwe` | `full` |
 | clarified intent, no approved design | `Uigwe` | `design-to-plan` |
 | approved design or packet set | `Uigwe` | `decompose-only` |

@@ -17,7 +17,7 @@ It is not a shim over another skill. Its source-of-truth routing contract is `..
 4. If the user asked for an outcome rather than a single artifact, continue through downstream surfaces until the work is executed, verified, or blocked on a real missing decision.
 5. Treat Korean court names as active user-facing surfaces:
    - `JangYeongsil` -> research, experiment, and evidence gathering
-   - `Jiphyeonjeon` -> debate, option comparison, and decision support
+   - `Jiphyeonjeon` -> discussion, debate, option comparison, and decision support
    - `Uigwe` -> formal planning with Uigwe modes and artifacts
    - `Seungjeongwon` -> execution and verification through the native Seungjeongwon executor
    - `Sillok` -> evidence and promotion records
@@ -25,4 +25,4 @@ It is not a shim over another skill. Its source-of-truth routing contract is `..
 
 Canonical internal surface ids are `jangyeongsil`, `jiphyeonjeon`, `uigwe`, `seungjeongwon`, and `sejong-direct`. Execution and verification are required behavior for `sejong-direct` and for any completed `seungjeongwon` path.
 
-Uigwe/의궤 remains the formal planning protocol and is used only when the routed surface selects formal planning. Preserve Uigwe live-session gates when routing there.
+Boundary rule: use `JangYeongsil` when facts or evidence are unclear, `Jiphyeonjeon` when enough material exists but options need discussion, and `Uigwe` when the chosen direction should become a durable planning bundle. Preserve Uigwe live-session gates when routing there.

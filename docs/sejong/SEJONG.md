@@ -1,6 +1,6 @@
 # Sejong Router Naming Contract
 
-`Sejong` is the all-in-one broad front door that decides whether a request needs research, decision support, formal Uigwe planning, execution, verification, evidence recording, or direct action.
+`Sejong` is the all-in-one broad front door that decides whether a request needs research, Jiphyeonjeon discussion, formal Uigwe planning, execution, verification, evidence recording, or direct action.
 
 Uigwe/의궤 is the formal planning protocol inside Sejong, not the whole product. The public surfaces are `JangYeongsil`, `Jiphyeonjeon`, `Uigwe`, `Seungjeongwon`, `Sillok`, and `Danjong`. Compact internal ids may use `jangyeongsil`, `jiphyeonjeon`, `uigwe`, `seungjeongwon`, and `sejong-direct`, but public docs should prefer the surface names.
 
@@ -12,7 +12,7 @@ New user-facing invocations should use `$sejong`; the source-of-truth routing co
 | --- | --- | --- |
 | `Sejong` | All-in-one front door | chained or direct surface execution |
 | `JangYeongsil` / `장영실` | Research, evidence gathering, experiments, and unknown discovery | `jangyeongsil` |
-| `Jiphyeonjeon` / `집현전` | Debate, option comparison, recommendations, and decision support | `jiphyeonjeon` |
+| `Jiphyeonjeon` / `집현전` | Discussion, debate, option comparison, recommendations, and decision support | `jiphyeonjeon` |
 | `Uigwe` / `의궤` | Formal planning with `full`, `design-to-plan`, or `decompose-only` | `uigwe` |
 | `Seungjeongwon` / `승정원` | Native execution and verification after a scope or bundle is approved | `seungjeongwon` |
 | `Sillok` / `실록` | Evidence, scorecards, promotion reports, and decision records | evidence artifacts |
@@ -22,6 +22,7 @@ New user-facing invocations should use `$sejong`; the source-of-truth routing co
 
 - Do not collapse Uigwe's packet rules into Sejong.
 - Do not expose old English brief names in public README surfaces.
+- Do not use Jiphyeonjeon as another name for research or formal planning; it is the discussion chamber between evidence and plan.
 - Do not create a `Danjong` execution lane.
 - Do not duplicate Uigwe packet rules in the router.
 - Route formal planning through Uigwe's `1단계: 기획 명확화`, `2단계: 설계 명확화`, and `3단계: 실행 계획화`.
@@ -35,9 +36,9 @@ New user-facing invocations should use `$sejong`; the source-of-truth routing co
 | User request | Router result |
 | --- | --- |
 | `장영실처럼 이 히스토리 조사해봐` | `JangYeongsil` |
-| `집현전에서 이 선택지 토론해봐` | `Jiphyeonjeon` |
+| `집현전에서 이 선택지 논의해봐` | `Jiphyeonjeon` |
 | `세종으로 이 앱 아이디어 기획부터 잡아줘` | `Uigwe` with `full` |
 | `bundle 있으니 승정원으로 실행 넘겨` | `Seungjeongwon` |
-| `이 선택지는 단종 처리해` | `Danjong` record inside a Jiphyeonjeon decision |
+| `이 선택지는 단종 처리해` | `Danjong` record inside a Jiphyeonjeon discussion |
 
 `Sillok` belongs in evidence records such as scorecards, baseline notes, promotion reports, and retained alternatives. It is not a replacement for execution or planning.

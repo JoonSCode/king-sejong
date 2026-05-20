@@ -104,7 +104,7 @@ King Sejong은 Codex repo-local skill로 나누는 물건이옵니다. npm, Pyth
 사용자가 결과를 원하면 Sejong은 이 길을 끝까지 밟을 수 있사옵니다.
 
 ```text
-장영실 조사 -> 집현전 결정 -> 의궤 기획 -> 승정원 실행 -> 검증 -> 실록 증거
+장영실 조사 -> 집현전 논의 -> 의궤 기획 -> 승정원 실행 -> 검증 -> 실록 증거
 ```
 
 다만 증거가 모자라거나, 사용자의 재가가 필요하거나, 선택이 갈리는 곳에서는 멈추어 묻사옵니다.
@@ -114,16 +114,16 @@ King Sejong은 Codex repo-local skill로 나누는 물건이옵니다. npm, Pyth
 무슨 길로 가야 할지 아직 분명치 않으면 Sejong을 부르시옵소서.
 
 ```text
-$sejong research this and tell me whether it should become a plan
-$sejong compare these options and recommend the next lane
-$sejong turn this approved design into executable work
+$sejong 이 일을 조사하고 의궤로 넘길지 논의해줘
+$sejong 이 선택지들을 집현전에서 논의하고 다음 길목을 정해줘
+$sejong 승인된 설계를 실행 가능한 일로 풀어줘
 ```
 
 이미 의궤 기획이 필요함을 아시면 곧장 Uigwe를 부르시옵소서.
 
 ```text
-$uigwe full build a browser-based MVP for async interview practice
-$uigwe design-to-plan this feature brief
+$uigwe full 비동기 면접 연습용 브라우저 MVP를 기획해줘
+$uigwe design-to-plan 이 기능 개요를 실행 계획으로 세워줘
 $uigwe decompose-only docs/specs/approved-design.md
 ```
 
@@ -132,7 +132,7 @@ $uigwe decompose-only docs/specs/approved-design.md
 | 길목 | 언제 쓰나이까 | 무엇을 내나이까 |
 | --- | --- | --- |
 | `장영실` / `JangYeongsil` | 사실, 내력, 증거가 아직 흐릴 때 | 아는 것, 추정, 모르는 것, 다음 결정 |
-| `집현전` / `Jiphyeonjeon` | 여러 길 가운데 하나를 골라야 할 때 | 선택지, 버린 길, 권하는 길, 위험 |
+| `집현전` / `Jiphyeonjeon` | 여러 길을 놓고 논의하여 방향을 정해야 할 때 | 찬반, 버린 길, 권하는 길, 위험 |
 | `의궤` / `Uigwe` | 오래 남길 기획 꾸러미가 필요할 때 | 의궤 packet, `spec.md`, `rationale.md`, `goal-tree.json` |
 | `승정원` / `Seungjeongwon` | 검증된 범위나 꾸러미를 실행해야 할 때 | 실행, 검증, 보고 |
 | `실록` / `Sillok` | 증거를 남겨야 할 때 | scorecard, 승격 기록, 결정의 내력 |
@@ -142,11 +142,13 @@ $uigwe decompose-only docs/specs/approved-design.md
 조정의 이름은 사람에게 보이는 별칭이옵니다.
 
 - `JangYeongsil` / `장영실` -> 조사
-- `Jiphyeonjeon` / `집현전` -> 결정 보좌
+- `Jiphyeonjeon` / `집현전` -> 논의와 결정 보좌
 - `Uigwe` / `의궤` -> 기획
 - `Seungjeongwon` / `승정원` -> 실행
 - `Sillok` / `실록` -> 증거 기록
 - `Danjong` / `단종` -> 버리거나 물린 선택지
+
+증거가 모자라면 장영실이 먼저 살피고, 재료는 있으나 선택이 어렵다면 집현전에서 논의하며, 방향이 정해졌으면 의궤로 기획 문서를 세우옵니다.
 
 ## 더 살필 문서
 
