@@ -43,50 +43,56 @@ The installer copies these managed paths into the target repository:
 
 - `.agents/skills/sejong/`
 - `.agents/skills/uigwe/`
+- `.agents/skills/seungjeongwon/`
 - `docs/sejong/`
 
 Keep those paths together. The skills are intentionally small and load their routing, planning, schema, and handoff contracts from `docs/sejong`.
 
-## Codex And Ralph
+## Codex And Execution
 
 This package is explicitly for Codex-style repo-local skills:
 
 - Codex loads `.agents/skills/sejong/SKILL.md` for `$sejong`.
 - Codex loads `.agents/skills/uigwe/SKILL.md` for `$uigwe`.
+- Codex loads `.agents/skills/seungjeongwon/SKILL.md` for `$seungjeongwon`.
 - Codex can execute clear tasks directly through Sejong's `direct-action` lane.
 - The docs include Codex consumer contracts for downstream execution feedback.
 
-Execution is part of Sejong's job.
+Execution is part of Sejong's job, and King Sejong includes its own executor:
+
+- `Seungjeongwon` / `승정원`
+
+Seungjeongwon executes approved scopes or validated Uigwe bundles, verifies the result, and reports evidence.
 
 Sejong can finish work in two ways:
 
 - direct execution in the current Codex session when the task is clear enough
-- executor handoff when the task needs a persistent execution loop after a validated Uigwe bundle
+- native Seungjeongwon execution when a plan or bundle needs implementation and verification
 
-Ralph is the default documented handoff backend for the second path, but the Ralph runtime itself is **not bundled** here.
+Ralph-compatible handoff is still supported for environments that already use Ralph, but it is no longer required for Sejong to execute work.
 
 What is included:
 
 - direct-action routing for clear implementation and verification work
+- `Seungjeongwon` native executor skill
+- Seungjeongwon execution contract
 - `RalphExecutor` docs and schema
 - `prepare_ralph_executor.py`
 - example `ralph-executor.request/result` artifacts
-- handoff wording that can be passed to a Ralph-capable Codex environment
+- optional handoff wording that can be passed to a Ralph-capable Codex environment
 
 What is not included:
 
-- the `$ralph` skill/runtime
-- a separate Ralph installer
 - a guarantee that non-Codex hosts understand the handoff automatically
 
-Without Ralph, Sejong still works for research, decision support, planning, direct execution, and verification in the current Codex session. The `executor-handoff` lane requires a host environment that already has Ralph or an equivalent execution loop.
+Sejong works for research, decision support, planning, execution, and verification without Ralph.
 
 ## Work Loop
 
 Sejong can run the full arc when the user asks for an outcome:
 
 ```text
-research -> decision -> Uigwe plan -> execute -> verify -> record evidence
+research -> decision -> Uigwe plan -> Seungjeongwon execute -> verify -> record evidence
 ```
 
 It should only stop early when the next step truly needs missing evidence, a user decision, or an approval gate.
@@ -116,7 +122,7 @@ $uigwe decompose-only docs/specs/approved-design.md
 | `research-brief` | The facts, history, or evidence are still unclear. | Known facts, inferences, unknowns, next decision. |
 | `decision-brief` | The main job is choosing between options. | Options, rejected paths, recommendation, risks. |
 | `uigwe-plan` | A durable planning bundle is useful. | Uigwe packets, `spec.md`, `rationale.md`, `goal-tree.json`. |
-| `executor-handoff` | A validated bundle needs persistent execution. | RalphExecutor handoff artifacts, then execution feedback. |
+| `executor-handoff` | A validated bundle needs execution. | Seungjeongwon execution, optionally Ralph-compatible handoff artifacts. |
 | `direct-action` | The task is clear enough to do now. | Completed work plus verification evidence. |
 
 Court-inspired aliases are supported as user-facing language:
@@ -132,6 +138,7 @@ Court-inspired aliases are supported as user-facing language:
 - [Sejong router contract](docs/sejong/ROUTER.md)
 - [Uigwe protocol](docs/sejong/PROTOCOL.md)
 - [Uigwe wrapper](docs/sejong/WRAPPER.md)
+- [Seungjeongwon executor](docs/sejong/SEUNGJEONGWON_EXECUTOR.md)
 - [RalphExecutor handoff](docs/sejong/RALPH_EXECUTOR.md)
 - [Bundle validator](docs/sejong/BUNDLE_VALIDATOR.md)
 

@@ -77,13 +77,14 @@ Use:
 
 - **executor layer** as the formal post-planning handoff
 - **Codex consumer** as a lower-level direct execution contract
-- **RalphExecutor** as the default execution implementation for substantial work
+- **Seungjeongwon** as the native execution implementation for substantial work
+- **RalphExecutor** as an optional compatibility handoff for Ralph-capable hosts
 
 In this model:
 
 - `Uigwe` owns planning truth
 - the `executor` owns execution truth and persistence rules
-- the execution backend such as `Ralph` owns implementation and verification behavior
+- Seungjeongwon owns implementation and verification behavior inside Codex
 
 When the work is "improve Uigwe's executor contract itself," success should be defined by contract validation and a representative handoff exercise, not by local taste.
 
@@ -91,26 +92,38 @@ When the work is "improve Uigwe's executor contract itself," success should be d
 
 The recommended default executor for Uigwe is:
 
-- `RalphExecutor`
+- `Seungjeongwon`
 
-The canonical backend for `RalphExecutor` is:
+The canonical native backend is:
 
-- the current **Codex-native Ralph skill**
+- the included repo-local `seungjeongwon` skill
 
-The Ralph skill is expected to be provided by the host agent environment. This package only prepares the handoff contract.
+Ralph-compatible handoff remains available, but it is no longer required for King Sejong execution.
 
 Current implementation draft:
 
+- `.agents/skills/seungjeongwon/SKILL.md`
+  - executes approved scopes or validated Uigwe bundles directly in Codex
 - `scripts/prepare_ralph_executor.py`
-  - emits a machine-readable request plus a ready-to-run Ralph handoff prompt for an AI agent harness
+  - emits a machine-readable request plus a ready-to-run Ralph-compatible handoff prompt when that path is useful
 
 ## Executor Variants
 
 Planned or implied variants:
 
+- `Seungjeongwon`
 - `RalphExecutor`
 - `DirectExecutor`
 - `TeamExecutor`
+
+### `Seungjeongwon`
+
+Best for:
+
+- default King Sejong execution
+- approved Uigwe bundles
+- direct Codex implementation and verification
+- evidence capture and re-entry advice
 
 ### `RalphExecutor`
 
@@ -120,6 +133,7 @@ Best for:
 - long-running work
 - persistence and verification
 - iterative completion pressure
+- compatibility with existing Ralph-capable environments
 
 ### `DirectExecutor`
 
@@ -171,5 +185,6 @@ Allowed escalation targets:
 
 After this file:
 
-1. `RALPH_EXECUTOR.md`
+1. `SEUNGJEONGWON_EXECUTOR.md`
 2. `CODEX_CONSUMER.md`
+3. `RALPH_EXECUTOR.md` when Ralph-compatible handoff is needed

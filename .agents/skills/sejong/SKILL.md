@@ -18,7 +18,7 @@ It is not a shim over another skill. Its source-of-truth routing contract is `..
 5. Treat Korean court names as aliases only:
    - `JangYeongsil` -> `research-brief`
    - `Jiphyeonjeon` -> `decision-brief`
-   - `Seungjeongwon` -> `executor-handoff` through RalphExecutor
+   - `Seungjeongwon` -> `executor-handoff` through the native Seungjeongwon executor
    - `Sillok` -> evidence and promotion records
    - `Danjong` -> retired or rejected option semantics, never an active lane
 

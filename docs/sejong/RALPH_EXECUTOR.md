@@ -4,13 +4,15 @@
 
 ## Purpose
 
-`RalphExecutor` is the default execution implementation for Uigwe.
+`RalphExecutor` is the optional Ralph-compatible execution implementation for Uigwe.
 
-It takes a validated Uigwe planning bundle and hands execution to the current Codex-native Ralph skill or any AI agent harness that can forward the generated Ralph prompt without reopening planning by default.
+It takes a validated Uigwe planning bundle and hands execution to a Ralph-capable agent harness that can forward the generated Ralph prompt without reopening planning by default.
+
+For native King Sejong execution, prefer [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md).
 
 ## Canonical Backend
 
-The canonical Ralph backend is the Ralph skill provided by the host agent environment.
+The canonical Ralph backend is a separate installed Ralph loop.
 
 Other Ralph variants may exist as:
 
@@ -22,7 +24,7 @@ but `RalphExecutor` should target the current Codex-native Ralph behavior.
 
 ## Why RalphExecutor
 
-Ralph is the best default executor for Uigwe when:
+Ralph is useful when:
 
 - the work is substantial
 - persistence matters
@@ -32,7 +34,8 @@ Ralph is the best default executor for Uigwe when:
 In short:
 
 - `Uigwe` decides **what should be done**
-- `RalphExecutor` ensures it is **carried through**
+- `Seungjeongwon` carries it through natively
+- `RalphExecutor` provides a compatibility handoff when a Ralph loop is available
 
 ## Input Contract
 
@@ -284,4 +287,4 @@ Default recommendation:
 - substantial or ambiguous execution -> `RalphExecutor`
 - coordination-heavy work -> `TeamExecutor`
 
-For Uigwe's current maturity, `RalphExecutor` is the safest default.
+For King Sejong's current public package, `Seungjeongwon` is the native default and `RalphExecutor` is the compatibility path.

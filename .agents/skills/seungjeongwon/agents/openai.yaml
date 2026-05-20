@@ -1,0 +1,4 @@
+interface:
+  display_name: "Seungjeongwon"
+  short_description: "Execute and verify Sejong plans"
+  default_prompt: "Use $seungjeongwon to execute this approved scope, verify the result, and report evidence."

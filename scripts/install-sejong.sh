@@ -14,6 +14,7 @@ Examples:
 Installs:
   .agents/skills/sejong/
   .agents/skills/uigwe/
+  .agents/skills/seungjeongwon/
   docs/sejong/
 EOF
 }
@@ -54,7 +55,7 @@ if [[ ! -d "$TARGET_ROOT/.git" && ! -f "$TARGET_ROOT/.git" ]]; then
 fi
 
 if [[ "$TARGET_ROOT" == "$SOURCE_ROOT" ]]; then
-  echo "Sejong and Uigwe are already present in this repository."
+  echo "King Sejong is already present in this repository."
   exit 0
 fi
 
@@ -88,18 +89,21 @@ copy_dir() {
 
 copy_dir "$SOURCE_ROOT/.agents/skills/sejong" "$TARGET_ROOT/.agents/skills/sejong"
 copy_dir "$SOURCE_ROOT/.agents/skills/uigwe" "$TARGET_ROOT/.agents/skills/uigwe"
+copy_dir "$SOURCE_ROOT/.agents/skills/seungjeongwon" "$TARGET_ROOT/.agents/skills/seungjeongwon"
 copy_dir "$SOURCE_ROOT/docs/sejong" "$TARGET_ROOT/docs/sejong"
 
 cat <<EOF
-Installed Sejong + Uigwe into:
+Installed King Sejong into:
   $TARGET_ROOT
 
 Managed paths:
   .agents/skills/sejong/
   .agents/skills/uigwe/
+  .agents/skills/seungjeongwon/
   docs/sejong/
 
 Invoke with:
   \$sejong <broad request>
   \$uigwe <formal planning request>
+  \$seungjeongwon <execution request>
 EOF

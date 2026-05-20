@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Sejong is the all-in-one OMX-style front door that decides the next useful lane and carries work through research, decision support, Uigwe planning, execution, verification, and evidence recording.
+Sejong is the all-in-one OMX-style front door that decides the next useful lane and carries work through research, decision support, Uigwe planning, Seungjeongwon execution, verification, and evidence recording.
 
 It exists because real user requests often say "research this", "think through this", "is this worth making", or "use Uigwe/의궤 for this" before the correct planning entry mode is known.
 
@@ -15,7 +15,7 @@ This file is Sejong's routing contract. Sejong is not a new planning protocol an
 ## Non-Goals
 
 - It is not a replacement for the Uigwe protocol.
-- It is not a replacement for the host execution backend; it orchestrates execution through Codex direct action or a handoff backend.
+- It is not a replacement for Uigwe's planning protocol; it orchestrates execution through Codex direct action, native Seungjeongwon execution, or optional Ralph-compatible handoff.
 - It does not weaken Uigwe live-session approval gates.
 - It does not create packets when the user only needs evidence or a lightweight decision.
 - It does not create new active Korean lane ids; Korean names are user-facing aliases only.
@@ -30,7 +30,7 @@ Use Sejong language when it helps the user understand the broad front door:
 | `Sejong` | All-in-one front door for research, planning, execution, verification, and evidence | one or more existing router lanes |
 | `JangYeongsil` | Research, experiment, evidence gathering, and unknown discovery | `research-brief` |
 | `Jiphyeonjeon` | Debate, option comparison, recommendation, and decision support | `decision-brief` |
-| `Seungjeongwon` | Execution handoff after a validated Uigwe bundle exists | `executor-handoff` through RalphExecutor |
+| `Seungjeongwon` | Native execution and verification after a scope or bundle is approved | `executor-handoff` through Seungjeongwon |
 | `Sillok` | Evidence records, scorecards, promotion notes, and decision history | validation and promotion artifacts |
 | `Danjong` | Retired, rejected, or deposed options | rejected-alternative or archive semantics only |
 
@@ -46,7 +46,7 @@ Sejong actively owns the end-to-end loop and then calls the selected surface:
 | `JangYeongsil` | Research lane | gather evidence and produce a `research-brief` |
 | `Jiphyeonjeon` | Decision lane | compare options and produce a `decision-brief` |
 | `Uigwe` | Formal planning protocol | run `full`, `design-to-plan`, or `decompose-only` |
-| `Seungjeongwon` | Persistent execution handoff lane | prepare RalphExecutor handoff from a validated bundle |
+| `Seungjeongwon` | Native execution lane | execute and verify an approved scope or validated bundle |
 | `Sillok` | Evidence records | update scorecards, promotion notes, or decision history |
 | `Danjong` | Rejected or retired option semantics | record rejection or retirement inside a decision/evidence artifact |
 | `direct-action` | Clear immediate work | perform the task under normal workspace rules |
@@ -58,14 +58,14 @@ Do not stop at naming the lane. After classifying a request, execute the selecte
 1. `research-brief`: inspect the available evidence, separate known/inferred/unknown facts, and name the next decision.
 2. `decision-brief`: compare options, reject weaker paths with reasons, recommend one path, and name the next lane.
 3. `uigwe-plan`: call into the Uigwe skill or protocol surface and preserve its live-session approval gates.
-4. `executor-handoff`: inspect the bundle, prepare RalphExecutor handoff artifacts, and require execution feedback from the handoff backend before claiming completion.
+4. `executor-handoff`: inspect the bundle, invoke Seungjeongwon execution, and require execution feedback before claiming completion. Prepare Ralph-compatible handoff artifacts only when that backend is explicitly useful.
 5. `direct-action`: state briefly that planning is not needed, perform the clear task, and verify the result.
 6. `Sillok` or `Danjong`: write evidence, archive, rejection, or promotion records rather than creating a new active lane.
 
 If the user asked for an outcome such as "research, plan, and do it", Sejong may chain lanes:
 
 ```text
-research-brief -> decision-brief -> uigwe-plan -> direct-action or executor-handoff -> evidence record
+research-brief -> decision-brief -> uigwe-plan -> direct-action or Seungjeongwon executor-handoff -> evidence record
 ```
 
 Stop early only when missing evidence, a user decision, or an approval gate is genuinely required.
@@ -116,9 +116,9 @@ The router must call into the Uigwe skill or protocol surface rather than duplic
 
 ### `executor-handoff`
 
-Use after planning succeeds and the user wants persistent execution or a long-running completion loop.
+Use after planning succeeds and the user wants execution, verification, or a long-running completion loop.
 
-The router may prepare RalphExecutor handoff instructions and should require execution feedback before reporting the end-to-end task as complete.
+The router should invoke Seungjeongwon by default. It may prepare Ralph-compatible handoff instructions when the user explicitly wants that path or an installed Ralph loop is already part of the workspace.
 
 ### `direct-action`
 
@@ -154,7 +154,7 @@ For this public install package, use a small scenario list when changing the rou
 - evidence-only request -> `research-brief`
 - option comparison -> `decision-brief`
 - vague build goal -> `uigwe-plan`
-- validated bundle execution -> `executor-handoff`
+- validated bundle execution -> `executor-handoff` through Seungjeongwon
 - exact implementation task -> `direct-action`
 
 Run JSON and example-bundle checks when the router change touches schemas, packet examples, wrapper docs, executor docs, or Ralph handoff behavior.

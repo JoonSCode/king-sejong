@@ -11,6 +11,7 @@ The installer copies this whole contract surface into a target repository:
 
 - `.agents/skills/sejong/`
 - `.agents/skills/uigwe/`
+- `.agents/skills/seungjeongwon/`
 - `docs/sejong/`
 
 The skill files stay short by design. They load the detailed contracts from this directory only when needed.
@@ -22,7 +23,8 @@ For normal use:
 1. Read [ROUTER.md](ROUTER.md) to understand Sejong's lanes.
 2. Read [PROTOCOL.md](PROTOCOL.md) to understand Uigwe's planning model.
 3. Read [WRAPPER.md](WRAPPER.md) if you want machine-consumable packet flow.
-4. Read [RALPH_EXECUTOR.md](RALPH_EXECUTOR.md) if you want to hand a validated plan to execution.
+4. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
+5. Read [RALPH_EXECUTOR.md](RALPH_EXECUTOR.md) only when you need Ralph-compatible handoff artifacts.
 
 ## Practical Usage
 
@@ -41,6 +43,13 @@ Use Uigwe directly when you already want formal planning:
 $uigwe full <brief>
 $uigwe design-to-plan <clear intent or feature brief>
 $uigwe decompose-only <approved design artifact>
+```
+
+Use Seungjeongwon directly when the scope is approved and execution should start:
+
+```text
+$seungjeongwon execute this validated Uigwe bundle and verify the result
+$seungjeongwon finish these executable leaves from docs/sejong/examples/brownfield-decompose-only
 ```
 
 ## What Uigwe Produces
