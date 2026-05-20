@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">Sejong and Uigwe routing map</title>
-  <desc id="desc">Sejong routes broad requests into research, decision, Uigwe planning, executor handoff, or direct action.</desc>
+  <title id="title">Sejong all-in-one work loop</title>
+  <desc id="desc">Sejong carries broad requests through research, decision, Uigwe planning, execution, verification, and evidence.</desc>
   <defs>
     <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
       <stop offset="0%" stop-color="#f7fafc"/>
@@ -25,8 +25,8 @@
     </marker>
   </defs>
   <rect width="1200" height="630" fill="url(#bg)"/>
-  <text x="70" y="92" class="title">Sejong routes. Uigwe plans.</text>
-  <text x="72" y="132" class="subtitle">A repo-local skill pair for research, decisions, formal planning, handoff, and direct action.</text>
+  <text x="70" y="92" class="title">Sejong researches, plans, executes.</text>
+  <text x="72" y="132" class="subtitle">A Codex skill bundle for research, decisions, Uigwe planning, execution, verification, and evidence.</text>
 
   <rect x="70" y="210" width="260" height="160" rx="22" class="card"/>
   <text x="105" y="258" class="tiny">USER REQUEST</text>
@@ -36,9 +36,9 @@
 
   <rect x="470" y="190" width="260" height="200" rx="28" fill="#17324d" filter="url(#shadow)"/>
   <text x="515" y="247" style="font: 800 40px ui-sans-serif, system-ui; fill: #ffffff;">Sejong</text>
-  <text x="516" y="287" style="font: 500 20px ui-sans-serif, system-ui; fill: #d9edf3;">front door router</text>
-  <text x="516" y="328" style="font: 400 17px ui-sans-serif, system-ui; fill: #c5d7df;">Classify once, then execute</text>
-  <text x="516" y="352" style="font: 400 17px ui-sans-serif, system-ui; fill: #c5d7df;">the selected lane.</text>
+  <text x="516" y="287" style="font: 500 20px ui-sans-serif, system-ui; fill: #d9edf3;">all-in-one front door</text>
+  <text x="516" y="328" style="font: 400 17px ui-sans-serif, system-ui; fill: #c5d7df;">Choose the lane, continue</text>
+  <text x="516" y="352" style="font: 400 17px ui-sans-serif, system-ui; fill: #c5d7df;">until verified or blocked.</text>
 
   <path d="M 333 290 C 382 290 415 290 463 290" class="arrow"/>
 
@@ -56,12 +56,12 @@
     <text x="875" y="338" class="small">packets and goal tree</text>
 
     <rect x="845" y="378" width="250" height="78" rx="18" class="lane" stroke="#86a873"/>
-    <text x="875" y="412" class="label">Executor Handoff</text>
-    <text x="875" y="438" class="small">RalphExecutor artifacts</text>
+    <text x="875" y="412" class="label">Execute + Verify</text>
+    <text x="875" y="438" class="small">direct or RalphExecutor</text>
 
     <rect x="845" y="478" width="250" height="78" rx="18" class="lane" stroke="#a989b5"/>
-    <text x="875" y="512" class="label">Direct Action</text>
-    <text x="875" y="538" class="small">do the clear task</text>
+    <text x="875" y="512" class="label">Evidence Record</text>
+    <text x="875" y="538" class="small">proof, notes, rejected paths</text>
   </g>
 
   <path d="M 730 255 C 775 160 792 118 838 118" class="arrow"/>

@@ -2,11 +2,11 @@
 
 ![Sejong routing map](docs/sejong/assets/sejong-routing-map.svg)
 
-King Sejong is a repo-local skill bundle for **Codex** and Codex-style agent environments.
+King Sejong is an all-in-one repo-local skill bundle for **Codex** and Codex-style agent environments.
 
-It gives an agent one broad front door, `$sejong`, for deciding whether a request needs research, decision support, formal planning, an executor handoff, or direct action.
+It gives an agent one broad front door, `$sejong`, for moving from research to decision, planning, execution, verification, and evidence recording.
 
-Uigwe is the formal planning protocol behind that front door. Sejong routes into Uigwe only when a durable planning bundle is useful.
+Uigwe is the formal planning protocol behind that front door. Sejong routes into Uigwe only when a durable planning bundle is useful, then continues to execution and verification when the user asked for an outcome rather than a plan artifact.
 
 This is not a standalone CLI or Python package. It is meant to be copied into a target repository so Codex can load the installed `.agents/skills` files.
 
@@ -53,12 +53,21 @@ This package is explicitly for Codex-style repo-local skills:
 
 - Codex loads `.agents/skills/sejong/SKILL.md` for `$sejong`.
 - Codex loads `.agents/skills/uigwe/SKILL.md` for `$uigwe`.
+- Codex can execute clear tasks directly through Sejong's `direct-action` lane.
 - The docs include Codex consumer contracts for downstream execution feedback.
 
-Ralph itself is **not bundled** here.
+Execution is part of Sejong's job.
+
+Sejong can finish work in two ways:
+
+- direct execution in the current Codex session when the task is clear enough
+- executor handoff when the task needs a persistent execution loop after a validated Uigwe bundle
+
+Ralph is the default documented handoff backend for the second path, but the Ralph runtime itself is **not bundled** here.
 
 What is included:
 
+- direct-action routing for clear implementation and verification work
 - `RalphExecutor` docs and schema
 - `prepare_ralph_executor.py`
 - example `ralph-executor.request/result` artifacts
@@ -70,7 +79,17 @@ What is not included:
 - a separate Ralph installer
 - a guarantee that non-Codex hosts understand the handoff automatically
 
-Without Ralph, Sejong and Uigwe still work for routing, research/decision support, and formal planning. The `executor-handoff` lane requires a host environment that already has Ralph or an equivalent execution loop.
+Without Ralph, Sejong still works for research, decision support, planning, direct execution, and verification in the current Codex session. The `executor-handoff` lane requires a host environment that already has Ralph or an equivalent execution loop.
+
+## Work Loop
+
+Sejong can run the full arc when the user asks for an outcome:
+
+```text
+research -> decision -> Uigwe plan -> execute -> verify -> record evidence
+```
+
+It should only stop early when the next step truly needs missing evidence, a user decision, or an approval gate.
 
 ## Use
 
@@ -97,8 +116,8 @@ $uigwe decompose-only docs/specs/approved-design.md
 | `research-brief` | The facts, history, or evidence are still unclear. | Known facts, inferences, unknowns, next decision. |
 | `decision-brief` | The main job is choosing between options. | Options, rejected paths, recommendation, risks. |
 | `uigwe-plan` | A durable planning bundle is useful. | Uigwe packets, `spec.md`, `rationale.md`, `goal-tree.json`. |
-| `executor-handoff` | A validated bundle should be handed to execution. | RalphExecutor handoff artifacts. |
-| `direct-action` | The task is already clear enough to do. | The completed work, under the target repo's rules. |
+| `executor-handoff` | A validated bundle needs persistent execution. | RalphExecutor handoff artifacts, then execution feedback. |
+| `direct-action` | The task is clear enough to do now. | Completed work plus verification evidence. |
 
 Court-inspired aliases are supported as user-facing language:
 

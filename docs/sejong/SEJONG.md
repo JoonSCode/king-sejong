@@ -1,8 +1,8 @@
 # Sejong Router Naming Contract
 
-`Sejong` is the router: the broad front door that decides whether a request needs research, decision support, formal Uigwe planning, executor handoff, evidence recording, or direct action.
+`Sejong` is the all-in-one broad front door that decides whether a request needs research, decision support, formal Uigwe planning, execution, verification, evidence recording, or direct action.
 
-This is a naming layer only. Uigwe/의궤 is the formal planning protocol. The router's canonical machine lane ids are `research-brief`, `decision-brief`, `uigwe-plan`, `executor-handoff`, and `direct-action`.
+Uigwe/의궤 is the formal planning protocol inside Sejong, not the whole product. The router's canonical machine lane ids are `research-brief`, `decision-brief`, `uigwe-plan`, `executor-handoff`, and `direct-action`. Sejong may chain those lanes when the user asks for an end-to-end outcome.
 
 New user-facing invocations should use `$sejong`; the source-of-truth routing contract lives in `docs/sejong/ROUTER.md`.
 
@@ -10,7 +10,7 @@ New user-facing invocations should use `$sejong`; the source-of-truth routing co
 
 | Name | Use it for | Canonical surface |
 | --- | --- | --- |
-| `Sejong` | The router/front door | existing router lane selection |
+| `Sejong` | All-in-one front door | chained or single router lane execution |
 | `JangYeongsil` | Research, evidence gathering, experiments, and unknown discovery | `research-brief` |
 | `Jiphyeonjeon` | Debate, option comparison, recommendations, and decision support | `decision-brief` |
 | `Seungjeongwon` | Execution handoff after a validated Uigwe bundle exists | `executor-handoff` via RalphExecutor |
@@ -19,12 +19,14 @@ New user-facing invocations should use `$sejong`; the source-of-truth routing co
 
 ## Boundaries
 
-- Do not collapse Uigwe into Sejong.
+- Do not collapse Uigwe's packet rules into Sejong.
 - Do not replace `research-brief`, `decision-brief`, `uigwe-plan`, `executor-handoff`, or `direct-action`.
 - Do not create a `Danjong` active lane.
 - Do not duplicate Uigwe packet rules in the router.
 - Route formal planning through Uigwe's `1단계: 기획 명확화`, `2단계: 설계 명확화`, and `3단계: 실행 계획화`.
-- Route execution through RalphExecutor only after a validated bundle exists.
+- Execute clear work directly through Codex when planning is not needed.
+- Route persistent execution through RalphExecutor only after a validated bundle exists.
+- Verify execution before claiming an end-to-end Sejong request is complete.
 
 ## Examples
 

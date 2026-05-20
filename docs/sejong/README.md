@@ -1,9 +1,9 @@
 # Sejong + Uigwe
 
-Sejong is the router and user-facing front door for broad agent work.
-It classifies a request into one useful lane, then executes that lane instead of forcing every request through formal planning.
+Sejong is the all-in-one user-facing front door for broad agent work.
+It can research, decide, plan, execute, verify, and record evidence instead of forcing every request through formal planning.
 
-Uigwe is the formal planning protocol behind Sejong. Use it when the output should be a durable planning bundle with packets, rationale, and executable leaves.
+Uigwe is the formal planning protocol inside Sejong. Use it when the output should be a durable planning bundle with packets, rationale, and executable leaves.
 
 ## Installed Layout
 
@@ -32,6 +32,7 @@ Use Sejong when the correct workflow is still uncertain:
 $sejong investigate the history and tell me the next decision
 $sejong compare these options and recommend a path
 $sejong this approved design should become executable work
+$sejong research the problem, plan the fix, implement it, and verify it
 ```
 
 Use Uigwe directly when you already want formal planning:
