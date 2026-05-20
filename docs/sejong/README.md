@@ -40,6 +40,13 @@ $sejong this approved design should become executable work
 $sejong research the problem, plan the fix, implement it, and verify it
 ```
 
+For larger Sejong work, parallelism is allowed when it is genuinely separable:
+
+- `JangYeongsil` can fan out across independent evidence sources and fan in to one `known` / `inferred` / `unknown` synthesis.
+- `Jiphyeonjeon` can run bounded council briefs in parallel, such as advocate, critic, specialist, operator, and risk reviewer. The agents do not vote; the lead Sejong agent synthesizes the recommendation.
+- `Uigwe` can overlap only through preflight checks such as artifact inventory, readiness review, or validation planning. Formal packets and live-session gates remain lead/user-owned.
+- Execution parallelism belongs in `Seungjeongwon` after scope approval, with disjoint file scopes or test surfaces.
+
 Use Uigwe directly when you already want formal planning:
 
 ```text

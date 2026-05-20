@@ -50,7 +50,7 @@ In short: `JangYeongsil` gathers the evidence, `Jiphyeonjeon` discusses and deci
 
 ## Codex Native Subagents
 
-Sejong may use Codex native subagents to increase parallelism, but subagents are an optional execution tactic rather than a separate Sejong surface.
+Sejong may use Codex native subagents to increase parallelism, but subagents are an optional execution tactic rather than a separate Sejong surface. The safe shape is hub-and-spoke: subagents return bounded briefs, and the lead Sejong agent owns routing, synthesis, final decision, and final verification.
 
 Use subagents when independent work can run in parallel without blocking the next local step:
 
@@ -61,6 +61,36 @@ Use subagents when independent work can run in parallel without blocking the nex
 - `Sillok`: have a verifier collect evidence while execution continues, then let the lead agent decide what belongs in the final record.
 
 Do not use subagents for trivial direct edits, single-source lookups, or duplicated readings of the same context. The lead Sejong agent owns routing, synthesis, final decision, and final verification.
+
+### Parallel Patterns
+
+`JangYeongsil` supports research fan-out and fan-in:
+
+- Split by independent source, subsystem, history window, benchmark, or external reference.
+- Give each lane a non-overlapping evidence scope and require `known`, `inferred`, `unknown`, confidence, source list, and the decision it enables.
+- Merge only after the lead reconciles conflicts and names unresolved unknowns.
+- Do not let research lanes vote on strategy, create Uigwe packets, or duplicate the same source read.
+
+`Jiphyeonjeon` supports a parallel chamber:
+
+- Start with a shared council brief: `decision_question`, `shared_evidence_bundle`, `fixed_options`, criteria, constraints, non-goals, allowed output, forbidden decisions, stop condition, and verification requirement.
+- Spawn bounded perspectives such as option advocate, counter-advocate, critic, domain specialist, operator, or risk reviewer.
+- Prefer independent first-round briefs, then a lead-mediated challenge round when the strongest objections need response.
+- Treat subagent agreement as signal, not evidence or approval. The lead synthesizes the final recommendation, rejected options, risks, confidence, and next surface.
+- Do not run open-ended subagent-to-subagent chat, majority voting, or debate-as-verification.
+
+`Uigwe` supports only preflight parallelism before gates:
+
+- Allowed: artifact inventory, readiness check, schema or bundle validation, missing-context scan, and risk review.
+- Forbidden before lead/user approval: competing canonical packets, finalized `spec.md`, finalized `rationale.md`, finalized `goal-tree.json`, or any gate decision.
+- If Jiphyeonjeon is still unsettled, Uigwe preflight may prepare questions and mode-readiness notes but must not harden the plan.
+
+Research, discussion, and planning may overlap only in this limited pipeline:
+
+1. While `JangYeongsil` gathers evidence, the lead may draft decision axes and candidate options.
+2. `Jiphyeonjeon` may begin once there is enough stable material for real comparison, but its final recommendation waits for blocking research lanes.
+3. `Uigwe` may run preflight checks once a likely direction exists, but formal planning waits for the lead-owned recommendation and any live-session approval gate.
+4. Execution waits for a clear direct task, approved scope, or validated bundle.
 
 ## Internal Structure
 

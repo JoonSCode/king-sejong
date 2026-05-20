@@ -28,3 +28,5 @@ Canonical internal surface ids are `jangyeongsil`, `jiphyeonjeon`, `uigwe`, `seu
 Boundary rule: use `JangYeongsil` when facts or evidence are unclear, `Jiphyeonjeon` when enough material exists but options need discussion, and `Uigwe` when the chosen direction should become a durable planning bundle. Preserve Uigwe live-session gates when routing there.
 
 `Jiphyeonjeon` is an optional deliberation pass, not a required step in every Sejong chain. Use Codex native subagents only when independent research, option-review, implementation, or verification lanes would materially improve speed or confidence; the lead Sejong agent owns synthesis, final routing, and final verification.
+
+For parallel Jiphyeonjeon, use bounded briefs from advocate, critic, specialist, operator, or risk-review lenses over the same evidence bundle; do not use subagent agreement as evidence or approval. Research, discussion, and planning may overlap only as preflight work: Uigwe gates and final packets remain lead/user-owned.

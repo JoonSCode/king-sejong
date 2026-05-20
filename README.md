@@ -176,6 +176,8 @@ Use `JangYeongsil` when evidence is missing, `Jiphyeonjeon` when evidence exists
 
 Codex native subagents can increase parallelism for independent research branches, option reviews, implementation slices, or verification lanes. They are not a required step; the lead Sejong agent still owns synthesis, routing, and final verification.
 
+For larger Sejong runs, use research fan-out in `JangYeongsil`, bounded council briefs in `Jiphyeonjeon`, and only preflight checks in `Uigwe` before approval gates. Subagent agreement is never evidence, approval, or verification by itself.
+
 ## Read More
 
 - [Sejong router contract](docs/sejong/ROUTER.md)
