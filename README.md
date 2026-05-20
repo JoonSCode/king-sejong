@@ -172,6 +172,10 @@ Court-inspired names are supported as user-facing language:
 
 Use `JangYeongsil` when evidence is missing, `Jiphyeonjeon` when evidence exists but the team needs discussion, and `Uigwe` when the selected direction should become a formal plan.
 
+`Jiphyeonjeon` is optional. It should appear as a short council pass only when evidence leaves a meaningful choice; skip it when the direction is already clear enough for Uigwe, Seungjeongwon, or direct action.
+
+Codex native subagents can increase parallelism for independent research branches, option reviews, implementation slices, or verification lanes. They are not a required step; the lead Sejong agent still owns synthesis, routing, and final verification.
+
 ## Read More
 
 - [Sejong router contract](docs/sejong/ROUTER.md)

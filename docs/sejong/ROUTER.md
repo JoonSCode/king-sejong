@@ -46,6 +46,22 @@ The three pre-execution surfaces are intentionally different:
 
 In short: `JangYeongsil` gathers the evidence, `Jiphyeonjeon` discusses and decides, and `Uigwe` writes the formal plan.
 
+`Jiphyeonjeon` is not mandatory in every Sejong chain. Use it as a short deliberation pass only when the gathered evidence leaves a meaningful choice.
+
+## Codex Native Subagents
+
+Sejong may use Codex native subagents to increase parallelism, but subagents are an optional execution tactic rather than a separate Sejong surface.
+
+Use subagents when independent work can run in parallel without blocking the next local step:
+
+- `JangYeongsil`: split evidence gathering across independent sources, docs, repo history, or external references.
+- `Jiphyeonjeon`: compare serious options through separate advocate, critic, or specialist perspectives before the lead agent synthesizes a recommendation.
+- `Uigwe`: keep live-session approval gates with the lead agent; use subagents only for bounded side research or artifact checks that do not decide the gate.
+- `Seungjeongwon`: split implementation or verification across disjoint file scopes, test surfaces, or review lanes.
+- `Sillok`: have a verifier collect evidence while execution continues, then let the lead agent decide what belongs in the final record.
+
+Do not use subagents for trivial direct edits, single-source lookups, or duplicated readings of the same context. The lead Sejong agent owns routing, synthesis, final decision, and final verification.
+
 ## Internal Structure
 
 Sejong actively owns the end-to-end loop and then calls the selected surface:
@@ -122,6 +138,7 @@ Required output:
 
 This surface should be used before Uigwe planning when the main uncertainty is strategic rather than structural.
 If the missing part is evidence, route back to `JangYeongsil`; if the choice is settled and the next job is artifact generation, route to `Uigwe`.
+Skip this surface when research already settles the direction or when the user gave an exact implementation task.
 
 ### `Uigwe`
 
