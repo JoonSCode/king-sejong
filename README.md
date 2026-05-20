@@ -62,14 +62,14 @@ Execution is part of Sejong's job, and King Sejong includes its own executor:
 
 - `Seungjeongwon` / `승정원`
 
-Seungjeongwon executes approved scopes or validated Uigwe bundles, verifies the result, and reports evidence.
+Seungjeongwon is King Sejong's native Ralph-loop implementation. It executes approved scopes or validated Uigwe bundles, verifies the result, and reports evidence.
 
 Sejong can finish work in two ways:
 
 - direct execution in the current Codex session when the task is clear enough
 - native Seungjeongwon execution when a plan or bundle needs implementation and verification
 
-Ralph-compatible handoff is still supported for environments that already use Ralph, but it is no longer required for Sejong to execute work.
+Ralph-compatible handoff is still supported for environments that already use a separate Ralph loop, but Ralph is no longer required for Sejong to execute work.
 
 What is included:
 

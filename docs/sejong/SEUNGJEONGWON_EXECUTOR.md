@@ -4,7 +4,7 @@
 
 ## Purpose
 
-`Seungjeongwon` / `승정원` is King Sejong's native executor.
+`Seungjeongwon` / `승정원` is King Sejong's native executor and Ralph-loop implementation.
 
 It exists so `/sejong` can be a real all-in-one work surface:
 
@@ -36,6 +36,8 @@ When a Uigwe bundle exists, Seungjeongwon treats these files as authoritative:
 It does not reopen planning unless execution discovers a contradiction.
 
 ## Relationship To Ralph
+
+Seungjeongwon is our Ralph-loop implementation for King Sejong.
 
 Ralph is no longer required for King Sejong to execute work.
 
