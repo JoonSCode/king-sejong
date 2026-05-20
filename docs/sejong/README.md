@@ -27,7 +27,8 @@ For normal use:
 1. Read [ROUTER.md](ROUTER.md) to understand Sejong's lanes.
 2. Read [PROTOCOL.md](PROTOCOL.md) to understand Uigwe's planning model.
 3. Read [WRAPPER.md](WRAPPER.md) if you want machine-consumable packet flow.
-4. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
+4. Read [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) if you want repo-local role prompt overlays.
+5. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
 
 ## Practical Usage
 
@@ -46,6 +47,8 @@ For larger Sejong work, parallelism is allowed when it is genuinely separable:
 - `Jiphyeonjeon` can run bounded council briefs in parallel, such as advocate, critic, specialist, operator, and risk reviewer. The agents do not vote; the lead Sejong agent synthesizes the recommendation.
 - `Uigwe` can overlap only through preflight checks such as artifact inventory, readiness review, or validation planning. Formal packets and live-session gates remain lead/user-owned.
 - Execution parallelism belongs in `Seungjeongwon` after scope approval, with disjoint file scopes or test surfaces.
+
+Sejong does not require `.codex/prompts/{role}.md`. If a target repo has such a file, treat it as a repo-local overlay on top of the Codex native role prompt. If it is absent, continue with the native role prompt. See [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md).
 
 Use Uigwe directly when you already want formal planning:
 

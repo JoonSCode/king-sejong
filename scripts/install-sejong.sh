@@ -75,6 +75,7 @@ verify_install() {
     ".agents/skills/seungjeongwon/SKILL.md"
     "docs/sejong/README.md"
     "docs/sejong/ROUTER.md"
+    "docs/sejong/PROMPT_OVERLAYS.md"
     "docs/sejong/PROTOCOL.md"
     "docs/sejong/SEUNGJEONGWON_EXECUTOR.md"
     "docs/sejong/BUNDLE_VALIDATOR.md"

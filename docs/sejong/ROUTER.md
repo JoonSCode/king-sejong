@@ -52,6 +52,15 @@ In short: `JangYeongsil` gathers the evidence, `Jiphyeonjeon` discusses and deci
 
 Sejong may use Codex native subagents to increase parallelism, but subagents are an optional execution tactic rather than a separate Sejong surface. The safe shape is hub-and-spoke: subagents return bounded briefs, and the lead Sejong agent owns routing, synthesis, final decision, and final verification.
 
+Role prompt resolution:
+
+1. Use the host Codex native role prompt as the default source for `agent_type` behavior.
+2. If `.codex/prompts/{role}.md` exists in the target repo, read it as a repo-local overlay before spawning that role.
+3. If the overlay file is absent, proceed with the Codex native role prompt; absence is not a blocker or install failure.
+4. Do not copy `.codex/prompts` as part of the default King Sejong install. A target repo should add prompt overlays only when it has stable, repo-specific role rules worth preserving.
+
+See [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) for optional overlay guidance.
+
 Use subagents when independent work can run in parallel without blocking the next local step:
 
 - `JangYeongsil`: split evidence gathering across independent sources, docs, repo history, or external references.

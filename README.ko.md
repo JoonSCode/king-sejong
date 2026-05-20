@@ -156,9 +156,12 @@ Codex의 서브에이전트는 독립된 조사 갈래, 선택지 검토, 나뉜
 
 큰 일에서는 장영실이 증거 갈래를 나누어 살피고, 집현전이 찬성ㆍ반대ㆍ전문가ㆍ실행자ㆍ위험 검토의 짧은 상소를 병렬로 받으며, 의궤는 재가 전에는 준비 살핌만 하옵니다. 여러 서브에이전트가 뜻을 같이했다 하여 그것이 곧 증거, 재가, 검증이 되지는 않사옵니다.
 
+`.codex/prompts/{role}.md` 파일은 반드시 필요하지 않사옵니다. King Sejong은 Codex의 본래 role prompt를 먼저 쓰고, 대상 저장소가 그 파일을 마련한 경우에만 repo-local 덧입힘으로 읽사옵니다.
+
 ## 더 살필 문서
 
 - [Sejong router contract](docs/sejong/ROUTER.md)
+- [Prompt overlays](docs/sejong/PROMPT_OVERLAYS.md)
 - [Uigwe protocol](docs/sejong/PROTOCOL.md)
 - [Uigwe wrapper](docs/sejong/WRAPPER.md)
 - [Seungjeongwon executor](docs/sejong/SEUNGJEONGWON_EXECUTOR.md)

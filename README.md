@@ -178,9 +178,12 @@ Codex native subagents can increase parallelism for independent research branche
 
 For larger Sejong runs, use research fan-out in `JangYeongsil`, bounded council briefs in `Jiphyeonjeon`, and only preflight checks in `Uigwe` before approval gates. Subagent agreement is never evidence, approval, or verification by itself.
 
+No `.codex/prompts/{role}.md` files are required. King Sejong uses Codex native role prompts by default and treats repo-local prompt files as optional overlays when a target repo provides them.
+
 ## Read More
 
 - [Sejong router contract](docs/sejong/ROUTER.md)
+- [Prompt overlays](docs/sejong/PROMPT_OVERLAYS.md)
 - [Uigwe protocol](docs/sejong/PROTOCOL.md)
 - [Uigwe wrapper](docs/sejong/WRAPPER.md)
 - [Seungjeongwon executor](docs/sejong/SEUNGJEONGWON_EXECUTOR.md)
