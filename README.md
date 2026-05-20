@@ -2,11 +2,13 @@
 
 ![Sejong routing map](docs/sejong/assets/sejong-routing-map.svg)
 
-King Sejong is a repo-local skill bundle for Codex-style agents.
+King Sejong is a repo-local skill bundle for **Codex** and Codex-style agent environments.
 
 It gives an agent one broad front door, `$sejong`, for deciding whether a request needs research, decision support, formal planning, an executor handoff, or direct action.
 
 Uigwe is the formal planning protocol behind that front door. Sejong routes into Uigwe only when a durable planning bundle is useful.
+
+This is not a standalone CLI or Python package. It is meant to be copied into a target repository so Codex can load the installed `.agents/skills` files.
 
 ## Naming
 
@@ -44,6 +46,31 @@ The installer copies these managed paths into the target repository:
 - `docs/sejong/`
 
 Keep those paths together. The skills are intentionally small and load their routing, planning, schema, and handoff contracts from `docs/sejong`.
+
+## Codex And Ralph
+
+This package is explicitly for Codex-style repo-local skills:
+
+- Codex loads `.agents/skills/sejong/SKILL.md` for `$sejong`.
+- Codex loads `.agents/skills/uigwe/SKILL.md` for `$uigwe`.
+- The docs include Codex consumer contracts for downstream execution feedback.
+
+Ralph itself is **not bundled** here.
+
+What is included:
+
+- `RalphExecutor` docs and schema
+- `prepare_ralph_executor.py`
+- example `ralph-executor.request/result` artifacts
+- handoff wording that can be passed to a Ralph-capable Codex environment
+
+What is not included:
+
+- the `$ralph` skill/runtime
+- a separate Ralph installer
+- a guarantee that non-Codex hosts understand the handoff automatically
+
+Without Ralph, Sejong and Uigwe still work for routing, research/decision support, and formal planning. The `executor-handoff` lane requires a host environment that already has Ralph or an equivalent execution loop.
 
 ## Use
 
@@ -88,3 +115,7 @@ Court-inspired aliases are supported as user-facing language:
 - [Uigwe wrapper](docs/sejong/WRAPPER.md)
 - [RalphExecutor handoff](docs/sejong/RALPH_EXECUTOR.md)
 - [Bundle validator](docs/sejong/BUNDLE_VALIDATOR.md)
+
+## License
+
+MIT. This keeps installation and reuse low-friction for personal, internal, and public agent workflows.
