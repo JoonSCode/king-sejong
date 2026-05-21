@@ -29,6 +29,7 @@ For normal use:
 3. Read [WRAPPER.md](WRAPPER.md) if you want machine-consumable packet flow.
 4. Read [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) if you want repo-local role prompt overlays.
 5. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
+6. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
 
 ## Practical Usage
 
@@ -80,12 +81,13 @@ These artifacts are meant for both human review and downstream machine consumpti
 
 ## Validation Helpers
 
-This public package includes schema and bundle validation helpers, but it intentionally does not ship private benchmark runs or score histories.
+This public package includes schema checks, bundle validation, frozen benchmark scaffolds, and an instruction-surface guardrail runner. It intentionally does not ship private benchmark runs or score histories.
 
 Useful commands:
 
 ```bash
 python3 docs/sejong/scripts/validate_json_contracts.py
 python3 docs/sejong/scripts/validate_bundle.py docs/sejong/examples/greenfield-full-flow
+python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets
 python3 docs/sejong/scripts/project_summary.py docs/sejong/examples/greenfield-full-flow --write
 ```

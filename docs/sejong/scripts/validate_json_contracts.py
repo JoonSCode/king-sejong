@@ -24,6 +24,8 @@ SCHEMA_FILES = {
     "consumer_feedback": SEJONG_ROOT / "codex-consumer-feedback.schema.json",
     "consumer_dry_run": SEJONG_ROOT / "consumer-dry-run-result.schema.json",
     "policy_defaults": SEJONG_ROOT / "policy.defaults.schema.json",
+    "validation_task_set": SEJONG_ROOT / "validation.task-set.schema.json",
+    "validation_scorecard": SEJONG_ROOT / "validation.scorecard.schema.json",
 }
 
 FORMAT_TO_SCHEMA = {
@@ -36,6 +38,8 @@ FORMAT_TO_SCHEMA = {
     "uigwe.codex-consumer-feedback/v0.2-draft": "consumer_feedback",
     "uigwe.consumer-dry-run-result/v0.1-draft": "consumer_dry_run",
     "uigwe.policy-defaults/v0.1-draft": "policy_defaults",
+    "uigwe.validation-task-set/v0.1-draft": "validation_task_set",
+    "uigwe.validation-scorecard/v0.1-draft": "validation_scorecard",
 }
 
 

@@ -1,0 +1,168 @@
+{
+  "format": "uigwe.validation-scorecard/v0.1-draft",
+  "metadata": {
+    "id": "uigwe-instruction-surface-scorecard",
+    "task_set_id": "uigwe-instruction-surface-task-set",
+    "generated_at": "2026-05-21T05:57:12Z",
+    "system_under_test": "sejong-uigwe",
+    "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
+  },
+  "aggregate": {
+    "scenario_count": 7,
+    "pass_count": 7,
+    "partial_count": 0,
+    "fail_count": 0,
+    "average_score": 1.0,
+    "meets_targets": true
+  },
+  "scenario_results": [
+    {
+      "scenario_id": "instruction-routing-modes",
+      "title": "Uigwe routing modes remain visible",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "routing_terms_present",
+          "passed": true,
+          "detail": "Uigwe trigger, non-trigger, and entry-mode terms remain visible in SKILL.md."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-live-session-gates",
+      "title": "Live-session gates remain protected",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "live_session_rules_present",
+          "passed": true,
+          "detail": "Live-session clarification and approval rules remain in SKILL.md."
+        },
+        {
+          "id": "readme_live_session_summary_present",
+          "passed": true,
+          "detail": "README still summarizes interactive live-session behavior."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-output-contract",
+      "title": "Canonical artifact contract remains visible",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "artifact_contract_present",
+          "passed": true,
+          "detail": "Canonical Uigwe output artifacts remain explicit."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-validation-benchmark",
+      "title": "Validation benchmark remains discoverable",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "validation_doc_contract_present",
+          "passed": true,
+          "detail": "VALIDATION.md defines baseline, scoring, benchmark, and dry-run expectations."
+        },
+        {
+          "id": "skill_names_validation_benchmark",
+          "passed": true,
+          "detail": "Uigwe SKILL.md points improvement work at the validation benchmark."
+        },
+        {
+          "id": "readme_names_validation_benchmark",
+          "passed": true,
+          "detail": "docs/sejong README exposes the validation benchmark command."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-sejong-boundary",
+      "title": "Sejong and Uigwe boundaries remain distinct",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "sejong_uigwe_boundary_present",
+          "passed": true,
+          "detail": "Sejong remains a router/front door and does not duplicate Uigwe packet rules."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-bounded-parallelism",
+      "title": "Bounded parallelism remains lead-owned",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "bounded_parallelism_present",
+          "passed": true,
+          "detail": "Parallelism remains optional, bounded, and lead-owned."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-compression-budget",
+      "title": "Skill files stay small enough to load",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "uigwe_skill_line_budget",
+          "passed": true,
+          "detail": "Uigwe SKILL.md line count is 265; budget is 320."
+        },
+        {
+          "id": "sejong_skill_line_budget",
+          "passed": true,
+          "detail": "Sejong SKILL.md line count is 34; budget is 90."
+        },
+        {
+          "id": "validation_detail_lives_in_reference",
+          "passed": true,
+          "detail": "Validation detail is routed to a reference document rather than expanded inline."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    }
+  ],
+  "notes": [
+    "This scorecard checks instruction-surface guardrails only.",
+    "It does not replace frozen planning benchmarks or consumer dry runs."
+  ]
+}

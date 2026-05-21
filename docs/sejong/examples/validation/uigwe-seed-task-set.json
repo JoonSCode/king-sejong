@@ -1,0 +1,299 @@
+{
+  "format": "uigwe.validation-task-set/v0.1-draft",
+  "metadata": {
+    "id": "uigwe-seed-task-set",
+    "title": "Uigwe Seed Planning Benchmark",
+    "purpose": "Compare Uigwe against lightweight and structured planning baselines across greenfield, brownfield, and mixed planning requests.",
+    "created_at": "2026-05-21"
+  },
+  "scenarios": [
+    {
+      "id": "gf-full-session-retro",
+      "title": "Greenfield retrospective assistant",
+      "profile": "greenfield",
+      "input_shape": "vague product goal",
+      "prompt": "Plan a lightweight web assistant that helps engineering teams run async sprint retrospectives.",
+      "expected_mode": "full",
+      "expected_artifacts": [
+        "intent.packet.json",
+        "design.packet.json",
+        "plan.packet.json",
+        "spec.md",
+        "rationale.md",
+        "goal-tree.json"
+      ],
+      "expected_behavior": [
+        "clarifies scope, non-goals, constraints, and acceptance criteria before design",
+        "compares at least two serious product approaches",
+        "produces executable leaves with verification steps"
+      ],
+      "forbidden_behavior": [
+        "silently inventing team workflow constraints",
+        "skipping live approval gates in an interactive context",
+        "marking vague feature ideas as executable leaves"
+      ],
+      "grading_notes": [
+        "Score design alternatives separately from decomposition quality.",
+        "Consumer readiness requires file scope or implementation scope clarity."
+      ]
+    },
+    {
+      "id": "gf-full-study-companion",
+      "title": "Greenfield Korean study companion",
+      "profile": "greenfield",
+      "input_shape": "vague app idea",
+      "prompt": "Plan an app that helps a Korean language learner practice spoken interview answers with feedback.",
+      "expected_mode": "full",
+      "expected_artifacts": [
+        "intent.packet.json",
+        "design.packet.json",
+        "plan.packet.json",
+        "spec.md",
+        "rationale.md",
+        "goal-tree.json"
+      ],
+      "expected_behavior": [
+        "separates learner goals from implementation guesses",
+        "names validation criteria for answer usefulness",
+        "keeps first version small enough to execute"
+      ],
+      "forbidden_behavior": [
+        "jumping straight to a full platform plan",
+        "using generic study-app tasks without interview-specific validation",
+        "claiming speech scoring quality without a validation plan"
+      ],
+      "grading_notes": [
+        "Look for strong non-goals and acceptance criteria.",
+        "A good plan should keep feedback quality measurable."
+      ]
+    },
+    {
+      "id": "gf-full-release-ops",
+      "title": "Greenfield release operations tracker",
+      "profile": "greenfield",
+      "input_shape": "ambiguous operations goal",
+      "prompt": "Plan a small release-ops tracker for app submissions, build uploads, reviewer notes, and follow-up tasks.",
+      "expected_mode": "full",
+      "expected_artifacts": [
+        "intent.packet.json",
+        "design.packet.json",
+        "plan.packet.json",
+        "spec.md",
+        "rationale.md",
+        "goal-tree.json"
+      ],
+      "expected_behavior": [
+        "clarifies source of truth and update cadence",
+        "compares manual-first and automation-first designs",
+        "produces leaves that can be implemented incrementally"
+      ],
+      "forbidden_behavior": [
+        "assuming App Store Connect API credentials exist",
+        "planning broad notification automation without approval boundaries",
+        "leaving verification as a nominal checklist"
+      ],
+      "grading_notes": [
+        "Integration assumptions should be explicit.",
+        "Brownfield-style verification clarity is useful even in a greenfield plan."
+      ]
+    },
+    {
+      "id": "gf-design-brief-to-plan",
+      "title": "Greenfield approved brief to design plan",
+      "profile": "greenfield",
+      "input_shape": "clear intent without selected design",
+      "prompt": "Given this brief: build a browser MVP for async interview practice with typed answers, score summaries, and saved sessions. Turn it into a plan.",
+      "expected_mode": "design-to-plan",
+      "expected_artifacts": [
+        "design.packet.json",
+        "plan.packet.json",
+        "spec.md",
+        "rationale.md",
+        "goal-tree.json"
+      ],
+      "expected_behavior": [
+        "validates that intent is sufficient before design exploration",
+        "compares implementation approaches before decomposition",
+        "does not require an intent packet unless readiness fails"
+      ],
+      "forbidden_behavior": [
+        "forcing a full interview despite sufficient intent",
+        "skipping design alternatives",
+        "decomposing before selecting a coherent approach"
+      ],
+      "grading_notes": [
+        "Wrong mode is acceptable only if justified by an explicit readiness failure.",
+        "The design packet is mandatory."
+      ]
+    },
+    {
+      "id": "gf-design-validation-dashboard",
+      "title": "Greenfield validation dashboard",
+      "profile": "greenfield",
+      "input_shape": "clear outcome and constraints",
+      "prompt": "Plan a simple dashboard that shows experiment signups, activation, and retention for a landing-page validation run.",
+      "expected_mode": "design-to-plan",
+      "expected_artifacts": [
+        "design.packet.json",
+        "plan.packet.json",
+        "spec.md",
+        "rationale.md",
+        "goal-tree.json"
+      ],
+      "expected_behavior": [
+        "keeps metrics definitions explicit",
+        "selects a low-cost first implementation",
+        "makes data-source assumptions visible"
+      ],
+      "forbidden_behavior": [
+        "inventing analytics events without naming assumptions",
+        "overbuilding a general BI platform",
+        "leaving dashboard verification to visual inspection only"
+      ],
+      "grading_notes": [
+        "Verification should include metric reconciliation.",
+        "Useful retained alternatives should differ in real cost or integration risk."
+      ]
+    },
+    {
+      "id": "bf-decompose-settings-flow",
+      "title": "Brownfield settings flow decomposition",
+      "profile": "brownfield",
+      "input_shape": "approved design artifact",
+      "prompt": "Decompose an approved design for refactoring an existing settings flow into smaller SwiftUI subviews without changing behavior.",
+      "expected_mode": "decompose-only",
+      "expected_artifacts": [
+        "plan.packet.json",
+        "spec.md",
+        "rationale.md",
+        "goal-tree.json"
+      ],
+      "expected_behavior": [
+        "checks that the design is approved enough for decomposition",
+        "requires explicit file scope and behavior-preservation verification",
+        "uses brownfield readiness thresholds"
+      ],
+      "forbidden_behavior": [
+        "redesigning the settings flow",
+        "creating product decisions during decomposition",
+        "omitting regression test or build verification"
+      ],
+      "grading_notes": [
+        "Leaf readiness should be strict.",
+        "File scope clarity matters more than option exploration."
+      ]
+    },
+    {
+      "id": "bf-decompose-docs-validator",
+      "title": "Brownfield docs validator decomposition",
+      "profile": "brownfield",
+      "input_shape": "approved technical design",
+      "prompt": "Decompose an approved design for adding cross-file validation to an existing documentation bundle validator.",
+      "expected_mode": "decompose-only",
+      "expected_artifacts": [
+        "plan.packet.json",
+        "spec.md",
+        "rationale.md",
+        "goal-tree.json"
+      ],
+      "expected_behavior": [
+        "keeps validator behavior and error taxonomy explicit",
+        "splits implementation, fixtures, and tests into executable leaves",
+        "does not reopen product strategy unless the design is contradictory"
+      ],
+      "forbidden_behavior": [
+        "changing schema scope without approval",
+        "combining all validator edits into one vague leaf",
+        "using examples as the only verification"
+      ],
+      "grading_notes": [
+        "A strong plan should include negative fixtures.",
+        "Bundle validation should be runnable after each important leaf."
+      ]
+    },
+    {
+      "id": "bf-decompose-ios-refactor",
+      "title": "Brownfield iOS refactor decomposition",
+      "profile": "brownfield",
+      "input_shape": "approved design and repo constraints",
+      "prompt": "Decompose an approved design to extract one UIKit table-view cell into a dedicated file while preserving current snapshot behavior.",
+      "expected_mode": "decompose-only",
+      "expected_artifacts": [
+        "plan.packet.json",
+        "spec.md",
+        "rationale.md",
+        "goal-tree.json"
+      ],
+      "expected_behavior": [
+        "names exact file scope",
+        "preserves existing domain and view-model boundaries",
+        "requires build and focused test verification"
+      ],
+      "forbidden_behavior": [
+        "introducing architectural refactors outside the approved design",
+        "assuming project-file edits when the target uses synchronized groups",
+        "leaving UI behavior verification implicit"
+      ],
+      "grading_notes": [
+        "The plan should resist broad cleanup.",
+        "A good leaf is small enough for one executor to own."
+      ]
+    },
+    {
+      "id": "bf-design-import-pipeline",
+      "title": "Brownfield import pipeline design",
+      "profile": "brownfield",
+      "input_shape": "clear intent with unresolved design choices",
+      "prompt": "Plan a brownfield change that adds CSV import validation to an existing data pipeline, with current parser and test fixtures already in place.",
+      "expected_mode": "design-to-plan",
+      "expected_artifacts": [
+        "design.packet.json",
+        "plan.packet.json",
+        "spec.md",
+        "rationale.md",
+        "goal-tree.json"
+      ],
+      "expected_behavior": [
+        "compares parser-extension and pre-validation approaches",
+        "keeps fixture and error-reporting behavior explicit",
+        "uses brownfield thresholds before decomposition"
+      ],
+      "forbidden_behavior": [
+        "assuming a new parser rewrite is allowed",
+        "skipping alternatives because implementation seems obvious",
+        "creating leaves without fixture expectations"
+      ],
+      "grading_notes": [
+        "Mode should be design-to-plan because implementation approach is not settled.",
+        "Retained alternatives should preserve integration tradeoffs."
+      ]
+    },
+    {
+      "id": "mixed-auto-router-upgrade",
+      "title": "Mixed auto router upgrade",
+      "profile": "mixed",
+      "input_shape": "broad Sejong improvement request",
+      "prompt": "Use Sejong to improve the router so it handles optional parallel research without turning every request into subagent work.",
+      "expected_mode": "auto",
+      "expected_artifacts": [
+        "mode decision",
+        "validation plan",
+        "implementation-ready scope"
+      ],
+      "expected_behavior": [
+        "starts with evidence or decision support if the change is not settled",
+        "routes to Uigwe only when a durable bundle is useful",
+        "preserves bounded parallelism and lead-owned gates"
+      ],
+      "forbidden_behavior": [
+        "using subagent agreement as approval",
+        "duplicating Uigwe packet rules in the Sejong router",
+        "forcing formal planning for a clear direct edit"
+      ],
+      "grading_notes": [
+        "This scenario checks Sejong routing around Uigwe, not only Uigwe output.",
+        "Score route choice separately from plan quality."
+      ]
+    }
+  ]
+}

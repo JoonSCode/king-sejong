@@ -1,0 +1,42 @@
+{
+  "format": "uigwe.validation-scorecard/v0.1-draft",
+  "metadata": {
+    "id": "uigwe-seed-scorecard-example",
+    "task_set_id": "uigwe-seed-task-set",
+    "generated_at": "2026-05-21T00:00:00Z",
+    "system_under_test": "uigwe",
+    "runner": "manual-example"
+  },
+  "aggregate": {
+    "scenario_count": 1,
+    "pass_count": 0,
+    "partial_count": 0,
+    "fail_count": 1,
+    "average_score": 0,
+    "meets_targets": false
+  },
+  "scenario_results": [
+    {
+      "scenario_id": "gf-full-session-retro",
+      "title": "Greenfield retrospective assistant",
+      "status": "fail",
+      "score": 0,
+      "checks": [
+        {
+          "id": "not_run",
+          "passed": false,
+          "detail": "Example placeholder; replace with an actual run scorecard."
+        }
+      ],
+      "blockers": [
+        "Scenario has not been run."
+      ],
+      "notes": [
+        "This sample exists to validate scorecard shape, not to claim benchmark results."
+      ]
+    }
+  ],
+  "notes": [
+    "This is a schema-valid example, not a benchmark result."
+  ]
+}

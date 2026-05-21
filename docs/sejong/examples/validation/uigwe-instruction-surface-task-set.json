@@ -1,0 +1,168 @@
+{
+  "format": "uigwe.validation-task-set/v0.1-draft",
+  "metadata": {
+    "id": "uigwe-instruction-surface-task-set",
+    "title": "Uigwe Instruction Surface Guardrail Benchmark",
+    "purpose": "Deterministically check that Uigwe and Sejong instructions preserve required contracts after documentation or skill edits.",
+    "created_at": "2026-05-21"
+  },
+  "scenarios": [
+    {
+      "id": "instruction-routing-modes",
+      "title": "Uigwe routing modes remain visible",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that the Uigwe skill still exposes trigger rules, non-trigger rules, and accepted modes.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        ".agents/skills/uigwe/SKILL.md"
+      ],
+      "expected_behavior": [
+        "auto, full, design-to-plan, and decompose-only are documented",
+        "Do Not Use When guidance remains visible"
+      ],
+      "forbidden_behavior": [
+        "mode names disappearing from the skill surface",
+        "planning being encouraged for direct execution tasks"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    },
+    {
+      "id": "instruction-live-session-gates",
+      "title": "Live-session gates remain protected",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that live Uigwe sessions still require clarification and approval gates.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        ".agents/skills/uigwe/SKILL.md",
+        "docs/sejong/README.md"
+      ],
+      "expected_behavior": [
+        "ambiguous briefs do not silently produce downstream packets",
+        "approval gates are not silently waived in live sessions"
+      ],
+      "forbidden_behavior": [
+        "offline benchmark waiver rules leaking into live sessions",
+        "one-shot packet generation from ambiguous live prompts"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    },
+    {
+      "id": "instruction-output-contract",
+      "title": "Canonical artifact contract remains visible",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that Uigwe still requires canonical planning artifacts instead of prose-only summaries.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        ".agents/skills/uigwe/SKILL.md"
+      ],
+      "expected_behavior": [
+        "Intent Packet, Design Packet, Plan Packet, spec.md, rationale.md, and goal-tree.json are named",
+        "prose-only completion is rejected"
+      ],
+      "forbidden_behavior": [
+        "treating a prose summary as a complete Uigwe bundle"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    },
+    {
+      "id": "instruction-validation-benchmark",
+      "title": "Validation benchmark remains discoverable",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that Uigwe improvement work points to the deterministic validation benchmark.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        "docs/sejong/VALIDATION.md",
+        ".agents/skills/uigwe/SKILL.md"
+      ],
+      "expected_behavior": [
+        "VALIDATION.md is named in the load order",
+        "benchmark_instruction_surface.py --write --require-targets is named for instruction changes"
+      ],
+      "forbidden_behavior": [
+        "claiming benchmark-gated improvement without a runnable benchmark"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    },
+    {
+      "id": "instruction-sejong-boundary",
+      "title": "Sejong and Uigwe boundaries remain distinct",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that Sejong routes into Uigwe without duplicating Uigwe packet rules.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        ".agents/skills/sejong/SKILL.md",
+        "docs/sejong/ROUTER.md"
+      ],
+      "expected_behavior": [
+        "Sejong is not a shim over another skill",
+        "formal planning routes through Uigwe"
+      ],
+      "forbidden_behavior": [
+        "duplicating Uigwe packet rules inside the router",
+        "weakening Uigwe live-session gates"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    },
+    {
+      "id": "instruction-bounded-parallelism",
+      "title": "Bounded parallelism remains lead-owned",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that Sejong parallelism remains bounded and lead-owned.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        ".agents/skills/sejong/SKILL.md",
+        "docs/sejong/ROUTER.md"
+      ],
+      "expected_behavior": [
+        "research and council fan-out are optional tactics",
+        "lead Sejong owns synthesis, routing, final decision, and final verification",
+        "Uigwe supports only preflight parallelism before gates"
+      ],
+      "forbidden_behavior": [
+        "subagent agreement treated as evidence or approval",
+        "always-on subagent swarming"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    },
+    {
+      "id": "instruction-compression-budget",
+      "title": "Skill files stay small enough to load",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that skill files remain thin wrappers over detailed docs.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        ".agents/skills/sejong/SKILL.md",
+        ".agents/skills/uigwe/SKILL.md"
+      ],
+      "expected_behavior": [
+        "skill files preserve routing and load-order pointers without absorbing every reference detail",
+        "detailed validation guidance lives in docs/sejong/VALIDATION.md"
+      ],
+      "forbidden_behavior": [
+        "expanding SKILL.md into a large duplicate of protocol docs"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    }
+  ]
+}

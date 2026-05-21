@@ -105,9 +105,10 @@ Read only what is needed, in this order:
 4. `../../../docs/sejong/SEUNGJEONGWON_EXECUTOR.md` when the user wants implementation and verification after planning
 5. `../../../docs/sejong/SCORING_AND_GATES.md` when you need numeric defaults or re-entry thresholds
 6. `../../../docs/sejong/BUNDLE_VALIDATOR.md` when you need bundle validation or report shape
-7. `../../../docs/sejong/SUMMARY_PROJECTION.md` when you need the human-facing summary projection
-8. `../../../docs/sejong/CODEX_CONSUMER.md` only if direct consumer handoff is requested or executor/consumer boundary text is changing
-9. `../../../docs/sejong/examples/README.md` only if you need reference examples
+7. `../../../docs/sejong/VALIDATION.md` when you need planning benchmark targets, scorecards, or promotion gates
+8. `../../../docs/sejong/SUMMARY_PROJECTION.md` when you need the human-facing summary projection
+9. `../../../docs/sejong/CODEX_CONSUMER.md` only if direct consumer handoff is requested or executor/consumer boundary text is changing
+10. `../../../docs/sejong/examples/README.md` only if you need reference examples
 
 ## When To Use
 
@@ -217,6 +218,8 @@ When the task is to improve Uigwe itself, keep the public skill surface small:
 
 - update the relevant contract doc first
 - update schemas and examples that depend on that contract
+- use `../../../docs/sejong/VALIDATION.md` for planning-method changes, instruction-surface regression checks, and promotion gates
+- run `python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets` for Uigwe or Sejong instruction-surface changes
 - validate JSON contracts and example bundles before claiming the change is ready
 - keep private evaluation corpora and score histories outside the installed package
 

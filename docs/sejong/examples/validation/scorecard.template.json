@@ -1,0 +1,42 @@
+{
+  "format": "uigwe.validation-scorecard/v0.1-draft",
+  "metadata": {
+    "id": "manual-scorecard-template",
+    "task_set_id": "uigwe-seed-task-set",
+    "generated_at": "2026-05-21T00:00:00Z",
+    "system_under_test": "uigwe",
+    "runner": "manual"
+  },
+  "aggregate": {
+    "scenario_count": 1,
+    "pass_count": 0,
+    "partial_count": 0,
+    "fail_count": 1,
+    "average_score": 0,
+    "meets_targets": false
+  },
+  "scenario_results": [
+    {
+      "scenario_id": "replace-with-scenario-id",
+      "title": "Replace with scenario title",
+      "status": "fail",
+      "score": 0,
+      "checks": [
+        {
+          "id": "mode_resolution",
+          "passed": false,
+          "detail": "Record whether the effective mode matched the scenario expectation."
+        }
+      ],
+      "blockers": [
+        "Replace with concrete blocker or remove after pass."
+      ],
+      "notes": [
+        "Record human edit distance, approval gate issues, and consumer-readiness notes."
+      ]
+    }
+  ],
+  "notes": [
+    "Copy this file per run. Do not edit the frozen task set while grading a candidate."
+  ]
+}

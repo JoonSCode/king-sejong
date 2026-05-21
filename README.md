@@ -113,7 +113,7 @@ What is included:
 - direct execution for clear implementation and verification work
 - `Seungjeongwon` native executor skill
 - Seungjeongwon execution contract
-- schema and example validation helpers
+- schema, bundle, and instruction-surface validation helpers
 - install and verify script for managed repo-local paths
 
 What is not included:
