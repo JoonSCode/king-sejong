@@ -5,25 +5,37 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  scripts/install-sejong.sh [--force] [--dry-run] [target-repo]
-  scripts/install-sejong.sh --verify [target-repo]
+  scripts/install-sejong.sh [--scope repo|user] [--force] [--dry-run] [target-repo]
+  scripts/install-sejong.sh --verify [--scope repo|user] [target-repo]
 
 Examples:
   scripts/install-sejong.sh /path/to/your-repo
   scripts/install-sejong.sh --force /path/to/your-repo
   scripts/install-sejong.sh --verify /path/to/your-repo
+  scripts/install-sejong.sh --scope user
+  scripts/install-sejong.sh --scope user --verify
+  CODEX_HOME=/path/to/codex-home scripts/install-sejong.sh --scope user --force
 
 Installs:
-  .agents/skills/sejong/
-  .agents/skills/uigwe/
-  .agents/skills/seungjeongwon/
-  docs/sejong/
+  repo scope:
+    .agents/skills/sejong/
+    .agents/skills/uigwe/
+    .agents/skills/seungjeongwon/
+    docs/sejong/
+  user scope:
+    ${CODEX_HOME:-~/.codex}/skills/sejong/
+    ${CODEX_HOME:-~/.codex}/skills/uigwe/
+    ${CODEX_HOME:-~/.codex}/skills/seungjeongwon/
+
+Source-only:
+  AGENTS.md is maintainer guidance for this source repository and is never installed.
 EOF
 }
 
 FORCE=0
 DRY_RUN=0
 VERIFY_ONLY=0
+SCOPE=repo
 TARGET_REPO="."
 
 while [[ $# -gt 0 ]]; do
@@ -44,6 +56,34 @@ while [[ $# -gt 0 ]]; do
       VERIFY_ONLY=1
       shift
       ;;
+    --scope)
+      if [[ $# -lt 2 ]]; then
+        echo "--scope requires one of: repo, project, user" >&2
+        exit 1
+      fi
+      case "$2" in
+        repo|project|local)
+          SCOPE=repo
+          ;;
+        user)
+          SCOPE=user
+          ;;
+        *)
+          echo "unsupported scope: $2" >&2
+          echo "expected one of: repo, project, user" >&2
+          exit 1
+          ;;
+      esac
+      shift 2
+      ;;
+    --repo|--project|--local)
+      SCOPE=repo
+      shift
+      ;;
+    --user)
+      SCOPE=user
+      shift
+      ;;
     *)
       TARGET_REPO=$1
       shift
@@ -53,20 +93,28 @@ done
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 SOURCE_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
+SOURCE_ONLY_PATHS=(
+  "AGENTS.md"
+)
 
-if [[ ! -d "$TARGET_REPO" ]]; then
-  echo "target repo does not exist: $TARGET_REPO" >&2
-  exit 1
-fi
+verify_source_only_paths_not_installed() {
+  local root=$1
+  local path
 
-TARGET_ROOT=$(cd "$TARGET_REPO" && pwd)
+  if [[ "$root" == "$SOURCE_ROOT" ]]; then
+    return
+  fi
 
-if [[ ! -d "$TARGET_ROOT/.git" && ! -f "$TARGET_ROOT/.git" ]]; then
-  echo "target is not a git repository: $TARGET_ROOT" >&2
-  exit 1
-fi
+  for path in "${SOURCE_ONLY_PATHS[@]}"; do
+    if [[ -f "$SOURCE_ROOT/$path" && -f "$root/$path" ]] && cmp -s "$SOURCE_ROOT/$path" "$root/$path"; then
+      echo "source-only file was copied into install target: $path" >&2
+      echo "King Sejong install should copy only managed skill and docs paths." >&2
+      exit 1
+    fi
+  done
+}
 
-verify_install() {
+verify_repo_install() {
   local root=$1
   local missing=0
   local required_paths=(
@@ -94,20 +142,45 @@ verify_install() {
     exit 1
   fi
 
-  echo "King Sejong install verified:"
+  verify_source_only_paths_not_installed "$root"
+
+  echo "King Sejong repo install verified:"
   echo "  $root"
 }
 
-if [[ "$VERIFY_ONLY" -eq 1 ]]; then
-  verify_install "$TARGET_ROOT"
-  exit 0
-fi
+verify_user_install() {
+  local root=$1
+  local missing=0
+  local required_paths=(
+    "skills/sejong/SKILL.md"
+    "skills/sejong/docs/README.md"
+    "skills/sejong/docs/ROUTER.md"
+    "skills/sejong/docs/PROMPT_OVERLAYS.md"
+    "skills/sejong/docs/PROTOCOL.md"
+    "skills/sejong/docs/SEUNGJEONGWON_EXECUTOR.md"
+    "skills/sejong/docs/BUNDLE_VALIDATOR.md"
+    "skills/sejong/docs/scripts/validate_json_contracts.py"
+    "skills/uigwe/SKILL.md"
+    "skills/seungjeongwon/SKILL.md"
+  )
 
-if [[ "$TARGET_ROOT" == "$SOURCE_ROOT" ]]; then
-  echo "King Sejong is already present in this repository."
-  verify_install "$TARGET_ROOT"
-  exit 0
-fi
+  for path in "${required_paths[@]}"; do
+    if [[ ! -e "$root/$path" ]]; then
+      echo "missing: $path" >&2
+      missing=1
+    fi
+  done
+
+  if [[ "$missing" -ne 0 ]]; then
+    echo "King Sejong user install verification failed: $root" >&2
+    exit 1
+  fi
+
+  verify_source_only_paths_not_installed "$root/skills"
+
+  echo "King Sejong user install verified:"
+  echo "  $root"
+}
 
 copy_dir() {
   local src=$1
@@ -142,21 +215,64 @@ copy_dir() {
   fi
 }
 
-copy_dir "$SOURCE_ROOT/.agents/skills/sejong" "$TARGET_ROOT/.agents/skills/sejong"
-copy_dir "$SOURCE_ROOT/.agents/skills/uigwe" "$TARGET_ROOT/.agents/skills/uigwe"
-copy_dir "$SOURCE_ROOT/.agents/skills/seungjeongwon" "$TARGET_ROOT/.agents/skills/seungjeongwon"
-copy_dir "$SOURCE_ROOT/docs/sejong" "$TARGET_ROOT/docs/sejong"
+rewrite_skill_doc_paths() {
+  local file=$1
+  local replacement=$2
+  local tmp_file
 
-if [[ "$DRY_RUN" -eq 1 ]]; then
-  echo "Dry run complete. No files were copied."
-  exit 0
-fi
+  if [[ ! -f "$file" ]]; then
+    echo "missing skill file for path rewrite: $file" >&2
+    exit 1
+  fi
 
-verify_install "$TARGET_ROOT"
+  tmp_file=$(mktemp "${file}.tmp.XXXXXX")
+  sed "s#\\.\\./\\.\\./\\.\\./docs/sejong/#$replacement#g" "$file" > "$tmp_file"
+  chmod 0644 "$tmp_file"
+  mv "$tmp_file" "$file"
+}
 
-cat <<EOF
-Installed King Sejong into:
-  $TARGET_ROOT
+install_repo_scope() {
+  local target_repo=$1
+  local target_root
+
+  if [[ ! -d "$target_repo" ]]; then
+    echo "target repo does not exist: $target_repo" >&2
+    exit 1
+  fi
+
+  target_root=$(cd "$target_repo" && pwd)
+
+  if [[ ! -d "$target_root/.git" && ! -f "$target_root/.git" ]]; then
+    echo "target is not a git repository: $target_root" >&2
+    exit 1
+  fi
+
+  if [[ "$VERIFY_ONLY" -eq 1 ]]; then
+    verify_repo_install "$target_root"
+    exit 0
+  fi
+
+  if [[ "$target_root" == "$SOURCE_ROOT" ]]; then
+    echo "King Sejong is already present in this repository."
+    verify_repo_install "$target_root"
+    exit 0
+  fi
+
+  copy_dir "$SOURCE_ROOT/.agents/skills/sejong" "$target_root/.agents/skills/sejong"
+  copy_dir "$SOURCE_ROOT/.agents/skills/uigwe" "$target_root/.agents/skills/uigwe"
+  copy_dir "$SOURCE_ROOT/.agents/skills/seungjeongwon" "$target_root/.agents/skills/seungjeongwon"
+  copy_dir "$SOURCE_ROOT/docs/sejong" "$target_root/docs/sejong"
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "Dry run complete. No files were copied."
+    exit 0
+  fi
+
+  verify_repo_install "$target_root"
+
+  cat <<EOF
+Installed King Sejong into repo:
+  $target_root
 
 Managed paths:
   .agents/skills/sejong/
@@ -169,3 +285,59 @@ Invoke with:
   \$uigwe <formal planning request>
   \$seungjeongwon <execution request>
 EOF
+}
+
+install_user_scope() {
+  local codex_home=${CODEX_HOME:-$HOME/.codex}
+  local skill_root="$codex_home/skills"
+
+  if [[ "$VERIFY_ONLY" -eq 1 ]]; then
+    verify_user_install "$codex_home"
+    exit 0
+  fi
+
+  copy_dir "$SOURCE_ROOT/.agents/skills/sejong" "$skill_root/sejong"
+  copy_dir "$SOURCE_ROOT/.agents/skills/uigwe" "$skill_root/uigwe"
+  copy_dir "$SOURCE_ROOT/.agents/skills/seungjeongwon" "$skill_root/seungjeongwon"
+  copy_dir "$SOURCE_ROOT/docs/sejong" "$skill_root/sejong/docs"
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "would rewrite repo-local doc paths for user-scope skill layout"
+    echo "Dry run complete. No files were copied."
+    exit 0
+  fi
+
+  rewrite_skill_doc_paths "$skill_root/sejong/SKILL.md" "docs/"
+  rewrite_skill_doc_paths "$skill_root/uigwe/SKILL.md" "../sejong/docs/"
+  rewrite_skill_doc_paths "$skill_root/seungjeongwon/SKILL.md" "../sejong/docs/"
+
+  verify_user_install "$codex_home"
+
+  cat <<EOF
+Installed King Sejong into Codex user scope:
+  $codex_home
+
+Managed paths:
+  skills/sejong/
+  skills/uigwe/
+  skills/seungjeongwon/
+
+Invoke from any Codex workspace with:
+  \$sejong <broad request>
+  \$uigwe <formal planning request>
+  \$seungjeongwon <execution request>
+EOF
+}
+
+case "$SCOPE" in
+  repo)
+    install_repo_scope "$TARGET_REPO"
+    ;;
+  user)
+    install_user_scope
+    ;;
+  *)
+    echo "unsupported scope: $SCOPE" >&2
+    exit 1
+    ;;
+esac

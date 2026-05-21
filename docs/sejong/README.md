@@ -11,14 +11,24 @@ Progress should be presented as approximate readiness such as `기획 준비도 
 
 ## Installed Layout
 
-The installer copies this whole contract surface into a target repository:
+The installer can copy this contract surface into either a target repository or a Codex user skill directory.
+
+Repo scope:
 
 - `.agents/skills/sejong/`
 - `.agents/skills/uigwe/`
 - `.agents/skills/seungjeongwon/`
 - `docs/sejong/`
 
-The skill files stay short by design. They load the detailed contracts from this directory only when needed.
+User scope under `${CODEX_HOME:-~/.codex}/skills`:
+
+- `sejong/`
+- `uigwe/`
+- `seungjeongwon/`
+
+In user scope, this docs tree is installed under `skills/sejong/docs/`, and the installed skill files are rewritten to load contracts from that user-scope docs copy.
+
+The skill files stay short by design. They load the detailed contracts from the installed Sejong docs only when needed.
 
 ## Start Here
 

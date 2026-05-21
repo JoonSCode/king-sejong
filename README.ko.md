@@ -6,11 +6,11 @@
 
 이 문서는 조선 말투로 적은 한글 안내서이옵니다. 말투는 옛스럽게 하였으나, 명령과 경로는 모두 지금 쓰는 참된 것이니 그대로 행하시면 되옵니다.
 
-King Sejong은 **Codex**와 Codex와 같은 repo-local skill 환경에 들이는 기술 꾸러미이옵니다.
+King Sejong은 **Codex**와 Codex와 같은 skill 환경에 들이는 기술 꾸러미이옵니다. 저장소 안에 들일 수도 있고, Codex 사용자 skill 길에 들여 여러 저장소에서 함께 쓸 수도 있사옵니다.
 
 한 에이전트에게 `$sejong`이라는 넓은 정문을 내려, 조사하고, 의논하여 정하고, 의궤로 기획하고, 승정원으로 실행하며, 검증하고, 실록처럼 증거를 남기게 하려는 물건이옵니다.
 
-이는 홀로 서는 CLI나 Python 패키지가 아니옵니다. 쓰고자 하는 저장소에 `.agents/skills`와 `docs/sejong` 문서를 함께 옮겨, Codex가 그 skill을 읽게 하는 방식이옵니다.
+이는 홀로 서는 CLI나 Python 패키지가 아니옵니다. 쓰고자 하는 저장소에 `.agents/skills`와 `docs/sejong` 문서를 함께 옮기거나, `${CODEX_HOME:-~/.codex}/skills`에 옮겨, Codex가 그 skill을 읽게 하는 방식이옵니다.
 
 ## 이름을 어찌 쓰리이까
 
@@ -42,6 +42,16 @@ Install King Sejong into this repository from https://github.com/JoonSCode/king-
 Run scripts/install-sejong.sh against the current repo, then verify the install with --verify.
 ```
 
+어느 저장소에서나 쓰는 Codex 사용자 범위에 들이고자 하면 이리 하시옵소서.
+
+```bash
+tmp=$(mktemp -d)
+git clone --depth 1 https://github.com/JoonSCode/king-sejong.git "$tmp/king-sejong"
+bash "$tmp/king-sejong/scripts/install-sejong.sh" --scope user
+bash "$tmp/king-sejong/scripts/install-sejong.sh" --scope user --verify
+rm -rf "$tmp"
+```
+
 ## 손수 들이는 법
 
 먼저 이 저장소를 받아오시옵소서.
@@ -64,32 +74,50 @@ bash scripts/install-sejong.sh --force /path/to/your-repo
 bash scripts/install-sejong.sh --verify /path/to/your-repo
 ```
 
-설치관이 옮기는 길은 이러하옵니다.
+Codex 사용자 범위에 들이고자 하면 이리 하시옵소서.
+
+```bash
+bash scripts/install-sejong.sh --scope user
+bash scripts/install-sejong.sh --scope user --verify
+```
+
+Codex 집이 `~/.codex`가 아니면 먼저 `CODEX_HOME`을 정하시옵소서.
+
+저장소 범위에서 설치관이 옮기는 길은 이러하옵니다.
 
 - `.agents/skills/sejong/`
 - `.agents/skills/uigwe/`
 - `.agents/skills/seungjeongwon/`
 - `docs/sejong/`
 
-이 네 길은 한 몸이니 흩지 마옵소서. Skill 문서는 짧게 두고, 자세한 법도와 문서는 `docs/sejong`에서 불러 보게 하였나이다.
+사용자 범위에서는 `${CODEX_HOME:-~/.codex}/skills` 아래 이 길을 옮기옵니다.
+
+- `sejong/`
+- `uigwe/`
+- `seungjeongwon/`
+
+사용자 범위에서는 함께 쓰는 Sejong 문서를 `skills/sejong/docs/` 아래 두고, 설치된 skill 파일들이 그 문서를 읽도록 길을 고쳐 두옵니다.
+
+각 범위의 길은 한 몸이니 흩지 마옵소서. Skill 문서는 짧게 두고, 자세한 법도와 문서는 함께 설치된 Sejong 문서에서 불러 보게 하였나이다.
 
 ## 어느 곳에서 쓰나이까
 
-King Sejong은 Codex repo-local skill로 나누는 물건이옵니다. npm, Python 패키지, 홀로 서는 CLI가 아니옵니다.
+King Sejong은 Codex skill로 나누는 물건이옵니다. npm, Python 패키지, 홀로 서는 CLI가 아니옵니다.
 
 | 자리 | 됨됨이 | 비고 |
 | --- | --- | --- |
-| repo-local `.agents/skills`를 읽는 Codex | 받듦 | 으뜸 대상이옵니다. |
+| repo-local `.agents/skills`를 읽는 Codex | 받듦 | 저장소마다 다른 법도에 맞출 때 으뜸이옵니다. |
+| 사용자 범위 `${CODEX_HOME:-~/.codex}/skills`를 읽는 Codex | 받듦 | `$sejong`, `$uigwe`, `$seungjeongwon`을 여러 저장소에서 함께 쓰고자 할 때 쓰시옵소서. |
 | `.agents/skills`와 repo 문서를 읽는 Codex식 환경 | 가히 될 수 있음 | 같은 길을 설치하고 그 자리에서 검증하옵소서. |
 | OpenCode, Claude Code, Gemini CLI, Cursor | 아직 꾸러미 아님 | 각자의 plugin/extension 법도에 맞춘 어댑터가 따로 필요하옵니다. |
 
 ## Codex와 실행
 
-이 꾸러미는 Codex식 repo-local skill을 위하여 만들었사옵니다.
+이 꾸러미는 Codex식 skill을 위하여 만들었사옵니다.
 
-- Codex는 `$sejong`에 `.agents/skills/sejong/SKILL.md`를 읽사옵니다.
-- Codex는 `$uigwe`에 `.agents/skills/uigwe/SKILL.md`를 읽사옵니다.
-- Codex는 `$seungjeongwon`에 `.agents/skills/seungjeongwon/SKILL.md`를 읽사옵니다.
+- 저장소 범위에서는 Codex가 `$sejong`에 `.agents/skills/sejong/SKILL.md`를 읽사옵니다.
+- 사용자 범위에서는 Codex가 `$sejong`에 `${CODEX_HOME:-~/.codex}/skills/sejong/SKILL.md`를 읽사옵니다.
+- `$uigwe`와 `$seungjeongwon`도 같은 범위 안에 함께 들사옵니다.
 - 일이 분명하면 Sejong이 의궤를 열지 않고 곧장 실행하옵니다.
 - 실행 뒤에는 검증과 증거를 남기는 계약을 문서로 두었사옵니다.
 

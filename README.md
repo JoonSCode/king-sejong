@@ -4,13 +4,13 @@
 
 [Korean, Joseon-style](README.ko.md)
 
-King Sejong is an all-in-one repo-local skill bundle for **Codex** and Codex-style agent environments.
+King Sejong is an all-in-one skill bundle for **Codex** and Codex-style agent environments. It can be installed repo-locally or into a Codex user skill directory.
 
 It gives an agent one broad front door, `$sejong`, for moving from research to decision, planning, execution, verification, and evidence recording.
 
 Uigwe is the formal planning protocol behind that front door. Sejong routes into Uigwe only when a durable planning bundle is useful, then continues to execution and verification when the user asked for an outcome rather than a plan artifact.
 
-This is not a standalone CLI or Python package. It is meant to be copied into a target repository so Codex can load the installed `.agents/skills` files.
+This is not a standalone CLI or Python package. It is meant to be copied into a target repository or into `${CODEX_HOME:-~/.codex}/skills` so Codex can load the installed skill files.
 
 ## Naming
 
@@ -44,6 +44,16 @@ Install King Sejong into this repository from https://github.com/JoonSCode/king-
 Run scripts/install-sejong.sh against the current repo, then verify the install with --verify.
 ```
 
+For Codex user scope, available from any workspace:
+
+```bash
+tmp=$(mktemp -d)
+git clone --depth 1 https://github.com/JoonSCode/king-sejong.git "$tmp/king-sejong"
+bash "$tmp/king-sejong/scripts/install-sejong.sh" --scope user
+bash "$tmp/king-sejong/scripts/install-sejong.sh" --scope user --verify
+rm -rf "$tmp"
+```
+
 ## Manual Install
 
 Clone this repository, then install the bundle into the repository where you want to use it:
@@ -66,22 +76,40 @@ To check an existing install without copying files:
 bash scripts/install-sejong.sh --verify /path/to/your-repo
 ```
 
-The installer copies these managed paths into the target repository:
+To install into the current Codex user scope instead:
+
+```bash
+bash scripts/install-sejong.sh --scope user
+bash scripts/install-sejong.sh --scope user --verify
+```
+
+Set `CODEX_HOME` first if your Codex home is not `~/.codex`.
+
+Repo scope copies these managed paths into the target repository:
 
 - `.agents/skills/sejong/`
 - `.agents/skills/uigwe/`
 - `.agents/skills/seungjeongwon/`
 - `docs/sejong/`
 
-Keep those paths together. The skills are intentionally small and load their routing, planning, schema, and handoff contracts from `docs/sejong`.
+User scope copies these managed paths into `${CODEX_HOME:-~/.codex}/skills`:
+
+- `sejong/`
+- `uigwe/`
+- `seungjeongwon/`
+
+In user scope, shared Sejong docs are installed under `skills/sejong/docs/`, and the installed skill files are rewritten to load those docs from the user skill tree.
+
+Keep each scope's managed paths together. The skills are intentionally small and load their routing, planning, schema, and handoff contracts from the installed Sejong docs.
 
 ## Compatibility
 
-King Sejong is distributed as repo-local Codex skills, not as an npm package, Python package, or standalone CLI.
+King Sejong is distributed as Codex skills, not as an npm package, Python package, or standalone CLI.
 
 | Host | Support | Notes |
 | --- | --- | --- |
-| Codex with repo-local `.agents/skills` | Supported | Primary target. |
+| Codex with repo-local `.agents/skills` | Supported | Primary target for repository-specific use. |
+| Codex with user-scope `${CODEX_HOME:-~/.codex}/skills` | Supported | Use when you want `$sejong`, `$uigwe`, and `$seungjeongwon` available across workspaces. |
 | Codex-style hosts that read `.agents/skills` and repo docs | Possible | Install the same managed paths and verify behavior in that host. |
 | OpenCode, Claude Code, Gemini CLI, Cursor | Not packaged yet | Their plugin/extension formats need separate adapters. |
 
@@ -89,11 +117,11 @@ If you use several agent harnesses, install King Sejong separately for each harn
 
 ## Codex And Execution
 
-This package is explicitly for Codex-style repo-local skills:
+This package is explicitly for Codex-style skills:
 
-- Codex loads `.agents/skills/sejong/SKILL.md` for `$sejong`.
-- Codex loads `.agents/skills/uigwe/SKILL.md` for `$uigwe`.
-- Codex loads `.agents/skills/seungjeongwon/SKILL.md` for `$seungjeongwon`.
+- In repo scope, Codex loads `.agents/skills/sejong/SKILL.md` for `$sejong`.
+- In user scope, Codex loads `${CODEX_HOME:-~/.codex}/skills/sejong/SKILL.md` for `$sejong`.
+- The same scope contains `$uigwe` and `$seungjeongwon`.
 - Codex can execute clear tasks directly through Sejong when formal planning is not needed.
 - The docs include Codex consumer contracts for downstream execution feedback.
 
@@ -114,7 +142,7 @@ What is included:
 - `Seungjeongwon` native executor skill
 - Seungjeongwon execution contract
 - schema, bundle, and instruction-surface validation helpers
-- install and verify script for managed repo-local paths
+- install and verify script for managed repo-local and Codex user-scope paths
 
 What is not included:
 
