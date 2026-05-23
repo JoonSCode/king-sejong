@@ -44,6 +44,10 @@ sillok-record.jsonl
 
 The context checkpoint should follow `docs/sejong/king-sejong-context.schema.json`. It is the shared runtime state for hooks, native subagents, TeamExecutor workers, Seungjeongwon execution feedback, and Sillok evidence refs.
 
+Sillok trace events should follow `docs/sejong/sillok-trace-event.schema.json`.
+Use [SILLOK_TRACE.md](SILLOK_TRACE.md) for the JSONL event contract and security
+review rules.
+
 Team worker coordination state should be stored under:
 
 ```text

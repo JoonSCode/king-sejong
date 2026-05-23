@@ -1,0 +1,17 @@
+{
+  "active_context_id": "ctx-example",
+  "created_at": "2026-05-24T00:00:00Z",
+  "event_id": "event-security-review-example",
+  "event_kind": "security_review",
+  "format": "sejong.sillok-trace-event/v0.1-draft",
+  "human_approval_ref": null,
+  "refs": [
+    "docs/sejong/SECURITY.md"
+  ],
+  "risk_flags": [
+    "untrusted_content"
+  ],
+  "run_id": "example-run",
+  "summary": "External research source was treated as untrusted and only used as evidence after attribution.",
+  "surface": "jangyeongsil"
+}

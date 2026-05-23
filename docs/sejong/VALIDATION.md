@@ -45,6 +45,19 @@ Examples:
 
 ## What To Measure
 
+### Sejong-Level Metrics
+
+- `route_sequence_accuracy`: did Sejong choose the expected surface chain or an explicitly acceptable alternative?
+- `overplanning_rate`: how often did Sejong invoke Uigwe or teams for direct tasks?
+- `missed_research_rate`: how often did Sejong decide or execute before gathering required evidence?
+- `decision_quality`: did Jiphyeonjeon compare serious options, reject weaker ones, and name a defensible next surface?
+- `execution_success_rate`: did Seungjeongwon complete executable leaves with reproducible verification evidence?
+- `guardrail_violation_count`: did workers, hooks, or direct edits violate lead-owned gates, final synthesis, or protected paths?
+- `continuity_preservation_rate`: did follow-up turns, pending gates, and compacted context keep the active Sejong workflow intact?
+- `artifact_hygiene_rate`: did runtime artifacts stay under the Sejong artifact root unless explicitly promoted?
+- `tokens_per_successful_scenario`: how many tokens were spent per passing scenario?
+- `quality_delta_per_1k_tokens`: how much benchmark score improved for each additional 1,000 tokens.
+
 ### Core Metrics
 
 - `mode_resolution_accuracy`: did Uigwe choose or recover to the correct effective mode?
@@ -94,7 +107,9 @@ Run these when changing active context checkpoints, hooks, TeamExecutor authorit
 
 ```bash
 python3 docs/sejong/scripts/test_king_sejong_hooks.py
+python3 docs/sejong/scripts/test_sejong_context.py
 python3 docs/sejong/scripts/test_team_executor.py
+python3 docs/sejong/scripts/test_sillok_trace.py
 SEJONG_HOME="$(mktemp -d)" python3 docs/sejong/scripts/test_king_sejong_e2e.py
 ```
 
@@ -109,11 +124,29 @@ Expected red tests before implementation:
 Expected green behavior:
 
 - `UserPromptSubmit` injects active context
+- `sejong_context.py` can start, update, diagnose, and close the active context pointer without writing runtime state into the target repository
 - `PreToolUse` and `PermissionRequest` guard protected paths
 - `SubagentStop` rejects gate and final-authority claims
 - `Stop` continues when verification gates remain
 - TeamExecutor invalid authority fixtures fail for the expected reason
+- Sillok trace events reject private-data, untrusted-content, external-action combinations without a human approval ref
 - runtime artifacts stay under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`
+
+### Phase 2C: Sejong Surface Seed Benchmark
+
+Run this when changing Sejong routing, active-session behavior, TeamExecutor guidance, hooks, Seungjeongwon handoff behavior, validation scorecards, or evaluation docs:
+
+```bash
+python3 docs/sejong/scripts/benchmark_sejong_surface.py --require-targets
+```
+
+Use `--write` only when intentionally refreshing the deterministic scorecard artifacts:
+
+```bash
+python3 docs/sejong/scripts/benchmark_sejong_surface.py --write --require-targets
+```
+
+This benchmark does not call an LLM. It validates that `examples/validation/sejong-seed-task-set.json` remains a complete, gradeable Sejong-level scenario set with route sequences, acceptable alternatives, forbidden surfaces, guardrail expectations, observable artifacts, and resource budgets.
 
 ### Phase 3: Frozen Planning Benchmark
 
@@ -153,6 +186,24 @@ Record the result with:
 
 Do not claim full consumer readiness from a limited dry run. Use it to expose whether leaves are actually executable.
 
+### Phase 6: Scorecard Comparison
+
+Compare a baseline scorecard and candidate scorecard before promoting a Sejong or Uigwe behavior change:
+
+```bash
+python3 docs/sejong/scripts/compare_scorecards.py <baseline.scorecard.json> <candidate.scorecard.json> --require-non-regression
+```
+
+When the scorecards include `resource_usage`, review:
+
+- `quality_delta`
+- `token_ratio`
+- `cost_ratio`
+- `cost_normalized_gain`
+- scenario-level regressions
+
+Token and cost deltas are secondary metrics. They should not hide a real quality improvement, but a candidate that spends substantially more tokens without score gains should not be promoted by default.
+
 ## Recommended Promotion Gates
 
 Do not promote a planning-method change unless the frozen benchmark and shadow runs meet these first-pass targets:
@@ -166,6 +217,10 @@ Do not promote a planning-method change unless the frozen benchmark and shadow r
 - `approval_gate_violation_count == 0`
 - `unnecessary_reentry_rate <= 0.15`
 - `median_human_edit_distance` improves over Baseline B
+- Sejong surface benchmark has no partial or failing scenarios
+- scorecard comparison has no scenario-level regressions for protected guardrail scenarios
+- if `token_ratio > 1.25`, require either `quality_delta >= 0.10` or an explicit overhead justification
+- if `token_ratio > 1.50` and `quality_delta < 0.05`, hold the change for redesign
 
 These are initial targets, not permanent truth.
 
@@ -202,9 +257,13 @@ This validation pack includes:
 - this plan
 - task-set and scorecard schemas
 - a seed frozen planning task set
+- a seed Sejong surface task set
 - an instruction-surface task set
 - a scorecard template
 - a deterministic instruction-surface benchmark runner
+- a deterministic Sejong surface benchmark runner
+- a scorecard comparison helper with token and cost deltas
+- a Sillok trace-event schema for evidence, verification, handoff, and security-review records
 - King Sejong hook, TeamExecutor, and end-to-end guardrail tests
 - a run output directory for benchmark scorecards
 

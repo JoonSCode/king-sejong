@@ -14,10 +14,20 @@ The reference implementation is:
 python3 docs/sejong/scripts/king_sejong_hooks.py <event-name> --context <context.json>
 ```
 
+Active context checkpoints can be created, updated, diagnosed, and closed with:
+
+```bash
+python3 docs/sejong/scripts/sejong_context.py start --repo-root .
+python3 docs/sejong/scripts/sejong_context.py update --append-route seungjeongwon --add-pending-gate verification
+python3 docs/sejong/scripts/sejong_context.py doctor --repo-root .
+python3 docs/sejong/scripts/sejong_context.py close
+```
+
 The reference tests are:
 
 ```bash
 python3 docs/sejong/scripts/test_king_sejong_hooks.py
+python3 docs/sejong/scripts/test_sejong_context.py
 SEJONG_HOME="$(mktemp -d)" python3 docs/sejong/scripts/test_king_sejong_e2e.py
 ```
 
@@ -58,6 +68,10 @@ Required state includes:
 
 - Keep follow-up turns inside the active King Sejong workflow unless the user explicitly exits.
 - Add model-visible context with the active context id, route id, current surface, route sequence, and pending gates.
+
+`sejong_context.py` writes the same checkpoint to both the active pointer under
+`${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json` and
+the repository-scoped run directory. Hooks read the active pointer by default.
 
 `PreToolUse`
 

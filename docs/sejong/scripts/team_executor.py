@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import os
 import subprocess
@@ -39,6 +40,8 @@ FORBIDDEN_WORKER_AUTHORITY_TERMS = (
     "by majority",
     "consensus approves",
 )
+
+GLOB_CHARS = "*?["
 
 
 def now_utc() -> str:
@@ -94,6 +97,57 @@ def parse_assignment(value: str) -> tuple[str, str]:
     if not key or not assigned:
         raise argparse.ArgumentTypeError("assignment must be worker_id=value")
     return key, assigned
+
+
+def normalize_scope(scope: str) -> str:
+    normalized = scope.strip().replace("\\", "/")
+    while normalized.startswith("./"):
+        normalized = normalized[2:]
+    normalized = normalized.rstrip("/")
+    return normalized or "."
+
+
+def is_glob_scope(scope: str) -> bool:
+    return any(char in scope for char in GLOB_CHARS)
+
+
+def literal_scope_prefix(scope: str) -> str:
+    normalized = normalize_scope(scope)
+    first_glob = min((normalized.find(char) for char in GLOB_CHARS if char in normalized), default=-1)
+    if first_glob == -1:
+        return normalized
+    prefix = normalized[:first_glob]
+    if "/" in prefix:
+        prefix = prefix.rsplit("/", 1)[0]
+    return prefix.rstrip("/") or "."
+
+
+def path_prefixes_overlap(left: str, right: str) -> bool:
+    left = normalize_scope(left)
+    right = normalize_scope(right)
+    if left == "." or right == ".":
+        return True
+    return left == right or left.startswith(right + "/") or right.startswith(left + "/")
+
+
+def scope_matches(pattern: str, target: str) -> bool:
+    pattern = normalize_scope(pattern)
+    target = normalize_scope(target)
+    return fnmatch.fnmatchcase(target, pattern) or path_prefixes_overlap(literal_scope_prefix(pattern), target)
+
+
+def scopes_overlap(left: str, right: str) -> bool:
+    left = normalize_scope(left)
+    right = normalize_scope(right)
+    left_is_glob = is_glob_scope(left)
+    right_is_glob = is_glob_scope(right)
+    if not left_is_glob and not right_is_glob:
+        return path_prefixes_overlap(left, right)
+    if left_is_glob and not right_is_glob:
+        return scope_matches(left, right)
+    if right_is_glob and not left_is_glob:
+        return scope_matches(right, left)
+    return path_prefixes_overlap(literal_scope_prefix(left), literal_scope_prefix(right))
 
 
 def team_path(run_dir: Path) -> Path:
@@ -306,11 +360,21 @@ def acquire_lease(args: argparse.Namespace) -> int:
         raise SystemExit(f"unknown worker: {args.worker_id}")
     leases = load_json(leases_path(run_dir))
     active = [lease for lease in leases.get("leases", []) if lease.get("status") == "active"]
-    requested = set(args.scope)
+    requested = [normalize_scope(scope) for scope in args.scope]
     for lease in active:
-        overlap = requested.intersection(set(lease.get("scopes", [])))
-        if overlap and lease.get("worker_id") != args.worker_id:
-            raise SystemExit(f"lease conflict on {sorted(overlap)} with {lease.get('worker_id')}")
+        if lease.get("worker_id") == args.worker_id:
+            continue
+        existing_scopes = [normalize_scope(scope) for scope in lease.get("scopes", [])]
+        overlaps = sorted(
+            {
+                f"{requested_scope} overlaps {existing_scope}"
+                for requested_scope in requested
+                for existing_scope in existing_scopes
+                if scopes_overlap(requested_scope, existing_scope)
+            }
+        )
+        if overlaps:
+            raise SystemExit(f"lease conflict with {lease.get('worker_id')}: {', '.join(overlaps)}")
 
     lease_id = args.lease_id or f"lease-{args.worker_id}-{len(leases.get('leases', [])) + 1}"
     leases.setdefault("leases", []).append(
@@ -426,10 +490,14 @@ def check_run(args: argparse.Namespace) -> int:
         if lease.get("status") != "active":
             continue
         for scope in lease.get("scopes", []):
-            owner = active.get(scope)
-            if owner and owner != lease.get("worker_id"):
-                failures.append(f"active lease conflict on {scope}: {owner} and {lease.get('worker_id')}")
-            active[scope] = lease.get("worker_id", "")
+            normalized_scope = normalize_scope(scope)
+            for active_scope, owner in active.items():
+                if owner != lease.get("worker_id") and scopes_overlap(normalized_scope, active_scope):
+                    failures.append(
+                        f"active lease conflict on {normalized_scope} and {active_scope}: "
+                        f"{owner} and {lease.get('worker_id')}"
+                    )
+            active[normalized_scope] = lease.get("worker_id", "")
 
     if failures:
         for failure in failures:

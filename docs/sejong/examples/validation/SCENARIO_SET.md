@@ -27,4 +27,32 @@
 - `instruction-sejong-self-modification`
 - `instruction-artifact-storage`
 - `instruction-repo-context-refresh`
+- `instruction-sillok-security-trace`
 - `instruction-compression-budget`
+
+## Sejong Surface Seed Scenarios
+
+- `route-evidence-only-history`: evidence-only request routes to `JangYeongsil`
+- `route-option-comparison`: option comparison routes to `Jiphyeonjeon`
+- `route-vague-product-plan`: vague planning routes to Uigwe `full`
+- `route-approved-bundle-execution`: validated bundle routes to `Seungjeongwon`
+- `route-clear-direct-task`: exact verification stays `Sejong direct`
+- `route-material-self-modification`: protected validation change uses Jiphyeonjeon -> Uigwe -> Seungjeongwon
+- `repo-context-refresh-candidate-first`: repo instruction refresh is candidate-diff first
+- `research-stale-external-facts`: time-sensitive research requires current sources
+- `research-repo-fanout`: repo research fan-out remains bounded
+- `decision-skill-plugin-boundary`: skill/plugin boundary decision stays evidence-backed
+- `decision-expansion-roi`: expansion requires concrete ROI
+- `planning-greenfield-full`: Sejong routes vague planning to Uigwe `full`
+- `planning-design-to-plan`: clear intent routes to Uigwe `design-to-plan`
+- `planning-decompose-only`: approved design routes to Uigwe `decompose-only`
+- `execution-small-doc-fix`: small approved doc fix avoids planning overhead
+- `execution-validated-leaf`: executable leaf completes with verification
+- `team-jiphyeonjeon-challenge-round`: team challenge stays lead-owned
+- `team-execution-disjoint-leases`: parallel execution requires disjoint leases
+- `hook-protected-path-route-gate`: protected path edit requires route evidence
+- `hook-subagent-final-claim`: subagent final-authority claim is rejected
+- `continuity-follow-up-same-workflow`: follow-up remains inside active Sejong workflow
+- `continuity-compaction-pending-gate`: compaction preserves pending gates
+- `chain-research-plan-execute-record`: end-to-end chain records evidence
+- `efficiency-direct-overhead-budget`: direct task token overhead stays bounded

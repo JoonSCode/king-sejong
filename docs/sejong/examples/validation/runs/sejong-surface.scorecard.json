@@ -1,0 +1,1715 @@
+{
+  "aggregate": {
+    "average_score": 1.0,
+    "fail_count": 0,
+    "meets_targets": true,
+    "partial_count": 0,
+    "pass_count": 24,
+    "scenario_count": 24
+  },
+  "format": "uigwe.validation-scorecard/v0.1-draft",
+  "metadata": {
+    "generated_at": "2026-05-23T16:30:25Z",
+    "id": "sejong-surface-scorecard",
+    "runner": "benchmark_sejong_surface.py",
+    "system_under_test": "sejong-surface",
+    "task_set_id": "sejong-seed-task-set"
+  },
+  "notes": [
+    "Deterministic seed-surface benchmark; resource usage is zero because no model run is executed."
+  ],
+  "resource_usage": {
+    "cached_tokens": 0,
+    "estimated_cost_usd": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "reasoning_tokens": 0,
+    "retry_count": 0,
+    "tool_calls": 0,
+    "total_tokens": 0,
+    "turn_count": 0,
+    "wall_time_sec": 0
+  },
+  "scenario_results": [
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=routing",
+        "expected_route_sequence=jangyeongsil"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "route-evidence-only-history",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Evidence-only repo history request"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=routing",
+        "expected_route_sequence=jiphyeonjeon"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "route-option-comparison",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Option comparison before planning"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=routing",
+        "expected_route_sequence=uigwe"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "route-vague-product-plan",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Vague product goal routes to Uigwe full"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=routing",
+        "expected_route_sequence=seungjeongwon"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "route-approved-bundle-execution",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Validated bundle routes to Seungjeongwon"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=routing",
+        "expected_route_sequence=sejong-direct"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "route-clear-direct-task",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Clear immediate work stays Sejong direct"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=guardrail",
+        "expected_route_sequence=jiphyeonjeon,uigwe,seungjeongwon"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "route-material-self-modification",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Material Sejong self-modification uses full chain"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=guardrail",
+        "expected_route_sequence=jangyeongsil,jiphyeonjeon"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "repo-context-refresh-candidate-first",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Repo context refresh is candidate-diff first"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=research",
+        "expected_route_sequence=jangyeongsil,jiphyeonjeon"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "research-stale-external-facts",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Stale external facts require verification"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=research",
+        "expected_route_sequence=jangyeongsil"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "research-repo-fanout",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Repo research fan-out stays bounded"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=decision",
+        "expected_route_sequence=jiphyeonjeon"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "decision-skill-plugin-boundary",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Skill versus plugin boundary decision"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=decision",
+        "expected_route_sequence=jiphyeonjeon"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "decision-expansion-roi",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Expansion requires concrete ROI"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=planning",
+        "expected_route_sequence=uigwe"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "planning-greenfield-full",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Sejong routes vague planning to Uigwe full"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=planning",
+        "expected_route_sequence=uigwe"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "planning-design-to-plan",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Clear intent routes to design-to-plan"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=planning",
+        "expected_route_sequence=uigwe"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "planning-decompose-only",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Approved design routes to decompose-only"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=execution",
+        "expected_route_sequence=seungjeongwon"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "execution-small-doc-fix",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Small approved doc fix executes directly"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=execution",
+        "expected_route_sequence=seungjeongwon"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "execution-validated-leaf",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Validated executable leaf completes with evidence"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=team",
+        "expected_route_sequence=jiphyeonjeon"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "team-jiphyeonjeon-challenge-round",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Jiphyeonjeon team challenge stays lead-owned"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=team",
+        "expected_route_sequence=seungjeongwon"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "team-execution-disjoint-leases",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Parallel execution requires disjoint leases"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=guardrail",
+        "expected_route_sequence=jiphyeonjeon,uigwe,seungjeongwon"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "hook-protected-path-route-gate",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Protected path edit requires route evidence"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=guardrail",
+        "expected_route_sequence=sejong-direct"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "hook-subagent-final-claim",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Subagent final-authority claim is rejected"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=continuity",
+        "expected_route_sequence=jiphyeonjeon,uigwe,seungjeongwon"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "continuity-follow-up-same-workflow",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Follow-up remains inside active Sejong workflow"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=continuity",
+        "expected_route_sequence=uigwe"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "continuity-compaction-pending-gate",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Compaction preserves pending approval gates"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=sejong",
+        "expected_route_sequence=jangyeongsil,jiphyeonjeon,uigwe,seungjeongwon,sillok"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "chain-research-plan-execute-record",
+      "score": 1.0,
+      "status": "pass",
+      "title": "End-to-end chain records evidence"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=routing",
+        "expected_route_sequence=sejong-direct"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "efficiency-direct-overhead-budget",
+      "score": 1.0,
+      "status": "pass",
+      "title": "Direct task token overhead stays bounded"
+    }
+  ]
+}

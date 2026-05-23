@@ -25,9 +25,12 @@ VALIDATION_PATH = SEJONG_ROOT / "VALIDATION.md"
 ARTIFACT_STORAGE_PATH = SEJONG_ROOT / "ARTIFACT_STORAGE.md"
 TEAM_EXECUTOR_PATH = SEJONG_ROOT / "TEAM_EXECUTOR.md"
 HOOKS_PATH = SEJONG_ROOT / "HOOKS.md"
+SECURITY_PATH = SEJONG_ROOT / "SECURITY.md"
+SILLOK_TRACE_PATH = SEJONG_ROOT / "SILLOK_TRACE.md"
 CONTEXT_SCHEMA_PATH = SEJONG_ROOT / "king-sejong-context.schema.json"
 CONTEXT_EXAMPLE_PATH = SEJONG_ROOT / "examples" / "king-sejong-context.example.json"
 HOOK_SCRIPT_PATH = SEJONG_ROOT / "scripts" / "king_sejong_hooks.py"
+SILLOK_TRACE_SCRIPT_PATH = SEJONG_ROOT / "scripts" / "sillok_trace.py"
 
 UIGWE_SKILL_LINE_BUDGET = 320
 SEJONG_SKILL_LINE_BUDGET = 90
@@ -45,6 +48,7 @@ SCENARIO_IDS = (
     "instruction-sejong-self-modification",
     "instruction-artifact-storage",
     "instruction-repo-context-refresh",
+    "instruction-sillok-security-trace",
     "instruction-compression-budget",
 )
 
@@ -55,6 +59,7 @@ REQUIRED_GUARDRAIL_SCENARIOS = {
     "instruction-sejong-self-modification",
     "instruction-artifact-storage",
     "instruction-repo-context-refresh",
+    "instruction-sillok-security-trace",
 }
 
 
@@ -341,6 +346,30 @@ def evaluate_repo_context_refresh() -> list[dict[str, Any]]:
     ]
 
 
+def evaluate_sillok_security_trace() -> list[dict[str, Any]]:
+    skill = load_text(SEJONG_SKILL_PATH)
+    router = load_text(ROUTER_PATH)
+    storage = load_text(ARTIFACT_STORAGE_PATH)
+    security = load_text(SECURITY_PATH)
+    sillok = load_text(SILLOK_TRACE_PATH)
+    trace_script = load_text(SILLOK_TRACE_SCRIPT_PATH)
+    combined = "\n".join([skill, router, storage, security, sillok, trace_script])
+    required = [
+        "Sillok trace",
+        "sillok-trace-event.schema.json",
+        "private_data",
+        "untrusted_content",
+        "external_action",
+        "human_approval_ref",
+        "LETHAL_TRIFECTA",
+        "Record security-sensitive tool calls and decisions",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check("sillok_security_trace_contract_present", passed, "Sillok trace and security guardrails remain visible and testable.", missing=missing)
+    ]
+
+
 def evaluate_compression() -> list[dict[str, Any]]:
     uigwe_lines = line_count(UIGWE_SKILL_PATH)
     sejong_lines = line_count(SEJONG_SKILL_PATH)
@@ -377,6 +406,7 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-sejong-self-modification": evaluate_sejong_self_modification,
     "instruction-artifact-storage": evaluate_artifact_storage,
     "instruction-repo-context-refresh": evaluate_repo_context_refresh,
+    "instruction-sillok-security-trace": evaluate_sillok_security_trace,
     "instruction-compression-budget": evaluate_compression,
 }
 
@@ -391,6 +421,9 @@ def expectation_text_for_scenario(scenario_id: str) -> str:
         load_text(CONTEXT_SCHEMA_PATH),
         load_text(CONTEXT_EXAMPLE_PATH),
         load_text(HOOK_SCRIPT_PATH),
+        load_text(SECURITY_PATH),
+        load_text(SILLOK_TRACE_PATH),
+        load_text(SILLOK_TRACE_SCRIPT_PATH),
     ]
     if scenario_id == "instruction-artifact-storage":
         return "\n".join([load_text(ARTIFACT_STORAGE_PATH), load_text(ROUTER_PATH), load_text(HOOKS_PATH)])
@@ -499,6 +532,23 @@ def build_scorecard(task_set: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def preserve_generated_at_when_unchanged(scorecard: dict[str, Any], existing_path: Path) -> dict[str, Any]:
+    if not existing_path.exists():
+        return scorecard
+    try:
+        existing = load_json(existing_path)
+    except Exception:
+        return scorecard
+
+    existing_generated_at = existing.get("metadata", {}).get("generated_at")
+    candidate = json.loads(json.dumps(scorecard))
+    if existing_generated_at:
+        candidate.setdefault("metadata", {})["generated_at"] = existing_generated_at
+    if candidate == existing:
+        scorecard["metadata"]["generated_at"] = existing_generated_at
+    return scorecard
+
+
 def markdown_summary(scorecard: dict[str, Any]) -> str:
     aggregate = scorecard["aggregate"]
     lines = [
@@ -527,6 +577,7 @@ def main() -> int:
     scorecard = build_scorecard(task_set)
 
     if args.write:
+        scorecard = preserve_generated_at_when_unchanged(scorecard, SCORECARD_PATH)
         SCORECARD_PATH.parent.mkdir(parents=True, exist_ok=True)
         SCORECARD_PATH.write_text(json.dumps(scorecard, indent=2) + "\n", encoding="utf-8")
         SUMMARY_PATH.write_text(markdown_summary(scorecard), encoding="utf-8")

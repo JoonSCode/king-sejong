@@ -11,6 +11,8 @@ It is not a shim over another skill. Its source-of-truth routing contract is `..
 
 When hooks or TeamExecutor are involved, active workflow context is represented by the checkpoint contract in `../../../docs/sejong/king-sejong-context.schema.json` and the hook guardrails in `../../../docs/sejong/HOOKS.md`.
 
+When security-sensitive evidence, verification, or tool actions are involved, follow the Sillok trace contract in `../../../docs/sejong/SILLOK_TRACE.md` and the security guardrails in `../../../docs/sejong/SECURITY.md`.
+
 When repo instruction context such as `AGENTS.md` should be initialized or refreshed, use the guarded candidate-diff workflow in `../../../docs/sejong/REPO_CONTEXT.md`; do not silently rewrite tracked instruction files.
 
 ## Routing

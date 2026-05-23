@@ -136,6 +136,10 @@ Do not use workers for trivial direct edits, single-source lookups, or duplicate
 
 Sejong follows the storage contract in [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md).
 
+Security-sensitive evidence, verification, and tool decisions should be recorded
+through the Sillok trace contract in [SILLOK_TRACE.md](SILLOK_TRACE.md) and the
+guardrails in [SECURITY.md](SECURITY.md).
+
 By default, JangYeongsil research notes, Jiphyeonjeon council briefs, temporary Uigwe artifacts, Seungjeongwon evidence snapshots, and Sillok records are external nontracked artifacts under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`.
 
 Do not ask for an artifact tracking policy during normal install or normal routing. Create git-tracked repository artifacts only when the user explicitly asks to promote a shareable plan, Uigwe bundle, or Sillok record into the repository.

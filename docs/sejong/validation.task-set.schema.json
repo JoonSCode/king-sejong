@@ -52,7 +52,29 @@
         "greenfield",
         "brownfield",
         "mixed",
-        "instruction"
+        "instruction",
+        "sejong",
+        "routing",
+        "research",
+        "decision",
+        "planning",
+        "execution",
+        "team",
+        "continuity",
+        "guardrail"
+      ]
+    },
+    "Surface": {
+      "type": "string",
+      "enum": [
+        "sejong",
+        "jangyeongsil",
+        "jiphyeonjeon",
+        "uigwe",
+        "seungjeongwon",
+        "sillok",
+        "danjong",
+        "sejong-direct"
       ]
     },
     "Metadata": {
@@ -116,6 +138,24 @@
         },
         "guardrail_expectations": {
           "$ref": "#/$defs/GuardrailExpectations"
+        },
+        "expected_route_sequence": {
+          "$ref": "#/$defs/StringList"
+        },
+        "acceptable_route_sequences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StringList"
+          }
+        },
+        "forbidden_surfaces": {
+          "$ref": "#/$defs/StringList"
+        },
+        "clarification_required": {
+          "type": "boolean"
+        },
+        "resource_expectations": {
+          "$ref": "#/$defs/ResourceExpectations"
         }
       },
       "required": [
@@ -158,6 +198,31 @@
         },
         "repo_context_guardrails": {
           "$ref": "#/$defs/StringList"
+        }
+      }
+    },
+    "ResourceExpectations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_turns": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_tool_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_total_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_wall_time_sec": {
+          "type": "number",
+          "minimum": 0
+        },
+        "overhead_budget_note": {
+          "$ref": "#/$defs/NonEmptyString"
         }
       }
     }

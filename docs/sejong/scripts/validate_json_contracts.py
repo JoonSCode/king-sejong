@@ -27,6 +27,8 @@ SCHEMA_FILES = {
     "validation_task_set": SEJONG_ROOT / "validation.task-set.schema.json",
     "validation_scorecard": SEJONG_ROOT / "validation.scorecard.schema.json",
     "king_sejong_context": SEJONG_ROOT / "king-sejong-context.schema.json",
+    "team_executor": SEJONG_ROOT / "team-executor.schema.json",
+    "sillok_trace_event": SEJONG_ROOT / "sillok-trace-event.schema.json",
 }
 
 FORMAT_TO_SCHEMA = {
@@ -42,7 +44,16 @@ FORMAT_TO_SCHEMA = {
     "uigwe.validation-task-set/v0.1-draft": "validation_task_set",
     "uigwe.validation-scorecard/v0.1-draft": "validation_scorecard",
     "king-sejong.context/v0.1-draft": "king_sejong_context",
+    "sejong.team/v0.1-draft": "team_executor",
+    "sejong.team-rounds/v0.1-draft": "team_executor",
+    "sejong.team-leases/v0.1-draft": "team_executor",
+    "sejong.team-worker/v0.1-draft": "team_executor",
+    "sejong.sillok-trace-event/v0.1-draft": "sillok_trace_event",
 }
+
+NEGATIVE_FIXTURE_PARTS = (
+    "examples/team-executor/invalid-",
+)
 
 
 def load_json(path: Path) -> dict:
@@ -79,6 +90,7 @@ def main() -> int:
     for path in sorted(SEJONG_ROOT.rglob("*.json")):
         if path.name.endswith(".schema.json"):
             continue
+        relative_path = rel(path)
 
         try:
             data = load_json(path)
@@ -86,10 +98,15 @@ def main() -> int:
             failures.append((path, f"invalid JSON: {exc}"))
             continue
 
+        if any(part in relative_path for part in NEGATIVE_FIXTURE_PARTS):
+            skipped += 1
+            print(f"skip: {relative_path} (negative fixture)")
+            continue
+
         schema_name = FORMAT_TO_SCHEMA.get(data.get("format"))
         if not schema_name:
             skipped += 1
-            print(f"skip: {rel(path)} (no mapped schema for format {data.get('format')!r})")
+            print(f"skip: {relative_path} (no mapped schema for format {data.get('format')!r})")
             continue
 
         schema = schema_contents[schema_name]
@@ -98,7 +115,7 @@ def main() -> int:
         try:
             validator.validate(data)
             validated += 1
-            print(f"instance ok: {rel(path)} -> {rel(SCHEMA_FILES[schema_name])}")
+            print(f"instance ok: {relative_path} -> {rel(SCHEMA_FILES[schema_name])}")
         except Exception as exc:
             failures.append((path, str(exc)))
 

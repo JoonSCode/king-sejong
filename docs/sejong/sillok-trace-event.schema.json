@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/sillok-trace-event.schema.json",
+  "title": "King Sejong Sillok Trace Event Schema Draft",
+  "description": "Runtime evidence, verification, and security-review event contract for Sillok records.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "sejong.sillok-trace-event/v0.1-draft"
+    },
+    "event_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "run_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "active_context_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "surface": {
+      "$ref": "#/$defs/Surface"
+    },
+    "event_kind": {
+      "$ref": "#/$defs/EventKind"
+    },
+    "summary": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "refs": {
+      "$ref": "#/$defs/StringList"
+    },
+    "risk_flags": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RiskFlag"
+      },
+      "uniqueItems": true
+    },
+    "human_approval_ref": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "format",
+    "event_id",
+    "run_id",
+    "active_context_id",
+    "created_at",
+    "surface",
+    "event_kind",
+    "summary",
+    "refs",
+    "risk_flags",
+    "human_approval_ref"
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      }
+    },
+    "Surface": {
+      "type": "string",
+      "enum": [
+        "sejong",
+        "jangyeongsil",
+        "jiphyeonjeon",
+        "uigwe",
+        "seungjeongwon",
+        "sillok",
+        "danjong",
+        "sejong-direct"
+      ]
+    },
+    "EventKind": {
+      "type": "string",
+      "enum": [
+        "route_decision",
+        "tool_call",
+        "evidence_ref",
+        "verification",
+        "security_review",
+        "handoff",
+        "blocker"
+      ]
+    },
+    "RiskFlag": {
+      "type": "string",
+      "enum": [
+        "private_data",
+        "untrusted_content",
+        "external_action",
+        "credential_access",
+        "network_access",
+        "write_action"
+      ]
+    }
+  }
+}

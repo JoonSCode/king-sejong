@@ -33,9 +33,33 @@
       ],
       "notes": [
         "Record human edit distance, approval gate issues, and consumer-readiness notes."
-      ]
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      }
     }
   ],
+  "resource_usage": {
+    "cached_tokens": 0,
+    "estimated_cost_usd": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "reasoning_tokens": 0,
+    "retry_count": 0,
+    "tool_calls": 0,
+    "total_tokens": 0,
+    "turn_count": 0,
+    "wall_time_sec": 0
+  },
   "notes": [
     "Copy this file per run. Do not edit the frozen task set while grading a candidate."
   ]

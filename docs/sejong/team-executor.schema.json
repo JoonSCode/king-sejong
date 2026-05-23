@@ -1,0 +1,316 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/team-executor.schema.json",
+  "title": "King Sejong TeamExecutor State Schema Draft",
+  "description": "Schema for TeamExecutor team, rounds, leases, and worker state JSON files.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Team"
+    },
+    {
+      "$ref": "#/$defs/Rounds"
+    },
+    {
+      "$ref": "#/$defs/Leases"
+    },
+    {
+      "$ref": "#/$defs/WorkerState"
+    }
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "NullableDateTime": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      }
+    },
+    "MessageKind": {
+      "type": "string",
+      "enum": [
+        "claim",
+        "objection",
+        "question",
+        "response",
+        "evidence_ref",
+        "risk",
+        "status",
+        "blocker",
+        "verification"
+      ]
+    },
+    "LeadAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "gate_owner": {
+          "const": "sejong"
+        },
+        "synthesis_owner": {
+          "const": "sejong"
+        },
+        "final_verification_owner": {
+          "const": "seungjeongwon"
+        }
+      },
+      "required": [
+        "gate_owner",
+        "synthesis_owner",
+        "final_verification_owner"
+      ]
+    },
+    "Worker": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "worker_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "role": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "scope": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "allowed_message_kinds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MessageKind"
+          }
+        },
+        "status": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "command": {
+          "$ref": "#/$defs/NonEmptyString"
+        }
+      },
+      "required": [
+        "worker_id",
+        "role",
+        "scope",
+        "allowed_message_kinds",
+        "status"
+      ]
+    },
+    "Team": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "sejong.team/v0.1-draft"
+        },
+        "run_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "repo_root": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "brief_path": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "active_context_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "route_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "source_of_truth_refs": {
+          "$ref": "#/$defs/StringList"
+        },
+        "lead_authority": {
+          "$ref": "#/$defs/LeadAuthority"
+        },
+        "forbidden_worker_claims": {
+          "$ref": "#/$defs/StringList"
+        },
+        "workers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Worker"
+          }
+        }
+      },
+      "required": [
+        "format",
+        "run_id",
+        "created_at",
+        "repo_root",
+        "brief_path",
+        "active_context_id",
+        "route_id",
+        "source_of_truth_refs",
+        "lead_authority",
+        "forbidden_worker_claims",
+        "workers"
+      ]
+    },
+    "Round": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "round_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "closed"
+          ]
+        },
+        "purpose": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "opened_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "closed_at": {
+          "$ref": "#/$defs/NullableDateTime"
+        }
+      },
+      "required": [
+        "round_id",
+        "status",
+        "purpose",
+        "opened_at",
+        "closed_at"
+      ]
+    },
+    "Rounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "sejong.team-rounds/v0.1-draft"
+        },
+        "run_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "rounds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Round"
+          }
+        }
+      },
+      "required": [
+        "format",
+        "run_id",
+        "rounds"
+      ]
+    },
+    "Lease": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "lease_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "worker_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "scopes": {
+          "$ref": "#/$defs/StringList"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "released"
+          ]
+        },
+        "acquired_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "released_at": {
+          "$ref": "#/$defs/NullableDateTime"
+        }
+      },
+      "required": [
+        "lease_id",
+        "worker_id",
+        "scopes",
+        "status",
+        "acquired_at",
+        "released_at"
+      ]
+    },
+    "Leases": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "sejong.team-leases/v0.1-draft"
+        },
+        "run_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "leases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Lease"
+          }
+        }
+      },
+      "required": [
+        "format",
+        "run_id",
+        "leases"
+      ]
+    },
+    "WorkerState": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "sejong.team-worker/v0.1-draft"
+        },
+        "run_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "worker_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "role": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "scope": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "status": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "format",
+        "run_id",
+        "worker_id",
+        "role",
+        "scope",
+        "status",
+        "updated_at"
+      ]
+    }
+  }
+}

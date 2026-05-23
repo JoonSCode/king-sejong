@@ -1,10 +1,10 @@
 # Uigwe Instruction Surface Scorecard
 
 - Task set: `uigwe-instruction-surface-task-set`
-- Generated at: `2026-05-23T08:43:13Z`
+- Generated at: `2026-05-23T16:52:41Z`
 - Status: `pass`
 - Average score: `1.0`
-- Pass/fail: `13/0`
+- Pass/fail: `14/0`
 
 ## Scenarios
 - `instruction-routing-modes`: `pass` (1.0)
@@ -19,4 +19,5 @@
 - `instruction-sejong-self-modification`: `pass` (1.0)
 - `instruction-artifact-storage`: `pass` (1.0)
 - `instruction-repo-context-refresh`: `pass` (1.0)
+- `instruction-sillok-security-trace`: `pass` (1.0)
 - `instruction-compression-budget`: `pass` (1.0)

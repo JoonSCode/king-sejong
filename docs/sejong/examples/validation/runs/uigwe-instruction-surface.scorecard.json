@@ -3,13 +3,13 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-23T08:43:13Z",
+    "generated_at": "2026-05-23T16:52:41Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
   "aggregate": {
-    "scenario_count": 13,
-    "pass_count": 13,
+    "scenario_count": 14,
+    "pass_count": 14,
     "partial_count": 0,
     "fail_count": 0,
     "average_score": 1.0,
@@ -306,6 +306,28 @@
       ]
     },
     {
+      "scenario_id": "instruction-sillok-security-trace",
+      "title": "Sillok trace and security guardrails remain visible",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "sillok_security_trace_contract_present",
+          "passed": true,
+          "detail": "Sillok trace and security guardrails remain visible and testable."
+        },
+        {
+          "id": "guardrail_artifact_retention_policy",
+          "passed": true,
+          "detail": "Typed guardrail expectation artifact_retention_policy is represented in the instruction surface."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
       "scenario_id": "instruction-compression-budget",
       "title": "Skill files stay small enough to load",
       "status": "pass",
@@ -319,7 +341,7 @@
         {
           "id": "sejong_skill_line_budget",
           "passed": true,
-          "detail": "Sejong SKILL.md line count is 40; budget is 90."
+          "detail": "Sejong SKILL.md line count is 42; budget is 90."
         },
         {
           "id": "validation_detail_lives_in_reference",
