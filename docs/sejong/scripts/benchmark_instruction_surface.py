@@ -19,6 +19,7 @@ UIGWE_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "uigwe" / "SKILL.md"
 SEJONG_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "sejong" / "SKILL.md"
 README_PATH = SEJONG_ROOT / "README.md"
 ROUTER_PATH = SEJONG_ROOT / "ROUTER.md"
+REPO_CONTEXT_PATH = SEJONG_ROOT / "REPO_CONTEXT.md"
 PROTOCOL_PATH = SEJONG_ROOT / "PROTOCOL.md"
 VALIDATION_PATH = SEJONG_ROOT / "VALIDATION.md"
 ARTIFACT_STORAGE_PATH = SEJONG_ROOT / "ARTIFACT_STORAGE.md"
@@ -43,6 +44,7 @@ SCENARIO_IDS = (
     "instruction-sejong-continuation",
     "instruction-sejong-self-modification",
     "instruction-artifact-storage",
+    "instruction-repo-context-refresh",
     "instruction-compression-budget",
 )
 
@@ -52,6 +54,7 @@ REQUIRED_GUARDRAIL_SCENARIOS = {
     "instruction-sejong-continuation",
     "instruction-sejong-self-modification",
     "instruction-artifact-storage",
+    "instruction-repo-context-refresh",
 }
 
 
@@ -314,6 +317,30 @@ def evaluate_artifact_storage() -> list[dict[str, Any]]:
     ]
 
 
+def evaluate_repo_context_refresh() -> list[dict[str, Any]]:
+    skill = load_text(SEJONG_SKILL_PATH)
+    router = load_text(ROUTER_PATH)
+    repo_context = load_text(REPO_CONTEXT_PATH)
+    readme = load_text(README_PATH)
+    combined = "\n".join([skill, router, repo_context, readme])
+    required = [
+        "guarded repo-context promotion workflow",
+        "`init`",
+        "`refresh`",
+        "Produce a candidate diff before changing tracked files.",
+        "explicit user approval",
+        "always-on automatic updater",
+        "Do not copy this source repository's `AGENTS.md` into target repositories.",
+        "instruction pollution checks",
+        "REPO_CONTEXT.md",
+        "Use Sejong repo-context init/refresh",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check("repo_context_refresh_contract_present", passed, "Repo-context init/refresh remains guarded, candidate-diff first, and approval-gated.", missing=missing)
+    ]
+
+
 def evaluate_compression() -> list[dict[str, Any]]:
     uigwe_lines = line_count(UIGWE_SKILL_PATH)
     sejong_lines = line_count(SEJONG_SKILL_PATH)
@@ -349,6 +376,7 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-sejong-continuation": evaluate_sejong_continuation,
     "instruction-sejong-self-modification": evaluate_sejong_self_modification,
     "instruction-artifact-storage": evaluate_artifact_storage,
+    "instruction-repo-context-refresh": evaluate_repo_context_refresh,
     "instruction-compression-budget": evaluate_compression,
 }
 
@@ -356,6 +384,7 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
 def expectation_text_for_scenario(scenario_id: str) -> str:
     base = [
         load_text(ROUTER_PATH),
+        load_text(REPO_CONTEXT_PATH),
         load_text(ARTIFACT_STORAGE_PATH),
         load_text(TEAM_EXECUTOR_PATH),
         load_text(HOOKS_PATH),

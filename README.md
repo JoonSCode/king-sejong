@@ -148,12 +148,14 @@ What is included:
 - recursive Uigwe decomposition that keeps selected leaves tied to the parent goal and verification criteria
 - `Seungjeongwon` native executor skill
 - Seungjeongwon execution contract
+- repo-context `AGENTS.md` init/refresh contract with candidate diffs
 - schema, bundle, and instruction-surface validation helpers
 - install and verify script for managed repo-local and Codex user-scope paths
 
 What is not included:
 
 - a guarantee that non-Codex hosts understand the handoff automatically
+- an always-on automatic updater for repository instruction files
 - adapters for OpenCode, Claude Code, Gemini CLI, or Cursor
 
 ## Work Loop
@@ -220,6 +222,7 @@ When changing King Sejong itself, material behavior changes should follow the fu
 ## Read More
 
 - [Sejong router contract](docs/sejong/ROUTER.md)
+- [Repo context init and refresh](docs/sejong/REPO_CONTEXT.md)
 - [Artifact storage](docs/sejong/ARTIFACT_STORAGE.md)
 - [Team executor](docs/sejong/TEAM_EXECUTOR.md)
 - [Prompt overlays](docs/sejong/PROMPT_OVERLAYS.md)

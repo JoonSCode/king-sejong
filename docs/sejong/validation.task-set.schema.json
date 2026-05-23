@@ -155,6 +155,9 @@
         },
         "artifact_retention_policy": {
           "$ref": "#/$defs/StringList"
+        },
+        "repo_context_guardrails": {
+          "$ref": "#/$defs/StringList"
         }
       }
     }

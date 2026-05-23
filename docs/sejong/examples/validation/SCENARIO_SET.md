@@ -18,10 +18,13 @@
 - `instruction-routing-modes`
 - `instruction-live-session-gates`
 - `instruction-output-contract`
+- `instruction-recursive-decomposition`
 - `instruction-validation-benchmark`
 - `instruction-sejong-boundary`
 - `instruction-bounded-parallelism`
+- `instruction-king-sejong-hooks`
 - `instruction-sejong-continuation`
 - `instruction-sejong-self-modification`
 - `instruction-artifact-storage`
+- `instruction-repo-context-refresh`
 - `instruction-compression-budget`

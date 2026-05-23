@@ -351,6 +351,47 @@
       }
     },
     {
+      "id": "instruction-repo-context-refresh",
+      "title": "Repo-context init and refresh remain approval-gated",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that Sejong repo-context init/refresh produces candidate diffs for AGENTS.md and never silently rewrites tracked instruction files.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        "docs/sejong/REPO_CONTEXT.md",
+        ".agents/skills/sejong/SKILL.md",
+        "docs/sejong/ROUTER.md",
+        "docs/sejong/README.md"
+      ],
+      "expected_behavior": [
+        "init inspects the repository and drafts a candidate AGENTS.md when missing or explicitly requested",
+        "refresh deduplicates durable lessons against existing guidance",
+        "tracked instruction files change only after explicit user approval or an explicit apply instruction",
+        "candidate notes and rejected lesson inventories remain external runtime artifacts by default"
+      ],
+      "forbidden_behavior": [
+        "always-on automatic instruction updates",
+        "blindly copying the source repo AGENTS.md into target repositories",
+        "silently rewriting tracked instruction files"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ],
+      "guardrail_expectations": {
+        "repo_context_guardrails": [
+          "guarded repo-context promotion workflow",
+          "candidate diff",
+          "explicit user approval",
+          "always-on automatic updater",
+          "Do not copy this source repository's `AGENTS.md` into target repositories."
+        ],
+        "artifact_retention_policy": [
+          "outside the target repository by default",
+          "${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}"
+        ]
+      }
+    },
+    {
       "id": "instruction-compression-budget",
       "title": "Skill files stay small enough to load",
       "profile": "instruction",

@@ -86,7 +86,7 @@ Run this when changing `.agents/skills`, router docs, README guidance, live-sess
 python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets
 ```
 
-This benchmark is deterministic. It checks whether the installed skill surface still exposes the required routing, live-session, output, validation, bounded-parallelism, active-context, hook, and protected-route contracts.
+This benchmark is deterministic. It checks whether the installed skill surface still exposes the required routing, live-session, output, validation, bounded-parallelism, active-context, hook, protected-route, and repo-context init/refresh contracts.
 
 ### Phase 2B: King Sejong Guardrail TDD
 

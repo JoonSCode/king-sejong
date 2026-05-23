@@ -22,6 +22,7 @@ This file is Sejong's routing contract. Sejong is not a new planning protocol an
 - It does not create packets when the user only needs evidence or a lightweight decision.
 - It does not turn `Danjong` into a separate execution lane.
 - It does not create git-tracked repository artifacts unless the user explicitly asks to promote a shareable record or planning bundle.
+- It does not silently rewrite repository instruction files such as `AGENTS.md`.
 
 ## Sejong Surfaces
 
@@ -142,6 +143,29 @@ Do not ask for an artifact tracking policy during normal install or normal routi
 When artifacts are generated, report the external run directory and whether any tracked repository files were created.
 
 Hook and worker evidence should reference active context artifacts instead of copying runtime state into the repository. For hook behavior, see [HOOKS.md](HOOKS.md).
+
+## Repo Context Init And Refresh
+
+Sejong can initialize or refresh repo-local instruction context such as
+`AGENTS.md` through the contract in [REPO_CONTEXT.md](REPO_CONTEXT.md).
+
+This is a guarded repo-context promotion workflow:
+
+- `init` inspects a target repository and drafts an initial `AGENTS.md`
+  candidate when one is missing or explicitly requested.
+- `refresh` collects durable lessons from the current session, recent diffs,
+  docs, and validation evidence, then deduplicates them against existing repo
+  guidance.
+- Both modes produce a candidate diff before changing tracked files.
+- Tracked instruction files are applied only after explicit user approval or an
+  explicit apply instruction.
+- The source repository's `AGENTS.md` is maintainer guidance for this repository
+  and must not be copied into target repositories.
+
+Use `JangYeongsil` when the repo facts are unclear, `Jiphyeonjeon` when candidate
+lessons need judgment, and `Seungjeongwon` when an approved candidate diff should
+be applied and verified. Use Uigwe only when the repo-context policy or Sejong
+behavior itself is changing materially.
 
 ### Parallel Patterns
 
@@ -292,6 +316,7 @@ This protects Uigwe from becoming performative planning overhead while keeping e
 | "장영실처럼 조사해봐", "JangYeongsil로 실험/근거 봐줘" | `JangYeongsil` | none yet |
 | "집현전에서 논의해봐", "집현전에서 토론해봐", "Jiphyeonjeon에서 선택지 비교해줘" | `Jiphyeonjeon` | none yet |
 | "승정원으로 실행 넘겨", "Seungjeongwon handoff" | `Seungjeongwon` | existing bundle |
+| "AGENTS.md 초기화", "refresh repo instructions", "Codex init 같은 것" | repo-context init/refresh through `JangYeongsil` or `Jiphyeonjeon`, then `Seungjeongwon` only after approval | none unless Sejong behavior changes |
 | "실록에 남겨", "Sillok evidence" | evidence or promotion record | none |
 | "단종 처리해", "Danjong archive" | `Jiphyeonjeon` rejected or retired option | none yet |
 | "조사해봐", "히스토리 긁어봐", "근거 확인해봐" | `JangYeongsil` | none yet |
