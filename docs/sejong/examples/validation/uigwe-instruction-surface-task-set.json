@@ -74,6 +74,31 @@
       ]
     },
     {
+      "id": "instruction-recursive-decomposition",
+      "title": "Recursive decomposition stays select-review-reselect",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that Uigwe decomposition recursively selects candidate work, reviews it against the parent objective, reselects weak candidates, and only stops at executable leaves.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        ".agents/skills/uigwe/SKILL.md",
+        "docs/sejong/PROTOCOL.md"
+      ],
+      "expected_behavior": [
+        "each expandable node is treated as a local objective",
+        "candidate children are reviewed before being committed",
+        "weak or invalid candidates trigger local reselection or re-entry",
+        "leaf status requires executable-leaf readiness rather than smallness alone"
+      ],
+      "forbidden_behavior": [
+        "treating decomposition as a one-shot task list",
+        "marking small but ambiguous nodes as executable leaves"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    },
+    {
       "id": "instruction-validation-benchmark",
       "title": "Validation benchmark remains discoverable",
       "profile": "instruction",

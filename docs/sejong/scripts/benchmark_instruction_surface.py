@@ -19,6 +19,7 @@ UIGWE_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "uigwe" / "SKILL.md"
 SEJONG_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "sejong" / "SKILL.md"
 README_PATH = SEJONG_ROOT / "README.md"
 ROUTER_PATH = SEJONG_ROOT / "ROUTER.md"
+PROTOCOL_PATH = SEJONG_ROOT / "PROTOCOL.md"
 VALIDATION_PATH = SEJONG_ROOT / "VALIDATION.md"
 ARTIFACT_STORAGE_PATH = SEJONG_ROOT / "ARTIFACT_STORAGE.md"
 TEAM_EXECUTOR_PATH = SEJONG_ROOT / "TEAM_EXECUTOR.md"
@@ -30,6 +31,7 @@ SCENARIO_IDS = (
     "instruction-routing-modes",
     "instruction-live-session-gates",
     "instruction-output-contract",
+    "instruction-recursive-decomposition",
     "instruction-validation-benchmark",
     "instruction-sejong-boundary",
     "instruction-bounded-parallelism",
@@ -136,6 +138,28 @@ def evaluate_output_contract() -> list[dict[str, Any]]:
     passed, missing = contains_all(skill, required)
     return [
         check("artifact_contract_present", passed, "Canonical Uigwe output artifacts remain explicit.", missing=missing)
+    ]
+
+
+def evaluate_recursive_decomposition() -> list[dict[str, Any]]:
+    skill = load_text(UIGWE_SKILL_PATH)
+    protocol = load_text(PROTOCOL_PATH)
+    combined = "\n".join([skill, protocol])
+    required = [
+        "select -> review -> reselect",
+        "At each expandable node, Uigwe treats that node as a local objective.",
+        "select candidate children, review whether they satisfy the parent objective, reselect when they are weak or invalid",
+        "fail to satisfy the parent node objective",
+        "Stop descending only when the selected node satisfies executable-leaf readiness.",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check(
+            "recursive_decomposition_contract_present",
+            passed,
+            "Uigwe decomposition remains a recursive select-review-reselect loop down to executable leaves.",
+            missing=missing,
+        )
     ]
 
 
@@ -279,6 +303,7 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-routing-modes": evaluate_routing,
     "instruction-live-session-gates": evaluate_live_session,
     "instruction-output-contract": evaluate_output_contract,
+    "instruction-recursive-decomposition": evaluate_recursive_decomposition,
     "instruction-validation-benchmark": evaluate_validation_benchmark,
     "instruction-sejong-boundary": evaluate_sejong_boundary,
     "instruction-bounded-parallelism": evaluate_bounded_parallelism,
