@@ -33,10 +33,12 @@ When repo instruction context such as `AGENTS.md` should be initialized or refre
 
 Canonical internal surface ids are `jangyeongsil`, `jiphyeonjeon`, `uigwe`, `seungjeongwon`, and `sejong-direct`. Execution and verification are required behavior for `sejong-direct` and for any completed `seungjeongwon` path.
 
+Treat JangYeongsil, Jiphyeonjeon, Uigwe, Seungjeongwon, Sillok, and Danjong as Sejong court modes, not peer agents. For non-trivial workflows, surface the current mode to the user in plain language such as `조사 중`, `판단 중`, `계획 정리 중`, `실행 중`, `기록 중`, or `제외/보류 중`, and state what the user can do next.
+
 Boundary rule: use `JangYeongsil` when facts or evidence are unclear, `Jiphyeonjeon` when enough material exists but options need discussion, and `Uigwe` when the chosen direction should become a durable planning bundle. Preserve Uigwe live-session gates when routing there.
 
 `Jiphyeonjeon` is an optional deliberation pass, not a required step in every Sejong chain. Use bounded workers only when independent research, option-review, implementation, or verification lanes would materially improve speed or confidence; the lead Sejong agent owns synthesis, final routing, and final verification.
 
 For parallel Jiphyeonjeon, use bounded briefs from advocate, critic, specialist, operator, or risk-review lenses over the same evidence bundle; do not use worker or subagent agreement as evidence or approval. Substantial Jiphyeonjeon work may use `$team` mailbox-mediated challenge rounds, but the lead Sejong agent opens and closes rounds and owns synthesis. Research, discussion, and planning may overlap only as preflight work: Uigwe gates and final packets remain lead/user-owned.
 
-Codex native subagents and `$team` tmux workers are different backends. For `$team`, use Sejong state under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/`, not `.omx`. When using Codex native subagents, `.codex/prompts/{role}.md` is an optional repo-local overlay. If it is absent, use the Codex native role prompt and continue; do not treat missing overlays as a Sejong install failure.
+Codex native subagents and `$team` tmux workers are different backends. For `$team`, use Sejong state under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/`, not `.omx`. Before starting workers, write a role assignment with current court mode, route context, source-of-truth refs, worker role, assigned scope, allowed outputs, verification expectation, stop condition, and forbidden claims. When using Codex native subagents, `.codex/prompts/{role}.md` is an optional repo-local overlay. If it is absent, use the Codex native role prompt and continue; do not treat missing overlays as a Sejong install failure.

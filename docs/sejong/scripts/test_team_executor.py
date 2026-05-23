@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -64,6 +65,8 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
                     "init",
                     "--run-id",
                     "lease-overlap",
+                    "--current-surface",
+                    "seungjeongwon",
                     "--worker",
                     "a:implementer:docs",
                     "--worker",
@@ -95,6 +98,8 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
                     "init",
                     "--run-id",
                     "lease-glob",
+                    "--current-surface",
+                    "seungjeongwon",
                     "--worker",
                     "a:implementer:docs",
                     "--worker",
@@ -117,6 +122,98 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             )
             self.assertNotEqual(second.returncode, 0)
             self.assertIn("lease conflict", second.stderr)
+
+    def test_missing_current_surface_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "missing-surface",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--worker",
+                    "critic:critic:bounded risk review",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "missing-surface"
+            team_path = run_dir / "team.json"
+            team = json.loads(team_path.read_text(encoding="utf-8"))
+            del team["current_surface"]
+            team_path.write_text(json.dumps(team, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+            result = run_team_command(["check", str(run_dir)], sejong_home=sejong_home)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("current_surface", result.stderr)
+
+    def test_message_role_scope_mismatch_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "message-mismatch",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--worker",
+                    "critic:critic:bounded risk review",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "message-mismatch"
+            opened = run_team_command(
+                ["open-round", str(run_dir), "--purpose", "first challenge"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(opened.returncode, 0, opened.stderr)
+
+            result = run_team_command(
+                [
+                    "append-message",
+                    str(run_dir),
+                    "--worker-id",
+                    "critic",
+                    "--role",
+                    "advocate",
+                    "--kind",
+                    "claim",
+                    "--summary",
+                    "Mismatched role.",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("message role does not match", result.stderr)
+
+    def test_launch_injects_surface_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "launch-context",
+                    "--current-surface",
+                    "uigwe",
+                    "--worker",
+                    "ready:readiness-checker:plan readiness",
+                    "--command",
+                    "ready=echo ready",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "launch-context"
+
+            result = run_team_command(["launch", str(run_dir), "--dry-run"], sejong_home=sejong_home)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("SEJONG_CURRENT_SURFACE=uigwe", result.stdout)
+            self.assertIn("SEJONG_WORKER_ROLE=readiness-checker", result.stdout)
 
 
 if __name__ == "__main__":

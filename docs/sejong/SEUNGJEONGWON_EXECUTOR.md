@@ -35,6 +35,8 @@ When a Uigwe bundle exists, Seungjeongwon treats these files as authoritative:
 
 It does not reopen planning unless execution discovers a contradiction.
 
+Uigwe owns the approved goal, non-goals, success criteria, verification bar, must-preserve behaviors, and re-entry triggers. Seungjeongwon may adapt implementation tactics when the original execution hypothesis is wrong, but it must preserve those guardrails unless the user or Uigwe explicitly reopens them.
+
 ## Execution Default
 
 The native default is:
@@ -70,6 +72,17 @@ For direct action:
    - blocked external decision -> ask the user
 6. Verify each completed leaf or direct task.
 7. Record evidence before reporting completion.
+
+## Execution Feedback And Re-entry
+
+Seungjeongwon treats execution as a way to test planning assumptions.
+
+- If only implementation details differ from the plan, adjust tactics locally, verify, and report the deviation.
+- If a leaf's scope, dependency, or verification method is wrong, perform local re-exploration or recommend Uigwe `local_reexploration`.
+- If an architecture or design assumption fails, stop widening execution and recommend Uigwe `brainstorming`.
+- If the goal, non-goals, success criteria, or must-preserve behavior are incomplete or contradicted, ask for `human_review` or Uigwe `deep_interview`.
+
+The executor must not silently redefine success to make verification pass.
 
 ## Artifact Storage
 

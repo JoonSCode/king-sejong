@@ -6,7 +6,7 @@
 
 Sejong is the all-in-one Codex front door that carries work through research, decision support, Uigwe planning, Seungjeongwon execution, verification, and evidence recording.
 
-King Sejong is the full court-style orchestration system. `Sejong` is the lead router and synthesizer inside that system, not the whole system by itself. The other court names are bounded surfaces, roles, or evidence semantics that the Sejong lead routes through.
+King Sejong is the full court-style orchestration system. `Sejong` is the lead router and synthesizer inside that system, not the whole system by itself. The other court names are court modes that the Sejong lead enters, not peer agents that can overrule the lead.
 
 It exists because real user requests often say "research this", "think through this", "is this worth making", or "use Uigwe/의궤 for this" before the correct planning entry mode is known.
 
@@ -54,6 +54,24 @@ In short: `JangYeongsil` gathers the evidence, `Jiphyeonjeon` discusses and deci
 
 `Jiphyeonjeon` is not mandatory in every Sejong chain. Use it as a short deliberation pass only when the gathered evidence leaves a meaningful choice.
 
+## Court Modes And User State
+
+JangYeongsil, Jiphyeonjeon, Uigwe, Seungjeongwon, Sillok, and Danjong are Sejong court modes, not independent peer agents. The Sejong lead changes behavior by entering a mode, but remains responsible for routing, synthesis, gates, and final verification. `$team` workers are scoped sessions inside the active court mode.
+
+When speaking to a human user during a non-trivial Sejong workflow, state the workflow position in plain language before dense internal ids. For Korean users, prefer:
+
+| Internal surface | User-facing state |
+| --- | --- |
+| `jangyeongsil` | `조사 중` |
+| `jiphyeonjeon` | `판단 중` |
+| `uigwe` | `계획 정리 중` |
+| `seungjeongwon` | `실행 중` |
+| `sillok` | `기록 중` |
+| `danjong` | `제외/보류 중` |
+| `sejong-direct` | `직접 처리 중` |
+
+The state note should also name what the user can do next, such as approve, adjust, provide missing evidence, review a gate, or wait for verification. Do not expose only machine fields like `current_surface` when a short human sentence would be clearer.
+
 ## Active Sejong Session
 
 Invoking `Sejong`, `$sejong`, or any court surface starts an active Sejong workflow for the current conversation.
@@ -100,7 +118,7 @@ Hook-backed environments should treat the material self-modification list as `pr
 
 ## Parallel Workers
 
-Sejong may use bounded workers to increase parallelism, but workers are an optional execution tactic rather than a separate Sejong surface. The safe shape is hub-and-spoke: workers return bounded briefs, mailbox messages, implementation slices, or verification evidence, and the lead Sejong agent owns routing, synthesis, final decision, and final verification.
+Sejong may use bounded workers to increase parallelism, but workers are an optional execution tactic rather than a separate Sejong surface. The safe shape is hub-and-spoke: workers return bounded briefs, mailbox messages, implementation slices, provisional consensus, or verification evidence, and the lead Sejong agent owns routing, synthesis, final decision, and final verification.
 
 Supported worker backends include:
 
@@ -111,7 +129,7 @@ Supported worker backends include:
 
 Codex native subagents remain a valid backend, but `$team` is the preferred shape when the intended workers are independent CLI processes rather than host-managed `spawn_agent` calls.
 
-Both worker backends must carry the active King Sejong context when available. Workers may return evidence, implementation slices, verification observations, objections, or mailbox messages. They must not approve Uigwe gates, claim final synthesis, make majority-vote decisions, or override the Sejong lead.
+Both worker backends must carry the active King Sejong context when available, including the current court mode, route sequence, source-of-truth refs, pending gates, role, assigned scope, allowed outputs, forbidden claims, stop condition, and return format. Workers may exchange bounded challenge messages and report provisional consensus to the Sejong lead. Worker consensus is useful signal, but never gate approval, final synthesis, or final verification.
 
 Codex native role prompt resolution:
 
@@ -122,11 +140,11 @@ Codex native role prompt resolution:
 
 See [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) for optional overlay guidance.
 
-Use bounded workers when independent work can run in parallel without blocking the next local step:
+Use bounded workers when independent work can run in parallel without blocking the next local step. Before `$team` starts, the Sejong lead must write a role assignment table with each worker's role, assigned scope, allowed outputs, allowed message kinds, write lease if writing, verification expectation, and stop condition:
 
 - `JangYeongsil`: split evidence gathering across independent sources, docs, repo history, or external references.
 - `Jiphyeonjeon`: compare serious options through separate advocate, critic, or specialist perspectives before the lead agent synthesizes a recommendation.
-- `Uigwe`: keep live-session approval gates with the lead agent; use workers only for bounded side research, preflight, readiness, or artifact checks that do not decide the gate.
+- `Uigwe`: keep live-session approval gates with the lead agent; use workers only for bounded side research, preflight, readiness, risk, dependency, scope, or verification checks that do not decide the gate. Uigwe worker use is plan validation, not debate over the selected direction.
 - `Seungjeongwon`: split implementation or verification across disjoint file scopes, test surfaces, or review lanes.
 - `Sillok`: have a verifier collect evidence while execution continues, then let the lead agent decide what belongs in the final record.
 

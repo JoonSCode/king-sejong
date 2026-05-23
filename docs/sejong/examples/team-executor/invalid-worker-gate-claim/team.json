@@ -3,13 +3,23 @@
   "brief_path": "brief.md",
   "created_at": "2026-05-23T00:00:00Z",
   "format": "sejong.team/v0.1-draft",
+  "forbidden_worker_claims": [
+    "gate approval",
+    "final decision by majority"
+  ],
   "lead_authority": {
     "final_verification_owner": "seungjeongwon",
     "gate_owner": "sejong",
     "synthesis_owner": "sejong"
   },
+  "current_surface": "jiphyeonjeon",
+  "phase_label": "decision",
+  "pending_gates": [],
   "repo_root": ".",
   "route_id": "route-team-invalid-gate",
+  "route_sequence": [
+    "jiphyeonjeon"
+  ],
   "run_id": "invalid-worker-gate-claim",
   "source_of_truth_refs": [
     "brief.md"
@@ -19,9 +29,14 @@
       "allowed_message_kinds": [
         "status"
       ],
+      "allowed_outputs": [
+        "bounded risk note"
+      ],
       "role": "critic",
       "scope": "bounded risk review",
       "status": "registered",
+      "stop_condition": "Return mailbox evidence to Sejong lead.",
+      "verification_expectation": "Cite brief.md or report a blocker.",
       "worker_id": "critic"
     }
   ]

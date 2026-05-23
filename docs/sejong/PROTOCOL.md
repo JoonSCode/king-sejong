@@ -116,6 +116,7 @@ Required outcomes:
 - dependency graph
 - risk summary
 - consumer-ready handoff data
+- execution guardrails for the executor
 
 Artifacts:
 
@@ -123,6 +124,19 @@ Artifacts:
 - `spec.md`
 - `rationale.md`
 - `goal-tree.json`
+
+Before handoff to Seungjeongwon, Uigwe must define the execution guardrails the executor is not allowed to silently change:
+
+- `goal`
+- `non_goals`
+- `success_criteria`
+- `verification_plan`
+- `must_preserve` behaviors or contracts
+- `acceptable_tradeoffs`
+- `reentry_triggers`
+- executable leaves with done criteria, scope, dependencies, and verification
+
+This is intentionally similar to test-first development: the success bar and verification method are set before implementation begins. Seungjeongwon may adapt tactics during execution, but it must not change the approved goal, non-goals, success criteria, must-preserve behavior, or verification bar without Uigwe re-entry or human review.
 
 ## Readiness-Gated Entry
 
@@ -213,6 +227,18 @@ An executable leaf is not merely a small node. It is a node that is safe to exec
 
 Stop descending only when the selected node satisfies executable-leaf readiness. If a node is small but still lacks done criteria, file or responsibility scope, dependency prerequisites, verification, or consumer context, it must be reselected, expanded again, or escalated through re-entry instead of being marked as a leaf.
 
+## Planning Validation Workers
+
+Uigwe may use bounded workers before gates, but their purpose is plan validation rather than open-ended debate. Suitable worker roles include:
+
+- readiness checker
+- risk checker
+- scope checker
+- dependency checker
+- verification checker
+
+These workers may inventory artifacts, scan for missing context, identify unverifiable leaves, challenge dependency order, and report risks. They must not create competing canonical packets, finalize `spec.md`, finalize `rationale.md`, finalize `goal-tree.json`, approve gates, or overturn the selected design by consensus. If a worker finds evidence that invalidates the selected design, Uigwe re-enters the appropriate earlier stage instead of letting the worker decide.
+
 ## Re-entry Rules
 
 `Uigwe` backtracks by severity.
@@ -224,6 +250,7 @@ Use when:
 - a subtree candidate is weak
 - a better local alternative appears
 - a dependency can be simplified without changing the chosen design
+- execution feedback shows a leaf needs tactical reshaping while preserving the approved goal, non-goals, success criteria, and verification bar
 
 ### Re-enter Design Exploration (`brainstorming`)
 
@@ -232,6 +259,7 @@ Use when:
 - the chosen design no longer supports good decomposition
 - dependency complexity grows beyond the intended architecture
 - a retained alternative becomes clearly stronger than the selected approach
+- Seungjeongwon execution invalidates an architecture or design assumption rather than only a local implementation detail
 
 ### Re-enter Intent Clarification (`deep-interview`)
 
@@ -241,6 +269,7 @@ Use when:
 - `non_goals` are missing or contradicted
 - `decision_boundaries` are missing or contradicted
 - new evidence invalidates upstream scope assumptions
+- execution evidence shows that the approved success criteria, non-goals, or user intent are incomplete or contradictory
 
 ## Internal State Model
 

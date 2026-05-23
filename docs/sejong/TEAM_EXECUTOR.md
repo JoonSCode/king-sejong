@@ -35,6 +35,8 @@ Sejong lead
 
 For Uigwe-backed execution, the Uigwe bundle remains the source of truth. For Jiphyeonjeon, the shared council brief remains the source of truth.
 
+JangYeongsil, Jiphyeonjeon, Uigwe, and Seungjeongwon are Sejong court modes, not peer agents. `$team` workers are scoped sessions inside one active court mode. They inherit the mode context and return bounded output to the lead.
+
 ## State Root
 
 `TeamExecutor` state belongs under the Sejong artifact root:
@@ -65,6 +67,10 @@ Each team run should also record King Sejong context metadata in `team.json`:
 
 - `active_context_id`
 - `route_id`
+- `current_surface`
+- user-facing `phase_label`
+- `route_sequence`
+- `pending_gates`
 - `source_of_truth_refs`
 - `lead_authority.gate_owner = "sejong"`
 - `lead_authority.synthesis_owner = "sejong"`
@@ -83,6 +89,7 @@ Each worker must have:
 - role
 - assigned scope
 - allowed message kinds
+- allowed outputs
 - allowed file scope, if it can write
 - verification expectation
 - stop condition
@@ -106,8 +113,12 @@ python3 docs/sejong/scripts/team_executor.py init \
   --run-id example \
   --active-context-id ctx-example \
   --route-id route-example \
+  --current-surface jiphyeonjeon \
   --source-of-truth-ref brief.md \
   --brief-file brief.md \
+  --worker-allowed-output advocate="option A claim and evidence" \
+  --worker-verification advocate="cite evidence or blocker" \
+  --worker-stop advocate="stop after first-round brief" \
   --worker advocate:advocate:"option A review" \
   --worker critic:critic:"risk review"
 ```
@@ -118,7 +129,7 @@ Useful commands:
 
 ```bash
 python3 docs/sejong/scripts/team_executor.py open-round <run-dir> --purpose "first challenge"
-python3 docs/sejong/scripts/team_executor.py append-message <run-dir> --worker-id critic --role critic --scope "risk review" --kind objection --summary "..."
+python3 docs/sejong/scripts/team_executor.py append-message <run-dir> --worker-id critic --kind objection --summary "..."
 python3 docs/sejong/scripts/team_executor.py acquire-lease <run-dir> --worker-id implementer --scope "src/example.py"
 python3 docs/sejong/scripts/team_executor.py check <run-dir>
 python3 docs/sejong/scripts/team_executor.py launch <run-dir> --worker-command 'critic=claude ...' --dry-run
@@ -154,7 +165,7 @@ Allowed `kind` values:
 
 The mailbox is coordination evidence, not a second source of truth. Worker agreement, mailbox consensus, or silence is never approval, verification, or a gate decision.
 
-`team_executor.py check` should fail when a mailbox message claims gate approval, final authority, or majority-vote decision ownership.
+`team_executor.py check` should fail when a mailbox message claims gate approval, final authority, majority-vote decision ownership, an unknown worker, or a role/scope different from the registered worker contract.
 
 ## Rounds
 
@@ -210,6 +221,24 @@ Workers may inventory artifacts, check readiness, scan missing context, or revie
 Allowed for execution only when dependencies and file scopes are independent.
 
 Workers may implement, critique, or verify disjoint leaves. The lead or Seungjeongwon executor owns integration, final verification, and feedback.
+
+## Worker Context Injection
+
+When launching tmux workers, the helper injects the active court-mode context into each worker environment:
+
+- `SEJONG_TEAM_RUN`
+- `SEJONG_TEAM_WORKER`
+- `SEJONG_CURRENT_SURFACE`
+- `SEJONG_PHASE_LABEL`
+- `SEJONG_ROUTE_SEQUENCE`
+- `SEJONG_SOURCE_OF_TRUTH_REFS`
+- `SEJONG_PENDING_GATES`
+- `SEJONG_WORKER_ROLE`
+- `SEJONG_WORKER_SCOPE`
+- `SEJONG_WORKER_ALLOWED_OUTPUTS`
+- `SEJONG_WORKER_STOP_CONDITION`
+
+Workers should treat that context as bounds, not as permission to widen scope. If the active mode is unclear, the lead should block or rewrite the role assignment before launching workers.
 
 ## Pipes
 

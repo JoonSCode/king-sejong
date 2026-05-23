@@ -788,6 +788,8 @@
       ],
       "expected_behavior": [
         "uses one shared council brief and fixed options",
+        "assigns each worker a role, scope, allowed output, verification expectation, and stop condition",
+        "injects the active court mode into worker context",
         "caps the challenge round",
         "lead synthesis names recommendation and rejected options"
       ],
@@ -800,6 +802,12 @@
         "Worker agreement is not evidence; the lead must synthesize."
       ],
       "guardrail_expectations": {
+        "required_state_fields": [
+          "current_surface",
+          "phase_label",
+          "route_sequence",
+          "source_of_truth_refs"
+        ],
         "worker_authority_forbidden_claims": [
           "Uigwe gate approval",
           "final synthesis",
@@ -857,6 +865,9 @@
         "required_state_fields": [
           "active_context_id",
           "route_id",
+          "current_surface",
+          "phase_label",
+          "route_sequence",
           "source_of_truth_refs"
         ],
         "worker_authority_forbidden_claims": [

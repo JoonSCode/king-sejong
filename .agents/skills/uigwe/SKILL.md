@@ -193,12 +193,15 @@ If the chosen entry point proves too optimistic, re-enter the earlier stage requ
 - Preserve `1` selected branch and keep `2-3` strong alternatives at upper levels
 - Allow shared dependencies when the structure is naturally a DAG
 - Mark a node `executable_leaf` only when task, done criteria, file scope, dependencies, and verification are all explicit
+- Before handing off to Seungjeongwon, define goal, non-goals, success criteria, verification plan, must-preserve behaviors, acceptable tradeoffs, re-entry triggers, and executable leaves
+- Use Uigwe workers only for plan validation such as readiness, risk, scope, dependency, and verification checks; do not use worker consensus to approve gates or reopen the selected direction
 
 If decomposition becomes unstable:
 
 - retry locally first when the issue is subtree-local
 - re-enter the Uigwe `Design Exploration` (`brainstorming`) phase when the selected design path is failing
 - re-enter the Uigwe `Intent Clarification` (`deep-interview`) phase when intent, scope, non-goals, or decision boundaries are unstable
+- treat Seungjeongwon execution feedback as evidence: local implementation mismatches may trigger local re-exploration, but broken design or success criteria trigger Uigwe re-entry
 
 Use the numeric defaults in `../../../docs/sejong/SCORING_AND_GATES.md` and `../../../docs/sejong/policy.defaults.json` unless the user explicitly overrides them.
 

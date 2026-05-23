@@ -12,8 +12,14 @@
     "gate_owner": "sejong",
     "synthesis_owner": "sejong"
   },
+  "current_surface": "jiphyeonjeon",
+  "phase_label": "decision",
+  "pending_gates": [],
   "repo_root": ".",
   "route_id": "route-team-valid",
+  "route_sequence": [
+    "jiphyeonjeon"
+  ],
   "run_id": "valid-context",
   "source_of_truth_refs": [
     "brief.md"
@@ -27,9 +33,14 @@
         "status",
         "verification"
       ],
+      "allowed_outputs": [
+        "bounded risk note"
+      ],
       "role": "critic",
       "scope": "bounded risk review",
       "status": "registered",
+      "stop_condition": "Return mailbox evidence to Sejong lead.",
+      "verification_expectation": "Cite brief.md or report a blocker.",
       "worker_id": "critic"
     }
   ]

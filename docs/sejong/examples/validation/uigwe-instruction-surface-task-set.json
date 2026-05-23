@@ -161,6 +161,7 @@
         "lead Sejong owns synthesis, routing, final decision, and final verification",
         "$team is an optional TeamExecutor backend for tmux workers coordinated through Sejong state",
         "$team state is stored under ${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/",
+        "$team worker context includes current court mode and role assignment bounds",
         "team_executor.py can initialize and check TeamExecutor run state",
         "Uigwe supports only preflight parallelism before gates"
       ],
@@ -176,6 +177,9 @@
         "required_state_fields": [
           "active_context_id",
           "route_id",
+          "current_surface",
+          "phase_label",
+          "route_sequence",
           "source_of_truth_refs"
         ],
         "worker_authority_forbidden_claims": [

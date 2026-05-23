@@ -5,6 +5,7 @@ import argparse
 import fnmatch
 import json
 import os
+import shlex
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -27,6 +28,28 @@ MESSAGE_KINDS = {
     "status",
     "blocker",
     "verification",
+}
+
+SURFACES = {
+    "sejong",
+    "jangyeongsil",
+    "jiphyeonjeon",
+    "uigwe",
+    "seungjeongwon",
+    "sillok",
+    "danjong",
+    "sejong-direct",
+}
+
+DEFAULT_PHASE_LABELS = {
+    "sejong": "King Sejong workflow",
+    "jangyeongsil": "research",
+    "jiphyeonjeon": "decision",
+    "uigwe": "planning",
+    "seungjeongwon": "execution",
+    "sillok": "recording",
+    "danjong": "retired option",
+    "sejong-direct": "direct handling",
 }
 
 FORBIDDEN_WORKER_AUTHORITY_TERMS = (
@@ -97,6 +120,20 @@ def parse_assignment(value: str) -> tuple[str, str]:
     if not key or not assigned:
         raise argparse.ArgumentTypeError("assignment must be worker_id=value")
     return key, assigned
+
+
+def grouped_assignments(assignments: list[tuple[str, str]] | None) -> dict[str, list[str]]:
+    grouped: dict[str, list[str]] = {}
+    for key, value in assignments or []:
+        grouped.setdefault(key, []).append(value)
+    return grouped
+
+
+def single_assignments(assignments: list[tuple[str, str]] | None) -> dict[str, str]:
+    singles: dict[str, str] = {}
+    for key, value in assignments or []:
+        singles[key] = value
+    return singles
 
 
 def normalize_scope(scope: str) -> str:
@@ -182,8 +219,38 @@ def worker_ids(team: dict[str, Any]) -> set[str]:
     return {worker["worker_id"] for worker in team.get("workers", [])}
 
 
-def add_worker_record(run_dir: Path, worker: dict[str, str], command: str | None = None) -> None:
+def worker_by_id(team: dict[str, Any], worker_id: str) -> dict[str, Any] | None:
+    for worker in team.get("workers", []):
+        if worker.get("worker_id") == worker_id:
+            return worker
+    return None
+
+
+def default_allowed_outputs(worker: dict[str, str]) -> list[str]:
+    return [f"bounded {worker['role']} output for {worker['scope']}"]
+
+
+def default_verification_expectation(worker: dict[str, str]) -> str:
+    return f"Return evidence or a blocker for {worker['scope']}."
+
+
+def default_stop_condition(worker: dict[str, str]) -> str:
+    return "Stop after returning the assigned output to the Sejong lead."
+
+
+def add_worker_record(
+    run_dir: Path,
+    worker: dict[str, str],
+    command: str | None = None,
+    *,
+    allowed_outputs: list[str] | None = None,
+    verification_expectation: str | None = None,
+    stop_condition: str | None = None,
+) -> None:
     team = load_team(run_dir)
+    for required_field in ("current_surface", "phase_label"):
+        if not team.get(required_field):
+            raise SystemExit(f"team run missing {required_field}; initialize a court-mode-aware run first")
     if worker["worker_id"] in worker_ids(team):
         raise SystemExit(f"worker already exists: {worker['worker_id']}")
 
@@ -192,6 +259,9 @@ def add_worker_record(run_dir: Path, worker: dict[str, str], command: str | None
         "role": worker["role"],
         "scope": worker["scope"],
         "allowed_message_kinds": sorted(MESSAGE_KINDS),
+        "allowed_outputs": allowed_outputs or default_allowed_outputs(worker),
+        "verification_expectation": verification_expectation or default_verification_expectation(worker),
+        "stop_condition": stop_condition or default_stop_condition(worker),
         "status": "registered",
     }
     if command:
@@ -207,9 +277,14 @@ def add_worker_record(run_dir: Path, worker: dict[str, str], command: str | None
         {
             "format": WORKER_FORMAT,
             "run_id": team["run_id"],
+            "current_surface": team["current_surface"],
+            "phase_label": team["phase_label"],
             "worker_id": worker["worker_id"],
             "role": worker["role"],
             "scope": worker["scope"],
+            "allowed_outputs": record["allowed_outputs"],
+            "verification_expectation": record["verification_expectation"],
+            "stop_condition": record["stop_condition"],
             "status": "registered",
             "updated_at": now_utc(),
         },
@@ -240,6 +315,9 @@ def init_run(args: argparse.Namespace) -> int:
 
     repo_root = Path(args.repo_root).expanduser().resolve()
     source_of_truth_refs = args.source_of_truth_ref or ["brief.md"]
+    current_surface = args.current_surface
+    phase_label = args.phase_label or DEFAULT_PHASE_LABELS[current_surface]
+    route_sequence = args.route_sequence or [current_surface]
     write_json(
         team_path(run_dir),
         {
@@ -250,6 +328,10 @@ def init_run(args: argparse.Namespace) -> int:
             "brief_path": "brief.md",
             "active_context_id": args.active_context_id or f"ctx-{run_id}",
             "route_id": args.route_id or f"route-{run_id}",
+            "current_surface": current_surface,
+            "phase_label": phase_label,
+            "route_sequence": route_sequence,
+            "pending_gates": args.pending_gate or [],
             "source_of_truth_refs": source_of_truth_refs,
             "lead_authority": {
                 "gate_owner": "sejong",
@@ -268,8 +350,24 @@ def init_run(args: argparse.Namespace) -> int:
     mailbox_path(run_dir).write_text("", encoding="utf-8")
 
     commands = dict(args.command or [])
+    allowed_outputs = grouped_assignments(args.worker_allowed_output)
+    verification_expectations = single_assignments(args.worker_verification)
+    stop_conditions = single_assignments(args.worker_stop)
+    declared_worker_ids = {worker["worker_id"] for worker in args.worker or []}
+    assigned_worker_ids = set(commands) | set(allowed_outputs) | set(verification_expectations) | set(stop_conditions)
+    unknown_worker_ids = sorted(assigned_worker_ids - declared_worker_ids)
+    if unknown_worker_ids:
+        raise SystemExit(f"worker assignments reference unknown workers: {unknown_worker_ids}")
     for worker in args.worker or []:
-        add_worker_record(run_dir, worker, commands.get(worker["worker_id"]))
+        worker_id = worker["worker_id"]
+        add_worker_record(
+            run_dir,
+            worker,
+            commands.get(worker_id),
+            allowed_outputs=allowed_outputs.get(worker_id),
+            verification_expectation=verification_expectations.get(worker_id),
+            stop_condition=stop_conditions.get(worker_id),
+        )
 
     print(str(run_dir))
     return 0
@@ -277,7 +375,14 @@ def init_run(args: argparse.Namespace) -> int:
 
 def add_worker(args: argparse.Namespace) -> int:
     run_dir = require_run_dir(Path(args.run_dir))
-    add_worker_record(run_dir, args.worker, args.command)
+    add_worker_record(
+        run_dir,
+        args.worker,
+        args.command,
+        allowed_outputs=args.allowed_output,
+        verification_expectation=args.verification,
+        stop_condition=args.stop,
+    )
     print(f"worker added: {args.worker['worker_id']}")
     return 0
 
@@ -328,10 +433,20 @@ def current_open_round(run_dir: Path) -> str:
 def append_message(args: argparse.Namespace) -> int:
     run_dir = require_run_dir(Path(args.run_dir))
     team = load_team(run_dir)
-    if args.worker_id not in worker_ids(team):
+    worker = worker_by_id(team, args.worker_id)
+    if worker is None:
         raise SystemExit(f"unknown worker: {args.worker_id}")
     if args.kind not in MESSAGE_KINDS:
         raise SystemExit(f"unsupported message kind: {args.kind}")
+    if args.kind not in worker.get("allowed_message_kinds", []):
+        raise SystemExit(f"message kind not allowed for worker {args.worker_id}: {args.kind}")
+
+    role = args.role or worker["role"]
+    scope = args.scope or worker["scope"]
+    if role != worker["role"]:
+        raise SystemExit(f"message role does not match registered worker role: {role} != {worker['role']}")
+    if scope != worker["scope"]:
+        raise SystemExit(f"message scope does not match registered worker scope: {scope} != {worker['scope']}")
 
     round_id = args.round_id or current_open_round(run_dir)
     message_id = args.message_id or f"{round_id}-{args.worker_id}-{datetime.now(timezone.utc).strftime('%H%M%S')}"
@@ -340,8 +455,8 @@ def append_message(args: argparse.Namespace) -> int:
         "run_id": team["run_id"],
         "round_id": round_id,
         "worker_id": args.worker_id,
-        "role": args.role,
-        "scope": args.scope,
+        "role": role,
+        "scope": scope,
         "kind": args.kind,
         "target_message_id": args.target_message_id,
         "summary": args.summary,
@@ -444,9 +559,19 @@ def check_run(args: argparse.Namespace) -> int:
         failures.append("team.json has unexpected format")
     if ".omx" in json.dumps(team):
         failures.append("team.json references .omx state")
-    for required_field in ("active_context_id", "route_id", "source_of_truth_refs", "lead_authority"):
+    for required_field in (
+        "active_context_id",
+        "route_id",
+        "current_surface",
+        "phase_label",
+        "route_sequence",
+        "source_of_truth_refs",
+        "lead_authority",
+    ):
         if not team.get(required_field):
             failures.append(f"team.json missing {required_field}")
+    if team.get("current_surface") not in SURFACES:
+        failures.append(f"team.json has invalid current_surface: {team.get('current_surface')}")
 
     lead_authority = team.get("lead_authority") or {}
     if lead_authority.get("gate_owner") != "sejong":
@@ -461,14 +586,35 @@ def check_run(args: argparse.Namespace) -> int:
             failures.append(f"source_of_truth_ref does not exist: {ref}")
 
     for worker in team.get("workers", []):
-        for field in ("worker_id", "role", "scope", "allowed_message_kinds", "status"):
+        for field in (
+            "worker_id",
+            "role",
+            "scope",
+            "allowed_message_kinds",
+            "allowed_outputs",
+            "verification_expectation",
+            "stop_condition",
+            "status",
+        ):
             if not worker.get(field):
                 failures.append(f"worker missing {field}: {worker.get('worker_id')}")
+        invalid_kinds = sorted(set(worker.get("allowed_message_kinds") or []) - MESSAGE_KINDS)
+        if invalid_kinds:
+            failures.append(f"worker has unsupported allowed_message_kinds: {worker.get('worker_id')}: {invalid_kinds}")
 
     seen_messages: set[str] = set()
     for message in read_mailbox(run_dir):
+        worker = worker_by_id(team, str(message.get("worker_id") or ""))
+        if worker is None:
+            failures.append(f"mailbox message references unknown worker: {message.get('message_id')}")
         if message.get("kind") not in MESSAGE_KINDS:
             failures.append(f"unsupported mailbox kind: {message.get('kind')}")
+        elif worker and message.get("kind") not in worker.get("allowed_message_kinds", []):
+            failures.append(f"mailbox kind not allowed for worker: {message.get('message_id')}")
+        if worker and message.get("role") != worker.get("role"):
+            failures.append(f"mailbox role does not match worker: {message.get('message_id')}")
+        if worker and message.get("scope") != worker.get("scope"):
+            failures.append(f"mailbox scope does not match worker: {message.get('message_id')}")
         message_id = message.get("message_id")
         if not message_id:
             failures.append("mailbox message missing message_id")
@@ -526,8 +672,22 @@ def launch(args: argparse.Namespace) -> int:
     cwd = str(Path(args.cwd or team["repo_root"]).expanduser().resolve())
     tmux_commands: list[list[str]] = []
     for index, (worker_id, command) in enumerate(commands.items()):
-        worker_env = f"SEJONG_TEAM_RUN={run_dir} SEJONG_TEAM_WORKER={worker_id} "
-        shell_command = worker_env + command
+        worker = worker_by_id(team, worker_id) or {}
+        env_values = {
+            "SEJONG_TEAM_RUN": str(run_dir),
+            "SEJONG_TEAM_WORKER": worker_id,
+            "SEJONG_CURRENT_SURFACE": str(team.get("current_surface") or ""),
+            "SEJONG_PHASE_LABEL": str(team.get("phase_label") or ""),
+            "SEJONG_ROUTE_SEQUENCE": json.dumps(team.get("route_sequence") or []),
+            "SEJONG_SOURCE_OF_TRUTH_REFS": json.dumps(team.get("source_of_truth_refs") or []),
+            "SEJONG_PENDING_GATES": json.dumps(team.get("pending_gates") or []),
+            "SEJONG_WORKER_ROLE": str(worker.get("role") or ""),
+            "SEJONG_WORKER_SCOPE": str(worker.get("scope") or ""),
+            "SEJONG_WORKER_ALLOWED_OUTPUTS": json.dumps(worker.get("allowed_outputs") or []),
+            "SEJONG_WORKER_STOP_CONDITION": str(worker.get("stop_condition") or ""),
+        }
+        worker_env = " ".join(f"{key}={shlex.quote(value)}" for key, value in env_values.items())
+        shell_command = f"{worker_env} {command}"
         if index == 0:
             tmux_commands.append(["tmux", "new-session", "-d", "-s", session, "-c", cwd, shell_command])
         else:
@@ -556,9 +716,16 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--brief-file")
     init.add_argument("--active-context-id")
     init.add_argument("--route-id")
+    init.add_argument("--current-surface", required=True, choices=sorted(SURFACES))
+    init.add_argument("--phase-label")
+    init.add_argument("--route-sequence", action="append")
+    init.add_argument("--pending-gate", action="append")
     init.add_argument("--source-of-truth-ref", action="append")
     init.add_argument("--worker", action="append", type=parse_worker)
     init.add_argument("--command", action="append", type=parse_assignment)
+    init.add_argument("--worker-allowed-output", action="append", type=parse_assignment)
+    init.add_argument("--worker-verification", action="append", type=parse_assignment)
+    init.add_argument("--worker-stop", action="append", type=parse_assignment)
     init.add_argument("--force", action="store_true")
     init.set_defaults(func=init_run)
 
@@ -566,6 +733,9 @@ def build_parser() -> argparse.ArgumentParser:
     worker.add_argument("run_dir")
     worker.add_argument("worker", type=parse_worker)
     worker.add_argument("--command")
+    worker.add_argument("--allowed-output", action="append")
+    worker.add_argument("--verification")
+    worker.add_argument("--stop")
     worker.set_defaults(func=add_worker)
 
     open_cmd = subparsers.add_parser("open-round", help="Open a mailbox challenge round")
@@ -584,8 +754,8 @@ def build_parser() -> argparse.ArgumentParser:
     message.add_argument("--message-id")
     message.add_argument("--round-id")
     message.add_argument("--worker-id", required=True)
-    message.add_argument("--role", required=True)
-    message.add_argument("--scope", required=True)
+    message.add_argument("--role")
+    message.add_argument("--scope")
     message.add_argument("--kind", required=True, choices=sorted(MESSAGE_KINDS))
     message.add_argument("--target-message-id")
     message.add_argument("--summary", required=True)

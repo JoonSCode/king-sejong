@@ -35,6 +35,19 @@
         "$ref": "#/$defs/NonEmptyString"
       }
     },
+    "Surface": {
+      "type": "string",
+      "enum": [
+        "sejong",
+        "jangyeongsil",
+        "jiphyeonjeon",
+        "uigwe",
+        "seungjeongwon",
+        "sillok",
+        "danjong",
+        "sejong-direct"
+      ]
+    },
     "MessageKind": {
       "type": "string",
       "enum": [
@@ -88,6 +101,15 @@
             "$ref": "#/$defs/MessageKind"
           }
         },
+        "allowed_outputs": {
+          "$ref": "#/$defs/StringList"
+        },
+        "verification_expectation": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "stop_condition": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
         "status": {
           "$ref": "#/$defs/NonEmptyString"
         },
@@ -100,6 +122,9 @@
         "role",
         "scope",
         "allowed_message_kinds",
+        "allowed_outputs",
+        "verification_expectation",
+        "stop_condition",
         "status"
       ]
     },
@@ -129,6 +154,18 @@
         "route_id": {
           "$ref": "#/$defs/NonEmptyString"
         },
+        "current_surface": {
+          "$ref": "#/$defs/Surface"
+        },
+        "phase_label": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "route_sequence": {
+          "$ref": "#/$defs/StringList"
+        },
+        "pending_gates": {
+          "$ref": "#/$defs/StringList"
+        },
         "source_of_truth_refs": {
           "$ref": "#/$defs/StringList"
         },
@@ -153,6 +190,10 @@
         "brief_path",
         "active_context_id",
         "route_id",
+        "current_surface",
+        "phase_label",
+        "route_sequence",
+        "pending_gates",
         "source_of_truth_refs",
         "lead_authority",
         "forbidden_worker_claims",
@@ -285,6 +326,12 @@
         "run_id": {
           "$ref": "#/$defs/NonEmptyString"
         },
+        "current_surface": {
+          "$ref": "#/$defs/Surface"
+        },
+        "phase_label": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
         "worker_id": {
           "$ref": "#/$defs/NonEmptyString"
         },
@@ -292,6 +339,15 @@
           "$ref": "#/$defs/NonEmptyString"
         },
         "scope": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "allowed_outputs": {
+          "$ref": "#/$defs/StringList"
+        },
+        "verification_expectation": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "stop_condition": {
           "$ref": "#/$defs/NonEmptyString"
         },
         "status": {
@@ -305,9 +361,14 @@
       "required": [
         "format",
         "run_id",
+        "current_surface",
+        "phase_label",
         "worker_id",
         "role",
         "scope",
+        "allowed_outputs",
+        "verification_expectation",
+        "stop_condition",
         "status",
         "updated_at"
       ]
