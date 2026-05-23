@@ -77,6 +77,30 @@ Each worker must have:
 
 Workers may read the shared brief and append mailbox messages. They must not silently widen their scope.
 
+## Reference Helper
+
+The installed docs include a small reference helper:
+
+```bash
+python3 docs/sejong/scripts/team_executor.py init \
+  --run-id example \
+  --brief-file brief.md \
+  --worker advocate:advocate:"option A review" \
+  --worker critic:critic:"risk review"
+```
+
+The helper manages Sejong-owned state, mailbox messages, rounds, leases, and optional tmux launch commands. It is a coordination helper for wrappers such as `$team`; it is not a replacement for the lead Sejong agent.
+
+Useful commands:
+
+```bash
+python3 docs/sejong/scripts/team_executor.py open-round <run-dir> --purpose "first challenge"
+python3 docs/sejong/scripts/team_executor.py append-message <run-dir> --worker-id critic --role critic --scope "risk review" --kind objection --summary "..."
+python3 docs/sejong/scripts/team_executor.py acquire-lease <run-dir> --worker-id implementer --scope "src/example.py"
+python3 docs/sejong/scripts/team_executor.py check <run-dir>
+python3 docs/sejong/scripts/team_executor.py launch <run-dir> --worker-command 'critic=claude ...' --dry-run
+```
+
 ## Mailbox Contract
 
 `mailbox.jsonl` is append-only. Each message should include:

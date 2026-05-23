@@ -109,4 +109,5 @@ python3 docs/sejong/scripts/validate_json_contracts.py
 python3 docs/sejong/scripts/validate_bundle.py docs/sejong/examples/greenfield-full-flow
 python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets
 python3 docs/sejong/scripts/project_summary.py docs/sejong/examples/greenfield-full-flow --write
+python3 docs/sejong/scripts/team_executor.py check <team-run-dir>
 ```

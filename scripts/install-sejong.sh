@@ -157,6 +157,8 @@ verify_repo_install() {
     "docs/sejong/PROTOCOL.md"
     "docs/sejong/SEUNGJEONGWON_EXECUTOR.md"
     "docs/sejong/BUNDLE_VALIDATOR.md"
+    "docs/sejong/TEAM_EXECUTOR.md"
+    "docs/sejong/scripts/team_executor.py"
     "docs/sejong/scripts/validate_json_contracts.py"
   )
 
@@ -200,6 +202,8 @@ verify_user_install() {
     "skills/sejong/docs/PROTOCOL.md"
     "skills/sejong/docs/SEUNGJEONGWON_EXECUTOR.md"
     "skills/sejong/docs/BUNDLE_VALIDATOR.md"
+    "skills/sejong/docs/TEAM_EXECUTOR.md"
+    "skills/sejong/docs/scripts/team_executor.py"
     "skills/sejong/docs/scripts/validate_json_contracts.py"
     "skills/uigwe/SKILL.md"
     "skills/seungjeongwon/SKILL.md"

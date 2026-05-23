@@ -153,13 +153,15 @@
       "expected_artifacts": [
         ".agents/skills/sejong/SKILL.md",
         "docs/sejong/ROUTER.md",
-        "docs/sejong/TEAM_EXECUTOR.md"
+        "docs/sejong/TEAM_EXECUTOR.md",
+        "docs/sejong/scripts/team_executor.py"
       ],
       "expected_behavior": [
         "research and council fan-out are optional tactics",
         "lead Sejong owns synthesis, routing, final decision, and final verification",
         "$team is an optional TeamExecutor backend for tmux workers coordinated through Sejong state",
         "$team state is stored under ${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/",
+        "team_executor.py can initialize and check TeamExecutor run state",
         "Uigwe supports only preflight parallelism before gates"
       ],
       "forbidden_behavior": [
