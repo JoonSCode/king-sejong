@@ -73,7 +73,7 @@ In those user-facing messages, the wrapper should prefer plain-language stage de
 
 - accept the validated Uigwe bundle after planning
 - preserve the bundle as the source of truth for execution
-- hand off execution to Seungjeongwon
+- hand off execution to Seungjeongwon by default, or to TeamExecutor when `$team` worker coordination is explicitly selected
 - return execution feedback or re-entry recommendations
 
 The wrapper must not absorb planner or consumer logic into its own contract.

@@ -26,7 +26,7 @@ Read only what is needed:
    - explicit user scope when the task is direct and clear
 2. Do not reopen planning unless execution discovers a real contradiction.
 3. Execute dependency-ready work in the current Codex session when possible.
-4. Use parallel subagents only when file scopes are independent and verification remains clear.
+4. Use parallel workers only when file scopes are independent and verification remains clear. `$team` workers require Sejong state, mailbox evidence, and file leases; do not use `.omx` state.
 5. Verify before claiming completion.
 6. Return execution feedback:
    - completed, blocked, invalidated, or failed scope

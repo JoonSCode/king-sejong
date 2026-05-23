@@ -40,7 +40,8 @@ For normal use:
 4. Read [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md) to understand where research, planning, runtime, and evidence artifacts are stored.
 5. Read [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) if you want repo-local role prompt overlays.
 6. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
-7. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
+7. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
+8. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
 
 ## Practical Usage
 
@@ -58,7 +59,7 @@ After Sejong is invoked, follow-up turns remain inside the active Sejong workflo
 For larger Sejong work, parallelism is allowed when it is genuinely separable:
 
 - `JangYeongsil` can fan out across independent evidence sources and fan in to one `known` / `inferred` / `unknown` synthesis.
-- `Jiphyeonjeon` can run bounded council briefs in parallel, such as advocate, critic, specialist, operator, and risk reviewer. The agents do not vote; the lead Sejong agent synthesizes the recommendation.
+- `Jiphyeonjeon` can run bounded council briefs in parallel, such as advocate, critic, specialist, operator, and risk reviewer. Substantial decisions may use `$team` tmux workers with Sejong mailbox/state files for a bounded challenge round. The workers do not vote; the lead Sejong agent opens and closes rounds and synthesizes the recommendation.
 - `Uigwe` can overlap only through preflight checks such as artifact inventory, readiness review, or validation planning. Formal packets and live-session gates remain lead/user-owned.
 - Execution parallelism belongs in `Seungjeongwon` after scope approval, with disjoint file scopes or test surfaces.
 
@@ -94,7 +95,7 @@ Depending on mode, Uigwe produces:
 
 These artifacts are meant for both human review and downstream machine consumption.
 
-By default, Sejong stores runtime, research, discussion, evidence, and temporary planning artifacts outside the target repository under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`. It does not create git-tracked repository files unless the user explicitly asks to promote a shareable artifact into the repo. See [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md).
+By default, Sejong stores runtime, research, discussion, evidence, and temporary planning artifacts outside the target repository under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`. `$team` worker state belongs under that root at `state/team/<run-id>/`, not under `.omx`. Sejong does not create git-tracked repository files unless the user explicitly asks to promote a shareable artifact into the repo. See [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md).
 
 ## Validation Helpers
 

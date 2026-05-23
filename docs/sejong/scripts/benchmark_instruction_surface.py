@@ -21,6 +21,7 @@ README_PATH = SEJONG_ROOT / "README.md"
 ROUTER_PATH = SEJONG_ROOT / "ROUTER.md"
 VALIDATION_PATH = SEJONG_ROOT / "VALIDATION.md"
 ARTIFACT_STORAGE_PATH = SEJONG_ROOT / "ARTIFACT_STORAGE.md"
+TEAM_EXECUTOR_PATH = SEJONG_ROOT / "TEAM_EXECUTOR.md"
 
 UIGWE_SKILL_LINE_BUDGET = 320
 SEJONG_SKILL_LINE_BUDGET = 90
@@ -177,13 +178,18 @@ def evaluate_sejong_boundary() -> list[dict[str, Any]]:
 def evaluate_bounded_parallelism() -> list[dict[str, Any]]:
     skill = load_text(SEJONG_SKILL_PATH)
     router = load_text(ROUTER_PATH)
-    combined = "\n".join([skill, router])
+    team = load_text(TEAM_EXECUTOR_PATH)
+    combined = "\n".join([skill, router, team])
     required = [
-        "subagents are an optional execution tactic",
+        "workers are an optional execution tactic",
         "lead Sejong agent owns routing, synthesis, final decision, and final verification",
         "For parallel Jiphyeonjeon, use bounded briefs",
+        "`$team` / `TeamExecutor` wrappers",
+        "${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/",
+        "must not depend on `.omx`",
+        "The lead Sejong agent opens and closes each challenge round",
         "`Uigwe` supports only preflight parallelism before gates",
-        "do not use subagent agreement as evidence or approval",
+        "do not use worker or subagent agreement as evidence or approval",
     ]
     passed, missing = contains_all(combined, required)
     return [

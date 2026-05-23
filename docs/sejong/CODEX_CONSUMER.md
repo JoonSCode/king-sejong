@@ -93,6 +93,8 @@ This lane may include:
 
 The consumer should use the lightest lane that preserves execution safety.
 
+These lane names describe the default Codex subagent consumer. `$team` is an executor-level `TeamExecutor` backend, not a fourth default consumer lane. When `$team` is selected, use [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) for tmux worker state, mailbox, and lease rules, then emit ordinary execution feedback for completed, blocked, or invalidated leaves.
+
 ## Dispatch Rules
 
 ### Dependency Order
@@ -123,6 +125,26 @@ When dispatching to a subagent, provide:
 - only the minimum supporting context needed from `spec.md` and `rationale.md`
 
 The consumer should avoid forwarding the full planning history unless it is actually needed.
+
+### Team Coordination
+
+For `$team` or other team-style execution, the consumer may use a mailbox only as coordination evidence, not as a second source of truth.
+
+Mailbox messages should be append-only and typed:
+
+- `claim`
+- `objection`
+- `question`
+- `response`
+- `evidence_ref`
+- `risk`
+- `status`
+- `blocker`
+- `verification`
+
+Each message should include the role, scope, authoring worker id, and target message id when it replies to another message. The lead agent owns round boundaries, conflict resolution, final synthesis, and all approval gates.
+
+Pipes may be used for ephemeral progress notifications from tmux workers, but durable decisions, blockers, and verification evidence should be written or summarized through the mailbox or final feedback contract. Do not treat pipe output, worker agreement, subagent agreement, or mailbox consensus as completion proof.
 
 ## Critic Policy
 

@@ -114,9 +114,39 @@ verify_source_only_paths_not_installed() {
   done
 }
 
+verify_tree_matches() {
+  local src=$1
+  local dest=$2
+  local label=$3
+
+  if ! diff -qr -x '.DS_Store' -x '__pycache__' "$src" "$dest" >/dev/null; then
+    echo "managed install differs from source: $label" >&2
+    diff -qr -x '.DS_Store' -x '__pycache__' "$src" "$dest" >&2 || true
+    return 1
+  fi
+}
+
+verify_rewritten_skill_matches() {
+  local src=$1
+  local dest=$2
+  local replacement=$3
+  local label=$4
+  local tmp_file
+
+  tmp_file=$(mktemp)
+  sed "s#\\.\\./\\.\\./\\.\\./docs/sejong/#$replacement#g" "$src" > "$tmp_file"
+  if ! cmp -s "$tmp_file" "$dest"; then
+    echo "managed install differs from rewritten source: $label" >&2
+    rm -f "$tmp_file"
+    return 1
+  fi
+  rm -f "$tmp_file"
+}
+
 verify_repo_install() {
   local root=$1
   local missing=0
+  local drift=0
   local required_paths=(
     ".agents/skills/sejong/SKILL.md"
     ".agents/skills/uigwe/SKILL.md"
@@ -144,6 +174,16 @@ verify_repo_install() {
 
   verify_source_only_paths_not_installed "$root"
 
+  verify_tree_matches "$SOURCE_ROOT/.agents/skills/sejong" "$root/.agents/skills/sejong" ".agents/skills/sejong/" || drift=1
+  verify_tree_matches "$SOURCE_ROOT/.agents/skills/uigwe" "$root/.agents/skills/uigwe" ".agents/skills/uigwe/" || drift=1
+  verify_tree_matches "$SOURCE_ROOT/.agents/skills/seungjeongwon" "$root/.agents/skills/seungjeongwon" ".agents/skills/seungjeongwon/" || drift=1
+  verify_tree_matches "$SOURCE_ROOT/docs/sejong" "$root/docs/sejong" "docs/sejong/" || drift=1
+
+  if [[ "$drift" -ne 0 ]]; then
+    echo "King Sejong install verification failed: managed content is stale or modified in $root" >&2
+    exit 1
+  fi
+
   echo "King Sejong repo install verified:"
   echo "  $root"
 }
@@ -151,6 +191,7 @@ verify_repo_install() {
 verify_user_install() {
   local root=$1
   local missing=0
+  local drift=0
   local required_paths=(
     "skills/sejong/SKILL.md"
     "skills/sejong/docs/README.md"
@@ -177,6 +218,19 @@ verify_user_install() {
   fi
 
   verify_source_only_paths_not_installed "$root/skills"
+
+  verify_rewritten_skill_matches "$SOURCE_ROOT/.agents/skills/sejong/SKILL.md" "$root/skills/sejong/SKILL.md" "docs/" "skills/sejong/SKILL.md" || drift=1
+  verify_rewritten_skill_matches "$SOURCE_ROOT/.agents/skills/uigwe/SKILL.md" "$root/skills/uigwe/SKILL.md" "../sejong/docs/" "skills/uigwe/SKILL.md" || drift=1
+  verify_rewritten_skill_matches "$SOURCE_ROOT/.agents/skills/seungjeongwon/SKILL.md" "$root/skills/seungjeongwon/SKILL.md" "../sejong/docs/" "skills/seungjeongwon/SKILL.md" || drift=1
+  verify_tree_matches "$SOURCE_ROOT/.agents/skills/sejong/agents" "$root/skills/sejong/agents" "skills/sejong/agents/" || drift=1
+  verify_tree_matches "$SOURCE_ROOT/.agents/skills/uigwe/agents" "$root/skills/uigwe/agents" "skills/uigwe/agents/" || drift=1
+  verify_tree_matches "$SOURCE_ROOT/.agents/skills/seungjeongwon/agents" "$root/skills/seungjeongwon/agents" "skills/seungjeongwon/agents/" || drift=1
+  verify_tree_matches "$SOURCE_ROOT/docs/sejong" "$root/skills/sejong/docs" "skills/sejong/docs/" || drift=1
+
+  if [[ "$drift" -ne 0 ]]; then
+    echo "King Sejong user install verification failed: managed content is stale or modified in $root" >&2
+    exit 1
+  fi
 
   echo "King Sejong user install verified:"
   echo "  $root"

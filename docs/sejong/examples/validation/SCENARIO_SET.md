@@ -21,4 +21,7 @@
 - `instruction-validation-benchmark`
 - `instruction-sejong-boundary`
 - `instruction-bounded-parallelism`
+- `instruction-sejong-continuation`
+- `instruction-sejong-self-modification`
+- `instruction-artifact-storage`
 - `instruction-compression-budget`

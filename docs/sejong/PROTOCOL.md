@@ -378,6 +378,7 @@ Reference docs:
 
 - `EXECUTOR.md`
 - `SEUNGJEONGWON_EXECUTOR.md`
+- `TEAM_EXECUTOR.md` when `$team` or tmux-backed worker coordination is explicitly selected
 
 Wrapper surface drafts:
 

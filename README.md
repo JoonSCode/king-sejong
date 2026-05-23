@@ -206,9 +206,9 @@ Use `JangYeongsil` when evidence is missing, `Jiphyeonjeon` when evidence exists
 
 `Jiphyeonjeon` is optional. It should appear as a short council pass only when evidence leaves a meaningful choice; skip it when the direction is already clear enough for Uigwe, Seungjeongwon, or direct action.
 
-Codex native subagents can increase parallelism for independent research branches, option reviews, implementation slices, or verification lanes. They are not a required step; the lead Sejong agent still owns synthesis, routing, and final verification.
+Bounded workers can increase parallelism for independent research branches, option reviews, implementation slices, or verification lanes. Codex native subagents are one backend; `$team` tmux workers are another. They are not a required step; the lead Sejong agent still owns synthesis, routing, and final verification.
 
-For larger Sejong runs, use research fan-out in `JangYeongsil`, bounded council briefs in `Jiphyeonjeon`, and only preflight checks in `Uigwe` before approval gates. Subagent agreement is never evidence, approval, or verification by itself.
+For larger Sejong runs, use research fan-out in `JangYeongsil`, bounded council briefs in `Jiphyeonjeon`, and only preflight checks in `Uigwe` before approval gates. Substantial `Jiphyeonjeon` decisions may use `$team` tmux workers coordinated through Sejong mailbox/state files under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/`. Worker or subagent agreement is never evidence, approval, or verification by itself.
 
 No `.codex/prompts/{role}.md` files are required. King Sejong uses Codex native role prompts by default and treats repo-local prompt files as optional overlays when a target repo provides them.
 
@@ -218,6 +218,7 @@ When changing King Sejong itself, material behavior changes should follow the fu
 
 - [Sejong router contract](docs/sejong/ROUTER.md)
 - [Artifact storage](docs/sejong/ARTIFACT_STORAGE.md)
+- [Team executor](docs/sejong/TEAM_EXECUTOR.md)
 - [Prompt overlays](docs/sejong/PROMPT_OVERLAYS.md)
 - [Uigwe protocol](docs/sejong/PROTOCOL.md)
 - [Uigwe wrapper](docs/sejong/WRAPPER.md)

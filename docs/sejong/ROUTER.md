@@ -89,11 +89,20 @@ Use `Jiphyeonjeon` when the policy, behavior, naming, or boundary decision is no
 
 `Sejong direct` remains allowed for narrow non-behavioral maintenance, such as typo fixes, broken links, formatting-only edits, deterministic scorecard regeneration, or mechanical corrections that do not change routing, planning, execution, installer, validation, or artifact-storage behavior.
 
-## Codex Native Subagents
+## Parallel Workers
 
-Sejong may use Codex native subagents to increase parallelism, but subagents are an optional execution tactic rather than a separate Sejong surface. The safe shape is hub-and-spoke: subagents return bounded briefs, and the lead Sejong agent owns routing, synthesis, final decision, and final verification.
+Sejong may use bounded workers to increase parallelism, but workers are an optional execution tactic rather than a separate Sejong surface. The safe shape is hub-and-spoke: workers return bounded briefs, mailbox messages, implementation slices, or verification evidence, and the lead Sejong agent owns routing, synthesis, final decision, and final verification.
 
-Role prompt resolution:
+Supported worker backends include:
+
+- Codex native subagents for host-managed bounded delegation
+- `$team` / `TeamExecutor` wrappers that launch separate Codex CLI, Claude CLI, or compatible workers in `tmux` panes and coordinate through Sejong-owned state files
+
+`$team` state belongs under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/`. It must not depend on `.omx` paths or OMX state. See [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) for the mailbox, tmux worker, and lease contract.
+
+Codex native subagents remain a valid backend, but `$team` is the preferred shape when the intended workers are independent CLI processes rather than host-managed `spawn_agent` calls.
+
+Codex native role prompt resolution:
 
 1. Use the host Codex native role prompt as the default source for `agent_type` behavior.
 2. If `.codex/prompts/{role}.md` exists in the target repo, read it as a repo-local overlay before spawning that role.
@@ -102,15 +111,15 @@ Role prompt resolution:
 
 See [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) for optional overlay guidance.
 
-Use subagents when independent work can run in parallel without blocking the next local step:
+Use bounded workers when independent work can run in parallel without blocking the next local step:
 
 - `JangYeongsil`: split evidence gathering across independent sources, docs, repo history, or external references.
 - `Jiphyeonjeon`: compare serious options through separate advocate, critic, or specialist perspectives before the lead agent synthesizes a recommendation.
-- `Uigwe`: keep live-session approval gates with the lead agent; use subagents only for bounded side research or artifact checks that do not decide the gate.
+- `Uigwe`: keep live-session approval gates with the lead agent; use workers only for bounded side research, preflight, readiness, or artifact checks that do not decide the gate.
 - `Seungjeongwon`: split implementation or verification across disjoint file scopes, test surfaces, or review lanes.
 - `Sillok`: have a verifier collect evidence while execution continues, then let the lead agent decide what belongs in the final record.
 
-Do not use subagents for trivial direct edits, single-source lookups, or duplicated readings of the same context. The lead Sejong agent owns routing, synthesis, final decision, and final verification.
+Do not use workers for trivial direct edits, single-source lookups, or duplicated readings of the same context. Worker agreement is not evidence, approval, or verification. The lead Sejong agent owns routing, synthesis, final decision, and final verification.
 
 ## Artifact Storage
 
@@ -134,10 +143,19 @@ When artifacts are generated, report the external run directory and whether any 
 `Jiphyeonjeon` supports a parallel chamber:
 
 - Start with a shared council brief: `decision_question`, `shared_evidence_bundle`, `fixed_options`, criteria, constraints, non-goals, allowed output, forbidden decisions, stop condition, and verification requirement.
-- Spawn bounded perspectives such as option advocate, counter-advocate, critic, domain specialist, operator, or risk reviewer.
+- Start bounded perspectives such as option advocate, counter-advocate, critic, domain specialist, operator, or risk reviewer.
 - Prefer independent first-round briefs, then a lead-mediated challenge round when the strongest objections need response.
+- For substantial Jiphyeonjeon work, a mailbox-mediated `$team` challenge round is allowed: workers may append bounded `claim`, `objection`, `question`, `response`, `evidence_ref`, or `risk` messages to the run mailbox, and may reference earlier message ids when answering each other.
 - Treat subagent agreement as signal, not evidence or approval. The lead synthesizes the final recommendation, rejected options, risks, confidence, and next surface.
-- Do not run open-ended subagent-to-subagent chat, majority voting, or debate-as-verification.
+- Do not run open-ended worker-to-worker chat, majority voting, or debate-as-verification. The lead Sejong agent opens and closes each challenge round, resolves conflicts, and owns the final decision note.
+
+Mailbox-mediated Jiphyeonjeon is useful when cross-examination will improve the decision faster than serial lead questioning. It should still stay bounded:
+
+- use one shared council brief and fixed option set unless the lead explicitly reopens the question
+- require every message to name its role, scope, message kind, and target message id when replying
+- cap challenge rounds; default to one challenge round after independent briefs
+- store the mailbox as external run evidence, not as a tracked repository artifact unless explicitly promoted
+- never allow a worker message to approve Uigwe gates, finalize packets, claim consensus, or override lead synthesis
 
 `Uigwe` supports only preflight parallelism before gates:
 

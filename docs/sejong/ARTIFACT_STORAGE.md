@@ -33,12 +33,21 @@ ${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs/<repo-id>/<timestamp>-<run-i
 
 `<repo-id>` should be stable enough to separate repositories and short enough to read in reports. A slug plus a short hash of the repository root is sufficient.
 
+Team worker coordination state should be stored under:
+
+```text
+${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/
+```
+
+Do not use `.omx/state/team` for King Sejong. OMX-specific paths are outside the Sejong contract.
+
 ## Artifact Classes
 
 External nontracked artifacts include:
 
 - raw JangYeongsil research notes
 - Jiphyeonjeon council briefs
+- TeamExecutor mailbox logs, worker notes, leases, and bounded challenge-round messages
 - temporary Uigwe packets and preflight notes
 - wrapper results produced during live planning
 - Seungjeongwon execution evidence snapshots

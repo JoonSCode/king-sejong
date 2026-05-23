@@ -63,7 +63,7 @@ For direct action:
 1. Read the source of truth before editing.
 2. Identify dependency-ready work.
 3. Execute only the approved leaves or explicit scope.
-4. Use parallel execution only when file scopes do not conflict.
+4. Use parallel execution only when file scopes do not conflict. `$team` workers require Sejong-owned state, mailbox evidence, and file leases.
 5. Keep planning and execution separate:
    - planning uncertainty -> return to Uigwe
    - implementation failure -> debug and continue
