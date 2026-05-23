@@ -143,6 +143,82 @@
       ]
     },
     {
+      "id": "instruction-sejong-continuation",
+      "title": "Sejong invocation persists across follow-up turns",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that an active Sejong workflow continues on follow-up turns until the user explicitly exits or switches workflows.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        ".agents/skills/sejong/SKILL.md",
+        "docs/sejong/ROUTER.md",
+        "docs/sejong/README.md"
+      ],
+      "expected_behavior": [
+        "follow-up turns remain Sejong turns without repeating the invocation token",
+        "current evidence, decisions, gates, selected surface, and verification state are carried forward",
+        "explicit exit or non-Sejong handoff ends the active workflow"
+      ],
+      "forbidden_behavior": [
+        "dropping Sejong context after one response",
+        "requiring the user to repeat $sejong for every clarification or approval"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    },
+    {
+      "id": "instruction-sejong-self-modification",
+      "title": "Material Sejong self-modification uses the full chain",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that material changes to Sejong, Uigwe, Seungjeongwon, installer, validation, or artifact-storage behavior go through Jiphyeonjeon, Uigwe, and Seungjeongwon rather than direct edits.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        ".agents/skills/sejong/SKILL.md",
+        "docs/sejong/ROUTER.md",
+        "docs/sejong/README.md"
+      ],
+      "expected_behavior": [
+        "material self-modification requires Jiphyeonjeon decision support when the decision is unsettled",
+        "Uigwe produces executable leaves and verification criteria before implementation",
+        "Seungjeongwon performs implementation and verification",
+        "Sejong direct remains limited to non-behavioral maintenance"
+      ],
+      "forbidden_behavior": [
+        "changing Sejong behavioral contracts through ordinary direct edits",
+        "using Uigwe as performative ceremony without execution leaves"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    },
+    {
+      "id": "instruction-artifact-storage",
+      "title": "Artifact storage remains nontracked by default",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that Sejong research, planning, runtime, and evidence artifacts are not git-tracked by default.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        "docs/sejong/ARTIFACT_STORAGE.md",
+        "docs/sejong/ROUTER.md",
+        "docs/sejong/README.md"
+      ],
+      "expected_behavior": [
+        "external nontracked artifact storage is the default",
+        "installer-time artifact tracking prompts are not part of normal install",
+        "repo-tracked artifacts require explicit user promotion"
+      ],
+      "forbidden_behavior": [
+        "automatically creating git-tracked research or planning artifacts",
+        "silently falling back to tracked repository files"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    },
+    {
       "id": "instruction-compression-budget",
       "title": "Skill files stay small enough to load",
       "profile": "instruction",

@@ -37,9 +37,10 @@ For normal use:
 1. Read [ROUTER.md](ROUTER.md) to understand Sejong's lanes.
 2. Read [PROTOCOL.md](PROTOCOL.md) to understand Uigwe's planning model.
 3. Read [WRAPPER.md](WRAPPER.md) if you want machine-consumable packet flow.
-4. Read [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) if you want repo-local role prompt overlays.
-5. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
-6. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
+4. Read [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md) to understand where research, planning, runtime, and evidence artifacts are stored.
+5. Read [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) if you want repo-local role prompt overlays.
+6. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
+7. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
 
 ## Practical Usage
 
@@ -52,6 +53,8 @@ $sejong this approved design should become executable work
 $sejong research the problem, plan the fix, implement it, and verify it
 ```
 
+After Sejong is invoked, follow-up turns remain inside the active Sejong workflow until the user explicitly exits Sejong or switches to another non-Sejong workflow. The user should not have to repeat `$sejong` for every clarification, approval, correction, implementation step, or verification request.
+
 For larger Sejong work, parallelism is allowed when it is genuinely separable:
 
 - `JangYeongsil` can fan out across independent evidence sources and fan in to one `known` / `inferred` / `unknown` synthesis.
@@ -60,6 +63,8 @@ For larger Sejong work, parallelism is allowed when it is genuinely separable:
 - Execution parallelism belongs in `Seungjeongwon` after scope approval, with disjoint file scopes or test surfaces.
 
 Sejong does not require `.codex/prompts/{role}.md`. If a target repo has such a file, treat it as a repo-local overlay on top of the Codex native role prompt. If it is absent, continue with the native role prompt. See [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md).
+
+When changing Sejong itself, use the full Sejong chain unless the edit is purely non-behavioral. Material changes to routing, Uigwe planning, Seungjeongwon execution, installer behavior, validation, or artifact storage should go through Jiphyeonjeon decision support, Uigwe planning and decomposition, then Seungjeongwon execution and verification. In short, material behavior changes should follow the full Sejong chain.
 
 Use Uigwe directly when you already want formal planning:
 
@@ -88,6 +93,8 @@ Depending on mode, Uigwe produces:
 - `goal-tree.json`
 
 These artifacts are meant for both human review and downstream machine consumption.
+
+By default, Sejong stores runtime, research, discussion, evidence, and temporary planning artifacts outside the target repository under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`. It does not create git-tracked repository files unless the user explicitly asks to promote a shareable artifact into the repo. See [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md).
 
 ## Validation Helpers
 

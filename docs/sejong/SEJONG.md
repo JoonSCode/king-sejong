@@ -42,3 +42,5 @@ New user-facing invocations should use `$sejong`; the source-of-truth routing co
 | `이 선택지는 단종 처리해` | `Danjong` record inside a Jiphyeonjeon discussion |
 
 `Sillok` belongs in evidence records such as scorecards, baseline notes, promotion reports, and retained alternatives. It is not a replacement for execution or planning.
+
+Sejong-generated research, planning, runtime, and evidence artifacts follow [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md). The default is external nontracked storage; repository-tracked artifacts require an explicit user promotion request.

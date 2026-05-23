@@ -3,13 +3,13 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-21T05:57:12Z",
+    "generated_at": "2026-05-23T04:43:50Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
   "aggregate": {
-    "scenario_count": 7,
-    "pass_count": 7,
+    "scenario_count": 10,
+    "pass_count": 10,
     "partial_count": 0,
     "fail_count": 0,
     "average_score": 1.0,
@@ -134,6 +134,57 @@
       ]
     },
     {
+      "scenario_id": "instruction-sejong-continuation",
+      "title": "Sejong invocation persists across follow-up turns",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "sejong_continuation_present",
+          "passed": true,
+          "detail": "Sejong invocation persists across follow-up turns until explicit exit or non-Sejong handoff."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-sejong-self-modification",
+      "title": "Material Sejong self-modification uses the full chain",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "sejong_self_modification_guard_present",
+          "passed": true,
+          "detail": "Material Sejong self-modification requires Jiphyeonjeon, Uigwe, and Seungjeongwon."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-artifact-storage",
+      "title": "Artifact storage remains nontracked by default",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "artifact_storage_policy_present",
+          "passed": true,
+          "detail": "Artifact storage remains external and nontracked by default with explicit promotion only."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
       "scenario_id": "instruction-compression-budget",
       "title": "Skill files stay small enough to load",
       "status": "pass",
@@ -147,7 +198,7 @@
         {
           "id": "sejong_skill_line_budget",
           "passed": true,
-          "detail": "Sejong SKILL.md line count is 34; budget is 90."
+          "detail": "Sejong SKILL.md line count is 36; budget is 90."
         },
         {
           "id": "validation_detail_lives_in_reference",

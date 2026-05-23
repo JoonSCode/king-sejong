@@ -71,6 +71,14 @@ For direct action:
 6. Verify each completed leaf or direct task.
 7. Record evidence before reporting completion.
 
+## Artifact Storage
+
+Execution evidence follows [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md).
+
+By default, Seungjeongwon stores execution feedback, verification notes, and evidence snapshots outside the target repository under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`. It should not create git-tracked evidence or planning files unless the user explicitly asks to promote or commit them.
+
+Implementation edits requested by the user still happen in the target workspace. This storage rule applies to Sejong-generated research, planning, runtime, and evidence artifacts, not to the source files the user asked Seungjeongwon to change.
+
 ## Output Contract
 
 Seungjeongwon reports:

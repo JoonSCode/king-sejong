@@ -20,6 +20,7 @@ SEJONG_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "sejong" / "SKILL.md"
 README_PATH = SEJONG_ROOT / "README.md"
 ROUTER_PATH = SEJONG_ROOT / "ROUTER.md"
 VALIDATION_PATH = SEJONG_ROOT / "VALIDATION.md"
+ARTIFACT_STORAGE_PATH = SEJONG_ROOT / "ARTIFACT_STORAGE.md"
 
 UIGWE_SKILL_LINE_BUDGET = 320
 SEJONG_SKILL_LINE_BUDGET = 90
@@ -31,6 +32,9 @@ SCENARIO_IDS = (
     "instruction-validation-benchmark",
     "instruction-sejong-boundary",
     "instruction-bounded-parallelism",
+    "instruction-sejong-continuation",
+    "instruction-sejong-self-modification",
+    "instruction-artifact-storage",
     "instruction-compression-budget",
 )
 
@@ -187,6 +191,61 @@ def evaluate_bounded_parallelism() -> list[dict[str, Any]]:
     ]
 
 
+def evaluate_sejong_continuation() -> list[dict[str, Any]]:
+    skill = load_text(SEJONG_SKILL_PATH)
+    router = load_text(ROUTER_PATH)
+    readme = load_text(README_PATH)
+    combined = "\n".join([skill, router, readme])
+    required = [
+        "when continuing an active Sejong workflow that the user has not explicitly ended",
+        "follow-up user turns as Sejong turns even when they do not repeat the invocation token",
+        "The user should not need to retype `$sejong`",
+        "until the user explicitly exits Sejong or switches to another non-Sejong workflow",
+        "This continuity is conversational state, not permanent memory.",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check("sejong_continuation_present", passed, "Sejong invocation persists across follow-up turns until explicit exit or non-Sejong handoff.", missing=missing)
+    ]
+
+
+def evaluate_sejong_self_modification() -> list[dict[str, Any]]:
+    skill = load_text(SEJONG_SKILL_PATH)
+    router = load_text(ROUTER_PATH)
+    readme = load_text(README_PATH)
+    combined = "\n".join([skill, router, readme])
+    required = [
+        "Changes to Sejong itself need a higher routing bar than ordinary repository edits.",
+        "Jiphyeonjeon decision -> Uigwe planning/decomposition -> Seungjeongwon execution and verification",
+        "Material self-modification includes changes to:",
+        "Use `Jiphyeonjeon` when the policy, behavior, naming, or boundary decision is not already settled.",
+        "`Sejong direct` remains allowed for narrow non-behavioral maintenance",
+        "material behavior changes should follow the full Sejong chain",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check("sejong_self_modification_guard_present", passed, "Material Sejong self-modification requires Jiphyeonjeon, Uigwe, and Seungjeongwon.", missing=missing)
+    ]
+
+
+def evaluate_artifact_storage() -> list[dict[str, Any]]:
+    storage = load_text(ARTIFACT_STORAGE_PATH)
+    router = load_text(ROUTER_PATH)
+    readme = load_text(README_PATH)
+    combined = "\n".join([storage, router, readme])
+    required = [
+        "external nontracked",
+        "`${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`",
+        "tracked repository files are created only when the user explicitly asks",
+        "Normal installation must not prompt for artifact tracking behavior.",
+        "When artifacts are generated, report the external run directory and whether any tracked repository files were created.",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check("artifact_storage_policy_present", passed, "Artifact storage remains external and nontracked by default with explicit promotion only.", missing=missing)
+    ]
+
+
 def evaluate_compression() -> list[dict[str, Any]]:
     uigwe_lines = line_count(UIGWE_SKILL_PATH)
     sejong_lines = line_count(SEJONG_SKILL_PATH)
@@ -217,6 +276,9 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-validation-benchmark": evaluate_validation_benchmark,
     "instruction-sejong-boundary": evaluate_sejong_boundary,
     "instruction-bounded-parallelism": evaluate_bounded_parallelism,
+    "instruction-sejong-continuation": evaluate_sejong_continuation,
+    "instruction-sejong-self-modification": evaluate_sejong_self_modification,
+    "instruction-artifact-storage": evaluate_artifact_storage,
     "instruction-compression-budget": evaluate_compression,
 }
 

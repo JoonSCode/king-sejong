@@ -1,6 +1,6 @@
 ---
 name: sejong
-description: Use when a user invokes Sejong/$sejong or court aliases JangYeongsil/장영실, Jiphyeonjeon/집현전, Seungjeongwon/승정원, Sillok/실록, or Danjong/단종 for all-in-one research, decision support, formal planning, execution, verification, evidence records, or rejected-option handling.
+description: Use when a user invokes Sejong/$sejong or court aliases JangYeongsil/장영실, Jiphyeonjeon/집현전, Seungjeongwon/승정원, Sillok/실록, or Danjong/단종 for all-in-one research, decision support, formal planning, execution, verification, evidence records, rejected-option handling, or when continuing an active Sejong workflow that the user has not explicitly ended.
 ---
 
 # Sejong
@@ -15,7 +15,9 @@ It is not a shim over another skill. Its source-of-truth routing contract is `..
 2. Classify the request into the next useful Sejong surface.
 3. Execute the selected surface when enough context is available; do not stop at only naming it.
 4. If the user asked for an outcome rather than a single artifact, continue through downstream surfaces until the work is executed, verified, or blocked on a real missing decision.
-5. Treat Korean court names as active user-facing surfaces:
+5. Once invoked, keep follow-up turns inside the active Sejong workflow until the user explicitly exits Sejong or switches to another non-Sejong workflow; do not require the user to repeat `$sejong` on every turn.
+6. For material changes to Sejong, Uigwe, Seungjeongwon, installer, validation, or artifact-storage behavior, use Jiphyeonjeon for unsettled decisions, Uigwe for planning and executable leaves, and Seungjeongwon for implementation and verification; reserve Sejong direct for non-behavioral typo, link, or formatting fixes.
+7. Treat Korean court names as active user-facing surfaces:
    - `JangYeongsil` -> research, experiment, and evidence gathering
    - `Jiphyeonjeon` -> discussion, debate, option comparison, and decision support
    - `Uigwe` -> formal planning with Uigwe modes and artifacts

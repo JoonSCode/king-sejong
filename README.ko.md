@@ -10,7 +10,11 @@ King Sejong은 **Codex**와 Codex와 같은 skill 환경에 들이는 기술 꾸
 
 한 에이전트에게 `$sejong`이라는 넓은 정문을 내려, 조사하고, 의논하여 정하고, 의궤로 기획하고, 승정원으로 실행하며, 검증하고, 실록처럼 증거를 남기게 하려는 물건이옵니다.
 
+한 번 `$sejong`을 부른 뒤에는, 사용자가 세종을 그만 쓰라 하거나 다른 비-Sejong workflow로 옮기라 하기 전까지 이어지는 답변도 Sejong 맥락으로 보옵니다.
+
 이는 홀로 서는 CLI나 Python 패키지가 아니옵니다. 쓰고자 하는 저장소에 `.agents/skills`와 `docs/sejong` 문서를 함께 옮기거나, `${CODEX_HOME:-~/.codex}/skills`에 옮겨, Codex가 그 skill을 읽게 하는 방식이옵니다.
+
+기본으로 Sejong은 조사, 기획, 실행 중 기록, 증거 산출물을 대상 저장소 밖 `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` 아래 두옵니다. 사용자가 명시하여 저장소에 남기라 하지 않는 한, git에 잡히는 기획 파일을 만들지 않사옵니다.
 
 ## 이름을 어찌 쓰리이까
 
@@ -186,9 +190,12 @@ Codex의 서브에이전트는 독립된 조사 갈래, 선택지 검토, 나뉜
 
 `.codex/prompts/{role}.md` 파일은 반드시 필요하지 않사옵니다. King Sejong은 Codex의 본래 role prompt를 먼저 쓰고, 대상 저장소가 그 파일을 마련한 경우에만 repo-local 덧입힘으로 읽사옵니다.
 
+King Sejong 자신을 고칠 때에는 단순한 오자, 링크, 서식 고침이 아닌 한 온전한 세종 길을 따르옵니다. 길목, 의궤 기획, 승정원 실행, 설치관, 검증, 산출물 저장 법도가 바뀌는 일은 집현전에서 정하고, 의궤로 실행 일을 나누며, 승정원으로 고치고 검증하옵니다.
+
 ## 더 살필 문서
 
 - [Sejong router contract](docs/sejong/ROUTER.md)
+- [Artifact storage](docs/sejong/ARTIFACT_STORAGE.md)
 - [Prompt overlays](docs/sejong/PROMPT_OVERLAYS.md)
 - [Uigwe protocol](docs/sejong/PROTOCOL.md)
 - [Uigwe wrapper](docs/sejong/WRAPPER.md)

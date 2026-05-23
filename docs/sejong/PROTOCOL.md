@@ -259,6 +259,12 @@ Internal-only state:
 
 - evidence graph state file
 
+Storage policy:
+
+- Uigwe's canonical outputs may be durable without being git-tracked
+- default planning and evidence artifacts follow [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md)
+- repository-tracked `spec.md`, `rationale.md`, `goal-tree.json`, and packet files require an explicit user promotion request
+
 Validation references:
 
 - `packets.schema.json`

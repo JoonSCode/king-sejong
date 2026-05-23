@@ -286,11 +286,14 @@ but those transitions should normally be applied by the planner after review, no
 - feedback emitted with `blocked` or `invalidated`
 - escalation recommends `brainstorming` or `deep_interview`
 
+## Artifact Storage
+
+Consumer feedback artifacts follow [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md) unless a caller explicitly requests repository-tracked promotion.
+
 ## Non-Goals
 
 This draft does not yet define:
 
 - the exact Codex prompt template for every execution lane
 - automatic reviewer role selection heuristics beyond the current policy guidance
-- the final persistence location for consumer feedback artifacts
 - multi-consumer arbitration when several consumers operate on one plan

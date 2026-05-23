@@ -19,6 +19,7 @@ This file is Sejong's routing contract. Sejong is not a new planning protocol an
 - It does not weaken Uigwe live-session approval gates.
 - It does not create packets when the user only needs evidence or a lightweight decision.
 - It does not turn `Danjong` into a separate execution lane.
+- It does not create git-tracked repository artifacts unless the user explicitly asks to promote a shareable record or planning bundle.
 
 ## Sejong Surfaces
 
@@ -48,6 +49,46 @@ In short: `JangYeongsil` gathers the evidence, `Jiphyeonjeon` discusses and deci
 
 `Jiphyeonjeon` is not mandatory in every Sejong chain. Use it as a short deliberation pass only when the gathered evidence leaves a meaningful choice.
 
+## Active Sejong Session
+
+Invoking `Sejong`, `$sejong`, or any court surface starts an active Sejong workflow for the current conversation.
+
+While that workflow is active, treat follow-up user turns as Sejong turns even when they do not repeat the invocation token. Carry forward the current evidence, decisions, pending gates, selected surface, rejected options, and verification state. Do not drop back to ordinary one-shot assistant behavior merely because the next turn says "continue", "do that", "what about this", or gives another instruction without naming Sejong.
+
+The user should not need to retype `$sejong` for each clarification, approval, correction, implementation step, or verification request inside the same workflow.
+
+End or hand off the active Sejong workflow only when one of these is true:
+
+- the user explicitly says to stop, leave Sejong, use normal Codex, or stop using the skill
+- the user explicitly invokes another non-Sejong skill or workflow and the request is not a Sejong sub-surface
+- the current conversation/workflow ends in the host environment
+
+If a follow-up seems unrelated but the user has not exited Sejong, still route it through Sejong. For an exact task, that route can be `Sejong direct`; for ambiguous scope, ask the smallest clarifying question needed to decide whether it belongs to the active Sejong workflow.
+
+This continuity is conversational state, not permanent memory. It does not require creating repository artifacts unless the user asks to promote a shareable record or planning bundle.
+
+## Sejong Self-Modification
+
+Changes to Sejong itself need a higher routing bar than ordinary repository edits.
+
+Material self-modification includes changes to:
+
+- `.agents/skills/sejong/`, `.agents/skills/uigwe/`, or `.agents/skills/seungjeongwon/`
+- `docs/sejong/ROUTER.md`, `PROTOCOL.md`, `WRAPPER.md`, `SEUNGJEONGWON_EXECUTOR.md`, `ARTIFACT_STORAGE.md`, or other durable behavior contracts
+- `scripts/install-sejong.sh`
+- schemas, validation tasks, benchmark scripts, or scorecards that define Sejong/Uigwe behavior
+- public docs when the wording changes behavioral expectations rather than only presentation
+
+For material self-modification, route through:
+
+```text
+Jiphyeonjeon decision -> Uigwe planning/decomposition -> Seungjeongwon execution and verification
+```
+
+Use `Jiphyeonjeon` when the policy, behavior, naming, or boundary decision is not already settled. Use `Uigwe` to turn the selected direction into executable leaves with done criteria and verification. Use `Seungjeongwon` to make the edits and prove the guardrails pass.
+
+`Sejong direct` remains allowed for narrow non-behavioral maintenance, such as typo fixes, broken links, formatting-only edits, deterministic scorecard regeneration, or mechanical corrections that do not change routing, planning, execution, installer, validation, or artifact-storage behavior.
+
 ## Codex Native Subagents
 
 Sejong may use Codex native subagents to increase parallelism, but subagents are an optional execution tactic rather than a separate Sejong surface. The safe shape is hub-and-spoke: subagents return bounded briefs, and the lead Sejong agent owns routing, synthesis, final decision, and final verification.
@@ -70,6 +111,16 @@ Use subagents when independent work can run in parallel without blocking the nex
 - `Sillok`: have a verifier collect evidence while execution continues, then let the lead agent decide what belongs in the final record.
 
 Do not use subagents for trivial direct edits, single-source lookups, or duplicated readings of the same context. The lead Sejong agent owns routing, synthesis, final decision, and final verification.
+
+## Artifact Storage
+
+Sejong follows the storage contract in [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md).
+
+By default, JangYeongsil research notes, Jiphyeonjeon council briefs, temporary Uigwe artifacts, Seungjeongwon evidence snapshots, and Sillok records are external nontracked artifacts under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`.
+
+Do not ask for an artifact tracking policy during normal install or normal routing. Create git-tracked repository artifacts only when the user explicitly asks to promote a shareable plan, Uigwe bundle, or Sillok record into the repository.
+
+When artifacts are generated, report the external run directory and whether any tracked repository files were created.
 
 ### Parallel Patterns
 

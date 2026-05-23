@@ -8,9 +8,13 @@ King Sejong is an all-in-one skill bundle for **Codex** and Codex-style agent en
 
 It gives an agent one broad front door, `$sejong`, for moving from research to decision, planning, execution, verification, and evidence recording.
 
+After `$sejong` is invoked, follow-up turns stay in the active Sejong workflow until the user explicitly exits Sejong or switches to another non-Sejong workflow.
+
 Uigwe is the formal planning protocol behind that front door. Sejong routes into Uigwe only when a durable planning bundle is useful, then continues to execution and verification when the user asked for an outcome rather than a plan artifact.
 
 This is not a standalone CLI or Python package. It is meant to be copied into a target repository or into `${CODEX_HOME:-~/.codex}/skills` so Codex can load the installed skill files.
+
+By default, Sejong keeps research, planning, runtime, and evidence artifacts outside the target repository under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`. It does not create git-tracked planning files unless the user explicitly asks to promote a shareable artifact into the repo.
 
 ## Naming
 
@@ -208,9 +212,12 @@ For larger Sejong runs, use research fan-out in `JangYeongsil`, bounded council 
 
 No `.codex/prompts/{role}.md` files are required. King Sejong uses Codex native role prompts by default and treats repo-local prompt files as optional overlays when a target repo provides them.
 
+When changing King Sejong itself, material behavior changes should follow the full Sejong chain: Jiphyeonjeon decision support, Uigwe planning and decomposition, then Seungjeongwon implementation and verification. Use direct edits only for non-behavioral typo, link, formatting, or mechanical fixes.
+
 ## Read More
 
 - [Sejong router contract](docs/sejong/ROUTER.md)
+- [Artifact storage](docs/sejong/ARTIFACT_STORAGE.md)
 - [Prompt overlays](docs/sejong/PROMPT_OVERLAYS.md)
 - [Uigwe protocol](docs/sejong/PROTOCOL.md)
 - [Uigwe wrapper](docs/sejong/WRAPPER.md)

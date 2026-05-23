@@ -143,6 +143,14 @@ Use `none` for any lane that is not requested.
 
 The wrapper should prefer explicit artifacts over inferred context.
 
+## Artifact Storage
+
+The wrapper follows [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md).
+
+Default generated artifacts are external nontracked artifacts under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`. The wrapper should still return artifact locations, but those locations should not be assumed to be repository-tracked paths.
+
+If the user explicitly asks for a repo-tracked plan or bundle, the wrapper may resolve the output directory to a repository path and should report that promotion clearly.
+
 ## Outputs
 
 The wrapper returns one result object.
