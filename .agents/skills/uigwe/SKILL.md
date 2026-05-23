@@ -188,6 +188,7 @@ If the chosen entry point proves too optimistic, re-enter the earlier stage requ
 
 ## Decomposition Rules
 
+- Treat each expandable node as a local objective: select candidate children, review whether they satisfy the parent objective, reselect when they are weak or invalid, then recurse into selected children
 - Use breadth-first decomposition with hard gates before scoring
 - Preserve `1` selected branch and keep `2-3` strong alternatives at upper levels
 - Allow shared dependencies when the structure is naturally a DAG

@@ -12,6 +12,8 @@ King Sejong은 **Codex**와 Codex와 같은 skill 환경에 들이는 기술 꾸
 
 한 번 `$sejong`을 부른 뒤에는, 사용자가 세종을 그만 쓰라 하거나 다른 비-Sejong workflow로 옮기라 하기 전까지 이어지는 답변도 Sejong 맥락으로 보옵니다.
 
+의궤는 목표를 이루기 위해 할 일을 고르고, 그 고른 일이 윗목표를 참으로 만족하는지 살피며, 아니면 다시 고르는 일을 거듭하여 실행 가능한 leaf에 이르도록 기획을 풀어내옵니다.
+
 이는 홀로 서는 CLI나 Python 패키지가 아니옵니다. 쓰고자 하는 저장소에 `.agents/skills`와 `docs/sejong` 문서를 함께 옮기거나, `${CODEX_HOME:-~/.codex}/skills`에 옮겨, Codex가 그 skill을 읽게 하는 방식이옵니다.
 
 기본으로 Sejong은 조사, 기획, 실행 중 기록, 증거 산출물을 대상 저장소 밖 `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` 아래 두옵니다. 사용자가 명시하여 저장소에 남기라 하지 않는 한, git에 잡히는 기획 파일을 만들지 않사옵니다.

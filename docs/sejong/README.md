@@ -8,6 +8,7 @@ Use `sejong` when the request is broad and the agent should choose whether to re
 Uigwe is the formal planning protocol inside Sejong. Use it when the output should be a durable planning bundle with packets, rationale, and executable leaves.
 In live chat usage, Uigwe is supposed to do that interactively.
 Progress should be presented as approximate readiness such as `기획 준비도 68%`, paired with the main weak areas.
+During decomposition, Uigwe repeatedly selects candidate work, reviews it against the parent objective, reselects weak or invalid candidates, and recurses until each selected branch is consumer-ready as an executable leaf.
 
 ## Installed Layout
 

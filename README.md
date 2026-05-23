@@ -12,6 +12,8 @@ After `$sejong` is invoked, follow-up turns stay in the active Sejong workflow u
 
 Uigwe is the formal planning protocol behind that front door. Sejong routes into Uigwe only when a durable planning bundle is useful, then continues to execution and verification when the user asked for an outcome rather than a plan artifact.
 
+Uigwe decomposes plans by repeatedly selecting candidate work, reviewing whether it satisfies the parent goal, reselecting when it does not, and descending until each branch becomes a consumer-ready executable leaf.
+
 This is not a standalone CLI or Python package. It is meant to be copied into a target repository or into `${CODEX_HOME:-~/.codex}/skills` so Codex can load the installed skill files.
 
 By default, Sejong keeps research, planning, runtime, and evidence artifacts outside the target repository under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`. It does not create git-tracked planning files unless the user explicitly asks to promote a shareable artifact into the repo.
@@ -143,6 +145,7 @@ Sejong can finish work in two ways:
 What is included:
 
 - direct execution for clear implementation and verification work
+- recursive Uigwe decomposition that keeps selected leaves tied to the parent goal and verification criteria
 - `Seungjeongwon` native executor skill
 - Seungjeongwon execution contract
 - schema, bundle, and instruction-surface validation helpers

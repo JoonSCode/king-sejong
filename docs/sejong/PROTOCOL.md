@@ -139,7 +139,22 @@ In live sessions, that re-entry means Uigwe returns to asking the user the missi
 
 ## Decomposition Engine
 
-The decomposition engine uses `gated beam BFS + backtracking`.
+The decomposition engine uses recursive `select -> review -> reselect` descent until each branch reaches executable-leaf readiness.
+
+At each expandable node, Uigwe treats that node as a local objective. It selects candidate child work that could satisfy the parent objective, reviews those candidates against gates and scoring, reselects when the candidate set is weak or invalid, and then repeats the same loop for each selected child.
+
+`gated beam BFS + backtracking` is the implementation shape for this loop.
+
+### Recursive Selection Loop
+
+For each expandable node:
+
+1. Define the node objective from the parent goal, selected design, constraints, non-goals, and expected done state.
+2. Select `2-3` candidate child sets that could satisfy that local objective.
+3. Review each candidate set against hard gates before scoring.
+4. Reselect locally when the candidate set is invalid, weak, duplicated, unverifiable, or misaligned with the parent objective.
+5. Commit the selected child set when it satisfies the local objective, and preserve strong upper-level alternatives where useful.
+6. Recurse into each selected child until it is either expanded again or marked `executable_leaf`.
 
 ### Search Behavior
 
@@ -159,6 +174,7 @@ Candidates are rejected before scoring if they:
 - conflict with the selected design direction
 - cannot be verified
 - claim to be a leaf while still having ambiguous scope or outputs
+- fail to satisfy the parent node objective
 
 ### Scoring Dimensions
 
@@ -192,6 +208,10 @@ A node becomes an executable leaf when all of the following are explicit:
 - enough context for a consumer to execute it safely
 
 An executable leaf is not merely a small node. It is a node that is safe to execute without further planning clarification.
+
+### Leaf Stop Rule
+
+Stop descending only when the selected node satisfies executable-leaf readiness. If a node is small but still lacks done criteria, file or responsibility scope, dependency prerequisites, verification, or consumer context, it must be reselected, expanded again, or escalated through re-entry instead of being marked as a leaf.
 
 ## Re-entry Rules
 
