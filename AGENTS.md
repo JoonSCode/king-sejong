@@ -4,6 +4,40 @@ This repository is both the source repository and the distribution repository fo
 
 This file is for agents working on this source repository. It is not part of the installed King Sejong skill contract and must not be copied into target repositories by `scripts/install-sejong.sh`.
 
+Its primary purpose is development continuity: future coding sessions should be able to recover the project direction, current architecture, and maintenance rules from the repository without the user restating chat context.
+
+## Development Direction
+
+King Sejong is a Codex-native skill and protocol distribution, not a separate runtime that replaces Codex, Claude, shell tools, or user-owned wrappers.
+
+The stable shape is:
+
+- `Sejong` is the broad user-facing front door for routing, decision support, execution, verification, and evidence records.
+- `Uigwe` is the formal planning protocol when a direction needs gates, packets, decomposition, or promotion-ready artifacts.
+- `Seungjeongwon` is the default execution and verification path for clear tasks.
+- `TeamExecutor` is an optional backend for `$team` wrappers that coordinate separate CLI workers in `tmux` panes through Sejong-owned state, mailbox, and lease files.
+
+Keep installed skills thin and keep durable behavior in `docs/sejong/`. Keep this file focused on source-repo maintenance direction for future development sessions, not product-facing explanation.
+
+Do not make King Sejong depend on OMX. OMX-specific paths and state are outside the Sejong contract; `$team` state belongs under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/`.
+
+## Session Resume Protocol
+
+For substantial source-repo work, start by reading this file and then the relevant source-of-truth docs below. Do not rely on chat history alone for project direction.
+
+When the user asks to continue without repeating context, inspect the repository state before asking for clarification:
+
+- `git status --short --branch`
+- `git log --oneline -5`
+- relevant source-of-truth docs from this file
+- recent validation outputs when they are available in the working session
+
+When a decision should survive into later sessions, promote it into `AGENTS.md` or the appropriate `docs/sejong/` contract instead of leaving it only in conversation. If the decision changes installed behavior, update the relevant docs, examples, and validation checks together.
+
+Do not create tracked planning or status artifacts just to preserve a local working session unless the user asks for a shareable artifact. Temporary Sejong runtime state belongs outside the target repository under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`.
+
+When handing off incomplete work, leave exact next files, commands, and validation state in the final response or commit message so another session can continue without reconstructing intent.
+
 ## Installed Surface
 
 King Sejong is distributed through these managed paths:
@@ -23,15 +57,19 @@ Do not add root-level repository files such as `AGENTS.md` to the managed instal
 - Sejong skill front door: `.agents/skills/sejong/SKILL.md`
 - Uigwe planning behavior: `.agents/skills/uigwe/SKILL.md` and `docs/sejong/PROTOCOL.md`
 - Execution behavior: `.agents/skills/seungjeongwon/SKILL.md` and `docs/sejong/SEUNGJEONGWON_EXECUTOR.md`
+- TeamExecutor behavior: `docs/sejong/TEAM_EXECUTOR.md` and `docs/sejong/scripts/team_executor.py`
+- Runtime artifact storage: `docs/sejong/ARTIFACT_STORAGE.md`
 - Prompt overlays: `docs/sejong/PROMPT_OVERLAYS.md`
 - Install behavior: `scripts/install-sejong.sh`
 
 ## Maintenance Rules
 
 - Keep skill files thin. Put durable contracts in `docs/sejong/`.
+- Keep `AGENTS.md` source-only. Promote installed behavior to `docs/sejong/` and the relevant skill front door.
 - Do not add `.codex/prompts/{role}.md` as a required install surface.
 - Do not treat missing repo-local prompt overlays as an install failure.
-- Preserve bounded parallelism: subagents may return bounded briefs, but the lead Sejong agent owns synthesis, routing, gates, and final verification.
+- Do not reintroduce `.omx` as a Sejong dependency.
+- Preserve bounded parallelism: subagents and `$team` workers may return bounded briefs, mailbox messages, implementation slices, or verification evidence, but the lead Sejong agent owns synthesis, routing, gates, and final verification.
 - When changing Sejong or Uigwe instruction surfaces, run `python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets`.
 - Validate JSON contracts and examples before claiming behavior changes are ready.
 - Run `bash scripts/install-sejong.sh --verify .` after changing managed install paths or installer behavior.
