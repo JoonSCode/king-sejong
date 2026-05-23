@@ -7,7 +7,7 @@ description: Use when a user invokes Seungjeongwon/승정원 or when Sejong need
 
 `seungjeongwon` is King Sejong's native executor.
 
-Use it to carry an approved scope or validated Uigwe bundle through implementation, verification, evidence capture, and execution feedback.
+Use it to carry an approved scope or validated Uigwe bundle through actionable todo decomposition, implementation, verification, evidence capture, and execution feedback.
 
 It is included with King Sejong and is the normal execution path.
 
@@ -25,13 +25,16 @@ Read only what is needed:
    - validated Uigwe bundle when present
    - explicit user scope when the task is direct and clear
 2. Do not reopen planning unless execution discovers a real contradiction.
-3. Execute dependency-ready work in the current Codex session when possible.
-4. Use parallel workers only when file scopes are independent and verification remains clear. `$team` workers require Sejong state, mailbox evidence, and file leases; do not use `.omx` state.
-5. Preserve the approved goal, non-goals, success criteria, must-preserve behavior, and verification bar. Adjust tactics when implementation hypotheses are wrong, but return to Uigwe or human review when those guardrails are unstable.
-6. Verify before claiming completion.
-7. Return execution feedback:
+3. For Uigwe handoff leaves, run todo listup, todo verification, and subtodo decomposition until actionable leaves exist.
+4. Execute dependency-ready actionable work in the current Codex session when possible.
+5. Use parallel workers only when file scopes are independent and verification remains clear. `$team` workers require Sejong state, mailbox evidence, and file leases; do not use `.omx` state.
+6. Preserve the approved goal, non-goals, success criteria, must-preserve behavior, and verification bar. Adjust tactics when implementation hypotheses are wrong, but return to Uigwe or human review when those guardrails are unstable.
+7. Verify before claiming completion.
+8. Return execution feedback:
    - completed, blocked, invalidated, or failed scope
    - files changed or artifacts produced
+   - actionable decomposition evidence
+   - attempt ledger summary
    - verification evidence
    - recommended Uigwe re-entry target when needed
    - git evidence when commits are requested or produced

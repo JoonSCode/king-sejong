@@ -40,7 +40,7 @@
     "leaf_updates": [
       {
         "node_id": "pending_leaf_1",
-        "previous_status": "executable_leaf",
+        "previous_status": "actionable_leaf",
         "new_status": "completed",
         "execution_lane": "direct_session",
         "artifacts": [],
@@ -50,7 +50,7 @@
       },
       {
         "node_id": "pending_leaf_2",
-        "previous_status": "executable_leaf",
+        "previous_status": "actionable_leaf",
         "new_status": "blocked",
         "execution_lane": "reviewed_subagent",
         "artifacts": [],

@@ -52,6 +52,7 @@ It is responsible for:
 - accepting a validated Uigwe bundle
 - choosing or representing an execution backend
 - preserving the planning bundle as the source of truth
+- decomposing Uigwe handoff leaves into actionable leaves before execution when needed
 - returning execution feedback and re-entry signals
 - owning execution-side metadata such as attempt identity, result persistence, and handoff retention semantics
 
@@ -84,7 +85,7 @@ In this model:
 
 - `Uigwe` owns planning truth
 - the `executor` owns execution truth and persistence rules
-- Seungjeongwon owns implementation and verification behavior inside Codex
+- Seungjeongwon owns todo listup, todo verification, subtodo decomposition, implementation, verification, and attempt-ledger behavior inside Codex
 - TeamExecutor owns worker process coordination, mailbox state, and leases only when explicitly selected
 
 When the work is "improve Uigwe's executor contract itself," success should be defined by contract validation and a representative handoff exercise, not by local taste.
@@ -125,7 +126,7 @@ Best for:
 
 Best for:
 
-- small, clear, low-risk leaf sets
+- small, clear, low-risk actionable leaf sets
 - direct execution without a heavier execution loop
 
 ### `TeamExecutor`

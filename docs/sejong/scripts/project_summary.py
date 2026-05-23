@@ -53,9 +53,9 @@ def project_summary(bundle_dir: Path) -> dict[str, Any]:
         }
         for risk in plan_packet.get("risk_summary", [])[:5]
     ]
-    leaves = []
-    for leaf in plan_packet.get("leaf_tasks", []):
-        leaves.append(
+    handoff_leaves = []
+    for leaf in plan_packet.get("handoff_leaves", []):
+        handoff_leaves.append(
             {
                 "id": leaf["id"],
                 "title": leaf["title"],
@@ -75,7 +75,7 @@ def project_summary(bundle_dir: Path) -> dict[str, Any]:
         "selected_approach": None,
         "retained_alternatives": retained,
         "top_risks": risks,
-        "leaf_summary": leaves,
+        "handoff_leaf_summary": handoff_leaves,
         "goal_tree_stats": {
             "node_count": len(goal_tree.get("nodes", [])),
             "dependency_edge_count": len(goal_tree.get("dependency_edges", [])),
@@ -122,8 +122,8 @@ def markdown_summary(summary: dict[str, Any]) -> str:
         for risk in summary["top_risks"]:
             lines.append(f"- `{risk['severity']}` `{risk['id']}`: {risk['description']}")
         lines.append("")
-    lines.extend(["## Leaf Summary", ""])
-    for leaf in summary["leaf_summary"]:
+    lines.extend(["## Handoff Leaf Summary", ""])
+    for leaf in summary["handoff_leaf_summary"]:
         lines.append(
             f"- `{leaf['title']}` | risk `{leaf['risk_level']}` | deps `{leaf['dependency_count']}` | files `{leaf['file_scope_count']}` | critic `{str(leaf['needs_critic']).lower()}` | verifier `{str(leaf['needs_verifier']).lower()}`"
         )

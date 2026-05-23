@@ -75,10 +75,10 @@
     },
     {
       "id": "instruction-recursive-decomposition",
-      "title": "Recursive decomposition stays select-review-reselect",
+      "title": "Handoff decomposition stays select-review-reselect",
       "profile": "instruction",
       "input_shape": "instruction-surface check",
-      "prompt": "Check that Uigwe decomposition recursively selects candidate work, reviews it against the parent objective, reselects weak candidates, and only stops at executable leaves.",
+      "prompt": "Check that Uigwe decomposition recursively selects candidate objectives, reviews them against the parent objective, reselects weak candidates, and only stops at Seungjeongwon handoff leaves.",
       "expected_mode": "none",
       "expected_artifacts": [
         ".agents/skills/uigwe/SKILL.md",
@@ -88,11 +88,13 @@
         "each expandable node is treated as a local objective",
         "candidate children are reviewed before being committed",
         "weak or invalid candidates trigger local reselection or re-entry",
-        "leaf status requires executable-leaf readiness rather than smallness alone"
+        "leaf status requires handoff-leaf readiness rather than smallness alone",
+        "Seungjeongwon owns the later todo listup, todo verification, subtodo decomposition, actionable leaf detection, and execution loop"
       ],
       "forbidden_behavior": [
-        "treating decomposition as a one-shot task list",
-        "marking small but ambiguous nodes as executable leaves"
+        "treating Uigwe decomposition as a one-shot implementation task list",
+        "marking small but ambiguous nodes as handoff leaves",
+        "making Uigwe own Seungjeongwon actionable todo loops"
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."
@@ -292,13 +294,13 @@
       ],
       "expected_behavior": [
         "material self-modification requires Jiphyeonjeon decision support when the decision is unsettled",
-        "Uigwe produces executable leaves and verification criteria before implementation",
-        "Seungjeongwon performs implementation and verification",
+        "Uigwe produces handoff leaves with verification criteria and re-entry triggers before implementation",
+        "Seungjeongwon performs actionable decomposition, implementation, and verification",
         "Sejong direct remains limited to non-behavioral maintenance"
       ],
       "forbidden_behavior": [
         "changing Sejong behavioral contracts through ordinary direct edits",
-        "using Uigwe as performative ceremony without execution leaves"
+        "using Uigwe as performative ceremony without handoff leaves"
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."

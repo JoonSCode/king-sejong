@@ -1,7 +1,7 @@
 # King Sejong Surface Scorecard
 
 - Task set: `sejong-seed-task-set`
-- Generated at: `2026-05-23T16:30:25Z`
+- Generated at: `2026-05-23T18:18:42Z`
 - Status: `pass`
 - Average score: `1.0`
 - Pass/partial/fail: `24/0/0`

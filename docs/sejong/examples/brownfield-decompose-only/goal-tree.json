@@ -172,7 +172,7 @@
         "cost": 0.23,
         "risk": 0.34
       },
-      "status": "executable_leaf",
+      "status": "handoff_leaf",
       "done_criteria": [
         "Wrapper purpose, inputs, outputs, and non-goals are documented",
         "Boundary rules are explicit"
@@ -195,7 +195,12 @@
         "expected_artifacts": [
           "wrapper draft doc"
         ]
-      }
+      },
+      "reentry_triggers": [
+        "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
+        "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
+        "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ]
     },
     {
       "id": "task_wrapper_schema",
@@ -233,7 +238,7 @@
         "cost": 0.3,
         "risk": 0.4
       },
-      "status": "executable_leaf",
+      "status": "handoff_leaf",
       "done_criteria": [
         "Wrapper input and output fields are explicit",
         "Existing Uigwe artifacts remain authoritative"
@@ -256,7 +261,12 @@
         "expected_artifacts": [
           "wrapper schema draft"
         ]
-      }
+      },
+      "reentry_triggers": [
+        "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
+        "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
+        "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ]
     },
     {
       "id": "task_docs_integration",
@@ -295,7 +305,7 @@
         "cost": 0.2,
         "risk": 0.24
       },
-      "status": "executable_leaf",
+      "status": "handoff_leaf",
       "done_criteria": [
         "Uigwe docs index links to the wrapper surface",
         "Cross-links point between wrapper and protocol artifacts where needed"
@@ -320,7 +330,12 @@
         "expected_artifacts": [
           "updated docs links"
         ]
-      }
+      },
+      "reentry_triggers": [
+        "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
+        "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
+        "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ]
     }
   ],
   "dependency_edges": [

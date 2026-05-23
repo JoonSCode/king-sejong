@@ -1,6 +1,6 @@
 # Consumer Dry-Run Example
 
-This folder contains the minimal scaffold for recording limited Codex consumer dry-run results over Uigwe leaves.
+This folder contains the minimal scaffold for recording limited Codex consumer dry-run results over executor-prepared actionable leaves.
 
 ## Included Files
 
@@ -13,7 +13,7 @@ This folder contains the minimal scaffold for recording limited Codex consumer d
 
 ## Usage
 
-1. Select a small set of `executable_leaf` nodes.
+1. Select a small set of `actionable_leaf` nodes prepared by Seungjeongwon or another executor.
 2. Fill in the template with run metadata and the selected node IDs.
 3. Embed the Codex consumer feedback object from the dry run.
 4. Keep the run limited so it remains a small contract exercise, not a broad readiness claim.

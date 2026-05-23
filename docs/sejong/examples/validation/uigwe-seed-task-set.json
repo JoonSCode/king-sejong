@@ -25,16 +25,16 @@
       "expected_behavior": [
         "clarifies scope, non-goals, constraints, and acceptance criteria before design",
         "compares at least two serious product approaches",
-        "produces executable leaves with verification steps"
+        "produces Seungjeongwon handoff leaves with verification expectations and re-entry triggers"
       ],
       "forbidden_behavior": [
         "silently inventing team workflow constraints",
         "skipping live approval gates in an interactive context",
-        "marking vague feature ideas as executable leaves"
+        "marking vague feature ideas as handoff leaves"
       ],
       "grading_notes": [
         "Score design alternatives separately from decomposition quality.",
-        "Consumer readiness requires file scope or implementation scope clarity."
+        "Handoff readiness requires scope boundaries, verification expectations, and re-entry triggers."
       ]
     },
     {
@@ -198,7 +198,7 @@
       ],
       "expected_behavior": [
         "keeps validator behavior and error taxonomy explicit",
-        "splits implementation, fixtures, and tests into executable leaves",
+        "splits implementation, fixtures, and tests into bounded handoff leaves",
         "does not reopen product strategy unless the design is contradictory"
       ],
       "forbidden_behavior": [

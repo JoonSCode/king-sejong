@@ -39,6 +39,7 @@ Active King Sejong context checkpoints should be stored inside the same run dire
 king-sejong-context.json
 route-decisions.jsonl
 execution-feedback.json
+execution-ledger.jsonl
 sillok-record.jsonl
 ```
 
@@ -69,6 +70,7 @@ External nontracked artifacts include:
 - temporary Uigwe packets and preflight notes
 - wrapper results produced during live planning
 - Seungjeongwon execution evidence snapshots
+- Seungjeongwon actionable decomposition notes and execution attempt ledgers
 - Sillok evidence logs that were not explicitly requested as repository records
 
 Repository-tracked artifacts are allowed only by explicit user request. Suitable promoted artifacts include:

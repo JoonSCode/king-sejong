@@ -1,19 +1,19 @@
 # Uigwe Codex Consumer Draft
 
 **Status:** Draft
-**Applies To:** the default reference consumer for `Uigwe`
+**Applies To:** the lower-level reference consumer for executor-prepared actionable leaves
 
 ## Purpose
 
-The Codex consumer is the default execution-facing implementation for Uigwe `Plan Packet` handoff.
+The Codex consumer is a lower-level execution-facing implementation for actionable leaves prepared by an executor such as Seungjeongwon.
 
-Its job is to consume executable leaves safely inside Codex without collapsing Uigwe into an execution-only system.
+Its job is to consume actionable leaves safely inside Codex without collapsing Uigwe into an execution-only system.
 
 The Codex consumer is not a planner.
 
 It must:
 
-- consume executable leaves only
+- consume actionable leaves only
 - respect the selected plan and retained dependency structure
 - apply selective review where risk justifies it
 - report execution state back into the Uigwe lifecycle
@@ -29,32 +29,35 @@ It must not:
 
 The Codex consumer expects the following inputs:
 
-- a valid `Plan Packet`
-- a valid `goal-tree.json`
+- executor-prepared actionable leaves
+- the relevant valid `Plan Packet`
+- the relevant valid `goal-tree.json`
 - the supporting human-facing planning artifacts:
   - `spec.md`
   - `rationale.md`
 
 The consumer should treat these as authoritative in this order:
 
-1. `Plan Packet`
-2. `goal-tree.json`
-3. `spec.md`
-4. `rationale.md`
+1. executor-prepared actionable leaf contract
+2. `Plan Packet`
+3. `goal-tree.json`
+4. `spec.md`
+5. `rationale.md`
 
 If these artifacts disagree materially, the consumer should block and escalate rather than improvise.
 
 ## Consumption Boundary
 
-The Codex consumer may act only on nodes whose status is `executable_leaf`.
+The Codex consumer may act only on nodes whose status is `actionable_leaf`.
 
 If a node is still:
 
 - `candidate`
 - `selected`
 - `retained_alt`
+- `handoff_leaf`
 
-then planning is incomplete for that node and the consumer must not execute it.
+then executor-side decomposition is incomplete for that node and the consumer must not execute it.
 
 ## Execution Lanes
 
@@ -93,18 +96,18 @@ This lane may include:
 
 The consumer should use the lightest lane that preserves execution safety.
 
-These lane names describe the default Codex subagent consumer. `$team` is an executor-level `TeamExecutor` backend, not a fourth default consumer lane. When `$team` is selected, use [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) for tmux worker state, mailbox, and lease rules, then emit ordinary execution feedback for completed, blocked, or invalidated leaves.
+These lane names describe the default Codex subagent consumer. `$team` is an executor-level `TeamExecutor` backend, not a fourth default consumer lane. When `$team` is selected, use [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) for tmux worker state, mailbox, and lease rules, then emit ordinary execution feedback for completed, blocked, or invalidated actionable leaves.
 
 ## Dispatch Rules
 
 ### Dependency Order
 
-- dispatch only leaves whose dependencies are already `completed`
-- never dispatch a leaf whose prerequisite is `blocked` or `invalidated`
+- dispatch only actionable leaves whose dependencies are already `completed`
+- never dispatch an actionable leaf whose prerequisite is `blocked` or `invalidated`
 
 ### Parallel Safety
 
-Leaves may run in parallel only when:
+Actionable leaves may run in parallel only when:
 
 - they are dependency-independent
 - their `file_scope` does not overlap
@@ -117,7 +120,7 @@ If file scope is unclear, assume the leaf is not parallel-safe.
 
 When dispatching to a subagent, provide:
 
-- the leaf contract fields
+- the actionable leaf contract fields
 - the selected plan summary
 - the relevant acceptance criteria
 - the file scope
@@ -153,9 +156,9 @@ Pipes may be used for ephemeral progress notifications from tmux workers, but du
 Use a critic pass when:
 
 - `risk_level` is `high`
-- the leaf crosses design or ownership boundaries
-- the leaf's verification is weak relative to its impact
-- the leaf explicitly requests critic review through consumer hints
+- the actionable leaf crosses design or ownership boundaries
+- the actionable leaf's verification is weak relative to its impact
+- the actionable leaf explicitly requests critic review through consumer hints
 
 The critic should check:
 
@@ -172,7 +175,7 @@ The critic should not reopen planning unless the issue cannot be resolved within
 
 At minimum, the verifier should confirm:
 
-- the leaf's `done_criteria`
+- the actionable leaf's `done_criteria`
 - the planned verification checks
 - obvious mismatch between claimed completion and actual evidence
 
@@ -221,7 +224,7 @@ Instead, each affected leaf may reference one or more `commit_group_ids`, and th
 
 The consumer should escalate rather than guess when:
 
-- a leaf contract is incomplete
+- an actionable leaf contract is incomplete
 - file scope is too vague to execute safely
 - verification requirements contradict available tooling
 - execution reveals upstream design instability
@@ -242,7 +245,7 @@ Recommended escalation targets:
 
 Use when:
 
-- the leaf is executable in principle but needs local restructuring
+- the actionable leaf is executable in principle but needs local restructuring
 - dependency order or scope can be repaired without changing the design
 
 ### Escalate to Design Exploration (`brainstorming`)
@@ -271,9 +274,9 @@ Use when:
 
 ## Status Updates
 
-The consumer is expected to move leaves through these states:
+The consumer is expected to move actionable leaves through these states:
 
-- `executable_leaf -> dispatched`
+- `actionable_leaf -> dispatched`
 - `dispatched -> completed`
 - `dispatched -> blocked`
 - `dispatched -> invalidated`

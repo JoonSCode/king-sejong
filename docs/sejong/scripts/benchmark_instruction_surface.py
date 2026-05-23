@@ -169,16 +169,17 @@ def evaluate_recursive_decomposition() -> list[dict[str, Any]]:
     required = [
         "select -> review -> reselect",
         "At each expandable node, Uigwe treats that node as a local objective.",
-        "select candidate children, review whether they satisfy the parent objective, reselect when they are weak or invalid",
+        "select candidate child objectives, review whether they satisfy the parent objective, reselect when they are weak or invalid",
         "fail to satisfy the parent node objective",
-        "Stop descending only when the selected node satisfies executable-leaf readiness.",
+        "Stop descending only when the selected node satisfies handoff-leaf readiness.",
+        "Seungjeongwon owns todo listup, todo verification, subtodo decomposition",
     ]
     passed, missing = contains_all(combined, required)
     return [
         check(
             "recursive_decomposition_contract_present",
             passed,
-            "Uigwe decomposition remains a recursive select-review-reselect loop down to executable leaves.",
+            "Uigwe decomposition remains a recursive select-review-reselect loop down to Seungjeongwon handoff leaves.",
             missing=missing,
         )
     ]
@@ -193,7 +194,7 @@ def evaluate_validation_benchmark() -> list[dict[str, Any]]:
         "Task-specific scoring",
         "benchmark_instruction_surface.py --write --require-targets",
         "examples/validation/uigwe-seed-task-set.json",
-        "Limited Consumer Dry Run",
+        "Limited Executor/Consumer Dry Run",
     ]
     validation_passed, validation_missing = contains_all(validation, required_validation)
     skill_passed = "VALIDATION.md" in skill and "benchmark_instruction_surface.py --write --require-targets" in skill
@@ -292,7 +293,7 @@ def evaluate_sejong_self_modification() -> list[dict[str, Any]]:
     combined = "\n".join([skill, router, readme])
     required = [
         "Changes to Sejong itself need a higher routing bar than ordinary repository edits.",
-        "Jiphyeonjeon decision -> Uigwe planning/decomposition -> Seungjeongwon execution and verification",
+        "Jiphyeonjeon decision -> Uigwe handoff-contract planning -> Seungjeongwon actionable decomposition, execution, and verification",
         "Material self-modification includes changes to:",
         "Use `Jiphyeonjeon` when the policy, behavior, naming, or boundary decision is not already settled.",
         "`Sejong direct` remains allowed for narrow non-behavioral maintenance",

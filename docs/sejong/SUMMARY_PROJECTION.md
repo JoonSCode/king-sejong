@@ -12,7 +12,7 @@ That means Uigwe can keep:
 
 - packets
 - goal graph
-- consumer-ready leaf contracts
+- Seungjeongwon handoff leaf contracts
 
 while still giving reviewers a shorter view of:
 

@@ -24,7 +24,7 @@ If execution is requested after planning, hand off through the documented execut
 
 `deep-interview`, `brainstorming`, and `decomposition` are Uigwe's own protocol stage ids.
 Machine-readable re-entry target ids are `local_reexploration`, `brainstorming`, `deep_interview`, and `human_review`.
-User-facing labels are `Intent Clarification`, `Design Exploration`, and `Execution Planning`.
+User-facing labels are `Intent Clarification`, `Design Exploration`, and `Executor Handoff Contract`.
 They are internal to this skill and do not require separately installed skills.
 
 Sejong's formal planning surface is `uigwe`.
@@ -52,13 +52,13 @@ Use the user's language. For Korean users, prefer:
 
 - `Intent Clarification` -> `1단계: 기획 명확화`
 - `Design Exploration` -> `2단계: 설계 명확화`
-- `Execution Planning` -> `3단계: 실행 계획화`
+- `Executor Handoff Contract` -> `3단계: 실행 계약화`
 
 Stage meanings should be explained like this:
 
 - `1단계: 기획 명확화` = clarify what to build, why now, scope, non-goals, constraints, and success criteria
 - `2단계: 설계 명확화` = clarify how to solve it, what alternatives exist, and what trade-offs matter
-- `3단계: 실행 계획화` = turn the chosen design into executable work, dependencies, and verification steps
+- `3단계: 실행 계약화` = turn the chosen design into a bounded Seungjeongwon handoff contract, dependencies, verification bar, and re-entry triggers
 
 Progress reporting rules:
 
@@ -90,7 +90,7 @@ Examples:
 
 - `$uigwe build a browser-based MVP for async interview practice`
 - `$uigwe use the approved design at docs/specs/feature.md and decompose it`
-- `$uigwe decompose-only this approved design into executable leaves`
+- `$uigwe decompose-only this approved design into Seungjeongwon handoff leaves`
 - `$uigwe design-to-plan this feature brief`
 
 If the user does not specify a mode, treat the request as `auto`.
@@ -114,9 +114,9 @@ Read only what is needed, in this order:
 
 - The user wants a rigorous planning workflow rather than immediate implementation
 - The user has a vague goal and wants to turn it into structured planning artifacts
-- The user already has an approved design and wants task decomposition only
+- The user already has an approved design and wants executor handoff decomposition only
 - The user wants one protocol that works for both `greenfield` and `brownfield`
-- The user wants one standalone protocol that carries intent clarification, design exploration, and recursive decomposition as one system
+- The user wants one standalone protocol that carries intent clarification, design exploration, and executor handoff decomposition as one system
 
 ## Do Not Use When
 
@@ -165,7 +165,7 @@ If the chosen entry point proves too optimistic, re-enter the earlier stage requ
 6. Ask the user the questions needed to resolve material design ambiguities before writing the packet
 7. Produce `Design Packet`
 8. Get one approval on the design summary
-9. Run the Uigwe `Execution Planning` (`decomposition`) phase
+9. Run the Uigwe `Executor Handoff Contract` (`decomposition`) phase
 10. Produce `Plan Packet`, `spec.md`, `rationale.md`, and `goal-tree.json`
 
 ### `design-to-plan`
@@ -176,32 +176,34 @@ If the chosen entry point proves too optimistic, re-enter the earlier stage requ
 4. Ask the user the questions needed to resolve material design ambiguities before writing the packet
 5. Produce `Design Packet`
 6. Get one approval on the design summary
-7. Run the Uigwe `Execution Planning` (`decomposition`) phase
+7. Run the Uigwe `Executor Handoff Contract` (`decomposition`) phase
 8. Produce `Plan Packet`, `spec.md`, `rationale.md`, and `goal-tree.json`
 
 ### `decompose-only`
 
 1. Validate design readiness
 2. If the supplied design is missing a boundary the plan depends on, stop and ask the user or re-enter `brainstorming`; do not guess past the design contract
-3. Run the Uigwe `Execution Planning` (`decomposition`) phase
+3. Run the Uigwe `Executor Handoff Contract` (`decomposition`) phase
 4. Produce `Plan Packet`, `spec.md`, `rationale.md`, and `goal-tree.json`
 
 ## Decomposition Rules
 
-- Treat each expandable node as a local objective: select candidate children, review whether they satisfy the parent objective, reselect when they are weak or invalid, then recurse into selected children
+- Treat each expandable node as a local objective: select candidate child objectives, review whether they satisfy the parent objective, reselect when they are weak or invalid, then recurse into selected children
 - Use breadth-first decomposition with hard gates before scoring
 - Preserve `1` selected branch and keep `2-3` strong alternatives at upper levels
 - Allow shared dependencies when the structure is naturally a DAG
-- Mark a node `executable_leaf` only when task, done criteria, file scope, dependencies, and verification are all explicit
-- Before handing off to Seungjeongwon, define goal, non-goals, success criteria, verification plan, must-preserve behaviors, acceptable tradeoffs, re-entry triggers, and executable leaves
+- Mark a node `handoff_leaf` only when objective, done criteria, scope boundary, dependencies, verification expectation, and re-entry triggers are all explicit
+- Before handing off to Seungjeongwon, define goal, non-goals, success criteria, verification plan, must-preserve behaviors, acceptable tradeoffs, re-entry triggers, and handoff leaves
 - Use Uigwe workers only for plan validation such as readiness, risk, scope, dependency, and verification checks; do not use worker consensus to approve gates or reopen the selected direction
+
+Uigwe does not produce the final implementation todo list. Seungjeongwon owns todo listup, todo verification, subtodo decomposition, actionable-leaf readiness, execution attempts, verification, evidence capture, and retry ledger.
 
 If decomposition becomes unstable:
 
 - retry locally first when the issue is subtree-local
 - re-enter the Uigwe `Design Exploration` (`brainstorming`) phase when the selected design path is failing
 - re-enter the Uigwe `Intent Clarification` (`deep-interview`) phase when intent, scope, non-goals, or decision boundaries are unstable
-- treat Seungjeongwon execution feedback as evidence: local implementation mismatches may trigger local re-exploration, but broken design or success criteria trigger Uigwe re-entry
+- treat Seungjeongwon decomposition and execution feedback as evidence: local implementation mismatches may trigger local re-exploration, but broken handoff leaves, design assumptions, or success criteria trigger Uigwe re-entry
 
 Use the numeric defaults in `../../../docs/sejong/SCORING_AND_GATES.md` and `../../../docs/sejong/policy.defaults.json` unless the user explicitly overrides them.
 
@@ -232,9 +234,9 @@ When the task is to improve Uigwe itself, keep the public skill surface small:
 If the user explicitly wants execution after planning:
 
 1. Finish planning first
-2. Confirm the plan bundle is consumer-ready and safe to hand off
+2. Confirm the plan bundle is handoff-ready and safe to pass to Seungjeongwon
 3. Prefer Seungjeongwon for substantial work inside King Sejong
-4. Execute dependency-ready leaves or the approved scope, then verify before reporting completion
+4. Let Seungjeongwon decompose dependency-ready handoff leaves into actionable work, then execute and verify before reporting completion
 5. Emit execution feedback with changed files, verification evidence, blockers, and recommended Uigwe re-entry if needed
 6. Follow `../../../docs/sejong/CODEX_CONSUMER.md` only when a lower-level direct consumer path is explicitly desired
 
@@ -247,6 +249,7 @@ Do not invent a custom execution lane inside this skill.
 - `spec.md`, `rationale.md`, and `goal-tree.json` exist
 - `goal-tree.json` is valid against the Uigwe goal-tree contract
 - Planning contradictions were either resolved or escalated explicitly
+- Seungjeongwon handoff leaves preserve the approved goal, non-goals, success criteria, verification bar, must-preserve behaviors, and re-entry triggers
 
 ## Failure Handling
 
@@ -255,7 +258,7 @@ Stop and surface a blocker when:
 - supplied artifacts materially disagree
 - readiness gates fail and the user rejects re-entry
 - a required boundary decision is missing
-- decomposition cannot produce executable leaves without guessing
+- decomposition cannot produce handoff leaves without guessing
 
 In a live session, unresolved ambiguity is a reason to ask the user and pause the stage, not a reason to auto-complete the stage with hidden assumptions.
 

@@ -5,7 +5,7 @@
 
 ## Purpose
 
-`Uigwe` is a planning protocol for turning vague goals, partial briefs, or approved designs into evidence-backed, executable goal graphs.
+`Uigwe` is a planning protocol for turning vague goals, partial briefs, or approved designs into evidence-backed handoff goal graphs.
 
 It is designed to work across both:
 
@@ -34,7 +34,7 @@ It can run in three entry modes:
 The canonical stage ids remain `deep-interview`, `brainstorming`, and `decomposition`.
 Machine-readable re-entry target ids are `local_reexploration`, `brainstorming`, `deep_interview`, and `human_review`.
 The `deep_interview` re-entry target maps back to the `deep-interview` stage.
-The preferred user-facing labels are `Intent Clarification`, `Design Exploration`, and `Execution Planning`.
+The preferred user-facing labels are `Intent Clarification`, `Design Exploration`, and `Executor Handoff Contract`.
 Those labels refer to Uigwe's internal protocol stages, not separate required skills.
 The machine-readable re-entry target ids above are escalation values, not stage ids.
 
@@ -104,18 +104,18 @@ Approval model:
 - one user approval gate after the design summary is produced
 - no default approval waiver in live sessions
 
-### 3. Execution Planning (`decomposition`)
+### 3. Executor Handoff Contract (`decomposition`)
 
-**Goal:** turn the selected design into executable leaves without losing rationale.
+**Goal:** turn the selected design into a bounded executor contract without losing rationale.
 
 Required outcomes:
 
-- selected plan
+- selected handoff plan
 - retained alternatives
-- executable leaves
+- handoff leaves
 - dependency graph
 - risk summary
-- consumer-ready handoff data
+- executor-ready handoff data
 - execution guardrails for the executor
 
 Artifacts:
@@ -134,28 +134,30 @@ Before handoff to Seungjeongwon, Uigwe must define the execution guardrails the 
 - `must_preserve` behaviors or contracts
 - `acceptable_tradeoffs`
 - `reentry_triggers`
-- executable leaves with done criteria, scope, dependencies, and verification
+- handoff leaves with done criteria, scope boundaries, dependencies, verification expectations, and re-entry triggers
 
-This is intentionally similar to test-first development: the success bar and verification method are set before implementation begins. Seungjeongwon may adapt tactics during execution, but it must not change the approved goal, non-goals, success criteria, must-preserve behavior, or verification bar without Uigwe re-entry or human review.
+This is intentionally similar to test-first development: the success bar and verification method are set before implementation begins. Seungjeongwon may adapt tactics during decomposition and execution, but it must not change the approved goal, non-goals, success criteria, must-preserve behavior, or verification bar without Uigwe re-entry or human review.
+
+Uigwe handoff leaves are not final implementation todos. They are bounded objectives that are clear enough for Seungjeongwon to begin executor-side decomposition. Seungjeongwon owns the later todo listup, todo verification, subtodo decomposition, actionable-leaf detection, execution attempts, verification, and retry ledger.
 
 ## Readiness-Gated Entry
 
 A stage may be skipped only when the incoming packet is strong enough.
 
 - the Uigwe `Design Exploration` (`brainstorming`) phase may start when an `Intent Packet` is present or equivalent requirements are already available
-- the Uigwe `Execution Planning` (`decomposition`) phase may start when a `Design Packet` is present or equivalent approved design material already exists
+- the Uigwe `Executor Handoff Contract` (`decomposition`) phase may start when a `Design Packet` is present or equivalent approved design material already exists
 
-If execution planning detects unresolved design ambiguity, Uigwe re-enters the `Design Exploration` (`brainstorming`) phase.
+If executor handoff contract generation detects unresolved design ambiguity, Uigwe re-enters the `Design Exploration` (`brainstorming`) phase.
 
-If design exploration or execution planning detects unresolved intent ambiguity, Uigwe re-enters the `Intent Clarification` (`deep-interview`) phase.
+If design exploration or executor handoff contract generation detects unresolved intent ambiguity, Uigwe re-enters the `Intent Clarification` (`deep-interview`) phase.
 
 In live sessions, that re-entry means Uigwe returns to asking the user the missing questions before producing downstream artifacts.
 
-## Decomposition Engine
+## Handoff Decomposition Engine
 
-The decomposition engine uses recursive `select -> review -> reselect` descent until each branch reaches executable-leaf readiness.
+The decomposition engine uses recursive `select -> review -> reselect` descent until each branch reaches handoff-leaf readiness.
 
-At each expandable node, Uigwe treats that node as a local objective. It selects candidate child work that could satisfy the parent objective, reviews those candidates against gates and scoring, reselects when the candidate set is weak or invalid, and then repeats the same loop for each selected child.
+At each expandable node, Uigwe treats that node as a local objective. It selects candidate child objectives that could satisfy the parent objective, reviews those candidates against gates and scoring, reselects when the candidate set is weak or invalid, and then repeats the same loop for each selected child.
 
 `gated beam BFS + backtracking` is the implementation shape for this loop.
 
@@ -164,16 +166,16 @@ At each expandable node, Uigwe treats that node as a local objective. It selects
 For each expandable node:
 
 1. Define the node objective from the parent goal, selected design, constraints, non-goals, and expected done state.
-2. Select `2-3` candidate child sets that could satisfy that local objective.
+2. Select `2-3` candidate child objective sets that could satisfy that local objective.
 3. Review each candidate set against hard gates before scoring.
 4. Reselect locally when the candidate set is invalid, weak, duplicated, unverifiable, or misaligned with the parent objective.
 5. Commit the selected child set when it satisfies the local objective, and preserve strong upper-level alternatives where useful.
-6. Recurse into each selected child until it is either expanded again or marked `executable_leaf`.
+6. Recurse into each selected child until it is either expanded again or marked `handoff_leaf`.
 
 ### Search Behavior
 
 - expand breadth-first to stabilize top-level structure early
-- generate `2-3` decomposition candidates per expandable node
+- generate `2-3` handoff decomposition candidates per expandable node
 - reject invalid candidates through hard gates before scoring
 - keep `1` selected candidate and preserve `2-3` strong alternatives at upper levels
 - merge duplicated work into shared dependencies when appropriate, allowing a DAG rather than a strict tree
@@ -187,7 +189,7 @@ Candidates are rejected before scoring if they:
 - violate `constraints`
 - conflict with the selected design direction
 - cannot be verified
-- claim to be a leaf while still having ambiguous scope or outputs
+- claim to be a handoff leaf while still having ambiguous scope boundaries or outputs
 - fail to satisfy the parent node objective
 
 ### Scoring Dimensions
@@ -209,23 +211,26 @@ Detailed defaults for scoring, readiness gates, and re-entry thresholds live in:
 - `policy.defaults.json`
 - `policy.defaults.schema.json`
 
-### Executable Leaf Definition
+### Handoff Leaf Definition
 
-A node becomes an executable leaf when all of the following are explicit:
+A node becomes a handoff leaf when all of the following are explicit:
 
 - what should be done
 - why it matters
 - what "done" means
-- the affected file or responsibility scope
+- the affected file or responsibility scope boundary
 - dependency prerequisites
-- how it will be verified
-- enough context for a consumer to execute it safely
+- the verification expectation the executor must preserve
+- the conditions that require local re-exploration, design re-entry, intent re-entry, or human review
+- enough context for Seungjeongwon to decompose it into actionable work safely
 
-An executable leaf is not merely a small node. It is a node that is safe to execute without further planning clarification.
+A handoff leaf is not merely a small node. It is a bounded objective that is safe to hand to Seungjeongwon without further planning clarification.
+
+An actionable leaf is different. It is a Seungjeongwon-owned execution unit produced after todo listup, todo verification, and subtodo decomposition. Uigwe does not need to predict the final actionable todo tree before execution starts.
 
 ### Leaf Stop Rule
 
-Stop descending only when the selected node satisfies executable-leaf readiness. If a node is small but still lacks done criteria, file or responsibility scope, dependency prerequisites, verification, or consumer context, it must be reselected, expanded again, or escalated through re-entry instead of being marked as a leaf.
+Stop descending only when the selected node satisfies handoff-leaf readiness. If a node is small but still lacks done criteria, file or responsibility scope boundaries, dependency prerequisites, verification expectations, re-entry triggers, or executor context, it must be reselected, expanded again, or escalated through re-entry instead of being marked as a leaf.
 
 ## Planning Validation Workers
 
@@ -237,7 +242,7 @@ Uigwe may use bounded workers before gates, but their purpose is plan validation
 - dependency checker
 - verification checker
 
-These workers may inventory artifacts, scan for missing context, identify unverifiable leaves, challenge dependency order, and report risks. They must not create competing canonical packets, finalize `spec.md`, finalize `rationale.md`, finalize `goal-tree.json`, approve gates, or overturn the selected design by consensus. If a worker finds evidence that invalidates the selected design, Uigwe re-enters the appropriate earlier stage instead of letting the worker decide.
+These workers may inventory artifacts, scan for missing context, identify unverifiable handoff leaves, challenge dependency order, and report risks. They must not create competing canonical packets, finalize `spec.md`, finalize `rationale.md`, finalize `goal-tree.json`, approve gates, or overturn the selected design by consensus. If a worker finds evidence that invalidates the selected design, Uigwe re-enters the appropriate earlier stage instead of letting the worker decide.
 
 ## Re-entry Rules
 
@@ -250,7 +255,7 @@ Use when:
 - a subtree candidate is weak
 - a better local alternative appears
 - a dependency can be simplified without changing the chosen design
-- execution feedback shows a leaf needs tactical reshaping while preserving the approved goal, non-goals, success criteria, and verification bar
+- Seungjeongwon actionable decomposition shows a handoff leaf needs tactical reshaping while preserving the approved goal, non-goals, success criteria, and verification bar
 
 ### Re-enter Design Exploration (`brainstorming`)
 
@@ -259,7 +264,7 @@ Use when:
 - the chosen design no longer supports good decomposition
 - dependency complexity grows beyond the intended architecture
 - a retained alternative becomes clearly stronger than the selected approach
-- Seungjeongwon execution invalidates an architecture or design assumption rather than only a local implementation detail
+- Seungjeongwon decomposition or execution invalidates an architecture or design assumption rather than only a local implementation detail
 
 ### Re-enter Intent Clarification (`deep-interview`)
 
@@ -351,6 +356,7 @@ Task nodes additionally require:
 - file or responsibility scope
 - verification checks
 - risk level
+- re-entry triggers
 - optional consumer hints
 
 The draft schema for this artifact lives in `goal-tree.schema.json`.
@@ -366,13 +372,14 @@ Node status is part of the protocol contract.
 - `retained_alt`
 - `invalidated`
 
-### Execution-readiness states
+### Handoff-readiness states
 
-- `executable_leaf`
+- `handoff_leaf`
 - `blocked`
 
-### Consumer feedback states
+### Executor feedback states
 
+- `actionable_leaf`
 - `dispatched`
 - `completed`
 
@@ -381,27 +388,29 @@ The intended transitions are:
 - `candidate -> selected`
 - `candidate -> retained_alt`
 - `candidate -> invalidated`
-- `selected -> executable_leaf`
+- `selected -> handoff_leaf`
 - `selected -> blocked`
 - `selected -> invalidated`
-- `executable_leaf -> dispatched`
-- `executable_leaf -> blocked`
+- `handoff_leaf -> actionable_leaf`
+- `handoff_leaf -> blocked`
+- `actionable_leaf -> dispatched`
+- `actionable_leaf -> blocked`
 - `dispatched -> completed`
 - `dispatched -> blocked`
 - `blocked -> selected`
 - `blocked -> invalidated`
 
-Consumer-facing states apply only after a handoff is initiated.
+Executor-facing states apply only after a handoff is initiated. `actionable_leaf` is produced by Seungjeongwon, not by Uigwe planning.
 
 ## Consumer Model
 
 `Uigwe` is consumer-agnostic.
 
-The default reference consumer is a `Codex subagent consumer`, but the protocol is designed to support pluggable consumers.
+The default substantial execution path is `Seungjeongwon`. The lower-level `Codex subagent consumer` is still documented as a reference execution consumer, but it consumes actionable leaves prepared by an executor and should not be treated as Uigwe's planning output.
 
-Consumers receive a `Plan Packet` and are expected to:
+Consumers receive executor-prepared actionable leaves plus the relevant plan context and are expected to:
 
-- consume executable leaves only
+- consume actionable leaves only
 - respect dependency ordering
 - apply selective `critic` review for high-risk leaves
 - apply `verifier` checks broadly
@@ -456,7 +465,7 @@ Bias toward:
 - integration risk
 - verification rigor
 - file and ownership scope clarity
-- narrower early beam with stricter executable-leaf requirements
+- narrower early beam with stricter handoff-leaf requirements
 
 ## Lifecycle Summary
 

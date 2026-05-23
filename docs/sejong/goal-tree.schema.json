@@ -194,7 +194,8 @@
         "candidate",
         "selected",
         "retained_alt",
-        "executable_leaf",
+        "handoff_leaf",
+        "actionable_leaf",
         "dispatched",
         "completed",
         "blocked",
@@ -304,6 +305,9 @@
             "$ref": "#/$defs/VerificationCheck"
           }
         },
+        "reentry_triggers": {
+          "$ref": "#/$defs/StringList"
+        },
         "risk_level": {
           "type": "string",
           "enum": [
@@ -349,6 +353,7 @@
               "done_criteria",
               "file_scope",
               "verification",
+              "reentry_triggers",
               "risk_level"
             ]
           }

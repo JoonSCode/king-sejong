@@ -48,7 +48,7 @@ The three pre-execution surfaces are intentionally different:
 
 - `JangYeongsil`: use when facts, history, evidence, external constraints, or experiments are still unclear. Its job is to discover and separate known, inferred, and unknown material.
 - `Jiphyeonjeon`: use when enough material exists to hold a discussion, but the direction is not settled. Its job is to weigh options, surface trade-offs, argue for and against paths, reject weaker alternatives, and recommend what to do next.
-- `Uigwe`: use when the direction is ready to become a durable planning bundle. Its job is not open-ended discussion; it turns clarified intent or a selected design into formal artifacts and executable leaves.
+- `Uigwe`: use when the direction is ready to become a durable planning bundle. Its job is not open-ended discussion; it turns clarified intent or a selected design into formal artifacts and Seungjeongwon handoff leaves.
 
 In short: `JangYeongsil` gathers the evidence, `Jiphyeonjeon` discusses and decides, and `Uigwe` writes the formal plan.
 
@@ -107,10 +107,10 @@ Material self-modification includes changes to:
 For material self-modification, route through:
 
 ```text
-Jiphyeonjeon decision -> Uigwe planning/decomposition -> Seungjeongwon execution and verification
+Jiphyeonjeon decision -> Uigwe handoff-contract planning -> Seungjeongwon actionable decomposition, execution, and verification
 ```
 
-Use `Jiphyeonjeon` when the policy, behavior, naming, or boundary decision is not already settled. Use `Uigwe` to turn the selected direction into executable leaves with done criteria and verification. Use `Seungjeongwon` to make the edits and prove the guardrails pass.
+Use `Jiphyeonjeon` when the policy, behavior, naming, or boundary decision is not already settled. Use `Uigwe` to turn the selected direction into handoff leaves with done criteria, verification bar, and re-entry triggers. Use `Seungjeongwon` to decompose those leaves into actionable work, make the edits, and prove the guardrails pass.
 
 `Sejong direct` remains allowed for narrow non-behavioral maintenance, such as typo fixes, broken links, formatting-only edits, deterministic scorecard regeneration, or mechanical corrections that do not change routing, planning, execution, installer, validation, or artifact-storage behavior.
 

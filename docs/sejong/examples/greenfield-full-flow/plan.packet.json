@@ -29,7 +29,38 @@
       "status": "retained_alt"
     }
   ],
-  "leaf_tasks": [
+  "dependency_edges": [
+    {
+      "from": "task_session_flow",
+      "to": "task_domain_contract",
+      "type": "depends_on"
+    },
+    {
+      "from": "task_feedback_and_history",
+      "to": "task_domain_contract",
+      "type": "depends_on"
+    },
+    {
+      "from": "task_feedback_and_history",
+      "to": "task_session_flow",
+      "type": "depends_on"
+    }
+  ],
+  "risk_summary": [
+    {
+      "id": "risk_feedback_quality",
+      "description": "The rubric evaluator may produce weak feedback without tighter structure.",
+      "severity": "high",
+      "mitigation": "Use explicit rubric templates and sample-session testing."
+    },
+    {
+      "id": "risk_setup_friction",
+      "description": "Too much setup may reduce first-session completion.",
+      "severity": "medium",
+      "mitigation": "Keep the setup flow short and template-driven."
+    }
+  ],
+  "handoff_leaves": [
     {
       "id": "task_domain_contract",
       "title": "Define session and feedback domain contracts",
@@ -58,7 +89,12 @@
         "expected_artifacts": [
           "domain model files"
         ]
-      }
+      },
+      "reentry_triggers": [
+        "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
+        "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
+        "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ]
     },
     {
       "id": "task_session_flow",
@@ -91,7 +127,12 @@
         "expected_artifacts": [
           "session flow UI"
         ]
-      }
+      },
+      "reentry_triggers": [
+        "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
+        "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
+        "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ]
     },
     {
       "id": "task_feedback_and_history",
@@ -126,39 +167,13 @@
           "feedback service",
           "history view"
         ]
-      }
+      },
+      "reentry_triggers": [
+        "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
+        "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
+        "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ]
     }
   ],
-  "dependency_edges": [
-    {
-      "from": "task_session_flow",
-      "to": "task_domain_contract",
-      "type": "depends_on"
-    },
-    {
-      "from": "task_feedback_and_history",
-      "to": "task_domain_contract",
-      "type": "depends_on"
-    },
-    {
-      "from": "task_feedback_and_history",
-      "to": "task_session_flow",
-      "type": "depends_on"
-    }
-  ],
-  "risk_summary": [
-    {
-      "id": "risk_feedback_quality",
-      "description": "The rubric evaluator may produce weak feedback without tighter structure.",
-      "severity": "high",
-      "mitigation": "Use explicit rubric templates and sample-session testing."
-    },
-    {
-      "id": "risk_setup_friction",
-      "description": "Too much setup may reduce first-session completion.",
-      "severity": "medium",
-      "mitigation": "Keep the setup flow short and template-driven."
-    }
-  ],
-  "ready_for_consumer": true
+  "ready_for_handoff": true
 }

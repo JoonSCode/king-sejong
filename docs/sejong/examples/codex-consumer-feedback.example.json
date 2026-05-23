@@ -21,7 +21,7 @@
   "leaf_updates": [
     {
       "node_id": "leaf_wrapper_contract_doc",
-      "previous_status": "executable_leaf",
+      "previous_status": "actionable_leaf",
       "new_status": "completed",
       "execution_lane": "single_subagent",
       "artifacts": [
@@ -45,7 +45,7 @@
     },
     {
       "node_id": "leaf_boundary_handoff_alignment",
-      "previous_status": "executable_leaf",
+      "previous_status": "actionable_leaf",
       "new_status": "blocked",
       "execution_lane": "reviewed_subagent",
       "artifacts": [],

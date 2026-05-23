@@ -9,7 +9,7 @@
   },
   "format": "uigwe.validation-scorecard/v0.1-draft",
   "metadata": {
-    "generated_at": "2026-05-23T16:30:25Z",
+    "generated_at": "2026-05-23T18:18:42Z",
     "id": "sejong-surface-scorecard",
     "runner": "benchmark_sejong_surface.py",
     "system_under_test": "sejong-surface",
@@ -1149,7 +1149,7 @@
       "scenario_id": "execution-validated-leaf",
       "score": 1.0,
       "status": "pass",
-      "title": "Validated executable leaf completes with evidence"
+      "title": "Validated actionable leaf completes with evidence"
     },
     {
       "blockers": [],

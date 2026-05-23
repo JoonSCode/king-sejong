@@ -23,4 +23,4 @@ Create a greenfield MVP for async interview practice, where a user can run a sho
 
 - why `greenfield` gives more room for alternatives early on
 - how a selected approach and retained alternatives appear in the design stage
-- how decomposition turns that design into executable leaves
+- how decomposition turns that design into Seungjeongwon handoff leaves

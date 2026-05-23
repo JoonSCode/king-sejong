@@ -33,14 +33,26 @@
         "validation_plan_quality": 0.06
       }
     },
-    "leaf_readiness": {
+    "handoff_readiness": {
       "dimensions": {
-        "task_clarity": 0.22,
+        "objective_clarity": 0.20,
         "done_clarity": 0.18,
-        "file_scope_clarity": 0.18,
+        "scope_boundary_clarity": 0.16,
         "dependency_clarity": 0.12,
-        "verification_clarity": 0.18,
-        "consumer_context_clarity": 0.12
+        "verification_expectation_clarity": 0.16,
+        "reentry_trigger_clarity": 0.14,
+        "executor_context_clarity": 0.14
+      }
+    },
+    "actionable_readiness": {
+      "dimensions": {
+        "task_specificity": 0.18,
+        "first_action_clarity": 0.16,
+        "done_observability": 0.16,
+        "execution_scope_narrowness": 0.14,
+        "dependency_satisfaction": 0.12,
+        "fresh_verification_clarity": 0.16,
+        "failure_path_clarity": 0.08
       }
     }
   },
@@ -57,7 +69,8 @@
       "readiness_thresholds": {
         "intent_to_brainstorming": 0.68,
         "design_to_decomposition": 0.70,
-        "leaf_to_executable": 0.78
+        "handoff_to_seungjeongwon": 0.78,
+        "actionable_to_execution": 0.82
       },
       "frontier_policy": {
         "beam_width_by_depth": {
@@ -97,7 +110,8 @@
       "readiness_thresholds": {
         "intent_to_brainstorming": 0.72,
         "design_to_decomposition": 0.76,
-        "leaf_to_executable": 0.84
+        "handoff_to_seungjeongwon": 0.84,
+        "actionable_to_execution": 0.88
       },
       "frontier_policy": {
         "beam_width_by_depth": {

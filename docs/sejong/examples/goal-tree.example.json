@@ -11,7 +11,7 @@
   "selected_plan": {
     "id": "plan_codex_consumer_v1",
     "title": "Deliver a first Codex consumer for Uigwe",
-    "summary": "Implement the first pluggable consumer that consumes executable leaves, respects dependencies, and applies selective critic plus broad verifier behavior."
+    "summary": "Implement the first pluggable consumer that consumes executor-prepared actionable leaves, respects dependencies, and applies selective critic plus broad verifier behavior."
   },
   "retained_alternatives": [
     {
@@ -84,7 +84,7 @@
       "id": "subgoal_contract",
       "type": "subgoal",
       "title": "Define the consumer-facing leaf contract",
-      "description": "Specify the minimum fields and invariants required for a leaf to be executable by a Codex consumer.",
+      "description": "Specify the minimum fields and invariants required for a handoff leaf to become an executor-prepared actionable leaf.",
       "parent_ids": [
         "goal_codex_consumer"
       ],
@@ -193,7 +193,7 @@
         "cost": 0.16,
         "risk": 0.18
       },
-      "status": "executable_leaf",
+      "status": "handoff_leaf",
       "done_criteria": [
         "Leaf task schema fields are added",
         "Example leaf validates structurally against the contract"
@@ -220,7 +220,12 @@
         "expected_artifacts": [
           "updated schema file"
         ]
-      }
+      },
+      "reentry_triggers": [
+        "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
+        "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
+        "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ]
     },
     {
       "id": "task_protocol_doc",
@@ -259,7 +264,7 @@
         "cost": 0.22,
         "risk": 0.21
       },
-      "status": "executable_leaf",
+      "status": "handoff_leaf",
       "done_criteria": [
         "Protocol doc explains dispatch, critic, and verifier behavior"
       ],
@@ -281,7 +286,12 @@
         "expected_artifacts": [
           "updated protocol doc"
         ]
-      }
+      },
+      "reentry_triggers": [
+        "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
+        "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
+        "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ]
     }
   ],
   "dependency_edges": [

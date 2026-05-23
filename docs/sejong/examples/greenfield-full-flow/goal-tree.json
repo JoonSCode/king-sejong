@@ -169,7 +169,7 @@
         "cost": 0.18,
         "risk": 0.17
       },
-      "status": "executable_leaf",
+      "status": "handoff_leaf",
       "done_criteria": [
         "Domain model covers session, answer, and feedback summary",
         "Storage shape supports saved history"
@@ -192,7 +192,12 @@
         "expected_artifacts": [
           "domain model files"
         ]
-      }
+      },
+      "reentry_triggers": [
+        "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
+        "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
+        "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ]
     },
     {
       "id": "task_session_flow",
@@ -229,7 +234,7 @@
         "cost": 0.31,
         "risk": 0.29
       },
-      "status": "executable_leaf",
+      "status": "handoff_leaf",
       "done_criteria": [
         "Users can move through the session flow",
         "Answers are captured in the domain model"
@@ -253,7 +258,12 @@
         "expected_artifacts": [
           "session flow UI"
         ]
-      }
+      },
+      "reentry_triggers": [
+        "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
+        "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
+        "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ]
     },
     {
       "id": "task_feedback_and_history",
@@ -293,7 +303,7 @@
         "cost": 0.42,
         "risk": 0.47
       },
-      "status": "executable_leaf",
+      "status": "handoff_leaf",
       "done_criteria": [
         "Saved summaries exist for completed sessions",
         "A user can revisit a saved report"
@@ -318,7 +328,12 @@
           "feedback service",
           "history view"
         ]
-      }
+      },
+      "reentry_triggers": [
+        "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
+        "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
+        "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ]
     }
   ],
   "dependency_edges": [

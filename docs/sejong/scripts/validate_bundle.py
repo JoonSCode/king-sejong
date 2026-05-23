@@ -151,8 +151,8 @@ def artifact_contract_for_mode(mode: str) -> tuple[set[str], set[str]]:
     return required, forbidden
 
 
-def stronger_task_statuses() -> set[str]:
-    return {"executable_leaf", "dispatched", "completed", "blocked"}
+def stronger_handoff_statuses() -> set[str]:
+    return {"handoff_leaf", "actionable_leaf", "dispatched", "completed", "blocked"}
 
 
 def validate_bundle(bundle_dir: Path, strict: bool = False) -> ValidationReport:
@@ -265,26 +265,26 @@ def validate_bundle(bundle_dir: Path, strict: bool = False) -> ValidationReport:
             if node.get("type") == "task"
         }
         missing_leaf_nodes = []
-        for leaf in plan_packet.get("leaf_tasks", []):
+        for leaf in plan_packet.get("handoff_leaves", []):
             node = task_nodes.get(leaf.get("id"))
-            if not node or node.get("status") not in stronger_task_statuses():
+            if not node or node.get("status") not in stronger_handoff_statuses():
                 missing_leaf_nodes.append(leaf.get("id"))
                 report.error(
-                    "leaf_missing_goal_tree_node",
-                    f"Leaf task '{leaf.get('id')}' is missing from goal-tree as an executable task node",
+                    "handoff_leaf_missing_goal_tree_node",
+                    f"Handoff leaf '{leaf.get('id')}' is missing from goal-tree as a handoff-ready task node",
                     goal_tree_path,
                 )
         if missing_leaf_nodes:
-            report.add_check("leaf_cross_reference", "fail", "Some plan leaves are missing in goal-tree task nodes", {"missing_leaf_ids": missing_leaf_nodes})
+            report.add_check("handoff_leaf_cross_reference", "fail", "Some handoff leaves are missing in goal-tree task nodes", {"missing_leaf_ids": missing_leaf_nodes})
         else:
-            report.add_check("leaf_cross_reference", "pass", "Every plan leaf appears in goal-tree executable task nodes")
+            report.add_check("handoff_leaf_cross_reference", "pass", "Every handoff leaf appears in goal-tree handoff-ready task nodes")
 
         field_drift = []
-        if "ready_for_consumer" in goal_tree:
-            field_drift.append("ready_for_consumer")
+        if "ready_for_handoff" in goal_tree:
+            field_drift.append("ready_for_handoff")
             report.error(
                 "packet_field_in_goal_tree",
-                "goal-tree.json contains packet-only field 'ready_for_consumer'",
+                "goal-tree.json contains packet-only field 'ready_for_handoff'",
                 goal_tree_path,
             )
         if field_drift:
@@ -296,7 +296,7 @@ def validate_bundle(bundle_dir: Path, strict: bool = False) -> ValidationReport:
         for node in task_nodes.values():
             missing_fields = [
                 field_name
-                for field_name in ("done_criteria", "file_scope", "verification", "risk_level")
+                for field_name in ("done_criteria", "file_scope", "verification", "reentry_triggers", "risk_level")
                 if not node.get(field_name)
             ]
             if missing_fields:

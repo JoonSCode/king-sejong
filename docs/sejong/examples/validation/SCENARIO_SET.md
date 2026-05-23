@@ -47,7 +47,7 @@
 - `planning-design-to-plan`: clear intent routes to Uigwe `design-to-plan`
 - `planning-decompose-only`: approved design routes to Uigwe `decompose-only`
 - `execution-small-doc-fix`: small approved doc fix avoids planning overhead
-- `execution-validated-leaf`: executable leaf completes with verification
+- `execution-validated-leaf`: actionable leaf completes with verification
 - `team-jiphyeonjeon-challenge-round`: team challenge stays lead-owned
 - `team-execution-disjoint-leases`: parallel execution requires disjoint leases
 - `hook-protected-path-route-gate`: protected path edit requires route evidence

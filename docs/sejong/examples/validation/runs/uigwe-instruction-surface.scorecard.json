@@ -3,7 +3,7 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-23T17:25:07Z",
+    "generated_at": "2026-05-23T18:18:39Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
@@ -74,14 +74,14 @@
     },
     {
       "scenario_id": "instruction-recursive-decomposition",
-      "title": "Recursive decomposition stays select-review-reselect",
+      "title": "Handoff decomposition stays select-review-reselect",
       "status": "pass",
       "score": 1.0,
       "checks": [
         {
           "id": "recursive_decomposition_contract_present",
           "passed": true,
-          "detail": "Uigwe decomposition remains a recursive select-review-reselect loop down to executable leaves."
+          "detail": "Uigwe decomposition remains a recursive select-review-reselect loop down to Seungjeongwon handoff leaves."
         }
       ],
       "blockers": [],
@@ -336,7 +336,7 @@
         {
           "id": "uigwe_skill_line_budget",
           "passed": true,
-          "detail": "Uigwe SKILL.md line count is 269; budget is 320."
+          "detail": "Uigwe SKILL.md line count is 272; budget is 320."
         },
         {
           "id": "sejong_skill_line_budget",

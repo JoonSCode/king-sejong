@@ -178,7 +178,7 @@
       ],
       "expected_behavior": [
         "inspects the bundle before execution",
-        "executes only approved or executable scope",
+        "executes only approved handoff scope or actionable scope",
         "requires verification evidence before completion"
       ],
       "forbidden_behavior": [
@@ -579,7 +579,7 @@
         "max_turns": 4,
         "max_tool_calls": 12,
         "max_total_tokens": 65000,
-        "overhead_budget_note": "Planning overhead is acceptable when it produces executable leaves."
+        "overhead_budget_note": "Planning overhead is acceptable when it produces Seungjeongwon handoff leaves."
       }
     },
     {
@@ -656,7 +656,7 @@
       "expected_behavior": [
         "checks that the design is approved enough",
         "keeps schema compatibility explicit",
-        "splits schema, examples, and validation into executable leaves"
+        "splits schema, examples, and validation into Seungjeongwon handoff leaves"
       ],
       "forbidden_behavior": [
         "reopening the product decision",
@@ -721,10 +721,10 @@
     },
     {
       "id": "execution-validated-leaf",
-      "title": "Validated executable leaf completes with evidence",
+      "title": "Validated actionable leaf completes with evidence",
       "profile": "execution",
-      "input_shape": "single executable leaf",
-      "prompt": "/sejong leaf: add a scorecard compare script that reads two scorecards and prints aggregate deltas. Implement and verify.",
+      "input_shape": "single actionable leaf",
+      "prompt": "/sejong actionable leaf: add a scorecard compare script that reads two scorecards and prints aggregate deltas. Implement and verify.",
       "expected_mode": "none",
       "expected_route_sequence": [
         "seungjeongwon"
@@ -753,7 +753,7 @@
         "omitting verification evidence"
       ],
       "grading_notes": [
-        "This checks executable-leaf readiness."
+        "This checks actionable-leaf readiness."
       ],
       "resource_expectations": {
         "max_turns": 2,

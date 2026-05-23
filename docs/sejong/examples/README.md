@@ -3,7 +3,7 @@
 This folder contains draft example flows for Uigwe.
 
 `deep-interview`, `brainstorming`, and `decomposition` in these examples are Uigwe internal phase ids, not separate required skills.
-The preferred user-facing labels are `Intent Clarification`, `Design Exploration`, and `Execution Planning`.
+The preferred user-facing labels are `Intent Clarification`, `Design Exploration`, and `Executor Handoff Contract`.
 
 ## Included Examples
 
@@ -11,7 +11,7 @@ The preferred user-facing labels are `Intent Clarification`, `Design Exploration
 
 Demonstrates:
 
-- `Intent Clarification (deep-interview) -> Design Exploration (brainstorming) -> Execution Planning (decomposition)`
+- `Intent Clarification (deep-interview) -> Design Exploration (brainstorming) -> Executor Handoff Contract (decomposition)`
 - a `greenfield` profile
 - full packet progression:
   - `intent.packet.json`

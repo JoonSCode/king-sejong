@@ -4,14 +4,15 @@
 
 ## Purpose
 
-This document turns Uigwe's qualitative planning rules into default numeric policy.
+This document turns Uigwe planning rules and Seungjeongwon actionable-readiness rules into default numeric policy.
 
 These defaults are not meant to freeze Uigwe permanently. They exist so the protocol can:
 
-- rank decomposition candidates consistently
+- rank handoff decomposition candidates consistently
 - decide when a packet is ready enough to skip into a later stage
 - decide when local repair is enough
 - decide when to re-enter `brainstorming` or `deep-interview`
+- decide when Seungjeongwon todo decomposition has reached actionable-leaf readiness
 
 The matching machine-facing defaults live in:
 
@@ -20,7 +21,7 @@ The matching machine-facing defaults live in:
 
 ## Metric Families
 
-Uigwe uses three distinct metric families.
+The Sejong planning/execution contract uses three distinct metric families.
 
 ### 1. Candidate Priority Score
 
@@ -44,9 +45,12 @@ Derived readiness metrics:
 
 - `intent_readiness`
 - `design_readiness`
-- `leaf_readiness`
+- `handoff_readiness`
+- `actionable_readiness`
 
 These are weighted completeness-and-clarity scores computed by the orchestrator from packet contents and planning analysis.
+
+`handoff_readiness` belongs to Uigwe and decides whether a node can be handed to Seungjeongwon. `actionable_readiness` belongs to Seungjeongwon and decides whether executor-side todo decomposition may enter the execution attempt loop.
 
 ### 3. Re-entry Thresholds
 
@@ -114,25 +118,49 @@ Default weights:
 - `risk_quality`: `0.08`
 - `validation_plan_quality`: `0.06`
 
-### Leaf Readiness
+### Handoff Readiness
 
-Suggested derived dimensions:
+Suggested Uigwe-derived dimensions:
 
-- `task_clarity`
+- `objective_clarity`
 - `done_clarity`
-- `file_scope_clarity`
+- `scope_boundary_clarity`
 - `dependency_clarity`
-- `verification_clarity`
-- `consumer_context_clarity`
+- `verification_expectation_clarity`
+- `reentry_trigger_clarity`
+- `executor_context_clarity`
 
 Default weights:
 
-- `task_clarity`: `0.22`
+- `objective_clarity`: `0.20`
 - `done_clarity`: `0.18`
-- `file_scope_clarity`: `0.18`
+- `scope_boundary_clarity`: `0.16`
 - `dependency_clarity`: `0.12`
-- `verification_clarity`: `0.18`
-- `consumer_context_clarity`: `0.12`
+- `verification_expectation_clarity`: `0.16`
+- `reentry_trigger_clarity`: `0.14`
+- `executor_context_clarity`: `0.14`
+
+### Actionable Readiness
+
+Suggested Seungjeongwon-derived dimensions:
+
+- `task_specificity`
+- `first_action_clarity`
+- `done_observability`
+- `execution_scope_narrowness`
+- `dependency_satisfaction`
+- `fresh_verification_clarity`
+- `failure_path_clarity`
+
+Default weights:
+
+- `task_specificity`: `0.18`
+- `first_action_clarity`: `0.16`
+- `done_observability`: `0.16`
+- `execution_scope_narrowness`: `0.14`
+- `dependency_satisfaction`: `0.12`
+- `fresh_verification_clarity`: `0.16`
+- `failure_path_clarity`: `0.08`
 
 ## Default Profiles
 
@@ -156,7 +184,8 @@ Use when:
 
 - `intent_readiness` required for `brainstorming`: `0.68`
 - `design_readiness` required for `decomposition`: `0.70`
-- `leaf_readiness` required for `executable_leaf`: `0.78`
+- `handoff_readiness` required for Seungjeongwon handoff: `0.78`
+- `actionable_readiness` required for execution attempt: `0.82`
 
 #### Frontier Defaults
 
@@ -170,7 +199,7 @@ Use when:
   - `1`: `3`
   - `2`: `2`
   - `3+`: `0`
-- max decomposition candidates generated per node: `3`
+- max handoff decomposition candidates generated per node: `3`
 - local subtree retry limit before escalation: `2`
 
 #### Re-entry Thresholds
@@ -202,7 +231,8 @@ Use when:
 
 - `intent_readiness` required for `brainstorming`: `0.72`
 - `design_readiness` required for `decomposition`: `0.76`
-- `leaf_readiness` required for `executable_leaf`: `0.84`
+- `handoff_readiness` required for Seungjeongwon handoff: `0.84`
+- `actionable_readiness` required for execution attempt: `0.88`
 
 #### Frontier Defaults
 
@@ -216,7 +246,7 @@ Use when:
   - `1`: `2`
   - `2`: `1`
   - `3+`: `0`
-- max decomposition candidates generated per node: `3`
+- max handoff decomposition candidates generated per node: `3`
 - local subtree retry limit before escalation: `2`
 
 #### Re-entry Thresholds
@@ -240,11 +270,20 @@ For example, a `design_readiness` score above threshold still does not justify d
 - alternatives were never seriously compared
 - critical assumptions remain unresolved
 
-Likewise, a leaf may not be marked `executable_leaf` if:
+Likewise, a Uigwe leaf may not be marked `handoff_leaf` if:
 
 - file scope is still ambiguous
 - verification is nominal rather than actionable
-- the consumer would still need to guess execution boundaries
+- re-entry triggers are missing
+- Seungjeongwon would still need to guess planning boundaries
+
+Likewise, a Seungjeongwon todo may not be marked `actionable_leaf` if:
+
+- the first edit, command, or inspection target is missing
+- the task is still broad enough to need subtodo decomposition
+- dependency prerequisites are neither satisfied nor explicitly blocked
+- verification cannot produce fresh proof
+- failure would not produce a next hypothesis or escalation target
 
 ## Re-entry Precedence
 

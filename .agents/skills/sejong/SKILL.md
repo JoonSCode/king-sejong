@@ -22,7 +22,7 @@ When repo instruction context such as `AGENTS.md` should be initialized or refre
 3. Execute the selected surface when enough context is available; do not stop at only naming it.
 4. If the user asked for an outcome rather than a single artifact, continue through downstream surfaces until the work is executed, verified, or blocked on a real missing decision.
 5. Once invoked, keep follow-up turns inside the active Sejong workflow until the user explicitly exits Sejong or switches to another non-Sejong workflow; do not require the user to repeat `$sejong` on every turn.
-6. For material changes to Sejong, Uigwe, Seungjeongwon, installer, validation, or artifact-storage behavior, use Jiphyeonjeon for unsettled decisions, Uigwe for planning and executable leaves, and Seungjeongwon for implementation and verification; reserve Sejong direct for non-behavioral typo, link, or formatting fixes.
+6. For material changes to Sejong, Uigwe, Seungjeongwon, installer, validation, or artifact-storage behavior, use Jiphyeonjeon for unsettled decisions, Uigwe for handoff-contract planning, and Seungjeongwon for actionable decomposition, implementation, and verification; reserve Sejong direct for non-behavioral typo, link, or formatting fixes.
 7. Treat Korean court names as active user-facing surfaces:
    - `JangYeongsil` -> research, experiment, and evidence gathering
    - `Jiphyeonjeon` -> discussion, debate, option comparison, and decision support

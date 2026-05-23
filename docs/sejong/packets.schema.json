@@ -212,7 +212,7 @@
         }
       }
     },
-    "LeafTask": {
+    "HandoffLeaf": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -243,6 +243,9 @@
             "$ref": "#/$defs/VerificationCheck"
           }
         },
+        "reentry_triggers": {
+          "$ref": "#/$defs/StringList"
+        },
         "risk_level": {
           "type": "string",
           "enum": [
@@ -264,6 +267,7 @@
         "file_scope",
         "dependencies",
         "verification",
+        "reentry_triggers",
         "risk_level"
       ]
     },
@@ -489,10 +493,10 @@
             "$ref": "#/$defs/Alternative"
           }
         },
-        "leaf_tasks": {
+        "handoff_leaves": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/LeafTask"
+            "$ref": "#/$defs/HandoffLeaf"
           }
         },
         "dependency_edges": {
@@ -507,7 +511,7 @@
             "$ref": "#/$defs/Risk"
           }
         },
-        "ready_for_consumer": {
+        "ready_for_handoff": {
           "type": "boolean"
         }
       },
@@ -520,10 +524,10 @@
         "goal_tree_path",
         "selected_plan",
         "retained_alternatives",
-        "leaf_tasks",
+        "handoff_leaves",
         "dependency_edges",
         "risk_summary",
-        "ready_for_consumer"
+        "ready_for_handoff"
       ]
     }
   }

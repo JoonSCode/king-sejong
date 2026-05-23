@@ -93,7 +93,7 @@ Catch fields that are valid somewhere but appear in the wrong place.
 
 Examples:
 
-- `ready_for_consumer` belongs in `plan.packet.json`, not in `goal-tree.json`
+- `ready_for_handoff` belongs in `plan.packet.json`, not in `goal-tree.json`
 - wrapper result should summarize artifact locations, not redefine packet contents
 - `goal-tree.json` should not carry packet-only readiness booleans
 
@@ -103,11 +103,12 @@ These are not full semantic proofs, but high-value guardrails.
 
 Examples:
 
-- every `leaf_task` id in `plan.packet.json` should appear as an `executable_leaf` or stronger task node in `goal-tree.json`
+- every `handoff_leaf` id in `plan.packet.json` should appear as a `handoff_leaf` or stronger task node in `goal-tree.json`
 - every task node in `goal-tree.json` should include:
   - `done_criteria`
   - `file_scope`
   - `verification`
+  - `reentry_triggers`
   - `risk_level`
 - `wrapper.result.json.status == completed` should not coexist with non-empty blockers unless explicitly allowed
 

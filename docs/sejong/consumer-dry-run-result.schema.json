@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://kinno.dev/schemas/uigwe/consumer-dry-run-result.schema.json",
   "title": "Uigwe Codex Consumer Dry-Run Result Schema Draft",
-  "description": "Draft schema for limited Codex consumer dry-run results over Uigwe executable leaves.",
+  "description": "Draft schema for limited Codex consumer dry-run results over executor-prepared actionable leaves.",
   "type": "object",
   "additionalProperties": false,
   "properties": {

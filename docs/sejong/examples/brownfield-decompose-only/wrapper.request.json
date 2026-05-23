@@ -3,7 +3,7 @@
   "mode": "decompose-only",
   "profile": "brownfield",
   "executor_handoff": "none",
-  "brief": "Turn an approved wrapper design packet into executable documentation leaves.",
+  "brief": "Turn an approved wrapper design packet into Seungjeongwon handoff documentation leaves.",
   "artifacts": {
     "design_packet_path": "docs/sejong/examples/brownfield-decompose-only/design.packet.json"
   },

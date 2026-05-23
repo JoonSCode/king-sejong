@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://kinno.dev/schemas/uigwe/policy.defaults.schema.json",
-  "title": "Uigwe Policy Defaults Schema Draft",
-  "description": "Draft schema for Uigwe machine-facing default policy values.",
+  "title": "Sejong Planning And Execution Policy Defaults Schema Draft",
+  "description": "Draft schema for Uigwe handoff-readiness and Seungjeongwon actionable-readiness default policy values.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -99,7 +99,10 @@
         "design_readiness": {
           "$ref": "#/$defs/DerivedMetric"
         },
-        "leaf_readiness": {
+        "handoff_readiness": {
+          "$ref": "#/$defs/DerivedMetric"
+        },
+        "actionable_readiness": {
           "$ref": "#/$defs/DerivedMetric"
         }
       },
@@ -107,7 +110,8 @@
         "candidate_priority_score",
         "intent_readiness",
         "design_readiness",
-        "leaf_readiness"
+        "handoff_readiness",
+        "actionable_readiness"
       ]
     },
     "CandidateScoreWeights": {
@@ -152,14 +156,18 @@
         "design_to_decomposition": {
           "$ref": "#/$defs/Weight"
         },
-        "leaf_to_executable": {
+        "handoff_to_seungjeongwon": {
+          "$ref": "#/$defs/Weight"
+        },
+        "actionable_to_execution": {
           "$ref": "#/$defs/Weight"
         }
       },
       "required": [
         "intent_to_brainstorming",
         "design_to_decomposition",
-        "leaf_to_executable"
+        "handoff_to_seungjeongwon",
+        "actionable_to_execution"
       ]
     },
     "BeamWidths": {

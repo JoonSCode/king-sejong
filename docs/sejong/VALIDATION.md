@@ -51,7 +51,7 @@ Examples:
 - `overplanning_rate`: how often did Sejong invoke Uigwe or teams for direct tasks?
 - `missed_research_rate`: how often did Sejong decide or execute before gathering required evidence?
 - `decision_quality`: did Jiphyeonjeon compare serious options, reject weaker ones, and name a defensible next surface?
-- `execution_success_rate`: did Seungjeongwon complete executable leaves with reproducible verification evidence?
+- `execution_success_rate`: did Seungjeongwon complete actionable leaves with reproducible verification evidence?
 - `guardrail_violation_count`: did workers, hooks, or direct edits violate lead-owned gates, final synthesis, or protected paths?
 - `continuity_preservation_rate`: did follow-up turns, pending gates, and compacted context keep the active Sejong workflow intact?
 - `artifact_hygiene_rate`: did runtime artifacts stay under the Sejong artifact root unless explicitly promoted?
@@ -63,8 +63,9 @@ Examples:
 - `mode_resolution_accuracy`: did Uigwe choose or recover to the correct effective mode?
 - `packet_completeness_rate`: did it produce the required artifacts for that mode?
 - `bundle_validation_pass_rate`: did the generated bundle pass `validate_bundle.py`?
-- `executable_leaf_rate`: how many leaf nodes were truly consumer-ready?
-- `consumer_ready_rate`: how often could the plan be handed off without guesswork?
+- `handoff_leaf_rate`: how many Uigwe leaf nodes were truly ready for Seungjeongwon handoff?
+- `actionable_leaf_rate`: how often did Seungjeongwon decomposition produce executable actionable leaves without weakening the Uigwe contract?
+- `handoff_ready_rate`: how often could the plan be handed off without planning guesswork?
 - `plan_acceptance_rate`: how often would a human approve the plan with only light edits?
 - `approval_gate_violation_count`: how often did live-session gates get skipped or silently waived?
 - `unnecessary_reentry_rate`: how often did Uigwe reopen earlier stages without enough justification?
@@ -78,6 +79,7 @@ Examples:
 - `verification_clarity`
 - `risk_summary_quality`
 - `blocked_leaf_diagnosis_quality`
+- `attempt_ledger_quality`
 
 ## Validation Phases
 
@@ -175,16 +177,16 @@ Recommended sample:
 
 Use this to find scenario types the frozen benchmark missed.
 
-### Phase 5: Limited Consumer Dry Run
+### Phase 5: Limited Executor/Consumer Dry Run
 
-Take a small subset of Uigwe `executable_leaf` nodes and hand them to the Codex consumer or Seungjeongwon path.
+Take a small subset of Uigwe `handoff_leaf` nodes and hand them to Seungjeongwon. Seungjeongwon should first run todo listup, todo verification, and subtodo decomposition until `actionable_leaf` units exist, then dispatch those actionable leaves to the Codex consumer only when a lower-level consumer lane is explicitly part of the run.
 
 Record the result with:
 
 - `consumer-dry-run-result.schema.json`
 - `codex-consumer-feedback.schema.json`
 
-Do not claim full consumer readiness from a limited dry run. Use it to expose whether leaves are actually executable.
+Do not claim full executor readiness from a limited dry run. Use it to expose whether handoff leaves decompose into actionable leaves and whether the execution attempt ledger produces useful evidence.
 
 ### Phase 6: Scorecard Comparison
 
@@ -211,8 +213,9 @@ Do not promote a planning-method change unless the frozen benchmark and shadow r
 - `mode_resolution_accuracy >= 0.80`
 - `packet_completeness_rate >= 0.90`
 - `bundle_validation_pass_rate >= 0.90`
-- `executable_leaf_rate >= 0.85`
-- `consumer_ready_rate >= 0.80`
+- `handoff_leaf_rate >= 0.85`
+- `actionable_leaf_rate >= 0.80`
+- `handoff_ready_rate >= 0.80`
 - `plan_acceptance_rate >= 0.70`
 - `approval_gate_violation_count == 0`
 - `unnecessary_reentry_rate <= 0.15`
@@ -240,7 +243,8 @@ Human or LLM-grade what needs judgment:
 - whether re-entry was appropriate
 - whether retained alternatives were meaningful
 - whether a human would approve the plan with light edits
-- whether leaves are truly executable
+- whether handoff leaves are truly ready for Seungjeongwon
+- whether actionable leaves are truly executable
 
 Prefer bounded judgments:
 
@@ -274,7 +278,8 @@ Treat Uigwe as failing a scenario when:
 - it chooses the wrong entry mode and does not recover
 - it generates incomplete packets for the chosen mode
 - it skips or silently waives live-session approval gates
-- it marks non-executable nodes as executable leaves
+- it marks ambiguous nodes as handoff leaves
+- Seungjeongwon marks broad or unverifiable todos as actionable leaves
 - it repeatedly re-enters earlier stages without improving plan quality
 - the plan still requires major human restructuring
 

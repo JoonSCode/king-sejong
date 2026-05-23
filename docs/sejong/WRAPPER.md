@@ -11,7 +11,7 @@ It exists to make Uigwe easier to call without redefining the protocol itself.
 When this document refers to `deep-interview`, `brainstorming`, and `decomposition`, those names mean Uigwe's internal protocol stage ids.
 Machine-readable re-entry target ids remain `local_reexploration`, `brainstorming`, `deep_interview`, and `human_review`.
 The `deep_interview` re-entry target maps back to the `deep-interview` stage.
-The preferred user-facing labels are `Intent Clarification`, `Design Exploration`, and `Execution Planning`.
+The preferred user-facing labels are `Intent Clarification`, `Design Exploration`, and `Executor Handoff Contract`.
 They are not separate required skills.
 
 Current repo-local draft skill:
@@ -36,7 +36,7 @@ Instead, it is a thin orchestration surface that:
 
 ## Sejong Compatibility
 
-`Sejong` may route a broad request into the wrapper, but the wrapper must still preserve Uigwe's stage ownership. User-facing Sejong language must not rename or skip Uigwe's live stages: `1단계: 기획 명확화`, `2단계: 설계 명확화`, and `3단계: 실행 계획화`.
+`Sejong` may route a broad request into the wrapper, but the wrapper must still preserve Uigwe's stage ownership. User-facing Sejong language must not rename or skip Uigwe's live stages: `1단계: 기획 명확화`, `2단계: 설계 명확화`, and `3단계: 실행 계약화`.
 
 When Sejong routes to formal planning, the wrapper should resolve `full`, `design-to-plan`, or `decompose-only` exactly as it would for Uigwe. When Sejong routes to execution, the wrapper should record Seungjeongwon handoff metadata only after the Uigwe bundle is valid.
 
@@ -55,17 +55,17 @@ The wrapper must preserve these boundaries.
 
 ### Protocol Responsibilities
 
-- conduct Uigwe's internal `Intent Clarification` (`deep-interview`), `Design Exploration` (`brainstorming`), and `Execution Planning` (`decomposition`) phases
+- conduct Uigwe's internal `Intent Clarification` (`deep-interview`), `Design Exploration` (`brainstorming`), and `Executor Handoff Contract` (`decomposition`) phases
 - apply readiness-gated entry logic
 - manage re-entry and backtracking
 - generate packets, `goal-tree`, `spec`, and `rationale`
 
 In a live session, the wrapper must surface Uigwe's clarification questions and approval requests to the user. It must not silently waive those gates unless the context is explicitly non-interactive or the user explicitly waives them.
-In those user-facing messages, the wrapper should prefer plain-language stage descriptions such as `1단계: 기획 명확화`, `2단계: 설계 명확화`, and `3단계: 실행 계획화`, plus approximate readiness with the main unresolved areas. It should avoid leading with packet names by default and should not promise a fixed number of next questions.
+In those user-facing messages, the wrapper should prefer plain-language stage descriptions such as `1단계: 기획 명확화`, `2단계: 설계 명확화`, and `3단계: 실행 계약화`, plus approximate readiness with the main unresolved areas. It should avoid leading with packet names by default and should not promise a fixed number of next questions.
 
 ### Consumer Responsibilities
 
-- execute `executable_leaf` nodes
+- execute executor-prepared `actionable_leaf` nodes
 - enforce dispatch, critic, and verifier rules
 - emit consumer feedback
 
@@ -73,6 +73,7 @@ In those user-facing messages, the wrapper should prefer plain-language stage de
 
 - accept the validated Uigwe bundle after planning
 - preserve the bundle as the source of truth for execution
+- decompose Uigwe handoff leaves into actionable leaves before implementation
 - hand off execution to Seungjeongwon by default, or to TeamExecutor when `$team` worker coordination is explicitly selected
 - return execution feedback or re-entry recommendations
 
@@ -116,7 +117,7 @@ If that assumption proves false during live interaction, the wrapper must re-ent
 
 ### `decompose-only`
 
-Use when an approved design already exists and `Execution Planning` (`decomposition`) is the only missing stage.
+Use when an approved design already exists and `Executor Handoff Contract` (`decomposition`) is the only missing stage.
 
 ## Inputs
 

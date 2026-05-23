@@ -28,7 +28,38 @@
       "status": "retained_alt"
     }
   ],
-  "leaf_tasks": [
+  "dependency_edges": [
+    {
+      "from": "task_wrapper_schema",
+      "to": "task_wrapper_doc",
+      "type": "depends_on"
+    },
+    {
+      "from": "task_docs_integration",
+      "to": "task_wrapper_doc",
+      "type": "depends_on"
+    },
+    {
+      "from": "task_docs_integration",
+      "to": "task_wrapper_schema",
+      "type": "depends_on"
+    }
+  ],
+  "risk_summary": [
+    {
+      "id": "risk_boundary_blur",
+      "description": "The wrapper spec may accidentally redefine core protocol responsibilities.",
+      "severity": "high",
+      "mitigation": "Add explicit planner vs wrapper boundary language."
+    },
+    {
+      "id": "risk_doc_fragmentation",
+      "description": "The new surface may fragment the docs package if linked poorly.",
+      "severity": "medium",
+      "mitigation": "Update the docs index and cross-link from protocol surfaces."
+    }
+  ],
+  "handoff_leaves": [
     {
       "id": "task_wrapper_doc",
       "title": "Write the wrapper surface draft",
@@ -57,7 +88,12 @@
         "expected_artifacts": [
           "wrapper draft doc"
         ]
-      }
+      },
+      "reentry_triggers": [
+        "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
+        "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
+        "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ]
     },
     {
       "id": "task_wrapper_schema",
@@ -89,7 +125,12 @@
         "expected_artifacts": [
           "wrapper schema draft"
         ]
-      }
+      },
+      "reentry_triggers": [
+        "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
+        "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
+        "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ]
     },
     {
       "id": "task_docs_integration",
@@ -124,39 +165,13 @@
         "expected_artifacts": [
           "updated index and cross-links"
         ]
-      }
+      },
+      "reentry_triggers": [
+        "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
+        "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
+        "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ]
     }
   ],
-  "dependency_edges": [
-    {
-      "from": "task_wrapper_schema",
-      "to": "task_wrapper_doc",
-      "type": "depends_on"
-    },
-    {
-      "from": "task_docs_integration",
-      "to": "task_wrapper_doc",
-      "type": "depends_on"
-    },
-    {
-      "from": "task_docs_integration",
-      "to": "task_wrapper_schema",
-      "type": "depends_on"
-    }
-  ],
-  "risk_summary": [
-    {
-      "id": "risk_boundary_blur",
-      "description": "The wrapper spec may accidentally redefine core protocol responsibilities.",
-      "severity": "high",
-      "mitigation": "Add explicit planner vs wrapper boundary language."
-    },
-    {
-      "id": "risk_doc_fragmentation",
-      "description": "The new surface may fragment the docs package if linked poorly.",
-      "severity": "medium",
-      "mitigation": "Update the docs index and cross-link from protocol surfaces."
-    }
-  ],
-  "ready_for_consumer": true
+  "ready_for_handoff": true
 }

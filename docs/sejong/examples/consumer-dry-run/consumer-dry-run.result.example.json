@@ -40,7 +40,7 @@
     "leaf_updates": [
       {
         "node_id": "consumer_leaf_schema_doc",
-        "previous_status": "executable_leaf",
+        "previous_status": "actionable_leaf",
         "new_status": "completed",
         "execution_lane": "single_subagent",
         "artifacts": [
@@ -62,7 +62,7 @@
       },
       {
         "node_id": "consumer_leaf_feedback_contract",
-        "previous_status": "executable_leaf",
+        "previous_status": "actionable_leaf",
         "new_status": "blocked",
         "execution_lane": "reviewed_subagent",
         "artifacts": [
@@ -81,7 +81,7 @@
     ],
     "escalations": [
       {
-        "reason": "The limited leaf set was enough for a scaffold, but not enough to claim full consumer readiness.",
+        "reason": "The limited leaf set was enough for a scaffold, but not enough to claim full executor readiness.",
         "severity": "low",
         "related_node_ids": [
           "consumer_leaf_feedback_contract"
@@ -93,6 +93,6 @@
   "notes": [
     "This is a limited dry-run example, not a release-readiness claim.",
     "Use the nested consumer feedback object as the authoritative leaf-level record.",
-    "Do not extrapolate full consumer readiness from a two-leaf sample."
+    "Do not extrapolate full executor readiness from a two-leaf sample."
   ]
 }

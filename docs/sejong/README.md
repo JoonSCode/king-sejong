@@ -5,10 +5,10 @@ It can research, decide, plan, execute, verify, and record evidence instead of f
 
 Use `sejong` when the request is broad and the agent should choose whether to research, decide, plan, execute, verify, or record evidence.
 
-Uigwe is the formal planning protocol inside Sejong. Use it when the output should be a durable planning bundle with packets, rationale, and executable leaves.
+Uigwe is the formal planning protocol inside Sejong. Use it when the output should be a durable planning bundle with packets, rationale, and Seungjeongwon handoff leaves.
 In live chat usage, Uigwe is supposed to do that interactively.
 Progress should be presented as approximate readiness such as `기획 준비도 68%`, paired with the main weak areas.
-During decomposition, Uigwe repeatedly selects candidate work, reviews it against the parent objective, reselects weak or invalid candidates, and recurses until each selected branch is consumer-ready as an executable leaf.
+During decomposition, Uigwe repeatedly selects candidate objectives, reviews them against the parent objective, reselects weak or invalid candidates, and recurses until each selected branch is ready as a Seungjeongwon handoff leaf. Seungjeongwon then owns todo listup, todo verification, subtodo decomposition to actionable leaves, execution, verification, evidence, and retry loops.
 
 ## Installed Layout
 
@@ -56,7 +56,7 @@ Use Sejong when the correct workflow is still uncertain:
 ```text
 $sejong investigate the history and tell me the next decision
 $sejong compare these options and recommend a path
-$sejong this approved design should become executable work
+$sejong this approved design should become a Seungjeongwon handoff contract
 $sejong research the problem, plan the fix, implement it, and verify it
 ```
 
@@ -75,7 +75,7 @@ For larger Sejong work, parallelism is allowed when it is genuinely separable:
 
 Sejong does not require `.codex/prompts/{role}.md`. If a target repo has such a file, treat it as a repo-local overlay on top of the Codex native role prompt. If it is absent, continue with the native role prompt. See [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md).
 
-When changing Sejong itself, use the full Sejong chain unless the edit is purely non-behavioral. Material changes to routing, Uigwe planning, Seungjeongwon execution, installer behavior, validation, or artifact storage should go through Jiphyeonjeon decision support, Uigwe planning and decomposition, then Seungjeongwon execution and verification. In short, material behavior changes should follow the full Sejong chain.
+When changing Sejong itself, use the full Sejong chain unless the edit is purely non-behavioral. Material changes to routing, Uigwe planning, Seungjeongwon execution, installer behavior, validation, or artifact storage should go through Jiphyeonjeon decision support, Uigwe handoff-contract planning, then Seungjeongwon actionable decomposition, execution, and verification. In short, material behavior changes should follow the full Sejong chain.
 
 Use Uigwe directly when you already want formal planning:
 
@@ -89,7 +89,7 @@ Use Seungjeongwon directly when the scope is approved and execution should start
 
 ```text
 $seungjeongwon execute this validated Uigwe bundle and verify the result
-$seungjeongwon finish these executable leaves from docs/sejong/examples/brownfield-decompose-only
+$seungjeongwon finish these handoff leaves from docs/sejong/examples/brownfield-decompose-only
 ```
 
 ## What Uigwe Produces
