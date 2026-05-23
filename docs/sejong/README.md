@@ -29,6 +29,8 @@ User scope under `${CODEX_HOME:-~/.codex}/skills`:
 
 In user scope, this docs tree is installed under `skills/sejong/docs/`, and the installed skill files are rewritten to load contracts from that user-scope docs copy.
 
+User-scope install also manages the King Sejong hook block in `${CODEX_HOME:-~/.codex}/config.toml`, sets `[features].hooks = true`, and creates `${CODEX_HOME:-~/.codex}/sejong/state/active-context.json` if it does not already exist. The hook block is marked and idempotent, so rerunning the installer replaces only King Sejong's managed hook section.
+
 The skill files stay short by design. They load the detailed contracts from the installed Sejong docs only when needed.
 
 ## Start Here
@@ -40,9 +42,10 @@ For normal use:
 3. Read [WRAPPER.md](WRAPPER.md) if you want machine-consumable packet flow.
 4. Read [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md) to understand where research, planning, runtime, and evidence artifacts are stored.
 5. Read [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) if you want repo-local role prompt overlays.
-6. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
-7. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
-8. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
+6. Read [HOOKS.md](HOOKS.md) if you want deterministic Codex lifecycle guardrails.
+7. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
+8. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
+9. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
 
 ## Practical Usage
 
@@ -56,6 +59,8 @@ $sejong research the problem, plan the fix, implement it, and verify it
 ```
 
 After Sejong is invoked, follow-up turns remain inside the active Sejong workflow until the user explicitly exits Sejong or switches to another non-Sejong workflow. The user should not have to repeat `$sejong` for every clarification, approval, correction, implementation step, or verification request.
+
+For substantial workflows, this active state can be mirrored into an external King Sejong context checkpoint. The checkpoint is validated by [king-sejong-context.schema.json](king-sejong-context.schema.json) and can be used by hooks, subagents, TeamExecutor, and Seungjeongwon evidence records.
 
 For larger Sejong work, parallelism is allowed when it is genuinely separable:
 
@@ -108,6 +113,9 @@ Useful commands:
 python3 docs/sejong/scripts/validate_json_contracts.py
 python3 docs/sejong/scripts/validate_bundle.py docs/sejong/examples/greenfield-full-flow
 python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets
+python3 docs/sejong/scripts/test_king_sejong_hooks.py
+python3 docs/sejong/scripts/test_team_executor.py
+SEJONG_HOME="$(mktemp -d)" python3 docs/sejong/scripts/test_king_sejong_e2e.py
 python3 docs/sejong/scripts/project_summary.py docs/sejong/examples/greenfield-full-flow --write
 python3 docs/sejong/scripts/team_executor.py check <team-run-dir>
 ```

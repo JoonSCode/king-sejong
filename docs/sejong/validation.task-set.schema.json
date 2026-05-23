@@ -113,6 +113,9 @@
         },
         "grading_notes": {
           "$ref": "#/$defs/StringList"
+        },
+        "guardrail_expectations": {
+          "$ref": "#/$defs/GuardrailExpectations"
         }
       },
       "required": [
@@ -127,6 +130,33 @@
         "forbidden_behavior",
         "grading_notes"
       ]
+    },
+    "GuardrailExpectations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required_state_fields": {
+          "$ref": "#/$defs/StringList"
+        },
+        "exit_conditions": {
+          "$ref": "#/$defs/StringList"
+        },
+        "protected_paths": {
+          "$ref": "#/$defs/StringList"
+        },
+        "required_route_sequence": {
+          "$ref": "#/$defs/StringList"
+        },
+        "allowed_direct_change_types": {
+          "$ref": "#/$defs/StringList"
+        },
+        "worker_authority_forbidden_claims": {
+          "$ref": "#/$defs/StringList"
+        },
+        "artifact_retention_policy": {
+          "$ref": "#/$defs/StringList"
+        }
+      }
     }
   }
 }

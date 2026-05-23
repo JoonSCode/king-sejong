@@ -23,6 +23,10 @@ PROTOCOL_PATH = SEJONG_ROOT / "PROTOCOL.md"
 VALIDATION_PATH = SEJONG_ROOT / "VALIDATION.md"
 ARTIFACT_STORAGE_PATH = SEJONG_ROOT / "ARTIFACT_STORAGE.md"
 TEAM_EXECUTOR_PATH = SEJONG_ROOT / "TEAM_EXECUTOR.md"
+HOOKS_PATH = SEJONG_ROOT / "HOOKS.md"
+CONTEXT_SCHEMA_PATH = SEJONG_ROOT / "king-sejong-context.schema.json"
+CONTEXT_EXAMPLE_PATH = SEJONG_ROOT / "examples" / "king-sejong-context.example.json"
+HOOK_SCRIPT_PATH = SEJONG_ROOT / "scripts" / "king_sejong_hooks.py"
 
 UIGWE_SKILL_LINE_BUDGET = 320
 SEJONG_SKILL_LINE_BUDGET = 90
@@ -35,11 +39,20 @@ SCENARIO_IDS = (
     "instruction-validation-benchmark",
     "instruction-sejong-boundary",
     "instruction-bounded-parallelism",
+    "instruction-king-sejong-hooks",
     "instruction-sejong-continuation",
     "instruction-sejong-self-modification",
     "instruction-artifact-storage",
     "instruction-compression-budget",
 )
+
+REQUIRED_GUARDRAIL_SCENARIOS = {
+    "instruction-bounded-parallelism",
+    "instruction-king-sejong-hooks",
+    "instruction-sejong-continuation",
+    "instruction-sejong-self-modification",
+    "instruction-artifact-storage",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -222,6 +235,30 @@ def evaluate_bounded_parallelism() -> list[dict[str, Any]]:
     ]
 
 
+def evaluate_king_sejong_hooks() -> list[dict[str, Any]]:
+    hooks = load_text(HOOKS_PATH)
+    context_schema = load_text(CONTEXT_SCHEMA_PATH)
+    hook_script = load_text(HOOK_SCRIPT_PATH)
+    combined = "\n".join([hooks, context_schema, hook_script])
+    required = [
+        "UserPromptSubmit",
+        "PreToolUse",
+        "PermissionRequest",
+        "SubagentStop",
+        "Stop",
+        "PreCompact",
+        "king-sejong.context/v0.1-draft",
+        "protected_paths",
+        "required_route_sequence",
+        "pending_gates",
+        "Hooks are deterministic guardrails, not a complete enforcement boundary.",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check("king_sejong_hooks_contract_present", passed, "King Sejong hook guardrails and active context schema remain present.", missing=missing)
+    ]
+
+
 def evaluate_sejong_continuation() -> list[dict[str, Any]]:
     skill = load_text(SEJONG_SKILL_PATH)
     router = load_text(ROUTER_PATH)
@@ -308,11 +345,63 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-validation-benchmark": evaluate_validation_benchmark,
     "instruction-sejong-boundary": evaluate_sejong_boundary,
     "instruction-bounded-parallelism": evaluate_bounded_parallelism,
+    "instruction-king-sejong-hooks": evaluate_king_sejong_hooks,
     "instruction-sejong-continuation": evaluate_sejong_continuation,
     "instruction-sejong-self-modification": evaluate_sejong_self_modification,
     "instruction-artifact-storage": evaluate_artifact_storage,
     "instruction-compression-budget": evaluate_compression,
 }
+
+
+def expectation_text_for_scenario(scenario_id: str) -> str:
+    base = [
+        load_text(ROUTER_PATH),
+        load_text(ARTIFACT_STORAGE_PATH),
+        load_text(TEAM_EXECUTOR_PATH),
+        load_text(HOOKS_PATH),
+        load_text(CONTEXT_SCHEMA_PATH),
+        load_text(CONTEXT_EXAMPLE_PATH),
+        load_text(HOOK_SCRIPT_PATH),
+    ]
+    if scenario_id == "instruction-artifact-storage":
+        return "\n".join([load_text(ARTIFACT_STORAGE_PATH), load_text(ROUTER_PATH), load_text(HOOKS_PATH)])
+    if scenario_id == "instruction-bounded-parallelism":
+        return "\n".join([load_text(TEAM_EXECUTOR_PATH), load_text(ROUTER_PATH), load_text(HOOKS_PATH)])
+    return "\n".join(base)
+
+
+def evaluate_guardrail_expectations(scenario: dict[str, Any]) -> list[dict[str, Any]]:
+    scenario_id = scenario["id"]
+    expectations = scenario.get("guardrail_expectations")
+    checks: list[dict[str, Any]] = []
+
+    if scenario_id in REQUIRED_GUARDRAIL_SCENARIOS and not expectations:
+        return [
+            check(
+                "typed_guardrail_expectations_present",
+                False,
+                "Scenario requires typed guardrail expectations.",
+                missing=["guardrail_expectations"],
+            )
+        ]
+    if not expectations:
+        return checks
+
+    target_text = expectation_text_for_scenario(scenario_id)
+    for field_name, values in expectations.items():
+        if not values:
+            checks.append(check(f"guardrail_{field_name}", False, f"{field_name} must not be empty.", missing=[field_name]))
+            continue
+        passed, missing = contains_all(target_text, values)
+        checks.append(
+            check(
+                f"guardrail_{field_name}",
+                passed,
+                f"Typed guardrail expectation {field_name} is represented in the instruction surface.",
+                missing=missing,
+            )
+        )
+    return checks
 
 
 def validate_task_set(task_set: dict[str, Any]) -> None:
@@ -337,6 +426,7 @@ def build_scorecard(task_set: dict[str, Any]) -> dict[str, Any]:
     results: list[dict[str, Any]] = []
     for scenario in task_set["scenarios"]:
         checks = EVALUATORS[scenario["id"]]()
+        checks.extend(evaluate_guardrail_expectations(scenario))
         status = scenario_status(checks)
         results.append(
             {

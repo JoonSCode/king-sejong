@@ -86,7 +86,34 @@ Run this when changing `.agents/skills`, router docs, README guidance, live-sess
 python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets
 ```
 
-This benchmark is deterministic. It checks whether the installed skill surface still exposes the required routing, live-session, output, validation, and bounded-parallelism contracts.
+This benchmark is deterministic. It checks whether the installed skill surface still exposes the required routing, live-session, output, validation, bounded-parallelism, active-context, hook, and protected-route contracts.
+
+### Phase 2B: King Sejong Guardrail TDD
+
+Run these when changing active context checkpoints, hooks, TeamExecutor authority, protected self-modification rules, or runtime artifact retention:
+
+```bash
+python3 docs/sejong/scripts/test_king_sejong_hooks.py
+python3 docs/sejong/scripts/test_team_executor.py
+SEJONG_HOME="$(mktemp -d)" python3 docs/sejong/scripts/test_king_sejong_e2e.py
+```
+
+Expected red tests before implementation:
+
+- protected Sejong path edits pass without route evidence
+- follow-up prompts fail to receive active King Sejong context
+- subagents can claim Uigwe gate approval or final synthesis
+- `$team` workers can claim final decisions by majority vote
+- runtime artifacts affect the target repository working tree
+
+Expected green behavior:
+
+- `UserPromptSubmit` injects active context
+- `PreToolUse` and `PermissionRequest` guard protected paths
+- `SubagentStop` rejects gate and final-authority claims
+- `Stop` continues when verification gates remain
+- TeamExecutor invalid authority fixtures fail for the expected reason
+- runtime artifacts stay under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`
 
 ### Phase 3: Frozen Planning Benchmark
 
@@ -178,6 +205,7 @@ This validation pack includes:
 - an instruction-surface task set
 - a scorecard template
 - a deterministic instruction-surface benchmark runner
+- King Sejong hook, TeamExecutor, and end-to-end guardrail tests
 - a run output directory for benchmark scorecards
 
 ## Failure Cases

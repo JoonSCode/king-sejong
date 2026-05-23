@@ -6,6 +6,8 @@
 
 Sejong is the all-in-one Codex front door that carries work through research, decision support, Uigwe planning, Seungjeongwon execution, verification, and evidence recording.
 
+King Sejong is the full court-style orchestration system. `Sejong` is the lead router and synthesizer inside that system, not the whole system by itself. The other court names are bounded surfaces, roles, or evidence semantics that the Sejong lead routes through.
+
 It exists because real user requests often say "research this", "think through this", "is this worth making", or "use Uigwe/의궤 for this" before the correct planning entry mode is known.
 
 Sejong keeps Uigwe focused on its strongest job: converting clarified intent, evidence, and decisions into durable planning artifacts. Sejong owns the larger work loop around Uigwe: gather evidence, decide whether planning is useful, invoke Uigwe when needed, execute the selected work, verify the outcome, and record evidence.
@@ -24,6 +26,8 @@ This file is Sejong's routing contract. Sejong is not a new planning protocol an
 ## Sejong Surfaces
 
 Use Sejong language in public docs and user-facing responses. The English ids below are only compact internal handles for tests and examples.
+
+Use `King Sejong` when referring to the total orchestration system: Sejong lead routing plus JangYeongsil research, Jiphyeonjeon decision support, Uigwe planning, Seungjeongwon execution, Sillok evidence, Danjong rejection semantics, hooks, and bounded worker backends.
 
 | Surface | Internal id | Use it for |
 | --- | --- | --- |
@@ -67,6 +71,8 @@ If a follow-up seems unrelated but the user has not exited Sejong, still route i
 
 This continuity is conversational state, not permanent memory. It does not require creating repository artifacts unless the user asks to promote a shareable record or planning bundle.
 
+For substantial or hook-mediated workflows, this conversational state may also be mirrored into an external active context checkpoint that follows [king-sejong-context.schema.json](king-sejong-context.schema.json). The checkpoint stores route id, current surface, route sequence, pending gates, protected paths, evidence refs, artifact refs, team refs, subagent refs, and exit conditions under the Sejong artifact root. It is runtime state and is not tracked by the target repository by default.
+
 ## Sejong Self-Modification
 
 Changes to Sejong itself need a higher routing bar than ordinary repository edits.
@@ -89,6 +95,8 @@ Use `Jiphyeonjeon` when the policy, behavior, naming, or boundary decision is no
 
 `Sejong direct` remains allowed for narrow non-behavioral maintenance, such as typo fixes, broken links, formatting-only edits, deterministic scorecard regeneration, or mechanical corrections that do not change routing, planning, execution, installer, validation, or artifact-storage behavior.
 
+Hook-backed environments should treat the material self-modification list as `protected_paths` in the active context checkpoint. A supported `PreToolUse` or `PermissionRequest` hook may deny protected edits until the route sequence contains `jiphyeonjeon`, `uigwe`, and `seungjeongwon` in order.
+
 ## Parallel Workers
 
 Sejong may use bounded workers to increase parallelism, but workers are an optional execution tactic rather than a separate Sejong surface. The safe shape is hub-and-spoke: workers return bounded briefs, mailbox messages, implementation slices, or verification evidence, and the lead Sejong agent owns routing, synthesis, final decision, and final verification.
@@ -101,6 +109,8 @@ Supported worker backends include:
 `$team` state belongs under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/`. It must not depend on `.omx` paths or OMX state. See [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) for the mailbox, tmux worker, and lease contract.
 
 Codex native subagents remain a valid backend, but `$team` is the preferred shape when the intended workers are independent CLI processes rather than host-managed `spawn_agent` calls.
+
+Both worker backends must carry the active King Sejong context when available. Workers may return evidence, implementation slices, verification observations, objections, or mailbox messages. They must not approve Uigwe gates, claim final synthesis, make majority-vote decisions, or override the Sejong lead.
 
 Codex native role prompt resolution:
 
@@ -130,6 +140,8 @@ By default, JangYeongsil research notes, Jiphyeonjeon council briefs, temporary 
 Do not ask for an artifact tracking policy during normal install or normal routing. Create git-tracked repository artifacts only when the user explicitly asks to promote a shareable plan, Uigwe bundle, or Sillok record into the repository.
 
 When artifacts are generated, report the external run directory and whether any tracked repository files were created.
+
+Hook and worker evidence should reference active context artifacts instead of copying runtime state into the repository. For hook behavior, see [HOOKS.md](HOOKS.md).
 
 ### Parallel Patterns
 

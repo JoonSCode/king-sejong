@@ -1,0 +1,18 @@
+{
+  "brief_path": "brief.md",
+  "created_at": "2026-05-23T00:00:00Z",
+  "format": "sejong.team/v0.1-draft",
+  "repo_root": ".",
+  "run_id": "invalid-missing-context",
+  "workers": [
+    {
+      "allowed_message_kinds": [
+        "status"
+      ],
+      "role": "critic",
+      "scope": "bounded risk review",
+      "status": "registered",
+      "worker_id": "critic"
+    }
+  ]
+}

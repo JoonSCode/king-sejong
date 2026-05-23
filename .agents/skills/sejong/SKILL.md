@@ -5,9 +5,11 @@ description: Use when a user invokes Sejong/$sejong or court aliases JangYeongsi
 
 # Sejong
 
-`sejong` is the all-in-one user-facing front door for broad research, decision support, planning triage, execution, verification, evidence recording, or direct action.
+`sejong` is the lead router inside King Sejong, the full court-style orchestration system for broad research, decision support, planning triage, execution, verification, evidence recording, or direct action.
 
 It is not a shim over another skill. Its source-of-truth routing contract is `../../../docs/sejong/ROUTER.md`.
+
+When hooks or TeamExecutor are involved, active workflow context is represented by the checkpoint contract in `../../../docs/sejong/king-sejong-context.schema.json` and the hook guardrails in `../../../docs/sejong/HOOKS.md`.
 
 ## Routing
 

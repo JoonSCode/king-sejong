@@ -39,6 +39,8 @@ Typical native role choices:
 
 The lead Sejong agent still owns synthesis, final routing, gates, and final verification.
 
+Optional Codex custom agents may be documented or copied from examples when a repo wants project-scoped roles. See `docs/sejong/examples/codex-agents/` for narrow examples. These examples are not a required install surface, and they do not replace the Sejong lead.
+
 ## Overlay Contract
 
 If an overlay exists, it should reinforce this structure:
@@ -52,3 +54,5 @@ If an overlay exists, it should reinforce this structure:
 - handoff format back to the lead agent
 
 It should not authorize the subagent to approve Uigwe gates, treat agreement as evidence, or replace lead-owned synthesis.
+
+When hooks are enabled, `SubagentStart` should inject the active context summary and `SubagentStop` should reject outputs that claim gate approval, final synthesis, final verification, or majority-vote decision ownership.

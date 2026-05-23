@@ -1,0 +1,13 @@
+{
+  "format": "sejong.team-rounds/v0.1-draft",
+  "rounds": [
+    {
+      "closed_at": null,
+      "opened_at": "2026-05-23T00:00:00Z",
+      "purpose": "bounded review",
+      "round_id": "round-1",
+      "status": "open"
+    }
+  ],
+  "run_id": "valid-context"
+}

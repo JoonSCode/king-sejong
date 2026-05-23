@@ -26,6 +26,7 @@ SCHEMA_FILES = {
     "policy_defaults": SEJONG_ROOT / "policy.defaults.schema.json",
     "validation_task_set": SEJONG_ROOT / "validation.task-set.schema.json",
     "validation_scorecard": SEJONG_ROOT / "validation.scorecard.schema.json",
+    "king_sejong_context": SEJONG_ROOT / "king-sejong-context.schema.json",
 }
 
 FORMAT_TO_SCHEMA = {
@@ -40,6 +41,7 @@ FORMAT_TO_SCHEMA = {
     "uigwe.policy-defaults/v0.1-draft": "policy_defaults",
     "uigwe.validation-task-set/v0.1-draft": "validation_task_set",
     "uigwe.validation-scorecard/v0.1-draft": "validation_scorecard",
+    "king-sejong.context/v0.1-draft": "king_sejong_context",
 }
 
 

@@ -33,6 +33,17 @@ ${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs/<repo-id>/<timestamp>-<run-i
 
 `<repo-id>` should be stable enough to separate repositories and short enough to read in reports. A slug plus a short hash of the repository root is sufficient.
 
+Active King Sejong context checkpoints should be stored inside the same run directory. Recommended names:
+
+```text
+king-sejong-context.json
+route-decisions.jsonl
+execution-feedback.json
+sillok-record.jsonl
+```
+
+The context checkpoint should follow `docs/sejong/king-sejong-context.schema.json`. It is the shared runtime state for hooks, native subagents, TeamExecutor workers, Seungjeongwon execution feedback, and Sillok evidence refs.
+
 Team worker coordination state should be stored under:
 
 ```text
@@ -45,8 +56,11 @@ Do not use `.omx/state/team` for King Sejong. OMX-specific paths are outside the
 
 External nontracked artifacts include:
 
+- active King Sejong context checkpoints
+- route decision logs
 - raw JangYeongsil research notes
 - Jiphyeonjeon council briefs
+- hook simulation inputs and outputs
 - TeamExecutor mailbox logs, worker notes, leases, and bounded challenge-round messages
 - temporary Uigwe packets and preflight notes
 - wrapper results produced during live planning
@@ -84,6 +98,7 @@ When a Sejong run generates artifacts, the final response should report:
 
 - the external run directory when artifacts were written
 - whether any repository-tracked artifacts were created
+- the active context id when a checkpoint was created or updated
 - how to request promotion if the user may want the result kept in the repo
 
 If no tracked artifacts were created, say so directly.
@@ -112,5 +127,6 @@ External artifact roots may contain sensitive research notes and execution evide
 
 - create storage directories with user-private permissions where the host allows it
 - keep repository namespaces separate
+- keep context checkpoints compact and reference large artifacts by path
 - support pruning old runs
 - avoid promoting secrets or raw private evidence into tracked files

@@ -16,6 +16,7 @@ The stable shape is:
 - `Uigwe` is the formal planning protocol when a direction needs gates, packets, decomposition, or promotion-ready artifacts.
 - `Seungjeongwon` is the default execution and verification path for clear tasks.
 - `TeamExecutor` is an optional backend for `$team` wrappers that coordinate separate CLI workers in `tmux` panes through Sejong-owned state, mailbox, and lease files.
+- Hook guardrails are Codex-native lifecycle checks that inject active King Sejong context, guard protected self-modification paths, and keep subagent or `$team` output bounded. They must not be treated as a complete sandbox. User-scope install may manage the marked King Sejong hook block in `${CODEX_HOME:-~/.codex}/config.toml`.
 
 Keep installed skills thin and keep durable behavior in `docs/sejong/`. Keep this file focused on source-repo maintenance direction for future development sessions, not product-facing explanation.
 
@@ -59,6 +60,8 @@ Do not add root-level repository files such as `AGENTS.md` to the managed instal
 - Execution behavior: `.agents/skills/seungjeongwon/SKILL.md` and `docs/sejong/SEUNGJEONGWON_EXECUTOR.md`
 - TeamExecutor behavior: `docs/sejong/TEAM_EXECUTOR.md` and `docs/sejong/scripts/team_executor.py`
 - Runtime artifact storage: `docs/sejong/ARTIFACT_STORAGE.md`
+- Hook guardrails: `docs/sejong/HOOKS.md` and `docs/sejong/scripts/king_sejong_hooks.py`
+- Active context checkpoints: `docs/sejong/king-sejong-context.schema.json`
 - Prompt overlays: `docs/sejong/PROMPT_OVERLAYS.md`
 - Install behavior: `scripts/install-sejong.sh`
 
@@ -70,6 +73,7 @@ Do not add root-level repository files such as `AGENTS.md` to the managed instal
 - Do not treat missing repo-local prompt overlays as an install failure.
 - Do not reintroduce `.omx` as a Sejong dependency.
 - Preserve bounded parallelism: subagents and `$team` workers may return bounded briefs, mailbox messages, implementation slices, or verification evidence, but the lead Sejong agent owns synthesis, routing, gates, and final verification.
+- Keep hook behavior test-first: add or update red fixtures before changing hook, active-context, or TeamExecutor authority behavior, then run the hook, TeamExecutor, and E2E guardrail tests.
 - When changing Sejong or Uigwe instruction surfaces, run `python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets`.
 - Validate JSON contracts and examples before claiming behavior changes are ready.
 - Run `bash scripts/install-sejong.sh --verify .` after changing managed install paths or installer behavior.

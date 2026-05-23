@@ -28,6 +28,18 @@ MESSAGE_KINDS = {
     "verification",
 }
 
+FORBIDDEN_WORKER_AUTHORITY_TERMS = (
+    "approve the uigwe gate",
+    "approved the uigwe gate",
+    "uigwe gate approved",
+    "gate approved",
+    "final decision",
+    "final synthesis",
+    "majority vote",
+    "by majority",
+    "consensus approves",
+)
+
 
 def now_utc() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -173,6 +185,7 @@ def init_run(args: argparse.Namespace) -> int:
     (run_dir / "brief.md").write_text(brief.rstrip() + "\n", encoding="utf-8")
 
     repo_root = Path(args.repo_root).expanduser().resolve()
+    source_of_truth_refs = args.source_of_truth_ref or ["brief.md"]
     write_json(
         team_path(run_dir),
         {
@@ -181,6 +194,18 @@ def init_run(args: argparse.Namespace) -> int:
             "created_at": now_utc(),
             "repo_root": str(repo_root),
             "brief_path": "brief.md",
+            "active_context_id": args.active_context_id or f"ctx-{run_id}",
+            "route_id": args.route_id or f"route-{run_id}",
+            "source_of_truth_refs": source_of_truth_refs,
+            "lead_authority": {
+                "gate_owner": "sejong",
+                "synthesis_owner": "sejong",
+                "final_verification_owner": "seungjeongwon",
+            },
+            "forbidden_worker_claims": [
+                "gate approval",
+                "final decision by majority",
+            ],
             "workers": [],
         },
     )
@@ -330,6 +355,18 @@ def read_mailbox(run_dir: Path) -> list[dict[str, Any]]:
     return messages
 
 
+def worker_claims_forbidden_authority(message: dict[str, Any]) -> bool:
+    summary = str(message.get("summary") or "").lower()
+    return any(term in summary for term in FORBIDDEN_WORKER_AUTHORITY_TERMS)
+
+
+def source_ref_exists(run_dir: Path, ref: str) -> bool:
+    candidate = Path(ref)
+    if candidate.is_absolute():
+        return candidate.exists()
+    return (run_dir / candidate).exists()
+
+
 def check_run(args: argparse.Namespace) -> int:
     run_dir = require_run_dir(Path(args.run_dir))
     required = ["brief.md", "team.json", "rounds.json", "mailbox.jsonl", "leases.json"]
@@ -343,6 +380,26 @@ def check_run(args: argparse.Namespace) -> int:
         failures.append("team.json has unexpected format")
     if ".omx" in json.dumps(team):
         failures.append("team.json references .omx state")
+    for required_field in ("active_context_id", "route_id", "source_of_truth_refs", "lead_authority"):
+        if not team.get(required_field):
+            failures.append(f"team.json missing {required_field}")
+
+    lead_authority = team.get("lead_authority") or {}
+    if lead_authority.get("gate_owner") != "sejong":
+        failures.append("lead_authority.gate_owner must be sejong")
+    if lead_authority.get("synthesis_owner") != "sejong":
+        failures.append("lead_authority.synthesis_owner must be sejong")
+    if lead_authority.get("final_verification_owner") != "seungjeongwon":
+        failures.append("lead_authority.final_verification_owner must be seungjeongwon")
+
+    for ref in team.get("source_of_truth_refs") or []:
+        if not source_ref_exists(run_dir, ref):
+            failures.append(f"source_of_truth_ref does not exist: {ref}")
+
+    for worker in team.get("workers", []):
+        for field in ("worker_id", "role", "scope", "allowed_message_kinds", "status"):
+            if not worker.get(field):
+                failures.append(f"worker missing {field}: {worker.get('worker_id')}")
 
     seen_messages: set[str] = set()
     for message in read_mailbox(run_dir):
@@ -360,6 +417,8 @@ def check_run(args: argparse.Namespace) -> int:
             seen_messages.add(message_id)
         if ".omx" in json.dumps(message):
             failures.append(f"mailbox message references .omx state: {message_id}")
+        if worker_claims_forbidden_authority(message):
+            failures.append(f"worker message claims gate or final authority: {message_id}")
 
     leases = load_json(leases_path(run_dir))
     active: dict[str, str] = {}
@@ -427,6 +486,9 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--repo-root", default=".")
     init.add_argument("--brief")
     init.add_argument("--brief-file")
+    init.add_argument("--active-context-id")
+    init.add_argument("--route-id")
+    init.add_argument("--source-of-truth-ref", action="append")
     init.add_argument("--worker", action="append", type=parse_worker)
     init.add_argument("--command", action="append", type=parse_assignment)
     init.add_argument("--force", action="store_true")

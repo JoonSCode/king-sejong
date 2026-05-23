@@ -1,0 +1,55 @@
+{
+  "format": "king-sejong.context/v0.1-draft",
+  "active_context_id": "ctx-king-sejong-example",
+  "repo_id": "king-sejong-176324a6",
+  "repo_root": "/Users/junsu/Develop/king-sejong",
+  "run_id": "20260523T074733Z-king-sejong-enforcement-uigwe",
+  "session_id": "example-session",
+  "route_id": "route-king-sejong-guardrails",
+  "current_surface": "seungjeongwon",
+  "route_sequence": [
+    "jiphyeonjeon",
+    "uigwe"
+  ],
+  "required_route_sequence": [
+    "jiphyeonjeon",
+    "uigwe",
+    "seungjeongwon"
+  ],
+  "last_user_intent": "Proceed with the Uigwe-approved King Sejong guardrail implementation.",
+  "pending_gates": [
+    "seungjeongwon_implementation_verification"
+  ],
+  "protected_paths": [
+    ".agents/skills/sejong/",
+    ".agents/skills/uigwe/",
+    ".agents/skills/seungjeongwon/",
+    "docs/sejong/ROUTER.md",
+    "docs/sejong/PROTOCOL.md",
+    "docs/sejong/SEUNGJEONGWON_EXECUTOR.md",
+    "docs/sejong/ARTIFACT_STORAGE.md",
+    "docs/sejong/TEAM_EXECUTOR.md",
+    "docs/sejong/HOOKS.md",
+    "scripts/install-sejong.sh"
+  ],
+  "allowed_direct_change_types": [
+    "typo",
+    "broken_link",
+    "formatting_only",
+    "deterministic_scorecard_regeneration"
+  ],
+  "evidence_refs": [
+    "/Users/junsu/.codex/sejong/runs/king-sejong-176324a6/20260523T074733Z-king-sejong-enforcement-uigwe/bundle-validation.md"
+  ],
+  "artifact_refs": [
+    "/Users/junsu/.codex/sejong/runs/king-sejong-176324a6/20260523T074733Z-king-sejong-enforcement-uigwe/plan.packet.json"
+  ],
+  "team_run_refs": [],
+  "subagent_refs": [],
+  "exit_conditions": [
+    "user_explicitly_exits_sejong",
+    "user_switches_to_non_sejong_workflow",
+    "host_conversation_ends"
+  ],
+  "last_updated_at": "2026-05-23T07:47:33Z"
+}

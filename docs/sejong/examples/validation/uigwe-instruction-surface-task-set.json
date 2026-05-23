@@ -171,7 +171,69 @@
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."
-      ]
+      ],
+      "guardrail_expectations": {
+        "required_state_fields": [
+          "active_context_id",
+          "route_id",
+          "source_of_truth_refs"
+        ],
+        "worker_authority_forbidden_claims": [
+          "Uigwe gate approval",
+          "final synthesis",
+          "majority-vote decisions"
+        ]
+      }
+    },
+    {
+      "id": "instruction-king-sejong-hooks",
+      "title": "King Sejong hooks preserve active context and protected route gates",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that King Sejong hook docs and reference scripts support active context injection, protected path checks, subagent bounds, stop continuation, and compaction preservation.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        "docs/sejong/HOOKS.md",
+        "docs/sejong/king-sejong-context.schema.json",
+        "docs/sejong/scripts/king_sejong_hooks.py"
+      ],
+      "expected_behavior": [
+        "UserPromptSubmit injects active context for follow-up turns",
+        "PreToolUse and PermissionRequest guard protected Sejong self-modification paths",
+        "SubagentStop rejects gate approval or final synthesis claims",
+        "Stop continues when pending gates remain",
+        "PreCompact and PostCompact preserve checkpoint context"
+      ],
+      "forbidden_behavior": [
+        "claiming hooks are a complete sandbox boundary",
+        "silently editing user-global Codex config during normal install",
+        "allowing hooks to replace lead-owned Sejong verification"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ],
+      "guardrail_expectations": {
+        "required_state_fields": [
+          "active_context_id",
+          "route_id",
+          "current_surface",
+          "pending_gates",
+          "exit_conditions"
+        ],
+        "protected_paths": [
+          "protected_paths"
+        ],
+        "required_route_sequence": [
+          "jiphyeonjeon",
+          "uigwe",
+          "seungjeongwon"
+        ],
+        "worker_authority_forbidden_claims": [
+          "Uigwe gate approval",
+          "final synthesis",
+          "majority-vote authority"
+        ]
+      }
     },
     {
       "id": "instruction-sejong-continuation",
@@ -196,7 +258,21 @@
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."
-      ]
+      ],
+      "guardrail_expectations": {
+        "required_state_fields": [
+          "active_context_id",
+          "route_id",
+          "current_surface",
+          "pending_gates",
+          "exit_conditions"
+        ],
+        "exit_conditions": [
+          "user explicitly says to stop",
+          "user explicitly invokes another non-Sejong skill",
+          "current conversation/workflow ends"
+        ]
+      }
     },
     {
       "id": "instruction-sejong-self-modification",
@@ -222,7 +298,25 @@
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."
-      ]
+      ],
+      "guardrail_expectations": {
+        "protected_paths": [
+          ".agents/skills/sejong/",
+          "docs/sejong/ROUTER.md",
+          "scripts/install-sejong.sh"
+        ],
+        "required_route_sequence": [
+          "jiphyeonjeon",
+          "uigwe",
+          "seungjeongwon"
+        ],
+        "allowed_direct_change_types": [
+          "typo",
+          "broken links",
+          "formatting-only edits",
+          "deterministic scorecard regeneration"
+        ]
+      }
     },
     {
       "id": "instruction-artifact-storage",
@@ -247,7 +341,14 @@
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."
-      ]
+      ],
+      "guardrail_expectations": {
+        "artifact_retention_policy": [
+          "external nontracked",
+          "tracked repository files are created only when the user explicitly asks",
+          "active King Sejong context checkpoints"
+        ]
+      }
     },
     {
       "id": "instruction-compression-budget",

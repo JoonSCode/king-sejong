@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/king-sejong-context.schema.json",
+  "title": "King Sejong Active Context Schema Draft",
+  "description": "Runtime checkpoint contract for active King Sejong workflows.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "king-sejong.context/v0.1-draft"
+    },
+    "active_context_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "repo_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "repo_root": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "run_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "session_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "route_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "current_surface": {
+      "$ref": "#/$defs/Surface"
+    },
+    "route_sequence": {
+      "$ref": "#/$defs/StringList"
+    },
+    "required_route_sequence": {
+      "$ref": "#/$defs/StringList"
+    },
+    "last_user_intent": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "pending_gates": {
+      "$ref": "#/$defs/StringList"
+    },
+    "protected_paths": {
+      "$ref": "#/$defs/StringList"
+    },
+    "allowed_direct_change_types": {
+      "$ref": "#/$defs/StringList"
+    },
+    "evidence_refs": {
+      "$ref": "#/$defs/StringList"
+    },
+    "artifact_refs": {
+      "$ref": "#/$defs/StringList"
+    },
+    "team_run_refs": {
+      "$ref": "#/$defs/StringList"
+    },
+    "subagent_refs": {
+      "$ref": "#/$defs/StringList"
+    },
+    "exit_conditions": {
+      "$ref": "#/$defs/StringList"
+    },
+    "last_updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "format",
+    "active_context_id",
+    "repo_id",
+    "repo_root",
+    "run_id",
+    "session_id",
+    "route_id",
+    "current_surface",
+    "route_sequence",
+    "required_route_sequence",
+    "last_user_intent",
+    "pending_gates",
+    "protected_paths",
+    "allowed_direct_change_types",
+    "evidence_refs",
+    "artifact_refs",
+    "team_run_refs",
+    "subagent_refs",
+    "exit_conditions",
+    "last_updated_at"
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      }
+    },
+    "Surface": {
+      "type": "string",
+      "enum": [
+        "sejong",
+        "jangyeongsil",
+        "jiphyeonjeon",
+        "uigwe",
+        "seungjeongwon",
+        "sillok",
+        "danjong",
+        "sejong-direct"
+      ]
+    }
+  }
+}

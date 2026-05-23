@@ -1,0 +1,28 @@
+{
+  "active_context_id": "ctx-team-invalid-majority",
+  "brief_path": "brief.md",
+  "created_at": "2026-05-23T00:00:00Z",
+  "format": "sejong.team/v0.1-draft",
+  "lead_authority": {
+    "final_verification_owner": "seungjeongwon",
+    "gate_owner": "sejong",
+    "synthesis_owner": "sejong"
+  },
+  "repo_root": ".",
+  "route_id": "route-team-invalid-majority",
+  "run_id": "invalid-majority-decision",
+  "source_of_truth_refs": [
+    "brief.md"
+  ],
+  "workers": [
+    {
+      "allowed_message_kinds": [
+        "claim"
+      ],
+      "role": "advocate",
+      "scope": "bounded option review",
+      "status": "registered",
+      "worker_id": "advocate"
+    }
+  ]
+}

@@ -61,6 +61,18 @@ state/team/<run-id>/
 
 These files are runtime coordination state. They are external nontracked artifacts by default and should not appear in a target repository's `git status`.
 
+Each team run should also record King Sejong context metadata in `team.json`:
+
+- `active_context_id`
+- `route_id`
+- `source_of_truth_refs`
+- `lead_authority.gate_owner = "sejong"`
+- `lead_authority.synthesis_owner = "sejong"`
+- `lead_authority.final_verification_owner = "seungjeongwon"`
+- `forbidden_worker_claims`
+
+The source of truth can be a council brief, an Uigwe bundle, or a direct Seungjeongwon execution scope. A worker mailbox is evidence, not the source of truth.
+
 ## Worker Model
 
 `$team` may launch workers in `tmux` panes. A worker can be backed by Codex CLI, Claude CLI, or another compatible command-line agent.
@@ -77,6 +89,14 @@ Each worker must have:
 
 Workers may read the shared brief and append mailbox messages. They must not silently widen their scope.
 
+Workers must not claim:
+
+- Uigwe gate approval
+- final synthesis
+- final verification
+- majority-vote decisions
+- consensus as approval
+
 ## Reference Helper
 
 The installed docs include a small reference helper:
@@ -84,6 +104,9 @@ The installed docs include a small reference helper:
 ```bash
 python3 docs/sejong/scripts/team_executor.py init \
   --run-id example \
+  --active-context-id ctx-example \
+  --route-id route-example \
+  --source-of-truth-ref brief.md \
   --brief-file brief.md \
   --worker advocate:advocate:"option A review" \
   --worker critic:critic:"risk review"
@@ -130,6 +153,8 @@ Allowed `kind` values:
 - `verification`
 
 The mailbox is coordination evidence, not a second source of truth. Worker agreement, mailbox consensus, or silence is never approval, verification, or a gate decision.
+
+`team_executor.py check` should fail when a mailbox message claims gate approval, final authority, or majority-vote decision ownership.
 
 ## Rounds
 
@@ -197,8 +222,10 @@ Durable decisions, blockers, evidence, verification, and round closure belong in
 Block or downgrade to direct Seungjeongwon execution when:
 
 - the source-of-truth brief is unclear
+- the team run lacks active King Sejong context metadata
 - worker scopes overlap
 - a worker edits without a lease
+- a worker claims Uigwe gate approval, final synthesis, final verification, or majority-vote decision authority
 - mailbox messages contradict the Uigwe bundle or council brief
 - a tmux worker stalls and the lead cannot prove its state
 - verification cannot be reproduced from durable evidence

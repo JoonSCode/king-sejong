@@ -3,13 +3,13 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-23T04:56:48Z",
+    "generated_at": "2026-05-23T08:21:06Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
   "aggregate": {
-    "scenario_count": 11,
-    "pass_count": 11,
+    "scenario_count": 12,
+    "pass_count": 12,
     "partial_count": 0,
     "fail_count": 0,
     "average_score": 1.0,
@@ -143,6 +143,53 @@
           "id": "bounded_parallelism_present",
           "passed": true,
           "detail": "Parallelism remains optional, bounded, and lead-owned."
+        },
+        {
+          "id": "guardrail_required_state_fields",
+          "passed": true,
+          "detail": "Typed guardrail expectation required_state_fields is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_worker_authority_forbidden_claims",
+          "passed": true,
+          "detail": "Typed guardrail expectation worker_authority_forbidden_claims is represented in the instruction surface."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-king-sejong-hooks",
+      "title": "King Sejong hooks preserve active context and protected route gates",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "king_sejong_hooks_contract_present",
+          "passed": true,
+          "detail": "King Sejong hook guardrails and active context schema remain present."
+        },
+        {
+          "id": "guardrail_required_state_fields",
+          "passed": true,
+          "detail": "Typed guardrail expectation required_state_fields is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_protected_paths",
+          "passed": true,
+          "detail": "Typed guardrail expectation protected_paths is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_required_route_sequence",
+          "passed": true,
+          "detail": "Typed guardrail expectation required_route_sequence is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_worker_authority_forbidden_claims",
+          "passed": true,
+          "detail": "Typed guardrail expectation worker_authority_forbidden_claims is represented in the instruction surface."
         }
       ],
       "blockers": [],
@@ -160,6 +207,16 @@
           "id": "sejong_continuation_present",
           "passed": true,
           "detail": "Sejong invocation persists across follow-up turns until explicit exit or non-Sejong handoff."
+        },
+        {
+          "id": "guardrail_required_state_fields",
+          "passed": true,
+          "detail": "Typed guardrail expectation required_state_fields is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_exit_conditions",
+          "passed": true,
+          "detail": "Typed guardrail expectation exit_conditions is represented in the instruction surface."
         }
       ],
       "blockers": [],
@@ -177,6 +234,21 @@
           "id": "sejong_self_modification_guard_present",
           "passed": true,
           "detail": "Material Sejong self-modification requires Jiphyeonjeon, Uigwe, and Seungjeongwon."
+        },
+        {
+          "id": "guardrail_protected_paths",
+          "passed": true,
+          "detail": "Typed guardrail expectation protected_paths is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_required_route_sequence",
+          "passed": true,
+          "detail": "Typed guardrail expectation required_route_sequence is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_allowed_direct_change_types",
+          "passed": true,
+          "detail": "Typed guardrail expectation allowed_direct_change_types is represented in the instruction surface."
         }
       ],
       "blockers": [],
@@ -194,6 +266,11 @@
           "id": "artifact_storage_policy_present",
           "passed": true,
           "detail": "Artifact storage remains external and nontracked by default with explicit promotion only."
+        },
+        {
+          "id": "guardrail_artifact_retention_policy",
+          "passed": true,
+          "detail": "Typed guardrail expectation artifact_retention_policy is represented in the instruction surface."
         }
       ],
       "blockers": [],
@@ -215,7 +292,7 @@
         {
           "id": "sejong_skill_line_budget",
           "passed": true,
-          "detail": "Sejong SKILL.md line count is 36; budget is 90."
+          "detail": "Sejong SKILL.md line count is 38; budget is 90."
         },
         {
           "id": "validation_detail_lives_in_reference",

@@ -26,6 +26,8 @@ Installs:
     ${CODEX_HOME:-~/.codex}/skills/sejong/
     ${CODEX_HOME:-~/.codex}/skills/uigwe/
     ${CODEX_HOME:-~/.codex}/skills/seungjeongwon/
+    ${CODEX_HOME:-~/.codex}/config.toml managed King Sejong hooks block
+    ${CODEX_HOME:-~/.codex}/sejong/state/active-context.json
 
 Source-only:
   AGENTS.md is maintainer guidance for this source repository and is never installed.
@@ -143,6 +145,262 @@ verify_rewritten_skill_matches() {
   rm -f "$tmp_file"
 }
 
+ensure_hooks_feature_enabled() {
+  local config_file=$1
+  local tmp_file
+
+  mkdir -p "$(dirname "$config_file")"
+  touch "$config_file"
+  tmp_file=$(mktemp)
+
+  awk '
+    BEGIN {
+      in_features = 0
+      seen_features = 0
+      wrote_hooks = 0
+    }
+    /^\[features\]$/ {
+      if (in_features && !wrote_hooks) {
+        print "hooks = true"
+        wrote_hooks = 1
+      }
+      in_features = 1
+      seen_features = 1
+      print
+      next
+    }
+    /^\[/ {
+      if (in_features && !wrote_hooks) {
+        print "hooks = true"
+        wrote_hooks = 1
+      }
+      in_features = 0
+      print
+      next
+    }
+    in_features && /^[[:space:]]*hooks[[:space:]]*=/ {
+      print "hooks = true"
+      wrote_hooks = 1
+      next
+    }
+    { print }
+    END {
+      if (!seen_features) {
+        print ""
+        print "[features]"
+        print "hooks = true"
+      } else if (in_features && !wrote_hooks) {
+        print "hooks = true"
+      }
+    }
+  ' "$config_file" > "$tmp_file"
+
+  mv "$tmp_file" "$config_file"
+}
+
+append_managed_hooks_block() {
+  local config_file=$1
+  local hook_script=$2
+  local tmp_file
+  local escaped_script
+
+  escaped_script=${hook_script//\'/\'\\\'\'}
+  tmp_file=$(mktemp)
+
+  awk '
+    /^# BEGIN King Sejong hooks$/ { skip = 1; next }
+    /^# END King Sejong hooks$/ { skip = 0; next }
+    !skip { print }
+  ' "$config_file" > "$tmp_file"
+
+  cat >> "$tmp_file" <<EOF
+
+# BEGIN King Sejong hooks
+[[hooks.SessionStart]]
+matcher = "startup|resume|compact"
+
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = 'python3 "$escaped_script" SessionStart'
+timeout = 30
+statusMessage = "Loading King Sejong context"
+
+[[hooks.UserPromptSubmit]]
+
+[[hooks.UserPromptSubmit.hooks]]
+type = "command"
+command = 'python3 "$escaped_script" UserPromptSubmit'
+timeout = 30
+statusMessage = "Checking King Sejong context"
+
+[[hooks.PreToolUse]]
+matcher = "Bash|apply_patch|Edit|Write"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = 'python3 "$escaped_script" PreToolUse'
+timeout = 30
+statusMessage = "Checking King Sejong protected paths"
+
+[[hooks.PermissionRequest]]
+matcher = "Bash|apply_patch|Edit|Write"
+
+[[hooks.PermissionRequest.hooks]]
+type = "command"
+command = 'python3 "$escaped_script" PermissionRequest'
+timeout = 30
+statusMessage = "Checking King Sejong permissions"
+
+[[hooks.PostToolUse]]
+matcher = "Bash|apply_patch|Edit|Write"
+
+[[hooks.PostToolUse.hooks]]
+type = "command"
+command = 'python3 "$escaped_script" PostToolUse'
+timeout = 30
+statusMessage = "Recording King Sejong tool evidence"
+
+[[hooks.SubagentStart]]
+matcher = ".*"
+
+[[hooks.SubagentStart.hooks]]
+type = "command"
+command = 'python3 "$escaped_script" SubagentStart'
+timeout = 30
+statusMessage = "Passing King Sejong context to subagent"
+
+[[hooks.SubagentStop]]
+matcher = ".*"
+
+[[hooks.SubagentStop.hooks]]
+type = "command"
+command = 'python3 "$escaped_script" SubagentStop'
+timeout = 30
+statusMessage = "Checking King Sejong subagent handoff"
+
+[[hooks.Stop]]
+
+[[hooks.Stop.hooks]]
+type = "command"
+command = 'python3 "$escaped_script" Stop'
+timeout = 30
+statusMessage = "Checking King Sejong completion gates"
+
+[[hooks.PreCompact]]
+matcher = "manual|auto"
+
+[[hooks.PreCompact.hooks]]
+type = "command"
+command = 'python3 "$escaped_script" PreCompact'
+timeout = 30
+statusMessage = "Checking King Sejong checkpoint before compaction"
+
+[[hooks.PostCompact]]
+matcher = "manual|auto"
+
+[[hooks.PostCompact.hooks]]
+type = "command"
+command = 'python3 "$escaped_script" PostCompact'
+timeout = 30
+statusMessage = "Restoring King Sejong context after compaction"
+# END King Sejong hooks
+EOF
+
+  mv "$tmp_file" "$config_file"
+}
+
+write_active_context_if_missing() {
+  local codex_home=$1
+  local context_file="$codex_home/sejong/state/active-context.json"
+  local repo_root
+  local timestamp
+
+  if [[ -f "$context_file" ]]; then
+    return
+  fi
+
+  repo_root=$(cd "$SOURCE_ROOT" && pwd)
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  mkdir -p "$(dirname "$context_file")"
+  cat > "$context_file" <<EOF
+{
+  "format": "king-sejong.context/v0.1-draft",
+  "active_context_id": "ctx-king-sejong-user-install",
+  "repo_id": "king-sejong",
+  "repo_root": "$repo_root",
+  "run_id": "user-install",
+  "session_id": "user-scope-install",
+  "route_id": "route-user-scope-install",
+  "current_surface": "sejong",
+  "route_sequence": ["sejong"],
+  "required_route_sequence": ["jiphyeonjeon", "uigwe", "seungjeongwon"],
+  "last_user_intent": "King Sejong user-scope hooks are installed.",
+  "pending_gates": [],
+  "protected_paths": [
+    ".agents/skills/sejong/",
+    ".agents/skills/uigwe/",
+    ".agents/skills/seungjeongwon/",
+    "docs/sejong/",
+    "scripts/install-sejong.sh"
+  ],
+  "allowed_direct_change_types": [
+    "typo",
+    "broken_link",
+    "formatting_only",
+    "deterministic_scorecard_regeneration"
+  ],
+  "evidence_refs": [],
+  "artifact_refs": [],
+  "team_run_refs": [],
+  "subagent_refs": [],
+  "exit_conditions": [
+    "user_explicitly_exits_sejong",
+    "user_switches_to_non_sejong_workflow",
+    "host_conversation_ends"
+  ],
+  "last_updated_at": "$timestamp"
+}
+EOF
+}
+
+configure_user_hooks() {
+  local codex_home=$1
+  local config_file="$codex_home/config.toml"
+  local hook_script="$codex_home/skills/sejong/docs/scripts/king_sejong_hooks.py"
+
+  ensure_hooks_feature_enabled "$config_file"
+  append_managed_hooks_block "$config_file" "$hook_script"
+  write_active_context_if_missing "$codex_home"
+}
+
+verify_user_hooks_config() {
+  local codex_home=$1
+  local config_file="$codex_home/config.toml"
+  local hook_script="$codex_home/skills/sejong/docs/scripts/king_sejong_hooks.py"
+  local context_file="$codex_home/sejong/state/active-context.json"
+
+  if [[ ! -f "$config_file" ]]; then
+    echo "missing Codex config: $config_file" >&2
+    return 1
+  fi
+  if ! grep -q "hooks = true" "$config_file"; then
+    echo "Codex hooks feature is not enabled in config.toml" >&2
+    return 1
+  fi
+  if ! grep -q "# BEGIN King Sejong hooks" "$config_file" || ! grep -q "# END King Sejong hooks" "$config_file"; then
+    echo "King Sejong managed hooks block is missing from config.toml" >&2
+    return 1
+  fi
+  if ! grep -q "$hook_script" "$config_file"; then
+    echo "King Sejong hook block does not reference installed hook script" >&2
+    return 1
+  fi
+  if [[ ! -f "$context_file" ]]; then
+    echo "missing King Sejong active context checkpoint: $context_file" >&2
+    return 1
+  fi
+}
+
 verify_repo_install() {
   local root=$1
   local missing=0
@@ -153,11 +411,17 @@ verify_repo_install() {
     ".agents/skills/seungjeongwon/SKILL.md"
     "docs/sejong/README.md"
     "docs/sejong/ROUTER.md"
+    "docs/sejong/HOOKS.md"
+    "docs/sejong/king-sejong-context.schema.json"
     "docs/sejong/PROMPT_OVERLAYS.md"
     "docs/sejong/PROTOCOL.md"
     "docs/sejong/SEUNGJEONGWON_EXECUTOR.md"
     "docs/sejong/BUNDLE_VALIDATOR.md"
     "docs/sejong/TEAM_EXECUTOR.md"
+    "docs/sejong/scripts/king_sejong_hooks.py"
+    "docs/sejong/scripts/test_king_sejong_hooks.py"
+    "docs/sejong/scripts/test_king_sejong_e2e.py"
+    "docs/sejong/scripts/test_team_executor.py"
     "docs/sejong/scripts/team_executor.py"
     "docs/sejong/scripts/validate_json_contracts.py"
   )
@@ -198,11 +462,17 @@ verify_user_install() {
     "skills/sejong/SKILL.md"
     "skills/sejong/docs/README.md"
     "skills/sejong/docs/ROUTER.md"
+    "skills/sejong/docs/HOOKS.md"
+    "skills/sejong/docs/king-sejong-context.schema.json"
     "skills/sejong/docs/PROMPT_OVERLAYS.md"
     "skills/sejong/docs/PROTOCOL.md"
     "skills/sejong/docs/SEUNGJEONGWON_EXECUTOR.md"
     "skills/sejong/docs/BUNDLE_VALIDATOR.md"
     "skills/sejong/docs/TEAM_EXECUTOR.md"
+    "skills/sejong/docs/scripts/king_sejong_hooks.py"
+    "skills/sejong/docs/scripts/test_king_sejong_hooks.py"
+    "skills/sejong/docs/scripts/test_king_sejong_e2e.py"
+    "skills/sejong/docs/scripts/test_team_executor.py"
     "skills/sejong/docs/scripts/team_executor.py"
     "skills/sejong/docs/scripts/validate_json_contracts.py"
     "skills/uigwe/SKILL.md"
@@ -230,6 +500,7 @@ verify_user_install() {
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/uigwe/agents" "$root/skills/uigwe/agents" "skills/uigwe/agents/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/seungjeongwon/agents" "$root/skills/seungjeongwon/agents" "skills/seungjeongwon/agents/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/docs/sejong" "$root/skills/sejong/docs" "skills/sejong/docs/" || drift=1
+  verify_user_hooks_config "$root" || drift=1
 
   if [[ "$drift" -ne 0 ]]; then
     echo "King Sejong user install verification failed: managed content is stale or modified in $root" >&2
@@ -368,6 +639,7 @@ install_user_scope() {
   rewrite_skill_doc_paths "$skill_root/sejong/SKILL.md" "docs/"
   rewrite_skill_doc_paths "$skill_root/uigwe/SKILL.md" "../sejong/docs/"
   rewrite_skill_doc_paths "$skill_root/seungjeongwon/SKILL.md" "../sejong/docs/"
+  configure_user_hooks "$codex_home"
 
   verify_user_install "$codex_home"
 
@@ -379,6 +651,10 @@ Managed paths:
   skills/sejong/
   skills/uigwe/
   skills/seungjeongwon/
+
+Managed hooks:
+  $codex_home/config.toml
+  $codex_home/sejong/state/active-context.json
 
 Invoke from any Codex workspace with:
   \$sejong <broad request>
