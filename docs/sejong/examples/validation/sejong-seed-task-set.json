@@ -790,6 +790,7 @@
         "uses one shared council brief and fixed options",
         "assigns each worker a role, scope, allowed output, verification expectation, and stop condition",
         "injects the active court mode into worker context",
+        "uses versioned send-message and receive-messages mailbox envelopes for bounded peer messages",
         "caps the challenge round",
         "lead synthesis names recommendation and rejected options"
       ],
@@ -1100,6 +1101,62 @@
         "max_tool_calls": 8,
         "max_total_tokens": 26000,
         "overhead_budget_note": "Continuation checks should inspect context rather than restart planning."
+      }
+    },
+    {
+      "id": "continuity-ambiguity-register-open-item",
+      "title": "Open ambiguity register blocks completion",
+      "profile": "continuity",
+      "input_shape": "live clarification with unresolved ambiguity",
+      "prompt": "/sejong 기획 준비도 99%인 ambiguity register에 open 항목이 하나 남아 있다. 다음 단계로 넘어갈 수 있는지 검증해줘.",
+      "expected_mode": "full",
+      "expected_route_sequence": [
+        "uigwe"
+      ],
+      "acceptable_route_sequences": [
+        [
+          "uigwe"
+        ]
+      ],
+      "forbidden_surfaces": [
+        "seungjeongwon"
+      ],
+      "clarification_required": true,
+      "expected_artifacts": [
+        "ambiguity register",
+        "hook output"
+      ],
+      "expected_behavior": [
+        "reads the ambiguity register through active context artifact_refs",
+        "reports readiness and the open unclear item",
+        "blocks completion or next-stage advancement while any item remains open",
+        "offers recommended options and a free-response path"
+      ],
+      "forbidden_behavior": [
+        "advancing because readiness is close to 100%",
+        "waiving ambiguity without explicit user instruction",
+        "copying runtime ambiguity logs into the target repository by default"
+      ],
+      "grading_notes": [
+        "A 99% readiness register with one open item is still blocked."
+      ],
+      "guardrail_expectations": {
+        "required_state_fields": [
+          "artifact_refs"
+        ],
+        "exit_conditions": [
+          "no open ambiguity items",
+          "explicit user waiver"
+        ],
+        "artifact_retention_policy": [
+          "ambiguity registers remain external nontracked artifacts"
+        ]
+      },
+      "resource_expectations": {
+        "max_turns": 2,
+        "max_tool_calls": 10,
+        "max_total_tokens": 30000,
+        "overhead_budget_note": "Ambiguity checks should inspect the register and avoid replanning."
       }
     },
     {

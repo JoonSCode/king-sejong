@@ -190,6 +190,66 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("message role does not match", result.stderr)
 
+    def test_send_and_receive_versioned_peer_message(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "peer-envelope",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--worker",
+                    "critic:critic:bounded risk review",
+                    "--worker",
+                    "advocate:advocate:bounded option review",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "peer-envelope"
+            opened = run_team_command(
+                ["open-round", str(run_dir), "--purpose", "peer challenge"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(opened.returncode, 0, opened.stderr)
+
+            sent = run_team_command(
+                [
+                    "send-message",
+                    str(run_dir),
+                    "--message-id",
+                    "m-peer-1",
+                    "--worker-id",
+                    "critic",
+                    "--kind",
+                    "question",
+                    "--recipient",
+                    "worker:advocate",
+                    "--summary",
+                    "Can you answer this bounded objection?",
+                    "--requires-response",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(sent.returncode, 0, sent.stderr)
+
+            received = run_team_command(
+                ["receive-messages", str(run_dir), "--worker-id", "advocate"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(received.returncode, 0, received.stderr)
+            payload = json.loads(received.stdout)
+            self.assertEqual(payload["format"], "sejong.team-mailbox-receive/v0.1-draft")
+            self.assertEqual(payload["count"], 1)
+            message = payload["messages"][0]
+            self.assertEqual(message["format"], "sejong.team-mailbox-message/v0.1-draft")
+            self.assertEqual(message["direction"], "worker_to_worker")
+            self.assertEqual(message["sender"]["id"], "critic")
+            self.assertEqual(message["recipients"][0]["id"], "advocate")
+            self.assertTrue(message["requires_response"])
+
     def test_launch_injects_surface_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)

@@ -53,6 +53,22 @@ Rules:
 - Approval gates are real gates in live sessions. They may be marked `waived` only in explicitly non-interactive contexts such as offline artifact generation, offline evaluation, or when the user explicitly waives them.
 - When a later stage discovers upstream ambiguity, Uigwe must re-enter the earlier stage and resume interaction with the user instead of silently filling the gap alone.
 - General assistant defaults favoring autonomous progress do not override this protocol contract.
+- When an ambiguity register is active, live stage clarification must reach `100%` readiness with no `open` ambiguity items before advancing, unless the user explicitly waives the remaining ambiguity.
+
+## Ambiguity Register During Live Sessions
+
+Sejong and Uigwe may record live clarification state in an external ambiguity
+register that follows [ambiguity-register.schema.json](ambiguity-register.schema.json).
+
+The active King Sejong context references this register through `artifact_refs`.
+The register stores the user-facing stage label, readiness percentage, unclear
+items, why each item matters, recommended options, free-response allowance,
+user responses, status, and next required user action.
+
+An ambiguity item with status `open` blocks stage completion. A `waived` item is
+valid only when the user explicitly asks to skip, waive, or proceed despite that
+ambiguity. Readiness percentages are progress signals; they do not permit
+advancing while any item remains open.
 
 ## Sejong Helper Calls During Uigwe
 

@@ -17,6 +17,8 @@ TEAM_FORMAT = "sejong.team/v0.1-draft"
 ROUNDS_FORMAT = "sejong.team-rounds/v0.1-draft"
 LEASES_FORMAT = "sejong.team-leases/v0.1-draft"
 WORKER_FORMAT = "sejong.team-worker/v0.1-draft"
+MAILBOX_MESSAGE_FORMAT = "sejong.team-mailbox-message/v0.1-draft"
+MAILBOX_RECEIVE_FORMAT = "sejong.team-mailbox-receive/v0.1-draft"
 
 MESSAGE_KINDS = {
     "claim",
@@ -29,6 +31,37 @@ MESSAGE_KINDS = {
     "blocker",
     "verification",
 }
+
+MESSAGE_DIRECTIONS = {
+    "lead_to_worker",
+    "worker_to_lead",
+    "worker_to_worker",
+    "system",
+}
+
+ENDPOINT_TYPES = {
+    "lead",
+    "worker",
+    "system",
+}
+
+REQUIRED_MAILBOX_FIELDS = (
+    "format",
+    "message_id",
+    "run_id",
+    "round_id",
+    "thread_id",
+    "target_message_id",
+    "direction",
+    "sender",
+    "recipients",
+    "kind",
+    "summary",
+    "body",
+    "evidence_refs",
+    "requires_response",
+    "created_at",
+)
 
 SURFACES = {
     "sejong",
@@ -120,6 +153,16 @@ def parse_assignment(value: str) -> tuple[str, str]:
     if not key or not assigned:
         raise argparse.ArgumentTypeError("assignment must be worker_id=value")
     return key, assigned
+
+
+def parse_endpoint(value: str) -> dict[str, str]:
+    parts = value.split(":", 1)
+    if len(parts) != 2 or not all(parts):
+        raise argparse.ArgumentTypeError("endpoint must be type:id")
+    endpoint_type, endpoint_id = parts
+    if endpoint_type not in ENDPOINT_TYPES:
+        raise argparse.ArgumentTypeError(f"endpoint type must be one of: {', '.join(sorted(ENDPOINT_TYPES))}")
+    return {"type": endpoint_type, "id": endpoint_id}
 
 
 def grouped_assignments(assignments: list[tuple[str, str]] | None) -> dict[str, list[str]]:
@@ -430,7 +473,88 @@ def current_open_round(run_dir: Path) -> str:
     raise SystemExit("no open round; run open-round first or pass --round-id")
 
 
-def append_message(args: argparse.Namespace) -> int:
+def require_open_round(run_dir: Path, round_id: str) -> None:
+    rounds = load_json(rounds_path(run_dir)).get("rounds", [])
+    for item in rounds:
+        if item.get("round_id") == round_id:
+            if item.get("status") != "open":
+                raise SystemExit(f"round is not open: {round_id}")
+            return
+    raise SystemExit(f"unknown round: {round_id}")
+
+
+def worker_endpoint(worker_id: str, worker: dict[str, Any]) -> dict[str, str]:
+    return {
+        "type": "worker",
+        "id": worker_id,
+        "role": str(worker.get("role") or ""),
+        "scope": str(worker.get("scope") or ""),
+    }
+
+
+def normalize_endpoint(team: dict[str, Any], endpoint: dict[str, str]) -> dict[str, str]:
+    normalized = dict(endpoint)
+    endpoint_type = normalized.get("type")
+    endpoint_id = normalized.get("id")
+    if endpoint_type not in ENDPOINT_TYPES:
+        raise SystemExit(f"unsupported endpoint type: {endpoint_type}")
+    if not endpoint_id:
+        raise SystemExit("endpoint id is required")
+    if endpoint_type == "worker":
+        worker = worker_by_id(team, endpoint_id)
+        if worker is None:
+            raise SystemExit(f"recipient references unknown worker: {endpoint_id}")
+        normalized.setdefault("role", str(worker.get("role") or ""))
+        normalized.setdefault("scope", str(worker.get("scope") or ""))
+    return normalized
+
+
+def endpoint_key(endpoint: dict[str, Any]) -> tuple[str, str]:
+    return str(endpoint.get("type") or ""), str(endpoint.get("id") or "")
+
+
+def endpoint_matches(left: dict[str, Any], right: dict[str, Any]) -> bool:
+    return endpoint_key(left) == endpoint_key(right)
+
+
+def infer_direction(sender: dict[str, Any], recipients: list[dict[str, Any]]) -> str:
+    sender_type = sender.get("type")
+    recipient_types = {recipient.get("type") for recipient in recipients}
+    if sender_type == "worker" and recipient_types == {"lead"}:
+        return "worker_to_lead"
+    if sender_type == "worker" and recipient_types == {"worker"}:
+        return "worker_to_worker"
+    if sender_type == "lead" and recipient_types == {"worker"}:
+        return "lead_to_worker"
+    if sender_type == "system":
+        return "system"
+    raise SystemExit("cannot infer mailbox direction from sender and recipients")
+
+
+def direction_is_consistent(direction: str, sender: dict[str, Any], recipients: list[dict[str, Any]]) -> bool:
+    sender_type = sender.get("type")
+    recipient_types = {recipient.get("type") for recipient in recipients}
+    if direction == "worker_to_lead":
+        return sender_type == "worker" and recipient_types == {"lead"}
+    if direction == "worker_to_worker":
+        return sender_type == "worker" and recipient_types == {"worker"}
+    if direction == "lead_to_worker":
+        return sender_type == "lead" and recipient_types == {"worker"}
+    if direction == "system":
+        return sender_type == "system"
+    return False
+
+
+def message_by_id(messages: list[dict[str, Any]], message_id: str | None) -> dict[str, Any] | None:
+    if not message_id:
+        return None
+    for message in messages:
+        if message.get("message_id") == message_id:
+            return message
+    return None
+
+
+def send_message(args: argparse.Namespace) -> int:
     run_dir = require_run_dir(Path(args.run_dir))
     team = load_team(run_dir)
     worker = worker_by_id(team, args.worker_id)
@@ -449,23 +573,46 @@ def append_message(args: argparse.Namespace) -> int:
         raise SystemExit(f"message scope does not match registered worker scope: {scope} != {worker['scope']}")
 
     round_id = args.round_id or current_open_round(run_dir)
-    message_id = args.message_id or f"{round_id}-{args.worker_id}-{datetime.now(timezone.utc).strftime('%H%M%S')}"
+    require_open_round(run_dir, round_id)
+    existing_messages = read_mailbox(run_dir)
+    target = message_by_id(existing_messages, args.target_message_id)
+    if args.target_message_id and target is None:
+        raise SystemExit(f"target_message_id not found before send: {args.target_message_id}")
+
+    message_id = args.message_id or f"{round_id}-{args.worker_id}-{len(existing_messages) + 1}"
+    sender = worker_endpoint(args.worker_id, {"role": role, "scope": scope})
+    recipients = [normalize_endpoint(team, recipient) for recipient in (args.recipient or [{"type": "lead", "id": "sejong"}])]
+    direction = args.direction or infer_direction(sender, recipients)
+    if direction not in MESSAGE_DIRECTIONS:
+        raise SystemExit(f"unsupported message direction: {direction}")
+    if not direction_is_consistent(direction, sender, recipients):
+        raise SystemExit(f"message direction is inconsistent with sender and recipients: {direction}")
+    thread_id = args.thread_id or (target.get("thread_id") if target else None) or message_id
+
     message = {
+        "format": MAILBOX_MESSAGE_FORMAT,
         "message_id": message_id,
         "run_id": team["run_id"],
         "round_id": round_id,
-        "worker_id": args.worker_id,
-        "role": role,
-        "scope": scope,
-        "kind": args.kind,
+        "thread_id": thread_id,
         "target_message_id": args.target_message_id,
+        "direction": direction,
+        "sender": sender,
+        "recipients": recipients,
+        "kind": args.kind,
         "summary": args.summary,
+        "body": args.body,
         "evidence_refs": args.evidence_ref or [],
+        "requires_response": args.requires_response,
         "created_at": now_utc(),
     }
     append_jsonl(mailbox_path(run_dir), message)
-    print(f"message appended: {message_id}")
+    print(f"message sent: {message_id}")
     return 0
+
+
+def append_message(args: argparse.Namespace) -> int:
+    return send_message(args)
 
 
 def acquire_lease(args: argparse.Namespace) -> int:
@@ -535,8 +682,99 @@ def read_mailbox(run_dir: Path) -> list[dict[str, Any]]:
 
 
 def worker_claims_forbidden_authority(message: dict[str, Any]) -> bool:
-    summary = str(message.get("summary") or "").lower()
-    return any(term in summary for term in FORBIDDEN_WORKER_AUTHORITY_TERMS)
+    message_text = " ".join(
+        [
+            str(message.get("summary") or ""),
+            str(message.get("body") or ""),
+        ]
+    ).lower()
+    return any(term in message_text for term in FORBIDDEN_WORKER_AUTHORITY_TERMS)
+
+
+def mailbox_message_failures(
+    team: dict[str, Any],
+    message: dict[str, Any],
+    *,
+    seen_messages: set[str],
+    round_ids: set[str],
+) -> list[str]:
+    failures: list[str] = []
+    message_id = str(message.get("message_id") or "")
+    if message.get("format") != MAILBOX_MESSAGE_FORMAT:
+        failures.append(f"mailbox message has unexpected format: {message_id or '<missing>'}")
+    for field in REQUIRED_MAILBOX_FIELDS:
+        if field not in message:
+            failures.append(f"mailbox message missing {field}: {message_id or '<missing>'}")
+
+    sender = message.get("sender") or {}
+    recipients = message.get("recipients") or []
+    direction = str(message.get("direction") or "")
+    kind = message.get("kind")
+
+    if not isinstance(sender, dict):
+        failures.append(f"mailbox sender must be an object: {message_id}")
+        sender = {}
+    if not isinstance(recipients, list) or not recipients:
+        failures.append(f"mailbox recipients must be a non-empty list: {message_id}")
+        recipients = []
+    if direction not in MESSAGE_DIRECTIONS:
+        failures.append(f"unsupported mailbox direction: {message_id}")
+    elif recipients and not direction_is_consistent(direction, sender, recipients):
+        failures.append(f"mailbox direction does not match sender and recipients: {message_id}")
+
+    sender_type = sender.get("type")
+    sender_id = str(sender.get("id") or "")
+    if sender_type not in ENDPOINT_TYPES:
+        failures.append(f"mailbox sender has unsupported endpoint type: {message_id}")
+    if not sender_id:
+        failures.append(f"mailbox sender missing id: {message_id}")
+    worker = worker_by_id(team, sender_id) if sender_type == "worker" else None
+    if sender_type == "worker":
+        if worker is None:
+            failures.append(f"mailbox message references unknown worker: {message_id}")
+        else:
+            if sender.get("role") != worker.get("role"):
+                failures.append(f"mailbox role does not match worker: {message_id}")
+            if sender.get("scope") != worker.get("scope"):
+                failures.append(f"mailbox scope does not match worker: {message_id}")
+            if kind not in worker.get("allowed_message_kinds", []):
+                failures.append(f"mailbox kind not allowed for worker: {message_id}")
+
+    for recipient in recipients:
+        if not isinstance(recipient, dict):
+            failures.append(f"mailbox recipient must be an object: {message_id}")
+            continue
+        if recipient.get("type") not in ENDPOINT_TYPES:
+            failures.append(f"mailbox recipient has unsupported endpoint type: {message_id}")
+        if not recipient.get("id"):
+            failures.append(f"mailbox recipient missing id: {message_id}")
+        if recipient.get("type") == "worker" and worker_by_id(team, str(recipient.get("id") or "")) is None:
+            failures.append(f"mailbox recipient references unknown worker: {message_id}")
+
+    if kind not in MESSAGE_KINDS:
+        failures.append(f"unsupported mailbox kind: {kind}")
+    if not message_id:
+        failures.append("mailbox message missing message_id")
+    elif message_id in seen_messages:
+        failures.append(f"duplicate message_id: {message_id}")
+    else:
+        target = message.get("target_message_id")
+        if target and target not in seen_messages:
+            failures.append(f"target_message_id not found before reply: {target}")
+        seen_messages.add(message_id)
+    if not message.get("thread_id"):
+        failures.append(f"mailbox message missing thread_id: {message_id}")
+    if message.get("round_id") not in round_ids:
+        failures.append(f"mailbox message references unknown round: {message_id}")
+    if not isinstance(message.get("evidence_refs"), list):
+        failures.append(f"mailbox evidence_refs must be a list: {message_id}")
+    if not isinstance(message.get("requires_response"), bool):
+        failures.append(f"mailbox requires_response must be boolean: {message_id}")
+    if ".omx" in json.dumps(message):
+        failures.append(f"mailbox message references .omx state: {message_id}")
+    if worker_claims_forbidden_authority(message):
+        failures.append(f"worker message claims gate or final authority: {message_id}")
+    return failures
 
 
 def source_ref_exists(run_dir: Path, ref: str) -> bool:
@@ -602,33 +840,10 @@ def check_run(args: argparse.Namespace) -> int:
         if invalid_kinds:
             failures.append(f"worker has unsupported allowed_message_kinds: {worker.get('worker_id')}: {invalid_kinds}")
 
+    round_ids = {str(item.get("round_id") or "") for item in load_json(rounds_path(run_dir)).get("rounds", [])}
     seen_messages: set[str] = set()
     for message in read_mailbox(run_dir):
-        worker = worker_by_id(team, str(message.get("worker_id") or ""))
-        if worker is None:
-            failures.append(f"mailbox message references unknown worker: {message.get('message_id')}")
-        if message.get("kind") not in MESSAGE_KINDS:
-            failures.append(f"unsupported mailbox kind: {message.get('kind')}")
-        elif worker and message.get("kind") not in worker.get("allowed_message_kinds", []):
-            failures.append(f"mailbox kind not allowed for worker: {message.get('message_id')}")
-        if worker and message.get("role") != worker.get("role"):
-            failures.append(f"mailbox role does not match worker: {message.get('message_id')}")
-        if worker and message.get("scope") != worker.get("scope"):
-            failures.append(f"mailbox scope does not match worker: {message.get('message_id')}")
-        message_id = message.get("message_id")
-        if not message_id:
-            failures.append("mailbox message missing message_id")
-        elif message_id in seen_messages:
-            failures.append(f"duplicate message_id: {message_id}")
-        else:
-            target = message.get("target_message_id")
-            if target and target not in seen_messages:
-                failures.append(f"target_message_id not found before reply: {target}")
-            seen_messages.add(message_id)
-        if ".omx" in json.dumps(message):
-            failures.append(f"mailbox message references .omx state: {message_id}")
-        if worker_claims_forbidden_authority(message):
-            failures.append(f"worker message claims gate or final authority: {message_id}")
+        failures.extend(mailbox_message_failures(team, message, seen_messages=seen_messages, round_ids=round_ids))
 
     leases = load_json(leases_path(run_dir))
     active: dict[str, str] = {}
@@ -650,6 +865,52 @@ def check_run(args: argparse.Namespace) -> int:
             print(f"failure: {failure}", file=sys.stderr)
         return 1
     print(f"team run ok: {run_dir}")
+    return 0
+
+
+def receive_messages(args: argparse.Namespace) -> int:
+    run_dir = require_run_dir(Path(args.run_dir))
+    team = load_team(run_dir)
+    if args.worker_id and args.recipient:
+        raise SystemExit("pass either --worker-id or --recipient, not both")
+    if args.recipient:
+        recipient = args.recipient
+    elif args.worker_id:
+        recipient = {"type": "worker", "id": args.worker_id}
+    else:
+        recipient = {"type": "lead", "id": "sejong"}
+    recipient = normalize_endpoint(team, recipient)
+
+    messages = read_mailbox(run_dir)
+    if args.after_message_id and message_by_id(messages, args.after_message_id) is None:
+        raise SystemExit(f"after_message_id not found: {args.after_message_id}")
+
+    include = args.after_message_id is None
+    selected: list[dict[str, Any]] = []
+    for message in messages:
+        if not include:
+            include = message.get("message_id") == args.after_message_id
+            continue
+        if args.round_id and message.get("round_id") != args.round_id:
+            continue
+        if args.thread_id and message.get("thread_id") != args.thread_id:
+            continue
+        if args.kind and message.get("kind") != args.kind:
+            continue
+        recipients = message.get("recipients") or []
+        if not any(endpoint_matches(recipient, item) for item in recipients if isinstance(item, dict)):
+            continue
+        selected.append(message)
+
+    payload = {
+        "format": MAILBOX_RECEIVE_FORMAT,
+        "run_id": team["run_id"],
+        "recipient": recipient,
+        "after_message_id": args.after_message_id,
+        "count": len(selected),
+        "messages": selected,
+    }
+    print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
 
 
@@ -749,17 +1010,50 @@ def build_parser() -> argparse.ArgumentParser:
     close_cmd.add_argument("round_id")
     close_cmd.set_defaults(func=close_round)
 
-    message = subparsers.add_parser("append-message", help="Append one mailbox message")
+    send = subparsers.add_parser("send-message", help="Send one versioned mailbox message")
+    send.add_argument("run_dir")
+    send.add_argument("--message-id")
+    send.add_argument("--round-id")
+    send.add_argument("--thread-id")
+    send.add_argument("--worker-id", required=True)
+    send.add_argument("--role")
+    send.add_argument("--scope")
+    send.add_argument("--kind", required=True, choices=sorted(MESSAGE_KINDS))
+    send.add_argument("--target-message-id")
+    send.add_argument("--recipient", action="append", type=parse_endpoint)
+    send.add_argument("--direction", choices=sorted(MESSAGE_DIRECTIONS))
+    send.add_argument("--summary", required=True)
+    send.add_argument("--body")
+    send.add_argument("--evidence-ref", action="append")
+    send.add_argument("--requires-response", action="store_true")
+    send.set_defaults(func=send_message)
+
+    receive = subparsers.add_parser("receive-messages", help="Read versioned mailbox messages for one recipient")
+    receive.add_argument("run_dir")
+    receive.add_argument("--worker-id")
+    receive.add_argument("--recipient", type=parse_endpoint)
+    receive.add_argument("--after-message-id")
+    receive.add_argument("--round-id")
+    receive.add_argument("--thread-id")
+    receive.add_argument("--kind", choices=sorted(MESSAGE_KINDS))
+    receive.set_defaults(func=receive_messages)
+
+    message = subparsers.add_parser("append-message", help="Compatibility alias for send-message")
     message.add_argument("run_dir")
     message.add_argument("--message-id")
     message.add_argument("--round-id")
+    message.add_argument("--thread-id")
     message.add_argument("--worker-id", required=True)
     message.add_argument("--role")
     message.add_argument("--scope")
     message.add_argument("--kind", required=True, choices=sorted(MESSAGE_KINDS))
     message.add_argument("--target-message-id")
+    message.add_argument("--recipient", action="append", type=parse_endpoint)
+    message.add_argument("--direction", choices=sorted(MESSAGE_DIRECTIONS))
     message.add_argument("--summary", required=True)
+    message.add_argument("--body")
     message.add_argument("--evidence-ref", action="append")
+    message.add_argument("--requires-response", action="store_true")
     message.set_defaults(func=append_message)
 
     acquire = subparsers.add_parser("acquire-lease", help="Acquire a file-scope write lease")

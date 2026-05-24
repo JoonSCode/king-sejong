@@ -17,7 +17,11 @@ SUMMARY_PATH = SEJONG_ROOT / "examples" / "validation" / "runs" / "uigwe-instruc
 
 UIGWE_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "uigwe" / "SKILL.md"
 SEJONG_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "sejong" / "SKILL.md"
+JANGYEONGSIL_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "jangyeongsil" / "SKILL.md"
+JIPHYEONJEON_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "jiphyeonjeon" / "SKILL.md"
 SEUNGJEONGWON_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "seungjeongwon" / "SKILL.md"
+JANGYEONGSIL_OPENAI_YAML_PATH = REPO_ROOT / ".agents" / "skills" / "jangyeongsil" / "agents" / "openai.yaml"
+JIPHYEONJEON_OPENAI_YAML_PATH = REPO_ROOT / ".agents" / "skills" / "jiphyeonjeon" / "agents" / "openai.yaml"
 README_PATH = SEJONG_ROOT / "README.md"
 ROUTER_PATH = SEJONG_ROOT / "ROUTER.md"
 REPO_CONTEXT_PATH = SEJONG_ROOT / "REPO_CONTEXT.md"
@@ -27,6 +31,8 @@ VALIDATION_PATH = SEJONG_ROOT / "VALIDATION.md"
 ARTIFACT_STORAGE_PATH = SEJONG_ROOT / "ARTIFACT_STORAGE.md"
 TEAM_EXECUTOR_PATH = SEJONG_ROOT / "TEAM_EXECUTOR.md"
 HOOKS_PATH = SEJONG_ROOT / "HOOKS.md"
+AMBIGUITY_REGISTER_PATH = SEJONG_ROOT / "AMBIGUITY_REGISTER.md"
+AMBIGUITY_REGISTER_SCHEMA_PATH = SEJONG_ROOT / "ambiguity-register.schema.json"
 SECURITY_PATH = SEJONG_ROOT / "SECURITY.md"
 SILLOK_TRACE_PATH = SEJONG_ROOT / "SILLOK_TRACE.md"
 CONTEXT_SCHEMA_PATH = SEJONG_ROOT / "king-sejong-context.schema.json"
@@ -36,6 +42,7 @@ SILLOK_TRACE_SCRIPT_PATH = SEJONG_ROOT / "scripts" / "sillok_trace.py"
 
 UIGWE_SKILL_LINE_BUDGET = 320
 SEJONG_SKILL_LINE_BUDGET = 90
+COURT_HELPER_SKILL_LINE_BUDGET = 80
 
 SCENARIO_IDS = (
     "instruction-routing-modes",
@@ -45,9 +52,11 @@ SCENARIO_IDS = (
     "instruction-validation-benchmark",
     "instruction-sejong-boundary",
     "instruction-cross-stage-helper-calls",
+    "instruction-court-skill-frontdoors",
     "instruction-bounded-parallelism",
     "instruction-king-sejong-hooks",
     "instruction-sejong-continuation",
+    "instruction-ambiguity-register",
     "instruction-sejong-self-modification",
     "instruction-artifact-storage",
     "instruction-repo-context-refresh",
@@ -59,6 +68,7 @@ REQUIRED_GUARDRAIL_SCENARIOS = {
     "instruction-bounded-parallelism",
     "instruction-king-sejong-hooks",
     "instruction-sejong-continuation",
+    "instruction-ambiguity-register",
     "instruction-sejong-self-modification",
     "instruction-artifact-storage",
     "instruction-repo-context-refresh",
@@ -232,20 +242,24 @@ def evaluate_sejong_boundary() -> list[dict[str, Any]]:
 
 def evaluate_cross_stage_helper_calls() -> list[dict[str, Any]]:
     sejong_skill = load_text(SEJONG_SKILL_PATH)
+    jangyeongsil_skill = load_text(JANGYEONGSIL_SKILL_PATH)
+    jiphyeonjeon_skill = load_text(JIPHYEONJEON_SKILL_PATH)
     uigwe_skill = load_text(UIGWE_SKILL_PATH)
     router = load_text(ROUTER_PATH)
     protocol = load_text(PROTOCOL_PATH)
     readme = load_text(README_PATH)
     team = load_text(TEAM_EXECUTOR_PATH)
-    combined = "\n".join([sejong_skill, uigwe_skill, router, protocol, readme, team])
+    combined = "\n".join([sejong_skill, jangyeongsil_skill, jiphyeonjeon_skill, uigwe_skill, router, protocol, readme, team])
     required = [
         "Court modes can be the primary route for a request or a bounded helper call inside another active court mode.",
         "`JangYeongsil` can be called as an evidence helper from Sejong, Uigwe, or Jiphyeonjeon",
         "`Jiphyeonjeon` can be called as a decision-support helper from Sejong, Uigwe, JangYeongsil, or Seungjeongwon",
         "A helper call produces bounded evidence or deliberation and then returns to the calling court mode.",
         "Helper calls return to Uigwe and do not approve gates or finalize canonical packets.",
+        "`JangYeongsil` and `Jiphyeonjeon` also have thin installed skill front doors",
         "JangYeongsil research can run while Uigwe prepares artifact inventory, mode-readiness, or validation preflight",
         "Jiphyeonjeon option review may run while Uigwe inventories artifacts",
+        "Host-native team or teammate messaging is preferred when the runtime officially supports direct worker messages",
         "with `current_surface` set to the helper mode",
         "Helper calls do not approve Uigwe gates, finalize `spec.md`, finalize `rationale.md`, finalize `goal-tree.json`, claim consensus, or override lead synthesis.",
     ]
@@ -255,6 +269,38 @@ def evaluate_cross_stage_helper_calls() -> list[dict[str, Any]]:
             "cross_stage_helper_calls_present",
             passed,
             "JangYeongsil and Jiphyeonjeon helper calls remain explicit, bounded, and non-authoritative.",
+            missing=missing,
+        )
+    ]
+
+
+def evaluate_court_skill_frontdoors() -> list[dict[str, Any]]:
+    jangyeongsil_skill = load_text(JANGYEONGSIL_SKILL_PATH)
+    jiphyeonjeon_skill = load_text(JIPHYEONJEON_SKILL_PATH)
+    jangyeongsil_ui = load_text(JANGYEONGSIL_OPENAI_YAML_PATH)
+    jiphyeonjeon_ui = load_text(JIPHYEONJEON_OPENAI_YAML_PATH)
+    router = load_text(ROUTER_PATH)
+    team = load_text(TEAM_EXECUTOR_PATH)
+    installer = load_text(REPO_ROOT / "scripts" / "install-sejong.sh")
+    combined = "\n".join([jangyeongsil_skill, jiphyeonjeon_skill, jangyeongsil_ui, jiphyeonjeon_ui, router, team, installer])
+    required = [
+        "`JangYeongsil` is the King Sejong evidence and experiment front door.",
+        "`Jiphyeonjeon` is the King Sejong discussion and decision-support front door.",
+        "source-of-truth routing contract is `../../../docs/sejong/ROUTER.md`",
+        "display_name: \"JangYeongsil\"",
+        "display_name: \"Jiphyeonjeon\"",
+        ".agents/skills/jangyeongsil/",
+        ".agents/skills/jiphyeonjeon/",
+        "skills/jangyeongsil/",
+        "skills/jiphyeonjeon/",
+        "Peer messages are allowed only as bounded worker messages inside an open round.",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check(
+            "court_skill_frontdoors_present",
+            passed,
+            "JangYeongsil and Jiphyeonjeon remain installed thin front doors with installer verification.",
             missing=missing,
         )
     ]
@@ -274,6 +320,9 @@ def evaluate_bounded_parallelism() -> list[dict[str, Any]]:
         "${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/",
         "must not depend on `.omx`",
         "The lead Sejong agent opens and closes each challenge round",
+        "sejong.team-mailbox-message/v0.1-draft",
+        "send-message",
+        "receive-messages",
         "`Uigwe` supports only preflight parallelism before gates",
         "do not use worker or subagent agreement as evidence or approval",
     ]
@@ -293,6 +342,9 @@ def evaluate_king_sejong_hooks() -> list[dict[str, Any]]:
         "PreToolUse",
         "PermissionRequest",
         "SubagentStop",
+        "TaskCreated",
+        "TaskCompleted",
+        "TeammateIdle",
         "Stop",
         "PreCompact",
         "king-sejong.context/v0.1-draft",
@@ -322,6 +374,41 @@ def evaluate_sejong_continuation() -> list[dict[str, Any]]:
     passed, missing = contains_all(combined, required)
     return [
         check("sejong_continuation_present", passed, "Sejong invocation persists across follow-up turns until explicit exit or non-Sejong handoff.", missing=missing)
+    ]
+
+
+def evaluate_ambiguity_register() -> list[dict[str, Any]]:
+    sejong_skill = load_text(SEJONG_SKILL_PATH)
+    uigwe_skill = load_text(UIGWE_SKILL_PATH)
+    router = load_text(ROUTER_PATH)
+    protocol = load_text(PROTOCOL_PATH)
+    hooks = load_text(HOOKS_PATH)
+    register = load_text(AMBIGUITY_REGISTER_PATH)
+    register_schema = load_text(AMBIGUITY_REGISTER_SCHEMA_PATH)
+    hook_script = load_text(HOOK_SCRIPT_PATH)
+    combined = "\n".join([sejong_skill, uigwe_skill, router, protocol, hooks, register, register_schema, hook_script])
+    required = [
+        "sejong.ambiguity-register/v0.1-draft",
+        "artifact_refs",
+        "readiness_percent",
+        "blocking_count",
+        "open",
+        "resolved",
+        "waived",
+        "readiness is `100%`",
+        "free-response",
+        "Stop` blocks completion when any referenced register has open ambiguities",
+        "PreCompact` blocks compaction when an ambiguity-register reference is broken",
+        "UserPromptSubmit` injects a compact register summary",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check(
+            "ambiguity_register_contract_present",
+            passed,
+            "Ambiguity register remains external, readiness-gated, and hook-enforced.",
+            missing=missing,
+        )
     ]
 
 
@@ -413,6 +500,8 @@ def evaluate_sillok_security_trace() -> list[dict[str, Any]]:
 def evaluate_compression() -> list[dict[str, Any]]:
     uigwe_lines = line_count(UIGWE_SKILL_PATH)
     sejong_lines = line_count(SEJONG_SKILL_PATH)
+    jangyeongsil_lines = line_count(JANGYEONGSIL_SKILL_PATH)
+    jiphyeonjeon_lines = line_count(JIPHYEONJEON_SKILL_PATH)
     skill = load_text(UIGWE_SKILL_PATH)
     return [
         check(
@@ -424,6 +513,16 @@ def evaluate_compression() -> list[dict[str, Any]]:
             "sejong_skill_line_budget",
             sejong_lines <= SEJONG_SKILL_LINE_BUDGET,
             f"Sejong SKILL.md line count is {sejong_lines}; budget is {SEJONG_SKILL_LINE_BUDGET}.",
+        ),
+        check(
+            "jangyeongsil_skill_line_budget",
+            jangyeongsil_lines <= COURT_HELPER_SKILL_LINE_BUDGET,
+            f"JangYeongsil SKILL.md line count is {jangyeongsil_lines}; budget is {COURT_HELPER_SKILL_LINE_BUDGET}.",
+        ),
+        check(
+            "jiphyeonjeon_skill_line_budget",
+            jiphyeonjeon_lines <= COURT_HELPER_SKILL_LINE_BUDGET,
+            f"Jiphyeonjeon SKILL.md line count is {jiphyeonjeon_lines}; budget is {COURT_HELPER_SKILL_LINE_BUDGET}.",
         ),
         check(
             "validation_detail_lives_in_reference",
@@ -441,9 +540,11 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-validation-benchmark": evaluate_validation_benchmark,
     "instruction-sejong-boundary": evaluate_sejong_boundary,
     "instruction-cross-stage-helper-calls": evaluate_cross_stage_helper_calls,
+    "instruction-court-skill-frontdoors": evaluate_court_skill_frontdoors,
     "instruction-bounded-parallelism": evaluate_bounded_parallelism,
     "instruction-king-sejong-hooks": evaluate_king_sejong_hooks,
     "instruction-sejong-continuation": evaluate_sejong_continuation,
+    "instruction-ambiguity-register": evaluate_ambiguity_register,
     "instruction-sejong-self-modification": evaluate_sejong_self_modification,
     "instruction-artifact-storage": evaluate_artifact_storage,
     "instruction-repo-context-refresh": evaluate_repo_context_refresh,
@@ -470,6 +571,18 @@ def expectation_text_for_scenario(scenario_id: str) -> str:
         return "\n".join([load_text(ARTIFACT_STORAGE_PATH), load_text(ROUTER_PATH), load_text(HOOKS_PATH)])
     if scenario_id == "instruction-bounded-parallelism":
         return "\n".join([load_text(TEAM_EXECUTOR_PATH), load_text(ROUTER_PATH), load_text(HOOKS_PATH)])
+    if scenario_id == "instruction-ambiguity-register":
+        return "\n".join(
+            [
+                load_text(AMBIGUITY_REGISTER_PATH),
+                load_text(AMBIGUITY_REGISTER_SCHEMA_PATH),
+                load_text(HOOKS_PATH),
+                load_text(HOOK_SCRIPT_PATH),
+                load_text(UIGWE_SKILL_PATH),
+                load_text(ROUTER_PATH),
+                load_text(ARTIFACT_STORAGE_PATH),
+            ]
+        )
     return "\n".join(base)
 
 

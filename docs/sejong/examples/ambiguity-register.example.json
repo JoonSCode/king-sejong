@@ -1,0 +1,41 @@
+{
+  "format": "sejong.ambiguity-register/v0.1-draft",
+  "metadata": {
+    "id": "ambiguity-register-example",
+    "active_context_id": "ctx-king-sejong-example",
+    "route_id": "route-king-sejong-guardrails",
+    "created_at": "2026-05-24T00:00:00Z"
+  },
+  "stage_id": "intent_clarification",
+  "stage_label": "기획 명확화",
+  "readiness_percent": 67,
+  "blocking_count": 1,
+  "ambiguities": [
+    {
+      "id": "amb-long-running-loop",
+      "question": "Should the long-running loop optimize for one continuous session or resumable checkpoints?",
+      "why_it_matters": "The answer changes hook blocking, checkpoint frequency, and execution evidence requirements.",
+      "options": [
+        {
+          "id": "continuous-session",
+          "label": "Continuous session",
+          "description": "Keep working in one active turn when the host runtime allows it.",
+          "recommended": true
+        },
+        {
+          "id": "checkpoint-first",
+          "label": "Checkpoint first",
+          "description": "Prefer resumable checkpoints even if a single long session is possible.",
+          "recommended": false
+        }
+      ],
+      "free_response_allowed": true,
+      "status": "open",
+      "blocking": true,
+      "evidence_refs": [],
+      "updated_at": "2026-05-24T00:00:00Z"
+    }
+  ],
+  "next_required_user_action": "Choose one option or provide a free-form answer.",
+  "last_updated_at": "2026-05-24T00:00:00Z"
+}

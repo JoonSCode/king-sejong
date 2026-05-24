@@ -3,13 +3,13 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-24T00:35:52Z",
+    "generated_at": "2026-05-24T01:07:52Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
   "aggregate": {
-    "scenario_count": 15,
-    "pass_count": 15,
+    "scenario_count": 17,
+    "pass_count": 17,
     "partial_count": 0,
     "fail_count": 0,
     "average_score": 1.0,
@@ -151,6 +151,23 @@
       ]
     },
     {
+      "scenario_id": "instruction-court-skill-frontdoors",
+      "title": "JangYeongsil and Jiphyeonjeon remain installed thin front doors",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "court_skill_frontdoors_present",
+          "passed": true,
+          "detail": "JangYeongsil and Jiphyeonjeon remain installed thin front doors with installer verification."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
       "scenario_id": "instruction-bounded-parallelism",
       "title": "Bounded parallelism remains lead-owned",
       "status": "pass",
@@ -234,6 +251,38 @@
           "id": "guardrail_exit_conditions",
           "passed": true,
           "detail": "Typed guardrail expectation exit_conditions is represented in the instruction surface."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-ambiguity-register",
+      "title": "Ambiguity register blocks unresolved live clarification",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "ambiguity_register_contract_present",
+          "passed": true,
+          "detail": "Ambiguity register remains external, readiness-gated, and hook-enforced."
+        },
+        {
+          "id": "guardrail_required_state_fields",
+          "passed": true,
+          "detail": "Typed guardrail expectation required_state_fields is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_exit_conditions",
+          "passed": true,
+          "detail": "Typed guardrail expectation exit_conditions is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_artifact_retention_policy",
+          "passed": true,
+          "detail": "Typed guardrail expectation artifact_retention_policy is represented in the instruction surface."
         }
       ],
       "blockers": [],
@@ -353,12 +402,22 @@
         {
           "id": "uigwe_skill_line_budget",
           "passed": true,
-          "detail": "Uigwe SKILL.md line count is 280; budget is 320."
+          "detail": "Uigwe SKILL.md line count is 282; budget is 320."
         },
         {
           "id": "sejong_skill_line_budget",
           "passed": true,
-          "detail": "Sejong SKILL.md line count is 46; budget is 90."
+          "detail": "Sejong SKILL.md line count is 48; budget is 90."
+        },
+        {
+          "id": "jangyeongsil_skill_line_budget",
+          "passed": true,
+          "detail": "JangYeongsil SKILL.md line count is 33; budget is 80."
+        },
+        {
+          "id": "jiphyeonjeon_skill_line_budget",
+          "passed": true,
+          "detail": "Jiphyeonjeon SKILL.md line count is 38; budget is 80."
         },
         {
           "id": "validation_detail_lives_in_reference",

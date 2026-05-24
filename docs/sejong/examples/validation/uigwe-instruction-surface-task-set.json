@@ -157,6 +157,8 @@
       "expected_mode": "none",
       "expected_artifacts": [
         ".agents/skills/sejong/SKILL.md",
+        ".agents/skills/jangyeongsil/SKILL.md",
+        ".agents/skills/jiphyeonjeon/SKILL.md",
         ".agents/skills/uigwe/SKILL.md",
         "docs/sejong/ROUTER.md",
         "docs/sejong/PROTOCOL.md",
@@ -167,8 +169,10 @@
         "JangYeongsil can be called as an evidence helper from Sejong, Uigwe, or Jiphyeonjeon",
         "Jiphyeonjeon can be called as a decision-support helper from Sejong, Uigwe, JangYeongsil, or Seungjeongwon",
         "helper calls return to the calling mode with bounded evidence or decision notes",
+        "JangYeongsil and Jiphyeonjeon have thin installed skill front doors",
         "JangYeongsil research can overlap with Uigwe preflight",
         "Jiphyeonjeon option review can overlap with Uigwe artifact inventory or decomposition challenge",
+        "official host-native team messaging is preferred when the runtime supports direct worker messages",
         "$team helper runs keep current_surface set to the helper mode and source_of_truth_refs pointed at the calling context"
       ],
       "forbidden_behavior": [
@@ -176,6 +180,38 @@
         "helper calls finalizing canonical packets",
         "worker or helper consensus replacing lead synthesis",
         "serializing every research, discussion, and planning step when bounded preflight overlap is safe"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    },
+    {
+      "id": "instruction-court-skill-frontdoors",
+      "title": "JangYeongsil and Jiphyeonjeon remain installed thin front doors",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that JangYeongsil and Jiphyeonjeon can be invoked directly as skills while keeping detailed Sejong behavior in docs/sejong.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        ".agents/skills/jangyeongsil/SKILL.md",
+        ".agents/skills/jangyeongsil/agents/openai.yaml",
+        ".agents/skills/jiphyeonjeon/SKILL.md",
+        ".agents/skills/jiphyeonjeon/agents/openai.yaml",
+        "scripts/install-sejong.sh",
+        "docs/sejong/ROUTER.md"
+      ],
+      "expected_behavior": [
+        "JangYeongsil invokes bounded research and evidence separation",
+        "Jiphyeonjeon invokes structured discussion and option comparison",
+        "both skills load docs/sejong/ROUTER.md as the source-of-truth routing contract",
+        "repo-scope install verifies .agents/skills/jangyeongsil and .agents/skills/jiphyeonjeon",
+        "user-scope install verifies skills/jangyeongsil and skills/jiphyeonjeon",
+        "peer messages are allowed only as bounded worker messages inside an open round"
+      ],
+      "forbidden_behavior": [
+        "duplicating the full router contract inside the thin skills",
+        "making JangYeongsil or Jiphyeonjeon peer agents that can overrule Sejong",
+        "treating peer messages as Uigwe gate approval"
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."
@@ -200,6 +236,8 @@
         "$team is an optional TeamExecutor backend for tmux workers coordinated through Sejong state",
         "$team state is stored under ${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/",
         "$team worker context includes current court mode and role assignment bounds",
+        "TeamExecutor mailbox messages use the sejong.team-mailbox-message/v0.1-draft envelope",
+        "new mailbox integrations use send-message and receive-messages rather than raw JSONL appends",
         "team_executor.py can initialize and check TeamExecutor run state",
         "Uigwe supports only preflight parallelism before gates"
       ],
@@ -243,6 +281,7 @@
         "UserPromptSubmit injects active context for follow-up turns",
         "PreToolUse and PermissionRequest guard protected Sejong self-modification paths",
         "SubagentStop rejects gate approval or final synthesis claims",
+        "TaskCreated, TaskCompleted, and TeammateIdle keep official team events inside Sejong authority bounds when the host supports them",
         "Stop continues when pending gates remain",
         "PreCompact and PostCompact preserve checkpoint context"
       ],
@@ -313,6 +352,48 @@
           "user explicitly says to stop",
           "user explicitly invokes another non-Sejong skill",
           "current conversation/workflow ends"
+        ]
+      }
+    },
+    {
+      "id": "instruction-ambiguity-register",
+      "title": "Ambiguity register blocks unresolved live clarification",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that live Sejong and Uigwe clarification can use an external ambiguity register with readiness, options, free response, and hook blocking.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        "docs/sejong/AMBIGUITY_REGISTER.md",
+        "docs/sejong/ambiguity-register.schema.json",
+        "docs/sejong/scripts/king_sejong_hooks.py",
+        ".agents/skills/uigwe/SKILL.md"
+      ],
+      "expected_behavior": [
+        "active context references ambiguity registers through artifact_refs",
+        "live clarification does not advance until readiness reaches 100% and no item remains open",
+        "users see unclear items, recommended options, and a free-response path",
+        "UserPromptSubmit injects register readiness and next action",
+        "Stop blocks completion while open ambiguity remains",
+        "PreCompact blocks broken ambiguity-register references"
+      ],
+      "forbidden_behavior": [
+        "advancing a live stage with open ambiguity",
+        "storing full ambiguity state directly in active context by default",
+        "waiving ambiguity without explicit user instruction"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ],
+      "guardrail_expectations": {
+        "required_state_fields": [
+          "artifact_refs"
+        ],
+        "exit_conditions": [
+          "no `open` ambiguity items",
+          "user explicitly asks to skip, waive, or proceed despite the ambiguity"
+        ],
+        "artifact_retention_policy": [
+          "Ambiguity registers are also external nontracked artifacts by default"
         ]
       }
     },

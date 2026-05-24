@@ -21,6 +21,7 @@ This file is Sejong's routing contract. Sejong is not a new planning protocol an
 - It does not weaken Uigwe live-session approval gates.
 - It does not create packets when the user only needs evidence or a lightweight decision.
 - It does not turn `Danjong` into a separate execution lane.
+- It does not turn court modes into uncontrolled peer agents. Peer or teammate messaging is a bounded worker backend, not a source of gate authority.
 - It does not create git-tracked repository artifacts unless the user explicitly asks to promote a shareable record or planning bundle.
 - It does not silently rewrite repository instruction files such as `AGENTS.md`.
 
@@ -70,6 +71,8 @@ Helper calls do not approve Uigwe gates, finalize `spec.md`, finalize `rationale
 
 JangYeongsil, Jiphyeonjeon, Uigwe, Seungjeongwon, Sillok, and Danjong are Sejong court modes, not independent peer agents. The Sejong lead changes behavior by entering a mode, but remains responsible for routing, synthesis, gates, and final verification. `$team` workers are scoped sessions inside the active court mode.
 
+`JangYeongsil` and `Jiphyeonjeon` also have thin installed skill front doors so the user can invoke them directly. Those skills load this router contract and return bounded evidence or decision support to the Sejong lead. They do not become peer agents that overrule Sejong.
+
 When speaking to a human user during a non-trivial Sejong workflow, state the workflow position in plain language before dense internal ids. For Korean users, prefer:
 
 | Internal surface | User-facing state |
@@ -104,6 +107,14 @@ This continuity is conversational state, not permanent memory. It does not requi
 
 For substantial or hook-mediated workflows, this conversational state may also be mirrored into an external active context checkpoint that follows [king-sejong-context.schema.json](king-sejong-context.schema.json). The checkpoint stores route id, current surface, route sequence, pending gates, protected paths, evidence refs, artifact refs, team refs, subagent refs, and exit conditions under the Sejong artifact root. It is runtime state and is not tracked by the target repository by default.
 
+When live clarification needs durable state, the active context should reference
+an ambiguity register through `artifact_refs`. The register follows
+[ambiguity-register.schema.json](ambiguity-register.schema.json) and stores the
+current user-facing stage, readiness percentage, unclear items, recommended
+options, free-response path, user answers, and next required user action. If any
+register item remains `open`, Sejong must not advance the stage or claim
+completion unless the user explicitly waives that ambiguity.
+
 ## Sejong Self-Modification
 
 Changes to Sejong itself need a higher routing bar than ordinary repository edits.
@@ -135,13 +146,14 @@ Sejong may use bounded workers to increase parallelism, but workers are an optio
 Supported worker backends include:
 
 - Codex native subagents for host-managed bounded delegation
+- host-native team or teammate messaging when the active runtime officially supports shared tasks and direct worker messages
 - `$team` / `TeamExecutor` wrappers that launch separate Codex CLI, Claude CLI, or compatible workers in `tmux` panes and coordinate through Sejong-owned state files
 
 `$team` state belongs under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/`. It must not depend on `.omx` paths or OMX state. See [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) for the mailbox, tmux worker, and lease contract.
 
-Codex native subagents remain a valid backend, but `$team` is the preferred shape when the intended workers are independent CLI processes rather than host-managed `spawn_agent` calls.
+Codex native subagents remain a valid backend for parent-mediated side tasks. Host-native team or teammate messaging is preferred when the runtime officially supports direct worker messages and the task genuinely needs peer challenge or shared task state. `$team` is the fallback and wrapper-friendly shape when the intended workers are independent CLI processes rather than host-managed calls.
 
-Both worker backends must carry the active King Sejong context when available, including the current court mode, route sequence, source-of-truth refs, pending gates, role, assigned scope, allowed outputs, forbidden claims, stop condition, and return format. Workers may exchange bounded challenge messages and report provisional consensus to the Sejong lead. Worker consensus is useful signal, but never gate approval, final synthesis, or final verification.
+All worker backends must carry the active King Sejong context when available, including the current court mode, route sequence, source-of-truth refs, pending gates, role, assigned scope, allowed outputs, forbidden claims, stop condition, and return format. Workers may exchange bounded challenge messages and report provisional consensus to the Sejong lead. Worker consensus is useful signal, but never gate approval, final synthesis, or final verification.
 
 Codex native role prompt resolution:
 
@@ -171,6 +183,10 @@ through the Sillok trace contract in [SILLOK_TRACE.md](SILLOK_TRACE.md) and the
 guardrails in [SECURITY.md](SECURITY.md).
 
 By default, JangYeongsil research notes, Jiphyeonjeon council briefs, temporary Uigwe artifacts, Seungjeongwon evidence snapshots, and Sillok records are external nontracked artifacts under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`.
+
+Ambiguity registers are also external nontracked artifacts by default. Reference
+them from active context `artifact_refs`; do not create tracked clarification
+logs unless the user explicitly asks to promote them.
 
 Do not ask for an artifact tracking policy during normal install or normal routing. Create git-tracked repository artifacts only when the user explicitly asks to promote a shareable plan, Uigwe bundle, or Sillok record into the repository.
 

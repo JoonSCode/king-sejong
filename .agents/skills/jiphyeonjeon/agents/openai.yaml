@@ -1,0 +1,4 @@
+interface:
+  display_name: "Jiphyeonjeon"
+  short_description: "Compare options for Sejong"
+  default_prompt: "Use $jiphyeonjeon to compare serious options, challenge tradeoffs, and recommend the next Sejong surface."

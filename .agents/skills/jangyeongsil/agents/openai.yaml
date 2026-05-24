@@ -1,0 +1,4 @@
+interface:
+  display_name: "JangYeongsil"
+  short_description: "Gather evidence for Sejong"
+  default_prompt: "Use $jangyeongsil to inspect evidence, separate known/inferred/unknown facts, and return the decision it enables."

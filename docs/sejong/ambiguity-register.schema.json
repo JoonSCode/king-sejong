@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/ambiguity-register.schema.json",
+  "title": "King Sejong Ambiguity Register Schema Draft",
+  "description": "External artifact contract for live King Sejong ambiguity clarification.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "sejong.ambiguity-register/v0.1-draft"
+    },
+    "metadata": {
+      "$ref": "#/$defs/Metadata"
+    },
+    "stage_id": {
+      "type": "string",
+      "enum": [
+        "intent_clarification",
+        "design_clarification",
+        "executor_handoff_contract"
+      ]
+    },
+    "stage_label": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "readiness_percent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "blocking_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "ambiguities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Ambiguity"
+      }
+    },
+    "next_required_user_action": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "last_updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "format",
+    "metadata",
+    "stage_id",
+    "stage_label",
+    "readiness_percent",
+    "blocking_count",
+    "ambiguities",
+    "next_required_user_action",
+    "last_updated_at"
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      }
+    },
+    "Metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "active_context_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "route_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "active_context_id"
+      ]
+    },
+    "Option": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "label": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "description": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "recommended": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "recommended"
+      ]
+    },
+    "Ambiguity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "question": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "why_it_matters": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Option"
+          }
+        },
+        "free_response_allowed": {
+          "type": "boolean"
+        },
+        "user_response": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "resolved",
+            "waived"
+          ]
+        },
+        "blocking": {
+          "type": "boolean"
+        },
+        "resolution_note": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/StringList"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "question",
+        "why_it_matters",
+        "options",
+        "free_response_allowed",
+        "status",
+        "blocking"
+      ]
+    }
+  }
+}

@@ -10,11 +10,13 @@ It is designed for wrappers such as `$team` that launch separate Codex CLI, Clau
 
 `TeamExecutor` is not the default Sejong executor. The default remains `Seungjeongwon`.
 
+When the active host runtime officially supports team or teammate messaging, use that native backend for direct worker messages and shared task state. TeamExecutor is the portable fallback and wrapper contract for runtimes that do not expose such a backend or when separate CLI processes are required.
+
 ## Non-Goals
 
 - It is not a replacement for Sejong routing.
 - It is not a replacement for Uigwe planning.
-- It is not a peer-to-peer agent chat room.
+- It is not an uncontrolled peer-to-peer agent chat room.
 - It does not approve Uigwe gates.
 - It does not create majority-vote decisions.
 - It does not depend on `.omx` paths or OMX state. OMX-specific state must not be part of the King Sejong contract.
@@ -36,6 +38,8 @@ Sejong lead
 For Uigwe-backed execution, the Uigwe bundle remains the source of truth. For Jiphyeonjeon, the shared council brief remains the source of truth.
 
 JangYeongsil, Jiphyeonjeon, Uigwe, and Seungjeongwon are Sejong court modes, not peer agents. `$team` workers are scoped sessions inside one active court mode. They inherit the mode context and return bounded output to the lead.
+
+Peer messages are allowed only as bounded worker messages inside an open round. They must name the role, scope, message kind, target message when replying, and evidence refs. Peer messages may challenge claims, ask questions, or answer objections, but they do not approve gates, finalize packets, declare consensus, or replace lead synthesis.
 
 Court-mode helper calls may also use `TeamExecutor`. For example, Uigwe can run a JangYeongsil evidence-helper team while Uigwe prepares non-blocking preflight checks, or run a Jiphyeonjeon option-review team while decomposition shape is still being challenged. In those cases, initialize the team run with `current_surface` set to the helper mode, include the calling Uigwe bundle, council brief, or active context in `source_of_truth_refs`, and require the worker output to return to the calling mode. Helper-team workers must not approve Uigwe gates, finalize packets, claim consensus, or override lead synthesis.
 
@@ -131,27 +135,79 @@ Useful commands:
 
 ```bash
 python3 docs/sejong/scripts/team_executor.py open-round <run-dir> --purpose "first challenge"
-python3 docs/sejong/scripts/team_executor.py append-message <run-dir> --worker-id critic --kind objection --summary "..."
+python3 docs/sejong/scripts/team_executor.py send-message <run-dir> --worker-id critic --kind objection --summary "..."
+python3 docs/sejong/scripts/team_executor.py receive-messages <run-dir> --worker-id advocate
 python3 docs/sejong/scripts/team_executor.py acquire-lease <run-dir> --worker-id implementer --scope "src/example.py"
 python3 docs/sejong/scripts/team_executor.py check <run-dir>
 python3 docs/sejong/scripts/team_executor.py launch <run-dir> --worker-command 'critic=claude ...' --dry-run
 ```
 
+`append-message` remains a compatibility alias for `send-message`, but wrappers should use `send-message` and `receive-messages` for new mailbox integrations.
+
 ## Mailbox Contract
 
-`mailbox.jsonl` is append-only. Each message should include:
+`mailbox.jsonl` is append-only. Each line must use the versioned mailbox envelope format `sejong.team-mailbox-message/v0.1-draft`. New wrappers should not write raw JSON lines directly; they should call `send-message`, then use `receive-messages` to read a normalized `sejong.team-mailbox-receive/v0.1-draft` response.
 
+Each message must include:
+
+- `format`
 - `message_id`
 - `run_id`
 - `round_id`
-- `worker_id`
-- `role`
-- `scope`
-- `kind`
+- `thread_id`
 - `target_message_id` when replying
+- `direction`
+- `sender`
+- `recipients`
+- `kind`
 - `summary`
+- `body`
 - `evidence_refs`
+- `requires_response`
 - `created_at`
+
+The default worker-to-lead envelope is:
+
+```json
+{
+  "format": "sejong.team-mailbox-message/v0.1-draft",
+  "message_id": "m-1",
+  "run_id": "example",
+  "round_id": "round-1",
+  "thread_id": "m-1",
+  "target_message_id": null,
+  "direction": "worker_to_lead",
+  "sender": {
+    "type": "worker",
+    "id": "critic",
+    "role": "critic",
+    "scope": "risk review"
+  },
+  "recipients": [
+    {
+      "type": "lead",
+      "id": "sejong"
+    }
+  ],
+  "kind": "objection",
+  "summary": "Bounded objection summary.",
+  "body": null,
+  "evidence_refs": [
+    "brief.md"
+  ],
+  "requires_response": false,
+  "created_at": "2026-05-24T00:00:00Z"
+}
+```
+
+Allowed `direction` values:
+
+- `worker_to_lead`
+- `worker_to_worker`
+- `lead_to_worker`
+- `system`
+
+Worker-to-worker messages must still stay inside an open round and use the same envelope. Replies should set `target_message_id`; the helper derives `thread_id` from the target message unless one is explicitly supplied.
 
 Allowed `kind` values:
 
@@ -167,7 +223,7 @@ Allowed `kind` values:
 
 The mailbox is coordination evidence, not a second source of truth. Worker agreement, mailbox consensus, or silence is never approval, verification, or a gate decision.
 
-`team_executor.py check` should fail when a mailbox message claims gate approval, final authority, majority-vote decision ownership, an unknown worker, or a role/scope different from the registered worker contract.
+`team_executor.py check` should fail when a mailbox message uses the wrong envelope format, claims gate approval, claims final authority, claims majority-vote decision ownership, references an unknown worker, references an unknown round, uses a missing or future `target_message_id`, or carries a sender role/scope different from the registered worker contract.
 
 ## Rounds
 

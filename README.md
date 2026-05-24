@@ -94,6 +94,8 @@ Set `CODEX_HOME` first if your Codex home is not `~/.codex`.
 Repo scope copies these managed paths into the target repository:
 
 - `.agents/skills/sejong/`
+- `.agents/skills/jangyeongsil/`
+- `.agents/skills/jiphyeonjeon/`
 - `.agents/skills/uigwe/`
 - `.agents/skills/seungjeongwon/`
 - `docs/sejong/`
@@ -101,6 +103,8 @@ Repo scope copies these managed paths into the target repository:
 User scope copies these managed paths into `${CODEX_HOME:-~/.codex}/skills`:
 
 - `sejong/`
+- `jangyeongsil/`
+- `jiphyeonjeon/`
 - `uigwe/`
 - `seungjeongwon/`
 
@@ -115,7 +119,7 @@ King Sejong is distributed as Codex skills, not as an npm package, Python packag
 | Host | Support | Notes |
 | --- | --- | --- |
 | Codex with repo-local `.agents/skills` | Supported | Primary target for repository-specific use. |
-| Codex with user-scope `${CODEX_HOME:-~/.codex}/skills` | Supported | Use when you want `$sejong`, `$uigwe`, and `$seungjeongwon` available across workspaces. |
+| Codex with user-scope `${CODEX_HOME:-~/.codex}/skills` | Supported | Use when you want `$sejong`, `$jangyeongsil`, `$jiphyeonjeon`, `$uigwe`, and `$seungjeongwon` available across workspaces. |
 | Codex-style hosts that read `.agents/skills` and repo docs | Possible | Install the same managed paths and verify behavior in that host. |
 | OpenCode, Claude Code, Gemini CLI, Cursor | Not packaged yet | Their plugin/extension formats need separate adapters. |
 
@@ -127,7 +131,7 @@ This package is explicitly for Codex-style skills:
 
 - In repo scope, Codex loads `.agents/skills/sejong/SKILL.md` for `$sejong`.
 - In user scope, Codex loads `${CODEX_HOME:-~/.codex}/skills/sejong/SKILL.md` for `$sejong`.
-- The same scope contains `$uigwe` and `$seungjeongwon`.
+- The same scope contains `$jangyeongsil`, `$jiphyeonjeon`, `$uigwe`, and `$seungjeongwon`.
 - Codex can execute clear tasks directly through Sejong when formal planning is not needed.
 - The docs include Codex consumer contracts for downstream execution feedback.
 

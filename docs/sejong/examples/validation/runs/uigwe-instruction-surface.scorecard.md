@@ -1,10 +1,10 @@
 # Uigwe Instruction Surface Scorecard
 
 - Task set: `uigwe-instruction-surface-task-set`
-- Generated at: `2026-05-24T00:35:52Z`
+- Generated at: `2026-05-24T01:07:52Z`
 - Status: `pass`
 - Average score: `1.0`
-- Pass/fail: `15/0`
+- Pass/fail: `17/0`
 
 ## Scenarios
 - `instruction-routing-modes`: `pass` (1.0)
@@ -14,9 +14,11 @@
 - `instruction-validation-benchmark`: `pass` (1.0)
 - `instruction-sejong-boundary`: `pass` (1.0)
 - `instruction-cross-stage-helper-calls`: `pass` (1.0)
+- `instruction-court-skill-frontdoors`: `pass` (1.0)
 - `instruction-bounded-parallelism`: `pass` (1.0)
 - `instruction-king-sejong-hooks`: `pass` (1.0)
 - `instruction-sejong-continuation`: `pass` (1.0)
+- `instruction-ambiguity-register`: `pass` (1.0)
 - `instruction-sejong-self-modification`: `pass` (1.0)
 - `instruction-artifact-storage`: `pass` (1.0)
 - `instruction-repo-context-refresh`: `pass` (1.0)

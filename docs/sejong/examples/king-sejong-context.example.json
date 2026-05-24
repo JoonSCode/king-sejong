@@ -22,6 +22,8 @@
   ],
   "protected_paths": [
     ".agents/skills/sejong/",
+    ".agents/skills/jangyeongsil/",
+    ".agents/skills/jiphyeonjeon/",
     ".agents/skills/uigwe/",
     ".agents/skills/seungjeongwon/",
     "docs/sejong/ROUTER.md",

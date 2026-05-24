@@ -61,6 +61,7 @@ REQUIRED_SCENARIO_IDS = {
     "hook-subagent-final-claim",
     "continuity-follow-up-same-workflow",
     "continuity-compaction-pending-gate",
+    "continuity-ambiguity-register-open-item",
     "chain-research-plan-execute-record",
     "efficiency-direct-overhead-budget",
 }

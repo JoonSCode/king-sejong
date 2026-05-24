@@ -37,6 +37,7 @@ Active King Sejong context checkpoints should be stored inside the same run dire
 
 ```text
 king-sejong-context.json
+ambiguity-register.json
 route-decisions.jsonl
 execution-feedback.json
 execution-ledger.jsonl
@@ -44,6 +45,10 @@ sillok-record.jsonl
 ```
 
 The context checkpoint should follow `docs/sejong/king-sejong-context.schema.json`. It is the shared runtime state for hooks, native subagents, TeamExecutor workers, Seungjeongwon execution feedback, and Sillok evidence refs.
+
+Ambiguity registers should follow `docs/sejong/ambiguity-register.schema.json`.
+The active context should reference them through `artifact_refs` rather than
+duplicating the full clarification state.
 
 Sillok trace events should follow `docs/sejong/sillok-trace-event.schema.json`.
 Use [SILLOK_TRACE.md](SILLOK_TRACE.md) for the JSONL event contract and security
@@ -62,6 +67,7 @@ Do not use `.omx/state/team` for King Sejong. OMX-specific paths are outside the
 External nontracked artifacts include:
 
 - active King Sejong context checkpoints
+- ambiguity registers for live clarification
 - route decision logs
 - raw JangYeongsil research notes
 - Jiphyeonjeon council briefs

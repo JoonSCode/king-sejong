@@ -44,6 +44,8 @@ When handing off incomplete work, leave exact next files, commands, and validati
 King Sejong is distributed through these managed paths:
 
 - `.agents/skills/sejong/`
+- `.agents/skills/jangyeongsil/`
+- `.agents/skills/jiphyeonjeon/`
 - `.agents/skills/uigwe/`
 - `.agents/skills/seungjeongwon/`
 - `docs/sejong/`
@@ -56,9 +58,12 @@ Do not add root-level repository files such as `AGENTS.md` to the managed instal
 
 - Sejong routing: `docs/sejong/ROUTER.md`
 - Sejong skill front door: `.agents/skills/sejong/SKILL.md`
+- JangYeongsil research front door: `.agents/skills/jangyeongsil/SKILL.md`
+- Jiphyeonjeon discussion front door: `.agents/skills/jiphyeonjeon/SKILL.md`
 - Uigwe planning behavior: `.agents/skills/uigwe/SKILL.md` and `docs/sejong/PROTOCOL.md`
 - Execution behavior: `.agents/skills/seungjeongwon/SKILL.md` and `docs/sejong/SEUNGJEONGWON_EXECUTOR.md`
 - TeamExecutor behavior: `docs/sejong/TEAM_EXECUTOR.md` and `docs/sejong/scripts/team_executor.py`
+- Live ambiguity clarification: `docs/sejong/AMBIGUITY_REGISTER.md` and `docs/sejong/ambiguity-register.schema.json`
 - Runtime artifact storage: `docs/sejong/ARTIFACT_STORAGE.md`
 - Hook guardrails: `docs/sejong/HOOKS.md` and `docs/sejong/scripts/king_sejong_hooks.py`
 - Active context checkpoints: `docs/sejong/king-sejong-context.schema.json`
@@ -74,6 +79,8 @@ Do not add root-level repository files such as `AGENTS.md` to the managed instal
 - Do not treat missing repo-local prompt overlays as an install failure.
 - Do not reintroduce `.omx` as a Sejong dependency.
 - Preserve bounded parallelism: subagents and `$team` workers may return bounded briefs, mailbox messages, implementation slices, or verification evidence, but the lead Sejong agent owns synthesis, routing, gates, and final verification.
+- Prefer officially supported host team or teammate messaging when it exists and a bounded Jiphyeonjeon or JangYeongsil round needs peer challenge; otherwise use Sejong TeamExecutor mailbox state. Peer messages are worker evidence, not court-mode authority.
+- Keep TeamExecutor mailbox traffic on the versioned `send-message` / `receive-messages` envelope; raw mailbox appends are compatibility-only and must not become the primary worker contract.
 - Keep hook behavior test-first: add or update red fixtures before changing hook, active-context, or TeamExecutor authority behavior, then run the hook, TeamExecutor, and E2E guardrail tests.
 - Keep Sillok/security behavior test-first: update trace schemas, examples, and `test_sillok_trace.py` when changing risk flags or approval rules.
 - When changing Sejong or Uigwe instruction surfaces, run `python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets`.

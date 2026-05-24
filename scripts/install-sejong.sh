@@ -19,11 +19,15 @@ Examples:
 Installs:
   repo scope:
     .agents/skills/sejong/
+    .agents/skills/jangyeongsil/
+    .agents/skills/jiphyeonjeon/
     .agents/skills/uigwe/
     .agents/skills/seungjeongwon/
     docs/sejong/
   user scope:
     ${CODEX_HOME:-~/.codex}/skills/sejong/
+    ${CODEX_HOME:-~/.codex}/skills/jangyeongsil/
+    ${CODEX_HOME:-~/.codex}/skills/jiphyeonjeon/
     ${CODEX_HOME:-~/.codex}/skills/uigwe/
     ${CODEX_HOME:-~/.codex}/skills/seungjeongwon/
     ${CODEX_HOME:-~/.codex}/config.toml managed King Sejong hooks block
@@ -315,13 +319,41 @@ write_active_context_if_missing() {
   local repo_root
   local timestamp
 
-  if [[ -f "$context_file" ]]; then
-    return
-  fi
-
   repo_root=$(cd "$SOURCE_ROOT" && pwd)
   timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   mkdir -p "$(dirname "$context_file")"
+
+  if [[ -f "$context_file" ]]; then
+    python3 - "$context_file" "$timestamp" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+timestamp = sys.argv[2]
+data = json.loads(path.read_text(encoding="utf-8"))
+protected = data.setdefault("protected_paths", [])
+for item in [
+    ".agents/skills/sejong/",
+    ".agents/skills/jangyeongsil/",
+    ".agents/skills/jiphyeonjeon/",
+    ".agents/skills/uigwe/",
+    ".agents/skills/seungjeongwon/",
+    "docs/sejong/",
+    "scripts/install-sejong.sh",
+]:
+    if item not in protected:
+        protected.append(item)
+required = data.setdefault("required_route_sequence", [])
+for item in ["jiphyeonjeon", "uigwe", "seungjeongwon"]:
+    if item not in required:
+        required.append(item)
+data["last_updated_at"] = timestamp
+path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+PY
+    return
+  fi
+
   cat > "$context_file" <<EOF
 {
   "format": "king-sejong.context/v0.1-draft",
@@ -338,6 +370,8 @@ write_active_context_if_missing() {
   "pending_gates": [],
   "protected_paths": [
     ".agents/skills/sejong/",
+    ".agents/skills/jangyeongsil/",
+    ".agents/skills/jiphyeonjeon/",
     ".agents/skills/uigwe/",
     ".agents/skills/seungjeongwon/",
     "docs/sejong/",
@@ -399,6 +433,15 @@ verify_user_hooks_config() {
     echo "missing King Sejong active context checkpoint: $context_file" >&2
     return 1
   fi
+  for path in \
+    ".agents/skills/jangyeongsil/" \
+    ".agents/skills/jiphyeonjeon/" \
+    "scripts/install-sejong.sh"; do
+    if ! grep -q "$path" "$context_file"; then
+      echo "King Sejong active context checkpoint is missing protected path: $path" >&2
+      return 1
+    fi
+  done
 }
 
 verify_repo_install() {
@@ -407,6 +450,8 @@ verify_repo_install() {
   local drift=0
   local required_paths=(
     ".agents/skills/sejong/SKILL.md"
+    ".agents/skills/jangyeongsil/SKILL.md"
+    ".agents/skills/jiphyeonjeon/SKILL.md"
     ".agents/skills/uigwe/SKILL.md"
     ".agents/skills/seungjeongwon/SKILL.md"
     "docs/sejong/README.md"
@@ -449,6 +494,8 @@ verify_repo_install() {
   verify_source_only_paths_not_installed "$root"
 
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/sejong" "$root/.agents/skills/sejong" ".agents/skills/sejong/" || drift=1
+  verify_tree_matches "$SOURCE_ROOT/.agents/skills/jangyeongsil" "$root/.agents/skills/jangyeongsil" ".agents/skills/jangyeongsil/" || drift=1
+  verify_tree_matches "$SOURCE_ROOT/.agents/skills/jiphyeonjeon" "$root/.agents/skills/jiphyeonjeon" ".agents/skills/jiphyeonjeon/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/uigwe" "$root/.agents/skills/uigwe" ".agents/skills/uigwe/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/seungjeongwon" "$root/.agents/skills/seungjeongwon" ".agents/skills/seungjeongwon/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/docs/sejong" "$root/docs/sejong" "docs/sejong/" || drift=1
@@ -468,6 +515,8 @@ verify_user_install() {
   local drift=0
   local required_paths=(
     "skills/sejong/SKILL.md"
+    "skills/jangyeongsil/SKILL.md"
+    "skills/jiphyeonjeon/SKILL.md"
     "skills/sejong/docs/README.md"
     "skills/sejong/docs/ROUTER.md"
     "skills/sejong/docs/REPO_CONTEXT.md"
@@ -510,9 +559,13 @@ verify_user_install() {
   verify_source_only_paths_not_installed "$root/skills"
 
   verify_rewritten_skill_matches "$SOURCE_ROOT/.agents/skills/sejong/SKILL.md" "$root/skills/sejong/SKILL.md" "docs/" "skills/sejong/SKILL.md" || drift=1
+  verify_rewritten_skill_matches "$SOURCE_ROOT/.agents/skills/jangyeongsil/SKILL.md" "$root/skills/jangyeongsil/SKILL.md" "../sejong/docs/" "skills/jangyeongsil/SKILL.md" || drift=1
+  verify_rewritten_skill_matches "$SOURCE_ROOT/.agents/skills/jiphyeonjeon/SKILL.md" "$root/skills/jiphyeonjeon/SKILL.md" "../sejong/docs/" "skills/jiphyeonjeon/SKILL.md" || drift=1
   verify_rewritten_skill_matches "$SOURCE_ROOT/.agents/skills/uigwe/SKILL.md" "$root/skills/uigwe/SKILL.md" "../sejong/docs/" "skills/uigwe/SKILL.md" || drift=1
   verify_rewritten_skill_matches "$SOURCE_ROOT/.agents/skills/seungjeongwon/SKILL.md" "$root/skills/seungjeongwon/SKILL.md" "../sejong/docs/" "skills/seungjeongwon/SKILL.md" || drift=1
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/sejong/agents" "$root/skills/sejong/agents" "skills/sejong/agents/" || drift=1
+  verify_tree_matches "$SOURCE_ROOT/.agents/skills/jangyeongsil/agents" "$root/skills/jangyeongsil/agents" "skills/jangyeongsil/agents/" || drift=1
+  verify_tree_matches "$SOURCE_ROOT/.agents/skills/jiphyeonjeon/agents" "$root/skills/jiphyeonjeon/agents" "skills/jiphyeonjeon/agents/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/uigwe/agents" "$root/skills/uigwe/agents" "skills/uigwe/agents/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/seungjeongwon/agents" "$root/skills/seungjeongwon/agents" "skills/seungjeongwon/agents/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/docs/sejong" "$root/skills/sejong/docs" "skills/sejong/docs/" || drift=1
@@ -604,6 +657,8 @@ install_repo_scope() {
   fi
 
   copy_dir "$SOURCE_ROOT/.agents/skills/sejong" "$target_root/.agents/skills/sejong"
+  copy_dir "$SOURCE_ROOT/.agents/skills/jangyeongsil" "$target_root/.agents/skills/jangyeongsil"
+  copy_dir "$SOURCE_ROOT/.agents/skills/jiphyeonjeon" "$target_root/.agents/skills/jiphyeonjeon"
   copy_dir "$SOURCE_ROOT/.agents/skills/uigwe" "$target_root/.agents/skills/uigwe"
   copy_dir "$SOURCE_ROOT/.agents/skills/seungjeongwon" "$target_root/.agents/skills/seungjeongwon"
   copy_dir "$SOURCE_ROOT/docs/sejong" "$target_root/docs/sejong"
@@ -621,12 +676,16 @@ Installed King Sejong into repo:
 
 Managed paths:
   .agents/skills/sejong/
+  .agents/skills/jangyeongsil/
+  .agents/skills/jiphyeonjeon/
   .agents/skills/uigwe/
   .agents/skills/seungjeongwon/
   docs/sejong/
 
 Invoke with:
   \$sejong <broad request>
+  \$jangyeongsil <research request>
+  \$jiphyeonjeon <decision request>
   \$uigwe <formal planning request>
   \$seungjeongwon <execution request>
 EOF
@@ -642,6 +701,8 @@ install_user_scope() {
   fi
 
   copy_dir "$SOURCE_ROOT/.agents/skills/sejong" "$skill_root/sejong"
+  copy_dir "$SOURCE_ROOT/.agents/skills/jangyeongsil" "$skill_root/jangyeongsil"
+  copy_dir "$SOURCE_ROOT/.agents/skills/jiphyeonjeon" "$skill_root/jiphyeonjeon"
   copy_dir "$SOURCE_ROOT/.agents/skills/uigwe" "$skill_root/uigwe"
   copy_dir "$SOURCE_ROOT/.agents/skills/seungjeongwon" "$skill_root/seungjeongwon"
   copy_dir "$SOURCE_ROOT/docs/sejong" "$skill_root/sejong/docs"
@@ -653,6 +714,8 @@ install_user_scope() {
   fi
 
   rewrite_skill_doc_paths "$skill_root/sejong/SKILL.md" "docs/"
+  rewrite_skill_doc_paths "$skill_root/jangyeongsil/SKILL.md" "../sejong/docs/"
+  rewrite_skill_doc_paths "$skill_root/jiphyeonjeon/SKILL.md" "../sejong/docs/"
   rewrite_skill_doc_paths "$skill_root/uigwe/SKILL.md" "../sejong/docs/"
   rewrite_skill_doc_paths "$skill_root/seungjeongwon/SKILL.md" "../sejong/docs/"
   configure_user_hooks "$codex_home"
@@ -665,6 +728,8 @@ Installed King Sejong into Codex user scope:
 
 Managed paths:
   skills/sejong/
+  skills/jangyeongsil/
+  skills/jiphyeonjeon/
   skills/uigwe/
   skills/seungjeongwon/
 
@@ -674,6 +739,8 @@ Managed hooks:
 
 Invoke from any Codex workspace with:
   \$sejong <broad request>
+  \$jangyeongsil <research request>
+  \$jiphyeonjeon <decision request>
   \$uigwe <formal planning request>
   \$seungjeongwon <execution request>
 EOF

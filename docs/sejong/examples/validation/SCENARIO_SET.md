@@ -21,6 +21,8 @@
 - `instruction-recursive-decomposition`
 - `instruction-validation-benchmark`
 - `instruction-sejong-boundary`
+- `instruction-cross-stage-helper-calls`
+- `instruction-court-skill-frontdoors`
 - `instruction-bounded-parallelism`
 - `instruction-king-sejong-hooks`
 - `instruction-sejong-continuation`

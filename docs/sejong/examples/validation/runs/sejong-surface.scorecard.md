@@ -1,10 +1,10 @@
 # King Sejong Surface Scorecard
 
 - Task set: `sejong-seed-task-set`
-- Generated at: `2026-05-23T18:18:42Z`
+- Generated at: `2026-05-24T01:07:52Z`
 - Status: `pass`
 - Average score: `1.0`
-- Pass/partial/fail: `24/0/0`
+- Pass/partial/fail: `25/0/0`
 
 ## Scenarios
 - `route-evidence-only-history`: `pass` (1.0)
@@ -29,6 +29,7 @@
 - `hook-subagent-final-claim`: `pass` (1.0)
 - `continuity-follow-up-same-workflow`: `pass` (1.0)
 - `continuity-compaction-pending-gate`: `pass` (1.0)
+- `continuity-ambiguity-register-open-item`: `pass` (1.0)
 - `chain-research-plan-execute-record`: `pass` (1.0)
 - `efficiency-direct-overhead-budget`: `pass` (1.0)
 

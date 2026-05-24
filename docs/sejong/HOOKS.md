@@ -57,6 +57,10 @@ Required state includes:
 - `subagent_refs`
 - `exit_conditions`
 
+When `artifact_refs` includes a readable artifact whose `format` is
+`sejong.ambiguity-register/v0.1-draft`, hooks treat it as the active ambiguity
+register. See [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md).
+
 ## Event Responsibilities
 
 `SessionStart`
@@ -68,6 +72,7 @@ Required state includes:
 
 - Keep follow-up turns inside the active King Sejong workflow unless the user explicitly exits.
 - Add model-visible context with the active context id, route id, current surface, route sequence, and pending gates.
+- Inject a compact ambiguity register summary when a referenced register exists, including readiness, open ambiguity count, and next required user action.
 
 `sejong_context.py` writes the same checkpoint to both the active pointer under
 `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json` and
@@ -93,6 +98,12 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 
 - Inject the bounded worker contract, source-of-truth refs, and forbidden authority claims.
 
+`TaskCreated`, `TaskCompleted`, `TeammateIdle` when the host runtime supports team or teammate hooks
+
+- Keep official team-task and teammate events inside the same Sejong authority model.
+- Reject teammate output or task completion that claims Uigwe gate approval, final synthesis, final verification, consensus approval, or majority-vote authority.
+- Add active context for bounded peer messages, shared task state, and lead-owned synthesis.
+
 `SubagentStop`
 
 - Reject worker outputs that claim Uigwe gate approval, final synthesis, or majority-vote authority.
@@ -101,10 +112,12 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 `Stop`
 
 - Continue the turn when pending gates or missing verification would make completion premature.
+- Continue the turn when any referenced ambiguity register still has `open` ambiguity items.
 
 `PreCompact`
 
 - Check that the active context checkpoint has the required fields before compaction.
+- Block compaction when an ambiguity-register reference is broken.
 
 `PostCompact`
 

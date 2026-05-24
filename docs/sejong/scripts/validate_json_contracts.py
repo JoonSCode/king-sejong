@@ -27,6 +27,7 @@ SCHEMA_FILES = {
     "validation_task_set": SEJONG_ROOT / "validation.task-set.schema.json",
     "validation_scorecard": SEJONG_ROOT / "validation.scorecard.schema.json",
     "king_sejong_context": SEJONG_ROOT / "king-sejong-context.schema.json",
+    "ambiguity_register": SEJONG_ROOT / "ambiguity-register.schema.json",
     "team_executor": SEJONG_ROOT / "team-executor.schema.json",
     "sillok_trace_event": SEJONG_ROOT / "sillok-trace-event.schema.json",
 }
@@ -44,10 +45,13 @@ FORMAT_TO_SCHEMA = {
     "uigwe.validation-task-set/v0.1-draft": "validation_task_set",
     "uigwe.validation-scorecard/v0.1-draft": "validation_scorecard",
     "king-sejong.context/v0.1-draft": "king_sejong_context",
+    "sejong.ambiguity-register/v0.1-draft": "ambiguity_register",
     "sejong.team/v0.1-draft": "team_executor",
     "sejong.team-rounds/v0.1-draft": "team_executor",
     "sejong.team-leases/v0.1-draft": "team_executor",
     "sejong.team-worker/v0.1-draft": "team_executor",
+    "sejong.team-mailbox-message/v0.1-draft": "team_executor",
+    "sejong.team-mailbox-receive/v0.1-draft": "team_executor",
     "sejong.sillok-trace-event/v0.1-draft": "sillok_trace_event",
 }
 
@@ -118,6 +122,35 @@ def main() -> int:
             print(f"instance ok: {relative_path} -> {rel(SCHEMA_FILES[schema_name])}")
         except Exception as exc:
             failures.append((path, str(exc)))
+
+    for path in sorted(SEJONG_ROOT.rglob("*.jsonl")):
+        relative_path = rel(path)
+        if any(part in relative_path for part in NEGATIVE_FIXTURE_PARTS):
+            skipped += 1
+            print(f"skip: {relative_path} (negative fixture)")
+            continue
+        for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if not line.strip():
+                continue
+            try:
+                data = json.loads(line)
+            except Exception as exc:
+                failures.append((path, f"invalid JSONL at line {line_no}: {exc}"))
+                continue
+            schema_name = FORMAT_TO_SCHEMA.get(data.get("format"))
+            if not schema_name:
+                skipped += 1
+                print(f"skip: {relative_path}:{line_no} (no mapped schema for format {data.get('format')!r})")
+                continue
+            schema = schema_contents[schema_name]
+            validator_cls = validators.validator_for(schema)
+            validator = validator_cls(schema, registry=registry)
+            try:
+                validator.validate(data)
+                validated += 1
+                print(f"instance ok: {relative_path}:{line_no} -> {rel(SCHEMA_FILES[schema_name])}")
+            except Exception as exc:
+                failures.append((path, f"line {line_no}: {exc}"))
 
     print(f"summary: schemas={len(schema_contents)} instances={validated} skipped={skipped} failures={len(failures)}")
     if failures:

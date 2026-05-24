@@ -17,6 +17,8 @@ The installer can copy this contract surface into either a target repository or 
 Repo scope:
 
 - `.agents/skills/sejong/`
+- `.agents/skills/jangyeongsil/`
+- `.agents/skills/jiphyeonjeon/`
 - `.agents/skills/uigwe/`
 - `.agents/skills/seungjeongwon/`
 - `docs/sejong/`
@@ -24,6 +26,8 @@ Repo scope:
 User scope under `${CODEX_HOME:-~/.codex}/skills`:
 
 - `sejong/`
+- `jangyeongsil/`
+- `jiphyeonjeon/`
 - `uigwe/`
 - `seungjeongwon/`
 
@@ -47,7 +51,8 @@ For normal use:
 8. Read [REPO_CONTEXT.md](REPO_CONTEXT.md) if you want guarded `AGENTS.md` init or refresh behavior.
 9. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
 10. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
-11. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
+11. Read [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md) when live clarification needs a durable readiness and open-ambiguity record.
+12. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
 
 ## Practical Usage
 
@@ -60,9 +65,18 @@ $sejong this approved design should become a Seungjeongwon handoff contract
 $sejong research the problem, plan the fix, implement it, and verify it
 ```
 
+Use JangYeongsil or Jiphyeonjeon directly when you already know the needed court mode:
+
+```text
+$jangyeongsil inspect the repo history and separate known/inferred/unknown evidence
+$jiphyeonjeon compare these options with advocate, critic, and risk-review lenses
+```
+
 After Sejong is invoked, follow-up turns remain inside the active Sejong workflow until the user explicitly exits Sejong or switches to another non-Sejong workflow. The user should not have to repeat `$sejong` for every clarification, approval, correction, implementation step, or verification request.
 
 For substantial workflows, this active state can be mirrored into an external King Sejong context checkpoint. The checkpoint is validated by [king-sejong-context.schema.json](king-sejong-context.schema.json) and can be used by hooks, subagents, TeamExecutor, and Seungjeongwon evidence records.
+
+When live clarification must be preserved across a long run, reference an ambiguity register from the active context `artifact_refs`. The register records the current stage, readiness percentage, unclear items, recommended options, free-response path, user responses, and next required user action. If any item remains `open`, Sejong must not advance or claim completion unless the user explicitly waives it.
 
 Use Sejong repo-context init/refresh when a target repository needs an initial `AGENTS.md` or an existing instruction file should absorb durable lessons from recent work. That workflow is candidate-diff first: inspect the repo, deduplicate lessons, reject transient or unsafe material, and apply tracked instruction edits only after explicit user approval or an explicit apply instruction. See [REPO_CONTEXT.md](REPO_CONTEXT.md).
 
@@ -71,9 +85,11 @@ Court modes can also be helper calls inside another active mode. JangYeongsil ca
 For larger Sejong work, parallelism is allowed when it is genuinely separable:
 
 - `JangYeongsil` can fan out across independent evidence sources and fan in to one `known` / `inferred` / `unknown` synthesis.
-- `Jiphyeonjeon` can run bounded council briefs in parallel, such as advocate, critic, specialist, operator, and risk reviewer. Substantial decisions may use `$team` tmux workers with Sejong mailbox/state files for a bounded challenge round. The workers do not vote; the lead Sejong agent opens and closes rounds and synthesizes the recommendation.
+- `Jiphyeonjeon` can run bounded council briefs in parallel, such as advocate, critic, specialist, operator, and risk reviewer. Substantial decisions may use `$team` tmux workers with Sejong mailbox/state files for a bounded challenge round. The mailbox uses versioned `send-message` / `receive-messages` envelopes. The workers do not vote; the lead Sejong agent opens and closes rounds and synthesizes the recommendation.
 - `Uigwe` can overlap only through preflight checks such as artifact inventory, readiness review, or validation planning. JangYeongsil evidence lanes or Jiphyeonjeon option review may run beside that preflight, but formal packets and live-session gates remain lead/user-owned.
 - Execution parallelism belongs in `Seungjeongwon` after scope approval, with disjoint file scopes or test surfaces.
+
+If the current host runtime officially supports team or teammate messaging, Sejong can use that native backend for bounded peer challenge. Otherwise, use `$team` / TeamExecutor mailbox messages. In both cases peer messages are evidence for the Sejong lead, not gate approval, final synthesis, or final verification.
 
 Sejong does not require `.codex/prompts/{role}.md`. If a target repo has such a file, treat it as a repo-local overlay on top of the Codex native role prompt. If it is absent, continue with the native role prompt. See [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md).
 
@@ -107,7 +123,7 @@ Depending on mode, Uigwe produces:
 
 These artifacts are meant for both human review and downstream machine consumption.
 
-By default, Sejong stores runtime, research, discussion, evidence, and temporary planning artifacts outside the target repository under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`. `$team` worker state belongs under that root at `state/team/<run-id>/`, not under `.omx`. Sejong does not create git-tracked repository files unless the user explicitly asks to promote a shareable artifact into the repo. See [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md).
+By default, Sejong stores runtime, research, discussion, ambiguity registers, evidence, and temporary planning artifacts outside the target repository under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`. `$team` worker state belongs under that root at `state/team/<run-id>/`, not under `.omx`. Sejong does not create git-tracked repository files unless the user explicitly asks to promote a shareable artifact into the repo. See [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md).
 
 ## Validation Helpers
 

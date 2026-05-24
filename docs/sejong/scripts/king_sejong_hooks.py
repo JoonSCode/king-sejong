@@ -52,6 +52,7 @@ FORBIDDEN_WORKER_AUTHORITY_TERMS = (
     "by majority",
     "consensus approves",
 )
+AMBIGUITY_REGISTER_FORMAT = "sejong.ambiguity-register/v0.1-draft"
 
 
 def parse_args() -> argparse.Namespace:
@@ -106,7 +107,7 @@ def hook_context(event_name: str, text: str) -> dict[str, Any]:
 
 
 def context_summary(context: dict[str, Any]) -> str:
-    return (
+    summary = (
         "King Sejong active context: "
         f"active_context_id={context.get('active_context_id')}; "
         f"route_id={context.get('route_id')}; "
@@ -115,6 +116,10 @@ def context_summary(context: dict[str, Any]) -> str:
         f"pending_gates={','.join(context.get('pending_gates', [])) or 'none'}. "
         "Continue through Sejong lead routing until an explicit exit condition is met."
     )
+    ambiguity_text = ambiguity_register_summary(context)
+    if ambiguity_text:
+        summary += " " + ambiguity_text
+    return summary
 
 
 def context_applies_to_cwd(context: dict[str, Any], payload: dict[str, Any]) -> bool:
@@ -162,6 +167,78 @@ def touched_protected_paths(context: dict[str, Any], payload: dict[str, Any]) ->
     haystack = flatten_tool_input(payload.get("tool_input", ""))
     protected = context.get("protected_paths") or []
     return [path for path in protected if path and path in haystack]
+
+
+def resolve_artifact_ref(ref: str, context: dict[str, Any]) -> Path:
+    path = Path(ref).expanduser()
+    if path.is_absolute():
+        return path
+    repo_root = context.get("repo_root")
+    if repo_root:
+        return Path(repo_root).expanduser() / path
+    return Path.cwd() / path
+
+
+def looks_like_ambiguity_register_ref(ref: str) -> bool:
+    lowered = ref.lower()
+    return "ambiguity" in lowered and lowered.endswith(".json")
+
+
+def load_ambiguity_registers(context: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
+    registers: list[dict[str, Any]] = []
+    broken_refs: list[str] = []
+    for ref in context.get("artifact_refs") or []:
+        path = resolve_artifact_ref(ref, context)
+        if not path.exists():
+            if looks_like_ambiguity_register_ref(ref):
+                broken_refs.append(str(path))
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            if looks_like_ambiguity_register_ref(ref):
+                broken_refs.append(str(path))
+            continue
+        if data.get("format") == AMBIGUITY_REGISTER_FORMAT:
+            registers.append(data)
+    return registers, broken_refs
+
+
+def open_ambiguity_count(register: dict[str, Any]) -> int:
+    ambiguities = register.get("ambiguities") or []
+    if isinstance(ambiguities, list):
+        return sum(1 for item in ambiguities if isinstance(item, dict) and item.get("status") == "open")
+    blocking_count = register.get("blocking_count")
+    return blocking_count if isinstance(blocking_count, int) and blocking_count > 0 else 0
+
+
+def ambiguity_register_summary(context: dict[str, Any]) -> str:
+    registers, broken_refs = load_ambiguity_registers(context)
+    parts: list[str] = []
+    for register in registers:
+        metadata = register.get("metadata") or {}
+        register_id = metadata.get("id") or "unknown"
+        readiness = register.get("readiness_percent", "unknown")
+        open_count = open_ambiguity_count(register)
+        next_action = register.get("next_required_user_action") or "none"
+        parts.append(
+            "ambiguity_register="
+            f"{register_id}; stage={register.get('stage_label') or register.get('stage_id')}; "
+            f"readiness={readiness}%; open_ambiguities={open_count}; next_action={next_action}."
+        )
+    if broken_refs:
+        parts.append("broken_ambiguity_register_refs=" + ",".join(broken_refs) + ".")
+    return " ".join(parts)
+
+
+def open_ambiguity_total(context: dict[str, Any]) -> int:
+    registers, _ = load_ambiguity_registers(context)
+    return sum(open_ambiguity_count(register) for register in registers)
+
+
+def broken_ambiguity_register_refs(context: dict[str, Any]) -> list[str]:
+    _, broken_refs = load_ambiguity_registers(context)
+    return broken_refs
 
 
 def deny_pre_tool(reason: str) -> dict[str, Any]:
@@ -245,6 +322,21 @@ def handle_subagent_stop(payload: dict[str, Any], context: dict[str, Any]) -> di
     return {}
 
 
+def handle_team_worker_event(event_name: str, payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    message = json.dumps(payload, sort_keys=True)
+    if message_claims_forbidden_authority(message):
+        return {
+            "decision": "block",
+            "reason": (
+                f"{event_name} must stay within King Sejong worker authority. "
+                "Peer messages and task state are evidence only; Sejong lead owns gates, synthesis, and final verification."
+            ),
+        }
+    if context:
+        return hook_context(event_name, "Keep teammate messages bounded; return evidence to the Sejong lead.")
+    return {}
+
+
 def handle_stop(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
     if payload.get("stop_hook_active"):
         return {}
@@ -254,11 +346,24 @@ def handle_stop(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, A
             "decision": "block",
             "reason": "Continue King Sejong execution: pending King Sejong gates remain: " + ", ".join(pending),
         }
+    broken_refs = broken_ambiguity_register_refs(context)
+    if broken_refs:
+        return {
+            "decision": "block",
+            "reason": "Continue King Sejong execution: broken King Sejong ambiguity register refs: "
+            + ", ".join(broken_refs),
+        }
+    open_count = open_ambiguity_total(context)
+    if open_count:
+        return {
+            "decision": "block",
+            "reason": f"Continue King Sejong execution: open King Sejong ambiguity remains: {open_count}",
+        }
     return {}
 
 
 def missing_context_fields(context: dict[str, Any]) -> list[str]:
-    return [field for field in REQUIRED_CONTEXT_FIELDS if not context.get(field)]
+    return [field for field in REQUIRED_CONTEXT_FIELDS if field not in context or context[field] is None]
 
 
 def handle_precompact(context: dict[str, Any]) -> dict[str, Any]:
@@ -268,6 +373,13 @@ def handle_precompact(context: dict[str, Any]) -> dict[str, Any]:
             "continue": False,
             "stopReason": "missing checkpoint fields: " + ", ".join(missing),
             "systemMessage": "King Sejong active context checkpoint is incomplete before compaction.",
+        }
+    broken_refs = broken_ambiguity_register_refs(context)
+    if broken_refs:
+        return {
+            "continue": False,
+            "stopReason": "broken ambiguity register refs: " + ", ".join(broken_refs),
+            "systemMessage": "King Sejong ambiguity register references must be readable before compaction.",
         }
     return hook_context("PreCompact", context_summary(context))
 
@@ -301,6 +413,8 @@ def dispatch(event_name: str, payload: dict[str, Any], context: dict[str, Any]) 
         return handle_post_tool_use(payload, context)
     if event_name == "SubagentStop":
         return handle_subagent_stop(payload, context)
+    if event_name in {"TaskCreated", "TaskCompleted", "TeammateIdle"}:
+        return handle_team_worker_event(event_name, payload, context)
     if event_name == "Stop":
         return handle_stop(payload, context)
     if event_name == "PreCompact":
