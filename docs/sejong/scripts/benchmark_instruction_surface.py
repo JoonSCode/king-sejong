@@ -17,10 +17,12 @@ SUMMARY_PATH = SEJONG_ROOT / "examples" / "validation" / "runs" / "uigwe-instruc
 
 UIGWE_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "uigwe" / "SKILL.md"
 SEJONG_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "sejong" / "SKILL.md"
+SEUNGJEONGWON_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "seungjeongwon" / "SKILL.md"
 README_PATH = SEJONG_ROOT / "README.md"
 ROUTER_PATH = SEJONG_ROOT / "ROUTER.md"
 REPO_CONTEXT_PATH = SEJONG_ROOT / "REPO_CONTEXT.md"
 PROTOCOL_PATH = SEJONG_ROOT / "PROTOCOL.md"
+SEUNGJEONGWON_EXECUTOR_PATH = SEJONG_ROOT / "SEUNGJEONGWON_EXECUTOR.md"
 VALIDATION_PATH = SEJONG_ROOT / "VALIDATION.md"
 ARTIFACT_STORAGE_PATH = SEJONG_ROOT / "ARTIFACT_STORAGE.md"
 TEAM_EXECUTOR_PATH = SEJONG_ROOT / "TEAM_EXECUTOR.md"
@@ -42,6 +44,7 @@ SCENARIO_IDS = (
     "instruction-recursive-decomposition",
     "instruction-validation-benchmark",
     "instruction-sejong-boundary",
+    "instruction-cross-stage-helper-calls",
     "instruction-bounded-parallelism",
     "instruction-king-sejong-hooks",
     "instruction-sejong-continuation",
@@ -165,7 +168,9 @@ def evaluate_output_contract() -> list[dict[str, Any]]:
 def evaluate_recursive_decomposition() -> list[dict[str, Any]]:
     skill = load_text(UIGWE_SKILL_PATH)
     protocol = load_text(PROTOCOL_PATH)
-    combined = "\n".join([skill, protocol])
+    executor = load_text(SEUNGJEONGWON_EXECUTOR_PATH)
+    seungjeongwon_skill = load_text(SEUNGJEONGWON_SKILL_PATH)
+    combined = "\n".join([skill, protocol, executor, seungjeongwon_skill])
     required = [
         "select -> review -> reselect",
         "At each expandable node, Uigwe treats that node as a local objective.",
@@ -173,6 +178,10 @@ def evaluate_recursive_decomposition() -> list[dict[str, Any]]:
         "fail to satisfy the parent node objective",
         "Stop descending only when the selected node satisfies handoff-leaf readiness.",
         "Seungjeongwon owns todo listup, todo verification, subtodo decomposition",
+        "When Codex todo tooling is available, Seungjeongwon uses it as the user-visible execution board.",
+        "append a redefinition event todo",
+        "replacement todo as a new item",
+        "Use the execution attempt ledger, not new visible todos, for small implementation hypotheses",
     ]
     passed, missing = contains_all(combined, required)
     return [
@@ -218,6 +227,36 @@ def evaluate_sejong_boundary() -> list[dict[str, Any]]:
     passed, missing = contains_all("\n".join([skill, router]), required)
     return [
         check("sejong_uigwe_boundary_present", passed, "Sejong remains a router/front door and does not duplicate Uigwe packet rules.", missing=missing)
+    ]
+
+
+def evaluate_cross_stage_helper_calls() -> list[dict[str, Any]]:
+    sejong_skill = load_text(SEJONG_SKILL_PATH)
+    uigwe_skill = load_text(UIGWE_SKILL_PATH)
+    router = load_text(ROUTER_PATH)
+    protocol = load_text(PROTOCOL_PATH)
+    readme = load_text(README_PATH)
+    team = load_text(TEAM_EXECUTOR_PATH)
+    combined = "\n".join([sejong_skill, uigwe_skill, router, protocol, readme, team])
+    required = [
+        "Court modes can be the primary route for a request or a bounded helper call inside another active court mode.",
+        "`JangYeongsil` can be called as an evidence helper from Sejong, Uigwe, or Jiphyeonjeon",
+        "`Jiphyeonjeon` can be called as a decision-support helper from Sejong, Uigwe, JangYeongsil, or Seungjeongwon",
+        "A helper call produces bounded evidence or deliberation and then returns to the calling court mode.",
+        "Helper calls return to Uigwe and do not approve gates or finalize canonical packets.",
+        "JangYeongsil research can run while Uigwe prepares artifact inventory, mode-readiness, or validation preflight",
+        "Jiphyeonjeon option review may run while Uigwe inventories artifacts",
+        "with `current_surface` set to the helper mode",
+        "Helper calls do not approve Uigwe gates, finalize `spec.md`, finalize `rationale.md`, finalize `goal-tree.json`, claim consensus, or override lead synthesis.",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check(
+            "cross_stage_helper_calls_present",
+            passed,
+            "JangYeongsil and Jiphyeonjeon helper calls remain explicit, bounded, and non-authoritative.",
+            missing=missing,
+        )
     ]
 
 
@@ -401,6 +440,7 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-recursive-decomposition": evaluate_recursive_decomposition,
     "instruction-validation-benchmark": evaluate_validation_benchmark,
     "instruction-sejong-boundary": evaluate_sejong_boundary,
+    "instruction-cross-stage-helper-calls": evaluate_cross_stage_helper_calls,
     "instruction-bounded-parallelism": evaluate_bounded_parallelism,
     "instruction-king-sejong-hooks": evaluate_king_sejong_hooks,
     "instruction-sejong-continuation": evaluate_sejong_continuation,

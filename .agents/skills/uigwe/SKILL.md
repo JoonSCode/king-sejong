@@ -186,6 +186,14 @@ If the chosen entry point proves too optimistic, re-enter the earlier stage requ
 3. Run the Uigwe `Executor Handoff Contract` (`decomposition`) phase
 4. Produce `Plan Packet`, `spec.md`, `rationale.md`, and `goal-tree.json`
 
+## Sejong Helper Calls
+
+Inside a Sejong workflow, Uigwe may call `JangYeongsil` as an evidence helper when facts, examples, repo history, experiments, or external constraints are missing. JangYeongsil returns `known`, `inferred`, `unknown`, source refs, confidence, and the decision it enables back to Uigwe.
+
+Uigwe may call `Jiphyeonjeon` as a decision-support helper during `deep-interview`, `brainstorming`, `decomposition`, or re-entry decisions when multiple perspectives would materially improve accuracy. Jiphyeonjeon returns options, arguments, rejected options, risks, confidence, and a next-surface recommendation back to Uigwe.
+
+Helper calls do not approve Uigwe gates, finalize `spec.md`, finalize `rationale.md`, finalize `goal-tree.json`, claim consensus, or replace user approval in live sessions. Uigwe remains responsible for formal packets, gate state, handoff leaves, and re-entry decisions.
+
 ## Decomposition Rules
 
 - Treat each expandable node as a local objective: select candidate child objectives, review whether they satisfy the parent objective, reselect when they are weak or invalid, then recurse into selected children

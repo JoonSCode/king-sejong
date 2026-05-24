@@ -37,6 +37,8 @@ For Uigwe-backed execution, the Uigwe bundle remains the source of truth. For Ji
 
 JangYeongsil, Jiphyeonjeon, Uigwe, and Seungjeongwon are Sejong court modes, not peer agents. `$team` workers are scoped sessions inside one active court mode. They inherit the mode context and return bounded output to the lead.
 
+Court-mode helper calls may also use `TeamExecutor`. For example, Uigwe can run a JangYeongsil evidence-helper team while Uigwe prepares non-blocking preflight checks, or run a Jiphyeonjeon option-review team while decomposition shape is still being challenged. In those cases, initialize the team run with `current_surface` set to the helper mode, include the calling Uigwe bundle, council brief, or active context in `source_of_truth_refs`, and require the worker output to return to the calling mode. Helper-team workers must not approve Uigwe gates, finalize packets, claim consensus, or override lead synthesis.
+
 ## State Root
 
 `TeamExecutor` state belongs under the Sejong artifact root:

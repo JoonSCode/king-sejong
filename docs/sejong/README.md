@@ -66,11 +66,13 @@ For substantial workflows, this active state can be mirrored into an external Ki
 
 Use Sejong repo-context init/refresh when a target repository needs an initial `AGENTS.md` or an existing instruction file should absorb durable lessons from recent work. That workflow is candidate-diff first: inspect the repo, deduplicate lessons, reject transient or unsafe material, and apply tracked instruction edits only after explicit user approval or an explicit apply instruction. See [REPO_CONTEXT.md](REPO_CONTEXT.md).
 
+Court modes can also be helper calls inside another active mode. JangYeongsil can gather missing evidence for Sejong, Uigwe, or Jiphyeonjeon, then return `known` / `inferred` / `unknown` evidence to the calling mode. Jiphyeonjeon can provide decision support from Sejong, Uigwe, JangYeongsil, or Seungjeongwon whenever multiple perspectives would improve accuracy, then return a decision note and next-surface recommendation. These helper calls do not approve Uigwe gates, finalize packets, or replace lead synthesis.
+
 For larger Sejong work, parallelism is allowed when it is genuinely separable:
 
 - `JangYeongsil` can fan out across independent evidence sources and fan in to one `known` / `inferred` / `unknown` synthesis.
 - `Jiphyeonjeon` can run bounded council briefs in parallel, such as advocate, critic, specialist, operator, and risk reviewer. Substantial decisions may use `$team` tmux workers with Sejong mailbox/state files for a bounded challenge round. The workers do not vote; the lead Sejong agent opens and closes rounds and synthesizes the recommendation.
-- `Uigwe` can overlap only through preflight checks such as artifact inventory, readiness review, or validation planning. Formal packets and live-session gates remain lead/user-owned.
+- `Uigwe` can overlap only through preflight checks such as artifact inventory, readiness review, or validation planning. JangYeongsil evidence lanes or Jiphyeonjeon option review may run beside that preflight, but formal packets and live-session gates remain lead/user-owned.
 - Execution parallelism belongs in `Seungjeongwon` after scope approval, with disjoint file scopes or test surfaces.
 
 Sejong does not require `.codex/prompts/{role}.md`. If a target repo has such a file, treat it as a repo-local overlay on top of the Codex native role prompt. If it is absent, continue with the native role prompt. See [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md).

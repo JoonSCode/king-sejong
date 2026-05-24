@@ -107,6 +107,16 @@ Seungjeongwon may split, merge, reorder, or locally reshape todos while preservi
 
 If the 4-6 loop keeps failing because the todo is too broad, dependency order is wrong, or the first implementation hypothesis was weak, Seungjeongwon continues local decomposition. If the handoff leaf itself is wrong, it recommends Uigwe `local_reexploration`. If the chosen design is wrong, it recommends `brainstorming`. If the goal, non-goals, success criteria, or must-preserve behavior are incomplete or contradicted, it recommends `deep_interview` or `human_review`.
 
+## Visible Execution Board
+
+When Codex todo tooling is available, Seungjeongwon uses it as the user-visible execution board.
+
+Before implementation begins, publish the initial actionable leaf list through Codex todo/update_plan. The visible board should show the current handoff leaf, actionable todos, dependency order, and verification-oriented work. It is not a private scratchpad and should not hide material execution reshaping from the user.
+
+Seungjeongwon must not silently overwrite an existing visible todo when execution changes the shape of the work. If scope, dependency order, done criteria, or verification method changes, append a redefinition event todo such as `R1: redefine execution todo after failed activation proof`, mark the old todo as replaced or invalidated in the visible text when the tooling has only basic statuses, and add the replacement todo as a new item.
+
+Use the execution attempt ledger, not new visible todos, for small implementation hypotheses that stay inside the same actionable todo. A visible redefinition event is required when the actionable todo itself changes. Uigwe re-entry is required when the approved goal, non-goals, success criteria, must-preserve behavior, verification bar, or other guardrails become unstable.
+
 ## Execution Attempt Loop
 
 After actionable leaves exist, Seungjeongwon runs:
@@ -164,6 +174,7 @@ Seungjeongwon reports:
 - blocked or invalidated scope with reason
 - files changed or artifacts produced
 - actionable decomposition evidence
+- visible todo board updates, including replacement or redefinition events when they occurred
 - execution attempt ledger summary
 - verification evidence
 - recommended Uigwe re-entry target:

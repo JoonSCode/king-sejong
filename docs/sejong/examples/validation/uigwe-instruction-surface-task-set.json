@@ -89,12 +89,15 @@
         "candidate children are reviewed before being committed",
         "weak or invalid candidates trigger local reselection or re-entry",
         "leaf status requires handoff-leaf readiness rather than smallness alone",
-        "Seungjeongwon owns the later todo listup, todo verification, subtodo decomposition, actionable leaf detection, and execution loop"
+        "Seungjeongwon owns the later todo listup, todo verification, subtodo decomposition, actionable leaf detection, and execution loop",
+        "Seungjeongwon publishes actionable leaves through Codex todo tooling as the visible execution board when that tooling is available",
+        "execution reshaping appends redefinition and replacement todos instead of silently overwriting the visible board"
       ],
       "forbidden_behavior": [
         "treating Uigwe decomposition as a one-shot implementation task list",
         "marking small but ambiguous nodes as handoff leaves",
-        "making Uigwe own Seungjeongwon actionable todo loops"
+        "making Uigwe own Seungjeongwon actionable todo loops",
+        "hiding material Seungjeongwon todo redefinition only in a private ledger"
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."
@@ -140,6 +143,39 @@
       "forbidden_behavior": [
         "duplicating Uigwe packet rules inside the router",
         "weakening Uigwe live-session gates"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    },
+    {
+      "id": "instruction-cross-stage-helper-calls",
+      "title": "Court helper calls remain explicit and bounded",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that JangYeongsil and Jiphyeonjeon can be invoked as bounded helpers inside Sejong, Uigwe, or other court modes without taking over gates or packet ownership.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        ".agents/skills/sejong/SKILL.md",
+        ".agents/skills/uigwe/SKILL.md",
+        "docs/sejong/ROUTER.md",
+        "docs/sejong/PROTOCOL.md",
+        "docs/sejong/TEAM_EXECUTOR.md"
+      ],
+      "expected_behavior": [
+        "court modes can be primary routes or helper calls",
+        "JangYeongsil can be called as an evidence helper from Sejong, Uigwe, or Jiphyeonjeon",
+        "Jiphyeonjeon can be called as a decision-support helper from Sejong, Uigwe, JangYeongsil, or Seungjeongwon",
+        "helper calls return to the calling mode with bounded evidence or decision notes",
+        "JangYeongsil research can overlap with Uigwe preflight",
+        "Jiphyeonjeon option review can overlap with Uigwe artifact inventory or decomposition challenge",
+        "$team helper runs keep current_surface set to the helper mode and source_of_truth_refs pointed at the calling context"
+      ],
+      "forbidden_behavior": [
+        "helper calls approving Uigwe gates",
+        "helper calls finalizing canonical packets",
+        "worker or helper consensus replacing lead synthesis",
+        "serializing every research, discussion, and planning step when bounded preflight overlap is safe"
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."

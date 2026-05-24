@@ -54,6 +54,18 @@ In short: `JangYeongsil` gathers the evidence, `Jiphyeonjeon` discusses and deci
 
 `Jiphyeonjeon` is not mandatory in every Sejong chain. Use it as a short deliberation pass only when the gathered evidence leaves a meaningful choice.
 
+## Cross-Stage Helper Calls
+
+Court modes can be the primary route for a request or a bounded helper call inside another active court mode.
+
+A primary route changes the current Sejong surface. A helper call produces bounded evidence or deliberation and then returns to the calling court mode. The calling mode keeps its gates, source-of-truth artifact, and completion responsibility.
+
+`JangYeongsil` can be called as an evidence helper from Sejong, Uigwe, or Jiphyeonjeon when facts, examples, repo history, experiments, external constraints, or source evidence are missing. It returns `known`, `inferred`, `unknown`, source refs, confidence, and the decision it enables. Uigwe may use that evidence during `deep-interview`, `brainstorming`, `decomposition`, or preflight checks, but JangYeongsil does not write or approve canonical Uigwe packets.
+
+`Jiphyeonjeon` can be called as a decision-support helper from Sejong, Uigwe, JangYeongsil, or Seungjeongwon whenever multiple perspectives would materially improve accuracy. Typical helper uses include sharpening a vague first Uigwe definition, comparing design alternatives during `brainstorming`, challenging decomposition shape, deciding whether execution feedback requires Uigwe re-entry, and judging which option should become Danjong. It returns the decision question, serious options, arguments, rejected options, risks, confidence, and next-surface recommendation.
+
+Helper calls do not approve Uigwe gates, finalize `spec.md`, finalize `rationale.md`, finalize `goal-tree.json`, claim consensus, or override lead synthesis. If a helper call finds material contradiction, the Sejong lead routes to the appropriate Uigwe re-entry, Jiphyeonjeon decision, JangYeongsil research, or Seungjeongwon execution path instead of silently continuing.
+
 ## Court Modes And User State
 
 JangYeongsil, Jiphyeonjeon, Uigwe, Seungjeongwon, Sillok, and Danjong are Sejong court modes, not independent peer agents. The Sejong lead changes behavior by entering a mode, but remains responsible for routing, synthesis, gates, and final verification. `$team` workers are scoped sessions inside the active court mode.
@@ -197,6 +209,7 @@ behavior itself is changing materially.
 - Give each lane a non-overlapping evidence scope and require `known`, `inferred`, `unknown`, confidence, source list, and the decision it enables.
 - Merge only after the lead reconciles conflicts and names unresolved unknowns.
 - Do not let research lanes vote on strategy, create Uigwe packets, or duplicate the same source read.
+- It may run as a helper call while Uigwe or Jiphyeonjeon continues non-blocking preflight work, but blocking facts must be resolved before gate approval, final recommendation, or packet finalization.
 
 `Jiphyeonjeon` supports a parallel chamber:
 
@@ -218,6 +231,7 @@ Mailbox-mediated Jiphyeonjeon is useful when cross-examination will improve the 
 `Uigwe` supports only preflight parallelism before gates:
 
 - Allowed: artifact inventory, readiness check, schema or bundle validation, missing-context scan, and risk review.
+- Allowed helper calls: JangYeongsil evidence gathering for missing facts, examples, repo history, or experiments; Jiphyeonjeon option review for design, decomposition, re-entry, or risk decisions.
 - Forbidden before lead/user approval: competing canonical packets, finalized `spec.md`, finalized `rationale.md`, finalized `goal-tree.json`, or any gate decision.
 - If Jiphyeonjeon is still unsettled, Uigwe preflight may prepare questions and mode-readiness notes but must not harden the plan.
 
@@ -225,8 +239,9 @@ Research, discussion, and planning may overlap only in this limited pipeline:
 
 1. While `JangYeongsil` gathers evidence, the lead may draft decision axes and candidate options.
 2. `Jiphyeonjeon` may begin once there is enough stable material for real comparison, but its final recommendation waits for blocking research lanes.
-3. `Uigwe` may run preflight checks once a likely direction exists, but formal planning waits for the lead-owned recommendation and any live-session approval gate.
-4. Execution waits for a clear direct task, approved scope, or validated bundle.
+3. `Uigwe` may run preflight checks once a likely direction exists, including artifact inventory, mode-readiness checks, and validation planning while JangYeongsil or Jiphyeonjeon helper calls continue.
+4. Uigwe formal gates and final packets wait for lead-owned synthesis, blocking evidence, the final Jiphyeonjeon recommendation when one is needed, and any live-session approval gate.
+5. Execution waits for a clear direct task, approved scope, or validated bundle.
 
 ## Internal Structure
 

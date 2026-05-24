@@ -54,6 +54,16 @@ Rules:
 - When a later stage discovers upstream ambiguity, Uigwe must re-enter the earlier stage and resume interaction with the user instead of silently filling the gap alone.
 - General assistant defaults favoring autonomous progress do not override this protocol contract.
 
+## Sejong Helper Calls During Uigwe
+
+When Uigwe is running inside Sejong, it may call other court modes as bounded helpers without leaving the Uigwe protocol.
+
+Uigwe may call JangYeongsil as an evidence helper during `deep-interview`, `brainstorming`, `decomposition`, or preflight checks when facts, examples, repo history, experiments, external constraints, or source evidence are missing. JangYeongsil returns `known`, `inferred`, `unknown`, source refs, confidence, and the decision it enables back to Uigwe. JangYeongsil research can run while Uigwe prepares artifact inventory, mode-readiness, or validation preflight, but blocking facts must be resolved before approval gates or packet finalization.
+
+Uigwe may call Jiphyeonjeon as a decision-support helper during `deep-interview`, `brainstorming`, `decomposition`, or re-entry decisions when multiple perspectives would materially improve accuracy. Use it to sharpen the initial definition, compare design alternatives, challenge decomposition shape, assess whether execution feedback invalidates the design, or decide which option should be retired. Jiphyeonjeon returns the decision question, options, arguments, rejected options, risks, confidence, and next-surface recommendation back to Uigwe.
+
+Helper calls return to Uigwe and do not approve gates or finalize canonical packets. They must not create competing `spec.md`, `rationale.md`, or `goal-tree.json` files, claim consensus as approval, waive live-session user approval, or override lead synthesis.
+
 ## Stage Contracts
 
 ### 1. Intent Clarification (`deep-interview`)

@@ -3,13 +3,13 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-23T18:18:39Z",
+    "generated_at": "2026-05-24T00:35:52Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
   "aggregate": {
-    "scenario_count": 14,
-    "pass_count": 14,
+    "scenario_count": 15,
+    "pass_count": 15,
     "partial_count": 0,
     "fail_count": 0,
     "average_score": 1.0,
@@ -126,6 +126,23 @@
           "id": "sejong_uigwe_boundary_present",
           "passed": true,
           "detail": "Sejong remains a router/front door and does not duplicate Uigwe packet rules."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-cross-stage-helper-calls",
+      "title": "Court helper calls remain explicit and bounded",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "cross_stage_helper_calls_present",
+          "passed": true,
+          "detail": "JangYeongsil and Jiphyeonjeon helper calls remain explicit, bounded, and non-authoritative."
         }
       ],
       "blockers": [],
@@ -336,12 +353,12 @@
         {
           "id": "uigwe_skill_line_budget",
           "passed": true,
-          "detail": "Uigwe SKILL.md line count is 272; budget is 320."
+          "detail": "Uigwe SKILL.md line count is 280; budget is 320."
         },
         {
           "id": "sejong_skill_line_budget",
           "passed": true,
-          "detail": "Sejong SKILL.md line count is 44; budget is 90."
+          "detail": "Sejong SKILL.md line count is 46; budget is 90."
         },
         {
           "id": "validation_detail_lives_in_reference",
