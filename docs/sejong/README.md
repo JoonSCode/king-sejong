@@ -123,7 +123,7 @@ Depending on mode, Uigwe produces:
 
 These artifacts are meant for both human review and downstream machine consumption.
 
-By default, Sejong stores runtime, research, discussion, ambiguity registers, evidence, and temporary planning artifacts outside the target repository under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`. `$team` worker state belongs under that root at `state/team/<run-id>/`, not under `.omx`. Sejong does not create git-tracked repository files unless the user explicitly asks to promote a shareable artifact into the repo. See [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md).
+By default, Sejong stores runtime, research, discussion, ambiguity registers, evidence, and temporary planning artifacts outside the target repository under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`. `$team` worker state belongs under that root at `state/team/<run-id>/`. Sejong does not create git-tracked repository files unless the user explicitly asks to promote a shareable artifact into the repo. See [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md).
 
 ## Validation Helpers
 

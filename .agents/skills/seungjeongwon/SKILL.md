@@ -28,7 +28,7 @@ Read only what is needed:
 3. For Uigwe handoff leaves, run todo listup, todo verification, and subtodo decomposition until actionable leaves exist.
 4. When Codex todo tooling is available, publish actionable leaves as the visible execution board before implementation; append explicit redefinition todos and replacement todos when the execution shape changes instead of silently overwriting the board.
 5. Execute dependency-ready actionable work in the current Codex session when possible.
-6. Use parallel workers only when file scopes are independent and verification remains clear. `$team` workers require Sejong state, mailbox evidence, and file leases; do not use `.omx` state.
+6. Use parallel workers only when file scopes are independent and verification remains clear. `$team` workers require Sejong-owned state, mailbox evidence, and file leases.
 7. Preserve the approved goal, non-goals, success criteria, must-preserve behavior, and verification bar. Adjust tactics when implementation hypotheses are wrong, but return to Uigwe or human review when those guardrails are unstable.
 8. Verify before claiming completion.
 9. Return execution feedback:

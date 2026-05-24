@@ -20,7 +20,7 @@ The stable shape is:
 
 Keep installed skills thin and keep durable behavior in `docs/sejong/`. Keep this file focused on source-repo maintenance direction for future development sessions, not product-facing explanation.
 
-Do not make King Sejong depend on OMX. OMX-specific paths and state are outside the Sejong contract; `$team` state belongs under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/`.
+Do not make King Sejong depend on repo-local or tool-specific orchestration state. `$team` state belongs under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/`.
 
 ## Session Resume Protocol
 
@@ -77,7 +77,7 @@ Do not add root-level repository files such as `AGENTS.md` to the managed instal
 - Keep `AGENTS.md` source-only. Promote installed behavior to `docs/sejong/` and the relevant skill front door.
 - Do not add `.codex/prompts/{role}.md` as a required install surface.
 - Do not treat missing repo-local prompt overlays as an install failure.
-- Do not reintroduce `.omx` as a Sejong dependency.
+- Do not reintroduce repo-local or tool-specific orchestration state as a Sejong dependency.
 - Preserve bounded parallelism: subagents and `$team` workers may return bounded briefs, mailbox messages, implementation slices, or verification evidence, but the lead Sejong agent owns synthesis, routing, gates, and final verification.
 - Prefer officially supported host team or teammate messaging when it exists and a bounded Jiphyeonjeon or JangYeongsil round needs peer challenge; otherwise use Sejong TeamExecutor mailbox state. Peer messages are worker evidence, not court-mode authority.
 - Keep TeamExecutor mailbox traffic on the versioned `send-message` / `receive-messages` envelope; raw mailbox appends are compatibility-only and must not become the primary worker contract.

@@ -318,7 +318,7 @@ def evaluate_bounded_parallelism() -> list[dict[str, Any]]:
         "`$team` / `TeamExecutor` wrappers",
         "team_executor.py",
         "${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/",
-        "must not depend on `.omx`",
+        "must use Sejong-owned state rooted at `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`",
         "The lead Sejong agent opens and closes each challenge round",
         "sejong.team-mailbox-message/v0.1-draft",
         "send-message",

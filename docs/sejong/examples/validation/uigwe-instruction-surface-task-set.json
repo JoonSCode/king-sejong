@@ -244,7 +244,7 @@
       "forbidden_behavior": [
         "worker or subagent agreement treated as evidence or approval",
         "always-on worker swarming",
-        "depending on .omx state for King Sejong"
+        "depending on repo-local or tool-specific orchestration state for King Sejong"
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."

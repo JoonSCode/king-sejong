@@ -19,7 +19,7 @@ When the active host runtime officially supports team or teammate messaging, use
 - It is not an uncontrolled peer-to-peer agent chat room.
 - It does not approve Uigwe gates.
 - It does not create majority-vote decisions.
-- It does not depend on `.omx` paths or OMX state. OMX-specific state must not be part of the King Sejong contract.
+- It depends only on Sejong-owned state under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`. Repo-local or tool-specific orchestration state is outside the King Sejong contract.
 
 ## Relationship To Sejong
 

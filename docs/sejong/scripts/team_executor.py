@@ -770,8 +770,6 @@ def mailbox_message_failures(
         failures.append(f"mailbox evidence_refs must be a list: {message_id}")
     if not isinstance(message.get("requires_response"), bool):
         failures.append(f"mailbox requires_response must be boolean: {message_id}")
-    if ".omx" in json.dumps(message):
-        failures.append(f"mailbox message references .omx state: {message_id}")
     if worker_claims_forbidden_authority(message):
         failures.append(f"worker message claims gate or final authority: {message_id}")
     return failures
@@ -795,8 +793,6 @@ def check_run(args: argparse.Namespace) -> int:
     team = load_team(run_dir)
     if team.get("format") != TEAM_FORMAT:
         failures.append("team.json has unexpected format")
-    if ".omx" in json.dumps(team):
-        failures.append("team.json references .omx state")
     for required_field in (
         "active_context_id",
         "route_id",

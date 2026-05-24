@@ -60,7 +60,7 @@ Team worker coordination state should be stored under:
 ${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/
 ```
 
-Do not use `.omx/state/team` for King Sejong. OMX-specific paths are outside the Sejong contract.
+Do not store King Sejong team state in repo-local or tool-specific orchestration directories. Team worker coordination state is part of the Sejong contract only when it is rooted under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`.
 
 ## Artifact Classes
 

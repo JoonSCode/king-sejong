@@ -476,7 +476,7 @@
       ],
       "forbidden_behavior": [
         "expanding surface area without ROI",
-        "making Sejong depend on OMX",
+        "making Sejong depend on repo-local or tool-specific orchestration state",
         "calling consensus the decision"
       ],
       "grading_notes": [
