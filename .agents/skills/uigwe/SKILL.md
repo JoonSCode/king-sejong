@@ -199,6 +199,7 @@ Helper calls do not approve Uigwe gates, finalize `spec.md`, finalize `rationale
 ## Decomposition Rules
 
 - Treat each expandable node as a local objective: select candidate child objectives, review whether they satisfy the parent objective, reselect when they are weak or invalid, then recurse into selected children
+- For nested goals, keep one top-level Uigwe bundle and recursive `goal-tree.json` by default; create a separate Uigwe bundle for a child objective only when it has its own durable goal, non-goals, success criteria, approval boundary, and verification bar independent of the parent
 - Use breadth-first decomposition with hard gates before scoring
 - Preserve `1` selected branch and keep `2-3` strong alternatives at upper levels
 - Allow shared dependencies when the structure is naturally a DAG

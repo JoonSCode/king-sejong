@@ -59,6 +59,10 @@ In short: `JangYeongsil` gathers the evidence, `Jiphyeonjeon` discusses and deci
 
 Research can stop at `JangYeongsil` only when the user asks for evidence by itself: source history, facts, examples, status, or a lightweight situation read with no downstream decision or plan.
 
+Advice can stop at `Jiphyeonjeon` only when the user asks for a recommendation, judgment, or comparison by itself and does not ask to concretize, plan, implement, verify, or otherwise achieve the recommended outcome. The advice output should name the recommendation, rejected options, risks, confidence, and what approval or extra detail would be needed to enter Uigwe.
+
+If the user approves a Jiphyeonjeon recommendation, asks to make it concrete, or asks to carry it out, the advice is no longer the terminal output. Treat the approved recommendation as Uigwe input and route to Uigwe before Seungjeongwon execution.
+
 When the user asks for research to decide what to do next, choose a strategy, compare market or product options, or prepare a future plan, the research result is not the conclusion. Treat it as pre-Uigwe evidence:
 
 ```text
@@ -76,6 +80,32 @@ For these requests, the Sejong lead must set or preserve a pending gate named `u
 - `next_surface: uigwe`
 
 It must not claim final strategic conclusion, start Seungjeongwon execution, or perform Sejong-direct implementation before Uigwe promotion. If the user explicitly asks for "research only", do not create the promotion gate and do not force Uigwe.
+
+## Outcome Completion Gate
+
+When the user asks Sejong to achieve an outcome, not merely answer a question, Sejong should continue until the outcome is executed, verified, blocked by a real missing decision, or explicitly narrowed by the user.
+
+Outcome-completion requests include creating, changing, fixing, shipping, implementing, validating, cleaning up, preparing a usable artifact, or otherwise reaching a stated goal. They also include follow-up turns where the user approves a recommendation, asks to make advice concrete, or asks to execute a selected direction.
+
+For goal-bearing outcome requests, research and advice are helper surfaces rather than completion surfaces. The default chain is:
+
+```text
+clarify goal as needed -> Uigwe planning -> Seungjeongwon execution -> verification -> Sillok evidence when useful
+```
+
+Use `JangYeongsil` before Uigwe when evidence is missing. Use `Jiphyeonjeon` before or inside Uigwe when serious options remain. These helper calls may run through workers or mailbox-backed rounds, but they return evidence or a recommendation to the lead route; they do not replace Uigwe planning.
+
+`Sejong direct` is only for small exact tasks that do not need a durable plan: one-command checks, simple explanations, narrow non-behavioral typo or link fixes, deterministic regeneration already covered by an approved contract, or obvious mechanical corrections. Do not classify a goal-bearing implementation request as `Sejong direct` merely because it is phrased clearly.
+
+When in doubt, ask the smallest missing clarification needed to decide whether the user wants advice-only/research-only or goal completion. If the answer is goal completion, enter Uigwe.
+
+## Recursive Goal Planning
+
+For nested goals, use one top-level Uigwe bundle and recursive `goal-tree.json` decomposition by default. A child objective may call JangYeongsil for missing facts or Jiphyeonjeon for option judgment, but the result returns to the active Uigwe node before handoff.
+
+Create a separate Uigwe bundle for a child objective only when it is project-level work with its own durable goal, non-goals, success criteria, approval boundary, and verification bar that should survive independently from the parent bundle.
+
+This keeps recursive planning inside the approved goal graph while still allowing bounded research, council discussion, TeamExecutor mailbox rounds, and Seungjeongwon feedback to trigger local re-exploration or Uigwe re-entry.
 
 ## Cross-Stage Helper Calls
 
@@ -313,7 +343,7 @@ If the user asked for an outcome such as "research, plan, and do it", Sejong may
 JangYeongsil research -> Jiphyeonjeon discussion -> Uigwe planning -> Seungjeongwon execution -> verification -> Sillok evidence
 ```
 
-Stop early only when missing evidence, a user decision, or an approval gate is genuinely required.
+Stop before Uigwe only when the user explicitly asked for research-only or advice-only output, or when missing evidence, a user decision, or an approval gate is genuinely required. Once the user approves or asks to concretize a recommendation, route to Uigwe.
 
 ## Surfaces
 
@@ -359,7 +389,8 @@ Required output:
 
 This surface should be used before Uigwe planning when the main uncertainty is strategic rather than structural.
 If the missing part is evidence, route back to `JangYeongsil`; if the choice is settled and the next job is artifact generation, route to `Uigwe`.
-Skip this surface when research already settles the direction or when the user gave an exact implementation task.
+If the user only asked for advice, Jiphyeonjeon may stop at a recommendation. If the user approves that recommendation, asks to make it concrete, or asks to execute it, route to Uigwe.
+Skip this surface when research already settles the direction, when the task is a small Sejong-direct command, or when a goal-bearing implementation task should enter Uigwe without strategic debate.
 
 ### `Uigwe`
 
@@ -381,9 +412,9 @@ The router should invoke Seungjeongwon by default.
 
 ### `Sejong Direct`
 
-Use when a request is already clear enough to implement, answer, or verify directly in the current Codex session.
+Use only when a request is a small exact task that can be answered, verified, or mechanically corrected directly in the current Codex session.
 
-This protects Uigwe from becoming performative planning overhead while keeping execution inside Sejong's all-in-one surface.
+This protects Uigwe from performative overhead for one-command checks, simple explanations, obvious typo or link fixes, and other non-behavioral corrections. It is not the default for goal-bearing implementation work.
 
 ## Routing Matrix
 
@@ -403,7 +434,8 @@ This protects Uigwe from becoming performative planning overhead while keeping e
 | clarified intent, no approved design | `Uigwe` | `design-to-plan` |
 | approved design or packet set | `Uigwe` | `decompose-only` |
 | existing bundle, now execute | `Seungjeongwon` | existing bundle |
-| exact implementation task | `Sejong direct` | none |
+| small exact command, simple answer, or obvious non-behavioral correction | `Sejong direct` | none |
+| goal-bearing implementation, cleanup, artifact creation, or validation outcome | `Uigwe` -> `Seungjeongwon` | resolved by evidence |
 | "조사해서 계획하고 실행까지 해줘", "research, plan, implement, and verify" | chained surfaces | resolved by evidence |
 
 ## Verification

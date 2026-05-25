@@ -185,6 +185,10 @@ The decomposition engine uses recursive `select -> review -> reselect` descent u
 
 At each expandable node, Uigwe treats that node as a local objective. It selects candidate child objectives that could satisfy the parent objective, reviews those candidates against gates and scoring, reselects when the candidate set is weak or invalid, and then repeats the same loop for each selected child.
 
+For nested goals, keep one top-level Uigwe bundle and represent recursive work in `goal-tree.json` by default. A child objective may use JangYeongsil for missing evidence or Jiphyeonjeon for option judgment, but those helper results return to the active Uigwe node before that node becomes a handoff leaf.
+
+Create a separate Uigwe bundle for a child objective only when it has its own durable goal, non-goals, success criteria, approval boundary, and verification bar independent of the parent bundle.
+
 `gated beam BFS + backtracking` is the implementation shape for this loop.
 
 ### Recursive Selection Loop

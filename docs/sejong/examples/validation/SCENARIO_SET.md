@@ -35,7 +35,7 @@
 ## Sejong Surface Seed Scenarios
 
 - `route-evidence-only-history`: evidence-only request routes to `JangYeongsil`
-- `route-option-comparison`: option comparison routes to `Jiphyeonjeon`
+- `route-option-comparison`: option comparison routes to `Jiphyeonjeon`; advice-only may stop at recommendation, but approval or concretization enters Uigwe
 - `route-vague-product-plan`: vague planning routes to Uigwe `full`
 - `route-approved-bundle-execution`: validated bundle routes to `Seungjeongwon`
 - `route-clear-direct-task`: exact verification stays `Sejong direct`
@@ -43,6 +43,7 @@
 - `repo-context-refresh-candidate-first`: repo instruction refresh is candidate-diff first
 - `research-stale-external-facts`: time-sensitive research requires current sources
 - `research-repo-fanout`: repo research fan-out remains bounded
+- `research-to-uigwe-promotion-gate`: decision-prep research and approved advice promote to Uigwe before execution
 - `decision-skill-plugin-boundary`: skill/plugin boundary decision stays evidence-backed
 - `decision-expansion-roi`: expansion requires concrete ROI
 - `planning-greenfield-full`: Sejong routes vague planning to Uigwe `full`

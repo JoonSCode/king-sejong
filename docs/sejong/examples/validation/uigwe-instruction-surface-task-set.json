@@ -86,6 +86,8 @@
       ],
       "expected_behavior": [
         "each expandable node is treated as a local objective",
+        "nested goals stay in one top-level Uigwe bundle and recursive goal-tree by default",
+        "a child objective gets a separate Uigwe bundle only when it has independent durable goal, non-goals, success criteria, approval boundary, and verification bar",
         "candidate children are reviewed before being committed",
         "weak or invalid candidates trigger local reselection or re-entry",
         "leaf status requires handoff-leaf readiness rather than smallness alone",
@@ -202,6 +204,9 @@
       ],
       "expected_behavior": [
         "research-only requests may stop at JangYeongsil",
+        "advice-only requests may stop at Jiphyeonjeon recommendation",
+        "approving a recommendation or asking to make it concrete routes the work to Uigwe",
+        "goal-bearing outcome requests use research and advice as helper surfaces before Uigwe and Seungjeongwon",
         "research for deciding a strategy, comparing options, or feeding Uigwe keeps uigwe_promotion_required pending",
         "JangYeongsil and Jiphyeonjeon output Uigwe-ready input summaries instead of final conclusions",
         "write-like execution is blocked before Uigwe entry while the promotion gate is pending",
@@ -210,7 +215,8 @@
       "forbidden_behavior": [
         "ending decision-prep research with a final strategic conclusion",
         "routing from decision-prep research directly to Seungjeongwon",
-        "forcing Uigwe for explicit research-only prompts"
+        "forcing Uigwe for explicit research-only prompts",
+        "treating goal-bearing implementation work as Sejong direct just because the wording is clear"
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."

@@ -80,7 +80,8 @@
       "expected_behavior": [
         "compares serious options against explicit criteria",
         "records rejected options with reasons",
-        "recommends one path and names the next surface"
+        "recommends one path and names the next surface",
+        "stops at advice when the user asked only for judgment, while naming that approval or concretization should enter Uigwe"
       ],
       "forbidden_behavior": [
         "implementing before making the decision",
@@ -479,6 +480,7 @@
       ],
       "expected_behavior": [
         "distinguishes research-only from research-for-decision",
+        "distinguishes advice-only from advice approved for planning or execution",
         "keeps uigwe_promotion_required pending until Uigwe starts or the user cancels it",
         "uses research as Uigwe evidence rather than a final strategic conclusion",
         "names the recommended Uigwe entry mode and user decision question"
@@ -1242,12 +1244,6 @@
           "jangyeongsil",
           "jiphyeonjeon",
           "uigwe",
-          "seungjeongwon",
-          "sillok"
-        ],
-        [
-          "jangyeongsil",
-          "jiphyeonjeon",
           "seungjeongwon",
           "sillok"
         ]
