@@ -3,13 +3,13 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-24T01:07:52Z",
+    "generated_at": "2026-05-24T15:21:49Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
   "aggregate": {
-    "scenario_count": 17,
-    "pass_count": 17,
+    "scenario_count": 18,
+    "pass_count": 18,
     "partial_count": 0,
     "fail_count": 0,
     "average_score": 1.0,
@@ -143,6 +143,33 @@
           "id": "cross_stage_helper_calls_present",
           "passed": true,
           "detail": "JangYeongsil and Jiphyeonjeon helper calls remain explicit, bounded, and non-authoritative."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-research-to-uigwe-promotion",
+      "title": "Decision-prep research promotes to Uigwe",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "research_to_uigwe_promotion_present",
+          "passed": true,
+          "detail": "Decision-prep research must promote to Uigwe instead of ending as a final conclusion."
+        },
+        {
+          "id": "guardrail_promotion_gate",
+          "passed": true,
+          "detail": "Typed guardrail expectation promotion_gate is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_hook_enforcement",
+          "passed": true,
+          "detail": "Typed guardrail expectation hook_enforcement is represented in the instruction surface."
         }
       ],
       "blockers": [],
@@ -407,17 +434,17 @@
         {
           "id": "sejong_skill_line_budget",
           "passed": true,
-          "detail": "Sejong SKILL.md line count is 48; budget is 90."
+          "detail": "Sejong SKILL.md line count is 50; budget is 90."
         },
         {
           "id": "jangyeongsil_skill_line_budget",
           "passed": true,
-          "detail": "JangYeongsil SKILL.md line count is 33; budget is 80."
+          "detail": "JangYeongsil SKILL.md line count is 35; budget is 80."
         },
         {
           "id": "jiphyeonjeon_skill_line_budget",
           "passed": true,
-          "detail": "Jiphyeonjeon SKILL.md line count is 38; budget is 80."
+          "detail": "Jiphyeonjeon SKILL.md line count is 40; budget is 80."
         },
         {
           "id": "validation_detail_lives_in_reference",

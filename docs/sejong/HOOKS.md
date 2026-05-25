@@ -57,6 +57,12 @@ Required state includes:
 - `subagent_refs`
 - `exit_conditions`
 
+For research that is explicitly meant to feed a decision or later Uigwe plan,
+active context should include `uigwe_promotion_required` in `pending_gates`
+until Uigwe starts or the user explicitly converts the request to research-only.
+This prevents a research or council note from being treated as the final
+workflow conclusion.
+
 When `artifact_refs` includes a readable artifact whose `format` is
 `sejong.ambiguity-register/v0.1-draft`, hooks treat it as the active ambiguity
 register. See [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md).
@@ -82,11 +88,13 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 
 - Inspect supported tool calls for protected King Sejong paths.
 - Deny material self-modification when the required route sequence is missing.
+- Deny write-like or execution-completion tool calls while `uigwe_promotion_required` is pending and the route has not entered `uigwe`.
 - Add context instead of denying when protected paths are touched after route evidence exists.
 
 `PermissionRequest`
 
 - Deny escalated protected edits when route evidence is missing.
+- Deny escalated write-like or execution-completion requests while `uigwe_promotion_required` is pending before Uigwe entry.
 - Leave normal approval flow alone when no protected route is involved.
 
 `PostToolUse`
@@ -112,6 +120,7 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 `Stop`
 
 - Continue the turn when pending gates or missing verification would make completion premature.
+- Continue the turn when `uigwe_promotion_required` remains pending, so decision-prep research cannot end as a final conclusion before Uigwe.
 - Continue the turn when any referenced ambiguity register still has `open` ambiguity items.
 
 `PreCompact`

@@ -186,6 +186,48 @@
       ]
     },
     {
+      "id": "instruction-research-to-uigwe-promotion",
+      "title": "Decision-prep research promotes to Uigwe",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that research requested for choosing a strategy or preparing a later plan cannot finish as a final conclusion before Uigwe.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        ".agents/skills/sejong/SKILL.md",
+        ".agents/skills/jangyeongsil/SKILL.md",
+        ".agents/skills/jiphyeonjeon/SKILL.md",
+        "docs/sejong/ROUTER.md",
+        "docs/sejong/HOOKS.md",
+        "docs/sejong/scripts/king_sejong_hooks.py"
+      ],
+      "expected_behavior": [
+        "research-only requests may stop at JangYeongsil",
+        "research for deciding a strategy, comparing options, or feeding Uigwe keeps uigwe_promotion_required pending",
+        "JangYeongsil and Jiphyeonjeon output Uigwe-ready input summaries instead of final conclusions",
+        "write-like execution is blocked before Uigwe entry while the promotion gate is pending",
+        "Stop continues the workflow when uigwe_promotion_required remains unresolved"
+      ],
+      "forbidden_behavior": [
+        "ending decision-prep research with a final strategic conclusion",
+        "routing from decision-prep research directly to Seungjeongwon",
+        "forcing Uigwe for explicit research-only prompts"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ],
+      "guardrail_expectations": {
+        "promotion_gate": [
+          "uigwe_promotion_required",
+          "research result is not the conclusion",
+          "next_surface: uigwe"
+        ],
+        "hook_enforcement": [
+          "write-like execution",
+          "Research or council output must enter Uigwe before write-like execution"
+        ]
+      }
+    },
+    {
       "id": "instruction-court-skill-frontdoors",
       "title": "JangYeongsil and Jiphyeonjeon remain installed thin front doors",
       "profile": "instruction",

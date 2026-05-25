@@ -18,6 +18,8 @@ It is a thin court-mode skill. Its source-of-truth routing contract is `../../..
 5. Record rejected options and reasons.
 6. Recommend the next path with confidence, risks, and the next Sejong surface.
 
+When the council is deciding from research that was gathered for a later plan, its recommendation is not the workflow conclusion. Return the selected option, rejected options, risks, and an Uigwe-ready input summary with `next_surface: uigwe`; do not route to Seungjeongwon or Sejong direct until Uigwe planning has run or the user explicitly cancels the promotion.
+
 ## Helper Use
 
 Jiphyeonjeon may be called from Sejong, Uigwe, JangYeongsil, or Seungjeongwon as a helper call when multiple perspectives would materially improve accuracy.

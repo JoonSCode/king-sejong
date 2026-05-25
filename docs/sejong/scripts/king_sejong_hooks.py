@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -53,6 +54,25 @@ FORBIDDEN_WORKER_AUTHORITY_TERMS = (
     "consensus approves",
 )
 AMBIGUITY_REGISTER_FORMAT = "sejong.ambiguity-register/v0.1-draft"
+UIGWE_PROMOTION_GATE = "uigwe_promotion_required"
+WRITE_LIKE_TOOL_NAMES = {
+    "apply_patch",
+    "edit",
+    "multiedit",
+    "write",
+}
+WRITE_LIKE_COMMAND_PATTERNS = (
+    r"\*\*\* begin patch",
+    r"(?:^|[;\n]|\|\||&&)\s*git\s+commit\b",
+    r"(?:^|[;\n]|\|\||&&)\s*git\s+push\b",
+    r"(?:^|[;\n]|\|\||&&)\s*sed\s+-i\b",
+    r"(?:^|[;\n]|\|\||&&)\s*tee\s+",
+    r"(?:^|[;\n]|\|\||&&)\s*cat\s+>",
+    r"(?:^|[;\n]|\|\||&&)\s*cat\s+<<",
+    r"(?:^|[;\n]|\|\||&&)\s*mv\s+",
+    r"(?:^|[;\n]|\|\||&&)\s*cp\s+",
+    r"(?:^|[;\n]|\|\||&&)\s*rm\s+",
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -119,6 +139,11 @@ def context_summary(context: dict[str, Any]) -> str:
     ambiguity_text = ambiguity_register_summary(context)
     if ambiguity_text:
         summary += " " + ambiguity_text
+    if pending_uigwe_promotion_unsatisfied(context):
+        summary += (
+            " uigwe_promotion_required=true; research or council output is not final; "
+            "enter Uigwe or ask the user to convert the request to research-only."
+        )
     return summary
 
 
@@ -153,6 +178,18 @@ def route_sequence_satisfied(context: dict[str, Any]) -> bool:
     return index == len(required)
 
 
+def route_entered(context: dict[str, Any], surface: str) -> bool:
+    return surface in (context.get("route_sequence") or [])
+
+
+def has_pending_uigwe_promotion(context: dict[str, Any]) -> bool:
+    return UIGWE_PROMOTION_GATE in (context.get("pending_gates") or [])
+
+
+def pending_uigwe_promotion_unsatisfied(context: dict[str, Any]) -> bool:
+    return has_pending_uigwe_promotion(context) and not route_entered(context, "uigwe")
+
+
 def flatten_tool_input(value: Any) -> str:
     if isinstance(value, str):
         return value
@@ -161,6 +198,18 @@ def flatten_tool_input(value: Any) -> str:
     if isinstance(value, list):
         return " ".join(flatten_tool_input(item) for item in value)
     return str(value)
+
+
+def tool_name(payload: dict[str, Any]) -> str:
+    return str(payload.get("tool_name") or payload.get("toolName") or "").lower()
+
+
+def is_write_like_tool_call(payload: dict[str, Any]) -> bool:
+    name = tool_name(payload)
+    if name in WRITE_LIKE_TOOL_NAMES:
+        return True
+    haystack = flatten_tool_input(payload.get("tool_input", "")).lower()
+    return any(re.search(pattern, haystack) for pattern in WRITE_LIKE_COMMAND_PATTERNS)
 
 
 def touched_protected_paths(context: dict[str, Any], payload: dict[str, Any]) -> list[str]:
@@ -277,6 +326,12 @@ def handle_session_context(event_name: str, context: dict[str, Any]) -> dict[str
 
 
 def handle_pre_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    if pending_uigwe_promotion_unsatisfied(context) and is_write_like_tool_call(payload):
+        return deny_pre_tool(
+            "King Sejong research-to-Uigwe gate is pending. "
+            "Research or council output must enter Uigwe before write-like execution, "
+            "unless the user explicitly converts the request to research-only."
+        )
     touched = touched_protected_paths(context, payload)
     if not touched:
         return {}
@@ -294,6 +349,10 @@ def handle_pre_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> dic
 
 
 def handle_permission_request(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    if pending_uigwe_promotion_unsatisfied(context) and is_write_like_tool_call(payload):
+        return deny_permission(
+            "King Sejong research-to-Uigwe gate is pending; enter Uigwe before write-like execution."
+        )
     touched = touched_protected_paths(context, payload)
     if touched and not route_sequence_satisfied(context):
         return deny_permission(
@@ -340,6 +399,14 @@ def handle_team_worker_event(event_name: str, payload: dict[str, Any], context: 
 def handle_stop(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
     if payload.get("stop_hook_active"):
         return {}
+    if pending_uigwe_promotion_unsatisfied(context):
+        return {
+            "decision": "block",
+            "reason": (
+                "Continue King Sejong execution: uigwe_promotion_required remains pending. "
+                "Research-for-decision must enter Uigwe or be explicitly converted to research-only."
+            ),
+        }
     pending = context.get("pending_gates") or []
     if pending:
         return {

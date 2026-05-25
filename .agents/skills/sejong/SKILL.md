@@ -37,6 +37,8 @@ Treat JangYeongsil, Jiphyeonjeon, Uigwe, Seungjeongwon, Sillok, and Danjong as S
 
 Boundary rule: use `JangYeongsil` when facts or evidence are unclear, `Jiphyeonjeon` when enough material exists but options need discussion, and `Uigwe` when the chosen direction should become a durable planning bundle. Preserve Uigwe live-session gates when routing there.
 
+Research-to-Uigwe rule: when research is explicitly for deciding a strategy, choosing what to try, preparing a later plan, or feeding Uigwe, do not end with a research conclusion. Treat JangYeongsil and optional Jiphyeonjeon as pre-Uigwe evidence, keep `uigwe_promotion_required` pending in active context when available, output the Uigwe input summary, and route to `Uigwe` unless the user explicitly says the task is research-only.
+
 When a live Sejong or Uigwe clarification uses an ambiguity register, do not advance the stage or claim completion while any ambiguity remains `open`. Show the user the stage readiness percentage, unclear items, recommended options, and a free-response path until readiness reaches `100%` or the user explicitly waives the remaining ambiguity.
 
 `JangYeongsil` and `Jiphyeonjeon` can be primary routes or helper calls inside another active court mode. Use JangYeongsil from Sejong, Uigwe, or Jiphyeonjeon when facts, examples, repo history, experiments, or external evidence are needed; return `known` / `inferred` / `unknown` evidence to the calling mode. Use Jiphyeonjeon from Sejong, Uigwe, JangYeongsil, or Seungjeongwon whenever multiple perspectives would materially improve accuracy; return a decision note, rejected options, risks, and the next surface. Helper calls do not approve Uigwe gates, finalize packets, claim consensus, or override lead synthesis.

@@ -444,6 +444,70 @@
       }
     },
     {
+      "id": "research-to-uigwe-promotion-gate",
+      "title": "Decision-prep research must promote to Uigwe",
+      "profile": "research",
+      "input_shape": "research requested for later strategic planning",
+      "prompt": "/sejong 이 앱에 유저를 어떻게 끌 수 있을지 마케팅 리서치를 먼저 해줘. 현황, 문제, 다른 사람들은 어떻게 하는지, 선택지를 싹 조사 비교해보고 그 결과로 의궤를 하고 싶어. 리서치만 하는 건 아니야.",
+      "expected_mode": "auto",
+      "expected_route_sequence": [
+        "jangyeongsil",
+        "jiphyeonjeon",
+        "uigwe"
+      ],
+      "acceptable_route_sequences": [
+        [
+          "jangyeongsil",
+          "uigwe"
+        ],
+        [
+          "jangyeongsil",
+          "jiphyeonjeon",
+          "uigwe"
+        ]
+      ],
+      "forbidden_surfaces": [
+        "seungjeongwon",
+        "sejong-direct"
+      ],
+      "clarification_required": true,
+      "expected_artifacts": [
+        "research note",
+        "decision note when options remain",
+        "Uigwe input summary",
+        "active context pending gate"
+      ],
+      "expected_behavior": [
+        "distinguishes research-only from research-for-decision",
+        "keeps uigwe_promotion_required pending until Uigwe starts or the user cancels it",
+        "uses research as Uigwe evidence rather than a final strategic conclusion",
+        "names the recommended Uigwe entry mode and user decision question"
+      ],
+      "forbidden_behavior": [
+        "ending with a final marketing conclusion before Uigwe",
+        "starting execution or implementation before Uigwe planning",
+        "forcing Uigwe when the user explicitly asks for research only"
+      ],
+      "grading_notes": [
+        "This scenario protects the research-to-Uigwe workflow: evidence may recommend, but the workflow conclusion is the Uigwe plan."
+      ],
+      "guardrail_expectations": {
+        "pending_gates": [
+          "uigwe_promotion_required"
+        ],
+        "blocked_surfaces": [
+          "seungjeongwon",
+          "sejong-direct"
+        ]
+      },
+      "resource_expectations": {
+        "max_turns": 4,
+        "max_tool_calls": 24,
+        "max_total_tokens": 70000,
+        "overhead_budget_note": "Research can be substantial, but it must stop at Uigwe readiness rather than execute."
+      }
+    },
+    {
       "id": "decision-skill-plugin-boundary",
       "title": "Skill versus plugin boundary decision",
       "profile": "decision",

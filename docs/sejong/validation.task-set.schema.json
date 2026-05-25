@@ -190,6 +190,18 @@
         "allowed_direct_change_types": {
           "$ref": "#/$defs/StringList"
         },
+        "pending_gates": {
+          "$ref": "#/$defs/StringList"
+        },
+        "blocked_surfaces": {
+          "$ref": "#/$defs/StringList"
+        },
+        "promotion_gate": {
+          "$ref": "#/$defs/StringList"
+        },
+        "hook_enforcement": {
+          "$ref": "#/$defs/StringList"
+        },
         "worker_authority_forbidden_claims": {
           "$ref": "#/$defs/StringList"
         },

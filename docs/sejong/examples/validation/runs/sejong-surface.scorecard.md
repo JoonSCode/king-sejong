@@ -1,10 +1,10 @@
 # King Sejong Surface Scorecard
 
 - Task set: `sejong-seed-task-set`
-- Generated at: `2026-05-24T01:07:52Z`
+- Generated at: `2026-05-24T15:21:49Z`
 - Status: `pass`
 - Average score: `1.0`
-- Pass/partial/fail: `25/0/0`
+- Pass/partial/fail: `26/0/0`
 
 ## Scenarios
 - `route-evidence-only-history`: `pass` (1.0)
@@ -16,6 +16,7 @@
 - `repo-context-refresh-candidate-first`: `pass` (1.0)
 - `research-stale-external-facts`: `pass` (1.0)
 - `research-repo-fanout`: `pass` (1.0)
+- `research-to-uigwe-promotion-gate`: `pass` (1.0)
 - `decision-skill-plugin-boundary`: `pass` (1.0)
 - `decision-expansion-roi`: `pass` (1.0)
 - `planning-greenfield-full`: `pass` (1.0)

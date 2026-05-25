@@ -52,6 +52,7 @@ SCENARIO_IDS = (
     "instruction-validation-benchmark",
     "instruction-sejong-boundary",
     "instruction-cross-stage-helper-calls",
+    "instruction-research-to-uigwe-promotion",
     "instruction-court-skill-frontdoors",
     "instruction-bounded-parallelism",
     "instruction-king-sejong-hooks",
@@ -69,6 +70,7 @@ REQUIRED_GUARDRAIL_SCENARIOS = {
     "instruction-king-sejong-hooks",
     "instruction-sejong-continuation",
     "instruction-ambiguity-register",
+    "instruction-research-to-uigwe-promotion",
     "instruction-sejong-self-modification",
     "instruction-artifact-storage",
     "instruction-repo-context-refresh",
@@ -269,6 +271,38 @@ def evaluate_cross_stage_helper_calls() -> list[dict[str, Any]]:
             "cross_stage_helper_calls_present",
             passed,
             "JangYeongsil and Jiphyeonjeon helper calls remain explicit, bounded, and non-authoritative.",
+            missing=missing,
+        )
+    ]
+
+
+def evaluate_research_to_uigwe_promotion() -> list[dict[str, Any]]:
+    sejong_skill = load_text(SEJONG_SKILL_PATH)
+    jangyeongsil_skill = load_text(JANGYEONGSIL_SKILL_PATH)
+    jiphyeonjeon_skill = load_text(JIPHYEONJEON_SKILL_PATH)
+    router = load_text(ROUTER_PATH)
+    hooks = load_text(HOOKS_PATH)
+    context_schema = load_text(CONTEXT_SCHEMA_PATH)
+    hook_script = load_text(HOOK_SCRIPT_PATH)
+    combined = "\n".join(
+        [sejong_skill, jangyeongsil_skill, jiphyeonjeon_skill, router, hooks, context_schema, hook_script]
+    )
+    required = [
+        "Research-To-Uigwe Promotion Gate",
+        "research result is not the conclusion",
+        "Research-to-Uigwe rule",
+        "research-only",
+        "uigwe_promotion_required",
+        "next_surface: uigwe",
+        "write-like execution",
+        "Research or council output must enter Uigwe before write-like execution",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check(
+            "research_to_uigwe_promotion_present",
+            passed,
+            "Decision-prep research must promote to Uigwe instead of ending as a final conclusion.",
             missing=missing,
         )
     ]
@@ -540,6 +574,7 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-validation-benchmark": evaluate_validation_benchmark,
     "instruction-sejong-boundary": evaluate_sejong_boundary,
     "instruction-cross-stage-helper-calls": evaluate_cross_stage_helper_calls,
+    "instruction-research-to-uigwe-promotion": evaluate_research_to_uigwe_promotion,
     "instruction-court-skill-frontdoors": evaluate_court_skill_frontdoors,
     "instruction-bounded-parallelism": evaluate_bounded_parallelism,
     "instruction-king-sejong-hooks": evaluate_king_sejong_hooks,
@@ -581,6 +616,18 @@ def expectation_text_for_scenario(scenario_id: str) -> str:
                 load_text(UIGWE_SKILL_PATH),
                 load_text(ROUTER_PATH),
                 load_text(ARTIFACT_STORAGE_PATH),
+            ]
+        )
+    if scenario_id == "instruction-research-to-uigwe-promotion":
+        return "\n".join(
+            [
+                load_text(ROUTER_PATH),
+                load_text(SEJONG_SKILL_PATH),
+                load_text(JANGYEONGSIL_SKILL_PATH),
+                load_text(JIPHYEONJEON_SKILL_PATH),
+                load_text(HOOKS_PATH),
+                load_text(CONTEXT_SCHEMA_PATH),
+                load_text(HOOK_SCRIPT_PATH),
             ]
         )
     return "\n".join(base)

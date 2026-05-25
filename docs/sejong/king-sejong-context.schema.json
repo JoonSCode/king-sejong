@@ -40,6 +40,7 @@
       "$ref": "#/$defs/NonEmptyString"
     },
     "pending_gates": {
+      "description": "Open workflow gates. Use uigwe_promotion_required when research was requested to support a decision or later Uigwe plan and must not finish as a final conclusion before Uigwe entry.",
       "$ref": "#/$defs/StringList"
     },
     "protected_paths": {

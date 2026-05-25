@@ -55,6 +55,28 @@ In short: `JangYeongsil` gathers the evidence, `Jiphyeonjeon` discusses and deci
 
 `Jiphyeonjeon` is not mandatory in every Sejong chain. Use it as a short deliberation pass only when the gathered evidence leaves a meaningful choice.
 
+## Research-To-Uigwe Promotion Gate
+
+Research can stop at `JangYeongsil` only when the user asks for evidence by itself: source history, facts, examples, status, or a lightweight situation read with no downstream decision or plan.
+
+When the user asks for research to decide what to do next, choose a strategy, compare market or product options, or prepare a future plan, the research result is not the conclusion. Treat it as pre-Uigwe evidence:
+
+```text
+JangYeongsil research -> Jiphyeonjeon option judgment when choices remain -> Uigwe planning
+```
+
+Typical trigger phrases include "what should we try", "how should we get users", "analyze the current situation before planning", "research before Uigwe", "compare options so I can decide", and equivalent Korean phrasing such as "뭘 시도해볼지", "현황 분석하고 선택지 비교", or "의궤 전에 리서치".
+
+For these requests, the Sejong lead must set or preserve a pending gate named `uigwe_promotion_required` in active context until Uigwe starts or the user explicitly converts the request to research-only. The final JangYeongsil or Jiphyeonjeon output should provide:
+
+- evidence and source refs
+- serious options and rejected options when applicable
+- the decision question the user must answer
+- the recommended Uigwe entry mode and input summary
+- `next_surface: uigwe`
+
+It must not claim final strategic conclusion, start Seungjeongwon execution, or perform Sejong-direct implementation before Uigwe promotion. If the user explicitly asks for "research only", do not create the promotion gate and do not force Uigwe.
+
 ## Cross-Stage Helper Calls
 
 Court modes can be the primary route for a request or a bounded helper call inside another active court mode.
@@ -257,7 +279,7 @@ Research, discussion, and planning may overlap only in this limited pipeline:
 2. `Jiphyeonjeon` may begin once there is enough stable material for real comparison, but its final recommendation waits for blocking research lanes.
 3. `Uigwe` may run preflight checks once a likely direction exists, including artifact inventory, mode-readiness checks, and validation planning while JangYeongsil or Jiphyeonjeon helper calls continue.
 4. Uigwe formal gates and final packets wait for lead-owned synthesis, blocking evidence, the final Jiphyeonjeon recommendation when one is needed, and any live-session approval gate.
-5. Execution waits for a clear direct task, approved scope, or validated bundle.
+5. Execution waits for a clear direct task, approved scope, or validated bundle. If `uigwe_promotion_required` is pending, execution also waits for Uigwe to start or for the user to explicitly cancel the promotion requirement.
 
 ## Internal Structure
 
@@ -308,6 +330,8 @@ Required output:
 - `next_surface`: usually `Jiphyeonjeon`, `Uigwe`, or `Sejong direct`
 
 This surface is useful for the user's broad "만능/리서치" usage because it prevents early packet generation from hiding weak evidence.
+
+If the research was requested to support a decision, strategy, or later Uigwe plan, JangYeongsil must return decision-ready evidence and `next_surface: uigwe` or `next_surface: jiphyeonjeon`; it must not turn the research note into a final conclusion.
 
 ### `Jiphyeonjeon`
 
@@ -372,7 +396,8 @@ This protects Uigwe from becoming performative planning overhead while keeping e
 | "AGENTS.md 초기화", "refresh repo instructions", "Codex init 같은 것" | repo-context init/refresh through `JangYeongsil` or `Jiphyeonjeon`, then `Seungjeongwon` only after approval | none unless Sejong behavior changes |
 | "실록에 남겨", "Sillok evidence" | evidence or promotion record | none |
 | "단종 처리해", "Danjong archive" | `Jiphyeonjeon` rejected or retired option | none yet |
-| "조사해봐", "히스토리 긁어봐", "근거 확인해봐" | `JangYeongsil` | none yet |
+| "조사해봐", "히스토리 긁어봐", "근거 확인해봐" with no downstream decision | `JangYeongsil` | none yet |
+| "현황 분석하고 뭘 시도할지 비교해줘", "리서치 결과로 의궤하고 싶어", "research before deciding/planning" | `JangYeongsil` -> `Jiphyeonjeon` if options remain -> `Uigwe` | resolved by evidence; keep `uigwe_promotion_required` pending until Uigwe starts |
 | "어떤 선택이 맞아?", "분화할까?", "할 만해?", "논의해보자" | `Jiphyeonjeon` | none yet |
 | vague product or system goal | `Uigwe` | `full` |
 | clarified intent, no approved design | `Uigwe` | `design-to-plan` |

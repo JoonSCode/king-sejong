@@ -20,6 +20,8 @@ It is a thin court-mode skill. Its source-of-truth routing contract is `../../..
 4. Name the `decision_question` this evidence enables.
 5. Return to the calling Sejong court mode with source refs, confidence, risks, and the recommended next surface.
 
+If the research is for choosing a strategy, preparing a plan, or feeding Uigwe, do not present the research note as the final conclusion. Return decision-ready evidence, the Uigwe input summary, and `next_surface: uigwe` or `next_surface: jiphyeonjeon`; only research-only prompts may stop at JangYeongsil.
+
 ## Helper Use
 
 JangYeongsil may be called from Sejong, Uigwe, or Jiphyeonjeon as a helper call. When called as a helper, keep the calling mode's gates and source-of-truth artifact intact.

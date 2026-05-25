@@ -107,6 +107,52 @@ class KingSejongHookTests(unittest.TestCase):
         )
         self.assertNotEqual(output.get("hookSpecificOutput", {}).get("permissionDecision"), "deny")
 
+    def test_pre_tool_use_blocks_write_before_research_to_uigwe_promotion(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["current_surface"] = "jiphyeonjeon"
+            context["route_sequence"] = ["jangyeongsil", "jiphyeonjeon"]
+            context["pending_gates"] = ["uigwe_promotion_required"]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "PreToolUse",
+                {
+                    "hook_event_name": "PreToolUse",
+                    "tool_name": "apply_patch",
+                    "tool_input": {
+                        "command": "*** Begin Patch\n*** Update File: README.md\n@@\n-old\n+new\n*** End Patch\n"
+                    },
+                },
+                context_path=context_path,
+            )
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("research-to-Uigwe gate is pending", specific["permissionDecisionReason"])
+
+    def test_pre_tool_use_allows_write_after_uigwe_promotion_entry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["current_surface"] = "uigwe"
+            context["route_sequence"] = ["jangyeongsil", "jiphyeonjeon", "uigwe"]
+            context["pending_gates"] = ["uigwe_promotion_required"]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "PreToolUse",
+                {
+                    "hook_event_name": "PreToolUse",
+                    "tool_name": "apply_patch",
+                    "tool_input": {
+                        "command": "*** Begin Patch\n*** Update File: README.md\n@@\n-old\n+new\n*** End Patch\n"
+                    },
+                },
+                context_path=context_path,
+            )
+        self.assertNotEqual(output.get("hookSpecificOutput", {}).get("permissionDecision"), "deny")
+
     def test_subagent_stop_rejects_gate_claim(self) -> None:
         output = run_hook(
             "SubagentStop",
@@ -142,6 +188,27 @@ class KingSejongHookTests(unittest.TestCase):
         )
         self.assertEqual(output["decision"], "block")
         self.assertIn("pending King Sejong gates", output["reason"])
+
+    def test_stop_blocks_research_to_uigwe_conclusion(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["current_surface"] = "jiphyeonjeon"
+            context["route_sequence"] = ["jangyeongsil", "jiphyeonjeon"]
+            context["pending_gates"] = ["uigwe_promotion_required"]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "Stop",
+                {
+                    "hook_event_name": "Stop",
+                    "stop_hook_active": False,
+                    "last_assistant_message": "Research conclusion: do option A.",
+                },
+                context_path=context_path,
+            )
+        self.assertEqual(output["decision"], "block")
+        self.assertIn("uigwe_promotion_required remains pending", output["reason"])
 
     def test_stop_continues_when_ambiguity_register_has_open_items(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

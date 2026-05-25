@@ -48,6 +48,7 @@ REQUIRED_SCENARIO_IDS = {
     "repo-context-refresh-candidate-first",
     "research-stale-external-facts",
     "research-repo-fanout",
+    "research-to-uigwe-promotion-gate",
     "decision-skill-plugin-boundary",
     "decision-expansion-roi",
     "planning-greenfield-full",
