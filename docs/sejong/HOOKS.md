@@ -134,7 +134,7 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 
 ## Config
 
-User-scope King Sejong install enables these hooks in `${CODEX_HOME:-~/.codex}/config.toml` automatically. The installer owns a marked King Sejong hook block and sets `[features].hooks = true`.
+User-scope King Sejong install enables these hooks in `${CODEX_HOME:-~/.codex}/config.toml` automatically. The installer owns a marked King Sejong hook block and sets `[features].hooks = true`. On macOS, installed hook path verification and active-context `repo_root` matching normalize path case so `/Users/Junsu` and `/Users/junsu` do not split the same workspace.
 
 Hooks are scoped by active context. If `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json` is missing, or its `repo_root` does not match the current workspace, the reference hook script returns no output.
 

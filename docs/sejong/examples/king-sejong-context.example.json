@@ -2,7 +2,7 @@
   "format": "king-sejong.context/v0.1-draft",
   "active_context_id": "ctx-king-sejong-example",
   "repo_id": "king-sejong-176324a6",
-  "repo_root": "/Users/junsu/Develop/king-sejong",
+  "repo_root": "/Users/example/Develop/king-sejong",
   "run_id": "20260523T074733Z-king-sejong-enforcement-uigwe",
   "session_id": "example-session",
   "route_id": "route-king-sejong-guardrails",
@@ -41,10 +41,10 @@
     "deterministic_scorecard_regeneration"
   ],
   "evidence_refs": [
-    "/Users/junsu/.codex/sejong/runs/king-sejong-176324a6/20260523T074733Z-king-sejong-enforcement-uigwe/bundle-validation.md"
+    "/Users/example/.codex/sejong/runs/king-sejong-176324a6/20260523T074733Z-king-sejong-enforcement-uigwe/bundle-validation.md"
   ],
   "artifact_refs": [
-    "/Users/junsu/.codex/sejong/runs/king-sejong-176324a6/20260523T074733Z-king-sejong-enforcement-uigwe/plan.packet.json"
+    "/Users/example/.codex/sejong/runs/king-sejong-176324a6/20260523T074733Z-king-sejong-enforcement-uigwe/plan.packet.json"
   ],
   "team_run_refs": [],
   "subagent_refs": [],

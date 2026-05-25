@@ -12,6 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from sejong_paths import resolve_path
+
 
 TEAM_FORMAT = "sejong.team/v0.1-draft"
 ROUNDS_FORMAT = "sejong.team-rounds/v0.1-draft"
@@ -356,7 +358,7 @@ def init_run(args: argparse.Namespace) -> int:
         brief = "# Team Brief\n\n- Source of truth:\n- Decision question:\n- Fixed options:\n- Stop condition:\n"
     (run_dir / "brief.md").write_text(brief.rstrip() + "\n", encoding="utf-8")
 
-    repo_root = Path(args.repo_root).expanduser().resolve()
+    repo_root = resolve_path(args.repo_root)
     source_of_truth_refs = args.source_of_truth_ref or ["brief.md"]
     current_surface = args.current_surface
     phase_label = args.phase_label or DEFAULT_PHASE_LABELS[current_surface]
@@ -926,7 +928,7 @@ def launch(args: argparse.Namespace) -> int:
         raise SystemExit("at least one --worker-command worker_id=command is required")
 
     session = args.session or f"sejong-{team['run_id']}"
-    cwd = str(Path(args.cwd or team["repo_root"]).expanduser().resolve())
+    cwd = str(resolve_path(args.cwd or team["repo_root"]))
     tmux_commands: list[list[str]] = []
     for index, (worker_id, command) in enumerate(commands.items()):
         worker = worker_by_id(team, worker_id) or {}

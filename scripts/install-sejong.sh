@@ -97,8 +97,68 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-SOURCE_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
+canonical_path() {
+  python3 - "$1" <<'PY'
+import sys
+from pathlib import Path
+
+print(Path(sys.argv[1]).expanduser().resolve())
+PY
+}
+
+same_path() {
+  python3 - "$1" "$2" <<'PY'
+import sys
+from pathlib import Path
+
+
+def path_key(value: str) -> str:
+    path = Path(value).expanduser().resolve()
+    text = str(path)
+    if sys.platform == "darwin":
+        return text.casefold()
+    return text
+
+
+left = sys.argv[1]
+right = sys.argv[2]
+try:
+    if Path(left).expanduser().samefile(Path(right).expanduser()):
+        raise SystemExit(0)
+except OSError:
+    pass
+
+raise SystemExit(0 if path_key(left) == path_key(right) else 1)
+PY
+}
+
+verify_hook_script_reference() {
+  python3 - "$1" "$2" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+
+def path_key(value: str) -> str:
+    path = Path(value).expanduser().resolve()
+    text = str(path)
+    if sys.platform == "darwin":
+        return text.casefold()
+    return text
+
+
+config_path = Path(sys.argv[1])
+expected = path_key(sys.argv[2])
+text = config_path.read_text(encoding="utf-8")
+for candidate in re.findall(r'python3\s+"([^"]*king_sejong_hooks\.py)"', text):
+    if path_key(candidate) == expected:
+        raise SystemExit(0)
+raise SystemExit(1)
+PY
+}
+
+SCRIPT_DIR=$(canonical_path "$(dirname "${BASH_SOURCE[0]}")")
+SOURCE_ROOT=$(canonical_path "$SCRIPT_DIR/..")
 SOURCE_ONLY_PATHS=(
   "AGENTS.md"
 )
@@ -107,7 +167,7 @@ verify_source_only_paths_not_installed() {
   local root=$1
   local path
 
-  if [[ "$root" == "$SOURCE_ROOT" ]]; then
+  if same_path "$root" "$SOURCE_ROOT"; then
     return
   fi
 
@@ -319,7 +379,7 @@ write_active_context_if_missing() {
   local repo_root
   local timestamp
 
-  repo_root=$(cd "$SOURCE_ROOT" && pwd)
+  repo_root=$(canonical_path "$SOURCE_ROOT")
   timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   mkdir -p "$(dirname "$context_file")"
 
@@ -425,7 +485,7 @@ verify_user_hooks_config() {
     echo "King Sejong managed hooks block is missing from config.toml" >&2
     return 1
   fi
-  if ! grep -q "$hook_script" "$config_file"; then
+  if ! verify_hook_script_reference "$config_file" "$hook_script"; then
     echo "King Sejong hook block does not reference installed hook script" >&2
     return 1
   fi
@@ -638,7 +698,7 @@ install_repo_scope() {
     exit 1
   fi
 
-  target_root=$(cd "$target_repo" && pwd)
+  target_root=$(canonical_path "$target_repo")
 
   if [[ ! -d "$target_root/.git" && ! -f "$target_root/.git" ]]; then
     echo "target is not a git repository: $target_root" >&2
@@ -650,7 +710,7 @@ install_repo_scope() {
     exit 0
   fi
 
-  if [[ "$target_root" == "$SOURCE_ROOT" ]]; then
+  if same_path "$target_root" "$SOURCE_ROOT"; then
     echo "King Sejong is already present in this repository."
     verify_repo_install "$target_root"
     exit 0
@@ -694,6 +754,9 @@ EOF
 install_user_scope() {
   local codex_home=${CODEX_HOME:-$HOME/.codex}
   local skill_root="$codex_home/skills"
+
+  codex_home=$(canonical_path "$codex_home")
+  skill_root="$codex_home/skills"
 
   if [[ "$VERIFY_ONLY" -eq 1 ]]; then
     verify_user_install "$codex_home"

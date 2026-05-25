@@ -10,6 +10,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from sejong_paths import path_contains_or_equals, path_key, resolve_path
+
 
 FORMAT = "king-sejong.context/v0.1-draft"
 SURFACES = {
@@ -75,8 +77,9 @@ def active_context_path() -> Path:
 
 
 def repo_slug(repo_root: Path) -> str:
+    repo_root = resolve_path(repo_root)
     safe_name = "".join(char if char.isalnum() or char in "-_" else "-" for char in repo_root.name).strip("-")
-    digest = hashlib.sha1(str(repo_root).encode("utf-8")).hexdigest()[:8]
+    digest = hashlib.sha1(path_key(repo_root).encode("utf-8")).hexdigest()[:8]
     return f"{safe_name or 'repo'}-{digest}"
 
 
@@ -193,7 +196,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def start_context(args: argparse.Namespace) -> int:
-    repo_root = Path(args.repo_root).expanduser().resolve()
+    repo_root = resolve_path(args.repo_root)
     run_id = args.run_id or default_run_id()
     repo_id = args.repo_id or repo_slug(repo_root)
     route_sequence = args.route_sequence or [args.current_surface]
@@ -277,13 +280,10 @@ def doctor_context(args: argparse.Namespace) -> int:
     context_path, context = load_context_argument(args.context)
     failures = validate_context(context)
     if args.repo_root:
-        repo_root = Path(args.repo_root).expanduser().resolve()
-        context_root = Path(context.get("repo_root", "")).expanduser().resolve()
-        try:
-            repo_root.relative_to(context_root)
-        except ValueError:
-            if repo_root != context_root:
-                failures.append(f"context repo_root does not cover requested repo: {repo_root}")
+        repo_root = resolve_path(args.repo_root)
+        context_root = resolve_path(context.get("repo_root", ""))
+        if not path_contains_or_equals(repo_root, context_root):
+            failures.append(f"context repo_root does not cover requested repo: {repo_root}")
     if failures:
         for failure in failures:
             print(f"failure: {failure}", file=sys.stderr)

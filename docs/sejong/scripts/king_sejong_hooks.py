@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from sejong_paths import path_contains_or_equals, resolve_path
+
 
 REQUIRED_CONTEXT_FIELDS = (
     "active_context_id",
@@ -151,13 +153,9 @@ def context_applies_to_cwd(context: dict[str, Any], payload: dict[str, Any]) -> 
     repo_root = context.get("repo_root")
     if not repo_root:
         return True
-    cwd = Path(payload.get("cwd") or os.getcwd()).expanduser().resolve()
-    root = Path(repo_root).expanduser().resolve()
-    try:
-        cwd.relative_to(root)
-        return True
-    except ValueError:
-        return cwd == root
+    cwd = resolve_path(payload.get("cwd") or os.getcwd())
+    root = resolve_path(repo_root)
+    return path_contains_or_equals(cwd, root)
 
 
 def is_explicit_exit(prompt: str) -> bool:
@@ -224,7 +222,7 @@ def resolve_artifact_ref(ref: str, context: dict[str, Any]) -> Path:
         return path
     repo_root = context.get("repo_root")
     if repo_root:
-        return Path(repo_root).expanduser() / path
+        return resolve_path(repo_root) / path
     return Path.cwd() / path
 
 
