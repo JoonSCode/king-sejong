@@ -117,6 +117,8 @@ Seungjeongwon must not silently overwrite an existing visible todo when executio
 
 Use the execution attempt ledger, not new visible todos, for small implementation hypotheses that stay inside the same actionable todo. A visible redefinition event is required when the actionable todo itself changes. Uigwe re-entry is required when the approved goal, non-goals, success criteria, must-preserve behavior, verification bar, or other guardrails become unstable.
 
+When execution feedback is persisted or handed back as JSON, record the same user-visible board movement in `visible_todo_events`. This ordered event list should include initial publication, starts, verification results, redefinitions, replacements, completions, blocks, or `board_unavailable` when the host lacks todo tooling. A typical visible reshaping sequence is `T2` published, `T2` verification fails, `R1` records the redefinition, `T2` is marked replaced, and replacement todos `T2a` and `T2b` are added before execution continues.
+
 ## Execution Attempt Loop
 
 After actionable leaves exist, Seungjeongwon runs:
@@ -175,6 +177,7 @@ Seungjeongwon reports:
 - files changed or artifacts produced
 - actionable decomposition evidence
 - visible todo board updates, including replacement or redefinition events when they occurred
+- `visible_todo_events` when machine-readable execution feedback is produced
 - execution attempt ledger summary
 - verification evidence
 - recommended Uigwe re-entry target:

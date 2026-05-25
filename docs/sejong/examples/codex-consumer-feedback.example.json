@@ -59,6 +59,43 @@
       "recommended_reentry_target": "local_reexploration"
     }
   ],
+  "visible_todo_events": [
+    {
+      "event_id": "E1",
+      "event_type": "publish",
+      "todo_id": "T1",
+      "related_todo_ids": [
+        "leaf_wrapper_contract_doc"
+      ],
+      "summary": "Publish wrapper contract documentation as an actionable todo on the visible board.",
+      "status": "pending",
+      "evidence_refs": []
+    },
+    {
+      "event_id": "E2",
+      "event_type": "complete",
+      "todo_id": "T1",
+      "related_todo_ids": [
+        "leaf_wrapper_contract_doc"
+      ],
+      "summary": "Mark the wrapper contract documentation todo complete after doc-review evidence.",
+      "status": "completed",
+      "evidence_refs": [
+        "docs/sejong/WRAPPER.md"
+      ]
+    },
+    {
+      "event_id": "E3",
+      "event_type": "block",
+      "todo_id": "T2",
+      "related_todo_ids": [
+        "leaf_boundary_handoff_alignment"
+      ],
+      "summary": "Block the boundary handoff alignment todo until planner ownership is clarified.",
+      "status": "blocked",
+      "evidence_refs": []
+    }
+  ],
   "escalations": [
     {
       "reason": "The blocked leaf exposed unclear ownership between executor-level lifecycle text and consumer-specific recovery behavior.",

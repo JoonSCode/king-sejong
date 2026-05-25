@@ -196,6 +196,8 @@ def evaluate_recursive_decomposition() -> list[dict[str, Any]]:
         "append a redefinition event todo",
         "replacement todo as a new item",
         "Use the execution attempt ledger, not new visible todos, for small implementation hypotheses",
+        "visible_todo_events",
+        "`T2` is marked replaced, and replacement todos `T2a` and `T2b` are added",
     ]
     passed, missing = contains_all(combined, required)
     return [

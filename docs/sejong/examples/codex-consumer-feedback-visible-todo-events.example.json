@@ -1,0 +1,181 @@
+{
+  "format": "uigwe.codex-consumer-feedback/v0.2-draft",
+  "metadata": {
+    "profile": "brownfield",
+    "generated_at": "2026-05-26T00:00:00Z",
+    "consumer": "codex",
+    "plan_id": "plan_visible_todo_events_example",
+    "goal_tree_path": "docs/sejong/examples/goal-tree.example.json",
+    "attempt_id": "seungjeongwon-visible-todo-001",
+    "attempt_number": 1,
+    "bundle_fingerprint": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "executor_result_path": "docs/sejong/examples/seungjeongwon-execution.result.example.json"
+  },
+  "summary": {
+    "completed_count": 2,
+    "blocked_count": 0,
+    "invalidated_count": 1,
+    "requires_planner_reentry": false,
+    "recommended_reentry_target": "none"
+  },
+  "leaf_updates": [
+    {
+      "node_id": "T2",
+      "previous_status": "actionable_leaf",
+      "new_status": "invalidated",
+      "execution_lane": "direct_session",
+      "artifacts": [],
+      "evidence": [
+        {
+          "type": "verification",
+          "description": "Activation proof failed because the original todo mixed setup and behavior verification."
+        }
+      ],
+      "notes": "T2 was replaced by narrower actionable todos after local Seungjeongwon reshaping.",
+      "recommended_reentry_target": "none"
+    },
+    {
+      "node_id": "T2a",
+      "previous_status": "actionable_leaf",
+      "new_status": "completed",
+      "execution_lane": "direct_session",
+      "artifacts": [],
+      "evidence": [
+        {
+          "type": "verification",
+          "description": "Setup activation passed after isolating the dependency step."
+        }
+      ],
+      "notes": "Replacement todo completed without changing the Uigwe success criteria.",
+      "recommended_reentry_target": "none"
+    },
+    {
+      "node_id": "T2b",
+      "previous_status": "actionable_leaf",
+      "new_status": "completed",
+      "execution_lane": "direct_session",
+      "artifacts": [],
+      "evidence": [
+        {
+          "type": "verification",
+          "description": "Behavior verification passed after setup was separated from the original todo."
+        }
+      ],
+      "notes": "Replacement todo completed under the original verification bar.",
+      "recommended_reentry_target": "none"
+    }
+  ],
+  "visible_todo_events": [
+    {
+      "event_id": "E1",
+      "event_type": "publish",
+      "todo_id": "T2",
+      "related_todo_ids": [
+        "T2"
+      ],
+      "summary": "Publish T2 as the initial actionable todo on the visible board.",
+      "status": "pending",
+      "evidence_refs": []
+    },
+    {
+      "event_id": "E2",
+      "event_type": "start",
+      "todo_id": "T2",
+      "related_todo_ids": [
+        "T2"
+      ],
+      "summary": "Start T2 and run its verification-oriented activation proof.",
+      "status": "in_progress",
+      "evidence_refs": []
+    },
+    {
+      "event_id": "E3",
+      "event_type": "verify",
+      "todo_id": "T2",
+      "related_todo_ids": [
+        "T2"
+      ],
+      "summary": "Verification failed because T2 mixed setup activation with behavior proof.",
+      "status": "blocked",
+      "reason": "The actionable todo was too broad, but the approved Uigwe goal and verification bar remained stable.",
+      "evidence_refs": [
+        "execution-ledger.jsonl#attempt-1"
+      ]
+    },
+    {
+      "event_id": "E4",
+      "event_type": "redefine",
+      "todo_id": "R1",
+      "related_todo_ids": [
+        "T2"
+      ],
+      "summary": "Add R1 to make the T2 redefinition visible instead of silently rewriting the board.",
+      "status": "completed",
+      "evidence_refs": [
+        "execution-ledger.jsonl#attempt-1"
+      ]
+    },
+    {
+      "event_id": "E5",
+      "event_type": "replace",
+      "todo_id": "T2",
+      "related_todo_ids": [
+        "R1",
+        "T2a",
+        "T2b"
+      ],
+      "summary": "Mark T2 as replaced by T2a and T2b.",
+      "status": "replaced",
+      "evidence_refs": []
+    },
+    {
+      "event_id": "E6",
+      "event_type": "replace",
+      "todo_id": "T2a",
+      "related_todo_ids": [
+        "T2"
+      ],
+      "summary": "Create replacement todo T2a for setup activation.",
+      "status": "pending",
+      "evidence_refs": []
+    },
+    {
+      "event_id": "E7",
+      "event_type": "replace",
+      "todo_id": "T2b",
+      "related_todo_ids": [
+        "T2"
+      ],
+      "summary": "Create replacement todo T2b for behavior verification.",
+      "status": "pending",
+      "evidence_refs": []
+    },
+    {
+      "event_id": "E8",
+      "event_type": "complete",
+      "todo_id": "T2a",
+      "related_todo_ids": [
+        "T2a"
+      ],
+      "summary": "Complete T2a after setup activation passes.",
+      "status": "completed",
+      "evidence_refs": [
+        "execution-ledger.jsonl#attempt-2"
+      ]
+    },
+    {
+      "event_id": "E9",
+      "event_type": "complete",
+      "todo_id": "T2b",
+      "related_todo_ids": [
+        "T2b"
+      ],
+      "summary": "Complete T2b after behavior verification passes.",
+      "status": "completed",
+      "evidence_refs": [
+        "execution-ledger.jsonl#attempt-3"
+      ]
+    }
+  ],
+  "escalations": []
+}

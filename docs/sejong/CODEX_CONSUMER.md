@@ -210,6 +210,7 @@ At minimum, feedback should carry:
 - the `executor_result_path` that this feedback belongs to
 - the same bundle fingerprint used by the executor result when available
 - commit group ids for leaf updates when the executor uses commit-producing git policy
+- `visible_todo_events` that mirror the user-visible Codex todo/update_plan board, including publication, verification, redefinition, replacement, completion, block, or `board_unavailable` events
 
 Default persistence rule for the current Uigwe draft:
 

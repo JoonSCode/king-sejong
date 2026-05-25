@@ -93,13 +93,15 @@
         "leaf status requires handoff-leaf readiness rather than smallness alone",
         "Seungjeongwon owns the later todo listup, todo verification, subtodo decomposition, actionable leaf detection, and execution loop",
         "Seungjeongwon publishes actionable leaves through Codex todo tooling as the visible execution board when that tooling is available",
-        "execution reshaping appends redefinition and replacement todos instead of silently overwriting the visible board"
+        "execution reshaping appends redefinition and replacement todos instead of silently overwriting the visible board",
+        "machine-readable execution feedback records visible todo board changes as visible_todo_events"
       ],
       "forbidden_behavior": [
         "treating Uigwe decomposition as a one-shot implementation task list",
         "marking small but ambiguous nodes as handoff leaves",
         "making Uigwe own Seungjeongwon actionable todo loops",
-        "hiding material Seungjeongwon todo redefinition only in a private ledger"
+        "hiding material Seungjeongwon todo redefinition only in a private ledger",
+        "omitting visible_todo_events from machine-readable execution feedback"
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."

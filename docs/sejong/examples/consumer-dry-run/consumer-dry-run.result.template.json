@@ -59,6 +59,30 @@
         "recommended_reentry_target": "local_reexploration"
       }
     ],
+    "visible_todo_events": [
+      {
+        "event_id": "E1",
+        "event_type": "publish",
+        "todo_id": "T1",
+        "related_todo_ids": [
+          "pending_leaf_1"
+        ],
+        "summary": "Replace with the visible board event for the first actionable leaf.",
+        "status": "pending",
+        "evidence_refs": []
+      },
+      {
+        "event_id": "E2",
+        "event_type": "block",
+        "todo_id": "T2",
+        "related_todo_ids": [
+          "pending_leaf_2"
+        ],
+        "summary": "Replace with the visible board event for the blocked or reshaped leaf.",
+        "status": "blocked",
+        "evidence_refs": []
+      }
+    ],
     "escalations": [
       {
         "reason": "Replace with the observed blocker or escalation reason.",

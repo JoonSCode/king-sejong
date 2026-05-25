@@ -79,6 +79,43 @@
         "recommended_reentry_target": "local_reexploration"
       }
     ],
+    "visible_todo_events": [
+      {
+        "event_id": "E1",
+        "event_type": "publish",
+        "todo_id": "T1",
+        "related_todo_ids": [
+          "consumer_leaf_schema_doc"
+        ],
+        "summary": "Publish the schema documentation dry-run leaf on the visible board.",
+        "status": "pending",
+        "evidence_refs": []
+      },
+      {
+        "event_id": "E2",
+        "event_type": "complete",
+        "todo_id": "T1",
+        "related_todo_ids": [
+          "consumer_leaf_schema_doc"
+        ],
+        "summary": "Mark the schema documentation leaf complete after JSON syntax and contract review evidence.",
+        "status": "completed",
+        "evidence_refs": [
+          "docs/sejong/consumer-dry-run-result.schema.json"
+        ]
+      },
+      {
+        "event_id": "E3",
+        "event_type": "block",
+        "todo_id": "T2",
+        "related_todo_ids": [
+          "consumer_leaf_feedback_contract"
+        ],
+        "summary": "Block the feedback contract dry-run leaf pending local re-exploration.",
+        "status": "blocked",
+        "evidence_refs": []
+      }
+    ],
     "escalations": [
       {
         "reason": "The limited leaf set was enough for a scaffold, but not enough to claim full executor readiness.",
