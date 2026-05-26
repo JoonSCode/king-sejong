@@ -3,7 +3,7 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-26T04:19:14Z",
+    "generated_at": "2026-05-26T04:59:42Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
@@ -478,7 +478,7 @@
         {
           "id": "jiphyeonjeon_skill_line_budget",
           "passed": true,
-          "detail": "Jiphyeonjeon SKILL.md line count is 40; budget is 80."
+          "detail": "Jiphyeonjeon SKILL.md line count is 42; budget is 80."
         },
         {
           "id": "validation_detail_lives_in_reference",

@@ -219,7 +219,7 @@ See [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) for optional overlay guidance.
 Use bounded workers when independent work can run in parallel without blocking the next local step. Before `$team` starts, the Sejong lead must write a role assignment table with each worker's role, assigned scope, allowed outputs, allowed message kinds, write lease if writing, verification expectation, and stop condition:
 
 - `JangYeongsil`: split evidence gathering across independent sources, docs, repo history, or external references.
-- `Jiphyeonjeon`: compare serious options through separate advocate, critic, or specialist perspectives before the lead agent synthesizes a recommendation.
+- `Jiphyeonjeon`: compare serious options through separate advocate, critic, or specialist perspectives before the lead agent synthesizes a recommendation. When the decision benefits from real debate, use a bounded persuasion round where workers answer each other's objections; close on apparent convergence or after 30 minutes of deadlock.
 - `Uigwe`: keep live-session approval gates with the lead agent; use workers only for bounded side research, preflight, readiness, risk, dependency, scope, or verification checks that do not decide the gate. Uigwe worker use is plan validation, not debate over the selected direction.
 - `Seungjeongwon`: split implementation or verification across disjoint file scopes, test surfaces, or review lanes.
 - `Sillok`: have a verifier collect evidence while execution continues, then let the lead agent decide what belongs in the final record.

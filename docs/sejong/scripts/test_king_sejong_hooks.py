@@ -257,6 +257,94 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertEqual(output["decision"], "block")
         self.assertIn("open King Sejong ambiguity remains", output["reason"])
 
+    def test_stop_blocks_active_seungjeongwon_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "seungjeongwon-run.json"
+            run_path.write_text(
+                json.dumps(
+                    {
+                        "format": "sejong.seungjeongwon-run/v0.1-draft",
+                        "run_id": "active-run",
+                        "repo_root": ".",
+                        "goal": "Complete implementation.",
+                        "status": "active",
+                        "success_criteria": ["All todos verified."],
+                        "verification_methods": ["Run tests."],
+                        "todos": [
+                            {
+                                "todo_id": "T1",
+                                "description": "Run tests",
+                                "done_criteria": "Tests pass",
+                                "verification_method": "python3 -m unittest",
+                                "status": "in_progress",
+                                "attempt_ids": [],
+                            }
+                        ],
+                        "attempt_ledger": [],
+                        "verification_evidence": [],
+                        "blockers": [],
+                        "uigwe_reentry_requests": [],
+                        "created_at": "2026-05-26T00:00:00Z",
+                        "updated_at": "2026-05-26T00:00:00Z",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["pending_gates"] = []
+            context["artifact_refs"] = [str(run_path)]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "Stop",
+                {
+                    "hook_event_name": "Stop",
+                    "stop_hook_active": False,
+                    "last_assistant_message": "Done.",
+                },
+                context_path=context_path,
+            )
+        self.assertEqual(output["decision"], "block")
+        self.assertIn("active Seungjeongwon run remains", output["reason"])
+
+    def test_precompact_blocks_invalid_seungjeongwon_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "seungjeongwon-run.json"
+            run_path.write_text(
+                json.dumps(
+                    {
+                        "format": "sejong.seungjeongwon-run/v0.1-draft",
+                        "run_id": "invalid-run",
+                        "repo_root": ".",
+                        "goal": "Complete implementation.",
+                        "status": "completed",
+                        "success_criteria": ["All todos verified."],
+                        "verification_methods": ["Run tests."],
+                        "todos": [],
+                        "attempt_ledger": [],
+                        "verification_evidence": [],
+                        "blockers": [],
+                        "uigwe_reentry_requests": [],
+                        "created_at": "2026-05-26T00:00:00Z",
+                        "updated_at": "2026-05-26T00:00:00Z",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["artifact_refs"] = [str(run_path)]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "PreCompact",
+                {"hook_event_name": "PreCompact", "trigger": "auto"},
+                context_path=context_path,
+            )
+        self.assertFalse(output["continue"])
+        self.assertIn("invalid Seungjeongwon run refs", output["stopReason"])
+
     def test_precompact_blocks_broken_ambiguity_register_ref(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))

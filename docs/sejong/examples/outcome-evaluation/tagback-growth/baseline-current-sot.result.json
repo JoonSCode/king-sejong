@@ -1,0 +1,55 @@
+{
+  "format": "sejong.outcome-quality-result/v0.1-draft",
+  "run_id": "baseline-current-sot",
+  "label": "latest SOT baseline",
+  "summary": "A generic growth plan that recommends social marketing, App Store cleanup, and analytics, but does not prove why those are the highest leverage moves.",
+  "dimensions": {
+    "causal_diagnosis": {
+      "root_causes": [
+        "Low awareness",
+        "Unclear conversion funnel"
+      ]
+    },
+    "audience_jtbd": {
+      "primary_segment": "Existing app users who might want reminders"
+    },
+    "marketing_strategy": {
+      "channels": [
+        "Social posts",
+        "App Store optimization"
+      ]
+    },
+    "experiment_prioritization": {
+      "ranked_experiments": [
+        "Try social content",
+        "Improve onboarding"
+      ]
+    },
+    "instrumentation": {
+      "funnel_metrics": [
+        "downloads",
+        "retention"
+      ]
+    },
+    "owner_split": {
+      "user_owned_actions": [
+        "Post marketing content"
+      ]
+    },
+    "risk_controls": {
+      "risks": [
+        "Marketing may not convert"
+      ]
+    },
+    "evidence_quality": {
+      "unknown": [
+        "No current analytics available"
+      ]
+    },
+    "actionable_plan": {
+      "first_week_plan": [
+        "Draft marketing copy"
+      ]
+    }
+  }
+}

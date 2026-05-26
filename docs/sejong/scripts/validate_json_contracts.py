@@ -29,6 +29,9 @@ SCHEMA_FILES = {
     "king_sejong_context": SEJONG_ROOT / "king-sejong-context.schema.json",
     "ambiguity_register": SEJONG_ROOT / "ambiguity-register.schema.json",
     "team_executor": SEJONG_ROOT / "team-executor.schema.json",
+    "seungjeongwon_run": SEJONG_ROOT / "seungjeongwon-run.schema.json",
+    "outcome_quality": SEJONG_ROOT / "outcome-quality.schema.json",
+    "product_evidence": SEJONG_ROOT / "product-evidence.schema.json",
     "sillok_trace_event": SEJONG_ROOT / "sillok-trace-event.schema.json",
 }
 
@@ -52,6 +55,13 @@ FORMAT_TO_SCHEMA = {
     "sejong.team-worker/v0.1-draft": "team_executor",
     "sejong.team-mailbox-message/v0.1-draft": "team_executor",
     "sejong.team-mailbox-receive/v0.1-draft": "team_executor",
+    "sejong.seungjeongwon-run/v0.1-draft": "seungjeongwon_run",
+    "sejong.outcome-quality-task/v0.1-draft": "outcome_quality",
+    "sejong.outcome-quality-result/v0.1-draft": "outcome_quality",
+    "sejong.outcome-quality-comparison/v0.1-draft": "outcome_quality",
+    "sejong.product-evidence-plan/v0.1-draft": "product_evidence",
+    "sejong.product-evidence-result/v0.1-draft": "product_evidence",
+    "sejong.product-evidence-judgment/v0.1-draft": "product_evidence",
     "sejong.sillok-trace-event/v0.1-draft": "sillok_trace_event",
 }
 

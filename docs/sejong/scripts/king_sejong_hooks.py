@@ -10,6 +10,9 @@ from pathlib import Path
 from typing import Any
 
 from sejong_paths import path_contains_or_equals, resolve_path
+from seungjeongwon_run import RUN_FORMAT as SEUNGJEONGWON_RUN_FORMAT
+from seungjeongwon_run import open_todos as seungjeongwon_open_todos
+from seungjeongwon_run import run_failures as seungjeongwon_run_failures
 
 
 REQUIRED_CONTEXT_FIELDS = (
@@ -231,6 +234,11 @@ def looks_like_ambiguity_register_ref(ref: str) -> bool:
     return "ambiguity" in lowered and lowered.endswith(".json")
 
 
+def looks_like_seungjeongwon_run_ref(ref: str) -> bool:
+    lowered = ref.lower()
+    return "seungjeongwon-run" in lowered and lowered.endswith(".json")
+
+
 def load_ambiguity_registers(context: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
     registers: list[dict[str, Any]] = []
     broken_refs: list[str] = []
@@ -286,6 +294,51 @@ def open_ambiguity_total(context: dict[str, Any]) -> int:
 def broken_ambiguity_register_refs(context: dict[str, Any]) -> list[str]:
     _, broken_refs = load_ambiguity_registers(context)
     return broken_refs
+
+
+def load_seungjeongwon_runs(context: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str], list[str]]:
+    runs: list[dict[str, Any]] = []
+    broken_refs: list[str] = []
+    invalid_refs: list[str] = []
+    for ref in context.get("artifact_refs") or []:
+        path = resolve_artifact_ref(ref, context)
+        if not path.exists():
+            if looks_like_seungjeongwon_run_ref(ref):
+                broken_refs.append(str(path))
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            if looks_like_seungjeongwon_run_ref(ref):
+                broken_refs.append(str(path))
+            continue
+        if data.get("format") != SEUNGJEONGWON_RUN_FORMAT:
+            continue
+        failures = seungjeongwon_run_failures(data)
+        if failures:
+            invalid_refs.append(f"{path}: {'; '.join(failures)}")
+        runs.append(data)
+    return runs, broken_refs, invalid_refs
+
+
+def active_seungjeongwon_run_summaries(context: dict[str, Any]) -> list[str]:
+    runs, _, _ = load_seungjeongwon_runs(context)
+    summaries: list[str] = []
+    for run in runs:
+        if run.get("status") == "active":
+            open_count = len(seungjeongwon_open_todos(run))
+            summaries.append(f"{run.get('run_id')} open_todos={open_count}")
+    return summaries
+
+
+def broken_seungjeongwon_run_refs(context: dict[str, Any]) -> list[str]:
+    _, broken_refs, _ = load_seungjeongwon_runs(context)
+    return broken_refs
+
+
+def invalid_seungjeongwon_run_refs(context: dict[str, Any]) -> list[str]:
+    _, _, invalid_refs = load_seungjeongwon_runs(context)
+    return invalid_refs
 
 
 def deny_pre_tool(reason: str) -> dict[str, Any]:
@@ -418,6 +471,27 @@ def handle_stop(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, A
             "reason": "Continue King Sejong execution: broken King Sejong ambiguity register refs: "
             + ", ".join(broken_refs),
         }
+    broken_run_refs = broken_seungjeongwon_run_refs(context)
+    if broken_run_refs:
+        return {
+            "decision": "block",
+            "reason": "Continue King Sejong execution: broken Seungjeongwon run refs: "
+            + ", ".join(broken_run_refs),
+        }
+    invalid_run_refs = invalid_seungjeongwon_run_refs(context)
+    if invalid_run_refs:
+        return {
+            "decision": "block",
+            "reason": "Continue King Sejong execution: invalid Seungjeongwon run refs: "
+            + ", ".join(invalid_run_refs),
+        }
+    active_runs = active_seungjeongwon_run_summaries(context)
+    if active_runs:
+        return {
+            "decision": "block",
+            "reason": "Continue King Sejong execution: active Seungjeongwon run remains: "
+            + ", ".join(active_runs),
+        }
     open_count = open_ambiguity_total(context)
     if open_count:
         return {
@@ -445,6 +519,20 @@ def handle_precompact(context: dict[str, Any]) -> dict[str, Any]:
             "continue": False,
             "stopReason": "broken ambiguity register refs: " + ", ".join(broken_refs),
             "systemMessage": "King Sejong ambiguity register references must be readable before compaction.",
+        }
+    broken_run_refs = broken_seungjeongwon_run_refs(context)
+    if broken_run_refs:
+        return {
+            "continue": False,
+            "stopReason": "broken Seungjeongwon run refs: " + ", ".join(broken_run_refs),
+            "systemMessage": "King Sejong Seungjeongwon run references must be readable before compaction.",
+        }
+    invalid_run_refs = invalid_seungjeongwon_run_refs(context)
+    if invalid_run_refs:
+        return {
+            "continue": False,
+            "stopReason": "invalid Seungjeongwon run refs: " + ", ".join(invalid_run_refs),
+            "systemMessage": "King Sejong Seungjeongwon run artifacts must validate before compaction.",
         }
     return hook_context("PreCompact", context_summary(context))
 

@@ -1,0 +1,134 @@
+{
+  "format": "sejong.outcome-quality-result/v0.1-draft",
+  "run_id": "candidate-runtime-contracts",
+  "label": "runtime contracts plus outcome evaluator",
+  "summary": "A goal-backed strategy artifact that first diagnoses why growth is blocked, then selects measurable experiments with clear owner split and stop conditions.",
+  "dimensions": {
+    "causal_diagnosis": {
+      "root_causes": [
+        "TagBack has not separated acquisition, activation, and retention causes, so marketing activity can hide product-positioning failure.",
+        "The app value proposition is likely too broad unless a specific recall/reminder job is named.",
+        "No measurement loop proves whether the bottleneck is impression-to-install, install-to-first-tag, or first-tag-to-repeat use."
+      ],
+      "why_now": [
+        "Before buying traffic or posting broadly, TagBack needs one narrow wedge where conversion can be measured within a week."
+      ],
+      "rejected_hypotheses": [
+        "More channels by itself is rejected because it cannot explain which funnel step improves.",
+        "A full rebrand is rejected until a segment-specific message test fails."
+      ]
+    },
+    "audience_jtbd": {
+      "primary_segment": [
+        "People who repeatedly save links, photos, or notes and fail to rediscover them at the moment of need."
+      ],
+      "job_to_be_done": [
+        "When I capture something useful, help me tag and resurface it later without building a manual organization system."
+      ],
+      "activation_trigger": [
+        "First successful saved item that is later found again through tag recall."
+      ]
+    },
+    "marketing_strategy": {
+      "positioning": [
+        "Position TagBack as a recall utility, not a generic notes app."
+      ],
+      "channels": [
+        "Short-form demos showing lost item -> tag -> rediscovery.",
+        "App Store search terms around tag, bookmark, recall, organize, and remember.",
+        "Small creator or student workflow communities where repeated capture pain is visible."
+      ],
+      "message_tests": [
+        "Never lose saved links again.",
+        "Find what you saved without folders.",
+        "Tag once, get it back when you need it."
+      ]
+    },
+    "experiment_prioritization": {
+      "ranked_experiments": [
+        "E1: landing/App Store message test around recall utility before channel expansion.",
+        "E2: onboarding event instrumentation from install to first meaningful tag.",
+        "E3: 10-user concierge interviews to identify the strongest repeat-use segment."
+      ],
+      "selection_reason": [
+        "E1 and E2 isolate whether demand or activation is the binding constraint; E3 explains the why behind numbers."
+      ],
+      "kill_or_continue_rule": [
+        "Kill a message if click-to-install or install-to-first-tag does not improve after 100 qualified impressions or one week.",
+        "Continue only when the metric movement identifies the next bottleneck."
+      ]
+    },
+    "instrumentation": {
+      "north_star_metric": [
+        "Weekly users who retrieve a previously tagged item."
+      ],
+      "funnel_metrics": [
+        "impression_to_store_view",
+        "store_view_to_install",
+        "install_to_first_tag",
+        "first_tag_to_first_retrieval",
+        "week_one_repeat_retrieval"
+      ],
+      "event_tracking": [
+        "tag_created",
+        "item_retrieved_by_tag",
+        "onboarding_completed",
+        "share_or_import_completed"
+      ]
+    },
+    "owner_split": {
+      "codex_owned_actions": [
+        "Audit current App Store metadata and onboarding text.",
+        "Draft three message-test variants.",
+        "Create an event instrumentation checklist and acceptance criteria.",
+        "Produce a one-week experiment board with score columns."
+      ],
+      "user_owned_actions": [
+        "Provide current analytics screenshots or confirm none exist.",
+        "Recruit or identify 10 target users.",
+        "Approve which segment is ethically and commercially worth targeting.",
+        "Publish tests and collect real traffic data."
+      ]
+    },
+    "risk_controls": {
+      "risks": [
+        "Synthetic strategy may overfit assumptions without real analytics.",
+        "A niche wedge may be too narrow if retention is already healthy.",
+        "Marketing copy can promise retrieval behavior the product does not yet support."
+      ],
+      "guardrails": [
+        "Separate known, inferred, and unknown evidence before claiming product-market fit.",
+        "Do not spend on paid acquisition until activation tracking works.",
+        "Return to Uigwe if metrics contradict the selected segment or success criteria."
+      ]
+    },
+    "evidence_quality": {
+      "known": [
+        "The user asked for growth success, marketing reasons, causes, and plan quality."
+      ],
+      "inferred": [
+        "TagBack likely depends on repeat retrieval, so retention metrics matter more than raw installs."
+      ],
+      "unknown": [
+        "Current acquisition sources, App Store conversion, active users, retention, pricing, and onboarding drop-off are unknown."
+      ]
+    },
+    "actionable_plan": {
+      "first_week_plan": [
+        "Day 1: collect current store/onboarding/analytics evidence.",
+        "Day 2: choose one target segment and create three message variants.",
+        "Day 3: instrument or manually track the first-tag and first-retrieval funnel.",
+        "Days 4-6: run the highest-confidence channel/message test.",
+        "Day 7: compare metric movement and decide continue, kill, or re-enter planning."
+      ],
+      "dependencies": [
+        "Current app screenshots, App Store listing, available analytics, and one reachable user segment."
+      ],
+      "verification_steps": [
+        "Run the same rubric after the experiment artifact is produced.",
+        "Check whether every recommendation maps to a measurable funnel event.",
+        "Reject the plan if it cannot name the next bottleneck after one week."
+      ]
+    }
+  }
+}

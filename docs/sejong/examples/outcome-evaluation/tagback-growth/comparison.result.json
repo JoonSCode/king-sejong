@@ -1,0 +1,231 @@
+{
+  "baseline_run_id": "baseline-current-sot",
+  "baseline_score": 0.363,
+  "candidate_run_id": "candidate-runtime-contracts",
+  "candidate_score": 1.0,
+  "dimension_scores": {
+    "actionable_plan": {
+      "baseline": {
+        "missing_checks": [
+          "dependencies",
+          "verification_steps"
+        ],
+        "passed_checks": [
+          "first_week_plan"
+        ],
+        "score": 0.3333,
+        "weight": 1.2
+      },
+      "candidate": {
+        "missing_checks": [],
+        "passed_checks": [
+          "first_week_plan",
+          "dependencies",
+          "verification_steps"
+        ],
+        "score": 1.0,
+        "weight": 1.2
+      },
+      "delta": 0.6667
+    },
+    "audience_jtbd": {
+      "baseline": {
+        "missing_checks": [
+          "job_to_be_done",
+          "activation_trigger"
+        ],
+        "passed_checks": [
+          "primary_segment"
+        ],
+        "score": 0.3333,
+        "weight": 1.0
+      },
+      "candidate": {
+        "missing_checks": [],
+        "passed_checks": [
+          "primary_segment",
+          "job_to_be_done",
+          "activation_trigger"
+        ],
+        "score": 1.0,
+        "weight": 1.0
+      },
+      "delta": 0.6667
+    },
+    "causal_diagnosis": {
+      "baseline": {
+        "missing_checks": [
+          "why_now",
+          "rejected_hypotheses"
+        ],
+        "passed_checks": [
+          "root_causes"
+        ],
+        "score": 0.3333,
+        "weight": 1.2
+      },
+      "candidate": {
+        "missing_checks": [],
+        "passed_checks": [
+          "root_causes",
+          "why_now",
+          "rejected_hypotheses"
+        ],
+        "score": 1.0,
+        "weight": 1.2
+      },
+      "delta": 0.6667
+    },
+    "evidence_quality": {
+      "baseline": {
+        "missing_checks": [
+          "known",
+          "inferred"
+        ],
+        "passed_checks": [
+          "unknown"
+        ],
+        "score": 0.3333,
+        "weight": 0.8
+      },
+      "candidate": {
+        "missing_checks": [],
+        "passed_checks": [
+          "known",
+          "inferred",
+          "unknown"
+        ],
+        "score": 1.0,
+        "weight": 0.8
+      },
+      "delta": 0.6667
+    },
+    "experiment_prioritization": {
+      "baseline": {
+        "missing_checks": [
+          "selection_reason",
+          "kill_or_continue_rule"
+        ],
+        "passed_checks": [
+          "ranked_experiments"
+        ],
+        "score": 0.3333,
+        "weight": 1.2
+      },
+      "candidate": {
+        "missing_checks": [],
+        "passed_checks": [
+          "ranked_experiments",
+          "selection_reason",
+          "kill_or_continue_rule"
+        ],
+        "score": 1.0,
+        "weight": 1.2
+      },
+      "delta": 0.6667
+    },
+    "instrumentation": {
+      "baseline": {
+        "missing_checks": [
+          "north_star_metric",
+          "event_tracking"
+        ],
+        "passed_checks": [
+          "funnel_metrics"
+        ],
+        "score": 0.3333,
+        "weight": 1.0
+      },
+      "candidate": {
+        "missing_checks": [],
+        "passed_checks": [
+          "north_star_metric",
+          "funnel_metrics",
+          "event_tracking"
+        ],
+        "score": 1.0,
+        "weight": 1.0
+      },
+      "delta": 0.6667
+    },
+    "marketing_strategy": {
+      "baseline": {
+        "missing_checks": [
+          "positioning",
+          "message_tests"
+        ],
+        "passed_checks": [
+          "channels"
+        ],
+        "score": 0.3333,
+        "weight": 1.0
+      },
+      "candidate": {
+        "missing_checks": [],
+        "passed_checks": [
+          "positioning",
+          "channels",
+          "message_tests"
+        ],
+        "score": 1.0,
+        "weight": 1.0
+      },
+      "delta": 0.6667
+    },
+    "owner_split": {
+      "baseline": {
+        "missing_checks": [
+          "codex_owned_actions"
+        ],
+        "passed_checks": [
+          "user_owned_actions"
+        ],
+        "score": 0.5,
+        "weight": 0.8
+      },
+      "candidate": {
+        "missing_checks": [],
+        "passed_checks": [
+          "codex_owned_actions",
+          "user_owned_actions"
+        ],
+        "score": 1.0,
+        "weight": 0.8
+      },
+      "delta": 0.5
+    },
+    "risk_controls": {
+      "baseline": {
+        "missing_checks": [
+          "guardrails"
+        ],
+        "passed_checks": [
+          "risks"
+        ],
+        "score": 0.5,
+        "weight": 0.8
+      },
+      "candidate": {
+        "missing_checks": [],
+        "passed_checks": [
+          "risks",
+          "guardrails"
+        ],
+        "score": 1.0,
+        "weight": 0.8
+      },
+      "delta": 0.5
+    }
+  },
+  "format": "sejong.outcome-quality-comparison/v0.1-draft",
+  "generated_at": "2026-05-26T04:59:42Z",
+  "min_promote_delta": 0.12,
+  "notes": [
+    "Scores compare structured outcome artifacts against the same task-specific checks.",
+    "This deterministic grader does not replace human or live A/B validation for real product success."
+  ],
+  "recommendation": "promote_candidate",
+  "score_delta": 0.637,
+  "task_id": "tagback-growth",
+  "winner": "candidate"
+}

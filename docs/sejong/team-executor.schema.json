@@ -77,6 +77,27 @@
         "system"
       ]
     },
+    "RoundKind": {
+      "type": "string",
+      "enum": [
+        "challenge",
+        "persuasion"
+      ]
+    },
+    "ClosedReason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "completed",
+        "apparent_convergence",
+        "deadlock_30m",
+        "lead_decision",
+        "timeout",
+        null
+      ]
+    },
     "MailboxEndpoint": {
       "type": "object",
       "additionalProperties": false,
@@ -259,12 +280,29 @@
         "purpose": {
           "$ref": "#/$defs/NonEmptyString"
         },
+        "round_kind": {
+          "$ref": "#/$defs/RoundKind"
+        },
+        "max_duration_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 30
+        },
+        "closure_policy": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
         "opened_at": {
           "type": "string",
           "format": "date-time"
         },
         "closed_at": {
           "$ref": "#/$defs/NullableDateTime"
+        },
+        "closed_reason": {
+          "$ref": "#/$defs/ClosedReason"
         }
       },
       "required": [

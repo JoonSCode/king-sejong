@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/outcome-quality.schema.json",
+  "title": "Sejong Outcome Quality Evaluation Schema Draft",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Task"
+    },
+    {
+      "$ref": "#/$defs/Result"
+    },
+    {
+      "$ref": "#/$defs/Comparison"
+    }
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      }
+    },
+    "Dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "weight": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "checks": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "id",
+        "weight",
+        "checks"
+      ]
+    },
+    "Task": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "sejong.outcome-quality-task/v0.1-draft"
+        },
+        "task_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "prompt": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "goal": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "min_promote_delta": {
+          "type": "number",
+          "minimum": 0
+        },
+        "required_dimensions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Dimension"
+          }
+        }
+      },
+      "required": [
+        "format",
+        "task_id",
+        "prompt",
+        "goal",
+        "min_promote_delta",
+        "required_dimensions"
+      ]
+    },
+    "Result": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "sejong.outcome-quality-result/v0.1-draft"
+        },
+        "run_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "label": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "summary": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "dimensions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "number",
+                "boolean",
+                "array",
+                "object",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "format",
+        "run_id",
+        "label",
+        "summary",
+        "dimensions"
+      ]
+    },
+    "DimensionScore": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "weight": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "passed_checks": {
+          "$ref": "#/$defs/StringList"
+        },
+        "missing_checks": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "score",
+        "weight",
+        "passed_checks",
+        "missing_checks"
+      ]
+    },
+    "ComparisonDimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "baseline": {
+          "$ref": "#/$defs/DimensionScore"
+        },
+        "candidate": {
+          "$ref": "#/$defs/DimensionScore"
+        },
+        "delta": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "baseline",
+        "candidate",
+        "delta"
+      ]
+    },
+    "Comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "sejong.outcome-quality-comparison/v0.1-draft"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "task_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "baseline_run_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "candidate_run_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "baseline_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "candidate_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "score_delta": {
+          "type": "number"
+        },
+        "min_promote_delta": {
+          "type": "number",
+          "minimum": 0
+        },
+        "winner": {
+          "type": "string",
+          "enum": [
+            "baseline",
+            "candidate",
+            "tie"
+          ]
+        },
+        "recommendation": {
+          "type": "string",
+          "enum": [
+            "promote_candidate",
+            "reject_candidate",
+            "keep_shadowing",
+            "inconclusive"
+          ]
+        },
+        "dimension_scores": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/ComparisonDimension"
+          }
+        },
+        "notes": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "format",
+        "generated_at",
+        "task_id",
+        "baseline_run_id",
+        "candidate_run_id",
+        "baseline_score",
+        "candidate_score",
+        "score_delta",
+        "min_promote_delta",
+        "winner",
+        "recommendation",
+        "dimension_scores",
+        "notes"
+      ]
+    }
+  }
+}

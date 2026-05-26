@@ -53,6 +53,8 @@ Native goal backing is a runtime persistence aid, not the execution plan. The go
 
 Do not activate a native goal for research-only, advice-only, plan-only, open-ambiguity, non-handoff-ready, or tiny Sejong-direct maintenance work. If the host lacks native goal support, continue with the normal Seungjeongwon loop and record that native goal support was unavailable when structured execution feedback is produced.
 
+For long-running or compaction-sensitive work, Seungjeongwon should also maintain a `sejong.seungjeongwon-run/v0.1-draft` artifact. The artifact records the approved goal, success criteria, verification methods, active todos, attempt ledger, verification evidence, blockers, and Uigwe re-entry requests. Hooks can block `Stop` and `PreCompact` when this artifact is active or invalid.
+
 ## Execution Inputs
 
 For a Uigwe bundle:
@@ -198,6 +200,14 @@ Each attempt should record:
 - evidence refs
 
 The executor should write this ledger into external Sejong runtime artifacts by default, usually alongside `execution-feedback.json` or `sillok-record.jsonl`.
+
+Use the reference helper when a machine-checkable active run artifact is useful:
+
+```bash
+python3 docs/sejong/scripts/seungjeongwon_run.py start --path <run.json> --run-id <id> --goal "..." --success-criterion "..." --verification-method "..."
+python3 docs/sejong/scripts/seungjeongwon_run.py record-attempt --path <run.json> --todo-id T1 --hypothesis "..." --action "..." --verification "..." --result pass --finding "..." --next-decision "..."
+python3 docs/sejong/scripts/seungjeongwon_run.py check --path <run.json>
+```
 
 ## Execution Feedback And Re-entry
 

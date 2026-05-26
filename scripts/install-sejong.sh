@@ -5,10 +5,11 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  scripts/install-sejong.sh [--scope repo|user] [--force] [--dry-run] [target-repo]
+  scripts/install-sejong.sh [--scope repo|user] [--force] [--dry-run] [--codex-guidance none|print|user] [target-repo]
   scripts/install-sejong.sh --verify [--scope repo|user] [target-repo]
   scripts/install-sejong.sh --check-updates
   scripts/install-sejong.sh --auto-update [--scope repo|user] [target-repo]
+  scripts/install-sejong.sh --print-codex-guidance
 
 Examples:
   scripts/install-sejong.sh /path/to/your-repo
@@ -17,7 +18,9 @@ Examples:
   scripts/install-sejong.sh --check-updates
   scripts/install-sejong.sh --auto-update --scope user
   scripts/install-sejong.sh --scope user
+  scripts/install-sejong.sh --scope user --codex-guidance user
   scripts/install-sejong.sh --scope user --verify
+  scripts/install-sejong.sh --print-codex-guidance
   CODEX_HOME=/path/to/codex-home scripts/install-sejong.sh --scope user --force
 
 Installs:
@@ -39,6 +42,11 @@ Installs:
 
 Source-only:
   AGENTS.md is maintainer guidance for this source repository and is never installed.
+
+Optional Codex guidance:
+  --codex-guidance print prints a compact generic AGENTS.md block.
+  --codex-guidance user writes that block to ${CODEX_HOME:-~/.codex}/AGENTS.md.
+  The block is generic Codex guidance and does not depend on OMX or repo-local state.
 EOF
 }
 
@@ -47,6 +55,8 @@ DRY_RUN=0
 VERIFY_ONLY=0
 UPDATE_CHECK=0
 AUTO_UPDATE=0
+CODEX_GUIDANCE=none
+PRINT_CODEX_GUIDANCE=0
 SCOPE=repo
 TARGET_REPO="."
 
@@ -74,6 +84,32 @@ while [[ $# -gt 0 ]]; do
       ;;
     --update|--auto-update)
       AUTO_UPDATE=1
+      shift
+      ;;
+    --codex-guidance)
+      if [[ $# -lt 2 ]]; then
+        echo "--codex-guidance requires one of: none, print, user" >&2
+        exit 1
+      fi
+      case "$2" in
+        none|print|user)
+          CODEX_GUIDANCE=$2
+          ;;
+        *)
+          echo "unsupported codex guidance mode: $2" >&2
+          echo "expected one of: none, print, user" >&2
+          exit 1
+          ;;
+      esac
+      shift 2
+      ;;
+    --print-codex-guidance)
+      CODEX_GUIDANCE=print
+      PRINT_CODEX_GUIDANCE=1
+      shift
+      ;;
+    --install-codex-guidance)
+      CODEX_GUIDANCE=user
       shift
       ;;
     --scope)
@@ -125,6 +161,11 @@ fi
 
 if [[ "$UPDATE_CHECK" -eq 1 && "$VERIFY_ONLY" -eq 1 ]]; then
   echo "--check-updates cannot be combined with --verify" >&2
+  exit 1
+fi
+
+if [[ "$VERIFY_ONLY" -eq 1 && "$CODEX_GUIDANCE" != "none" ]]; then
+  echo "--codex-guidance cannot be combined with --verify" >&2
   exit 1
 fi
 
@@ -193,6 +234,48 @@ SOURCE_ROOT=$(canonical_path "$SCRIPT_DIR/..")
 SOURCE_ONLY_PATHS=(
   "AGENTS.md"
 )
+
+print_codex_guidance_block() {
+  cat <<'EOF'
+<!-- BEGIN King Sejong Codex Guidance -->
+# King Sejong Codex Guidance
+
+King Sejong is a Codex-native skill and protocol distribution. It does not replace Codex, shell tools, user permissions, or host-native subagents.
+
+When a user invokes Sejong or a court surface:
+- Route broad or goal-bearing work through Sejong lead synthesis.
+- Use JangYeongsil for bounded evidence gathering.
+- Use Jiphyeonjeon for bounded multi-perspective debate; workers may persuade each other, but Sejong lead owns synthesis.
+- Use Uigwe to clarify ambiguous ideas and designs into success criteria, verification bars, and handoff leaves.
+- Use Seungjeongwon to decompose, execute, retry, and verify until the Uigwe pass criteria are met or a real blocker is recorded.
+- Store Sejong runtime artifacts under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` unless the user explicitly asks to promote a tracked artifact.
+- Do not use `.omx` paths as Sejong state.
+
+Hooks and schemas are guardrails, not a sandbox. Completion still requires fresh verification evidence.
+<!-- END King Sejong Codex Guidance -->
+EOF
+}
+
+write_codex_guidance_block() {
+  local codex_home=$1
+  local agents_file="$codex_home/AGENTS.md"
+  local tmp_file
+
+  mkdir -p "$codex_home"
+  touch "$agents_file"
+  tmp_file=$(mktemp)
+  awk '
+    /^<!-- BEGIN King Sejong Codex Guidance -->$/ { skip = 1; next }
+    /^<!-- END King Sejong Codex Guidance -->$/ { skip = 0; next }
+    !skip { print }
+  ' "$agents_file" > "$tmp_file"
+  {
+    sed '/^[[:space:]]*$/N;/^\n$/D' "$tmp_file"
+    echo
+    print_codex_guidance_block
+  } > "$agents_file"
+  rm -f "$tmp_file"
+}
 
 require_source_git_repo() {
   if ! git -C "$SOURCE_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -617,6 +700,27 @@ verify_user_hooks_config() {
   done
 }
 
+verify_user_codex_guidance() {
+  local codex_home=$1
+  local agents_file="$codex_home/AGENTS.md"
+
+  if [[ "$CODEX_GUIDANCE" != "user" ]]; then
+    return 0
+  fi
+  if [[ ! -f "$agents_file" ]]; then
+    echo "missing Codex AGENTS.md guidance file: $agents_file" >&2
+    return 1
+  fi
+  if ! grep -q "BEGIN King Sejong Codex Guidance" "$agents_file" || ! grep -q "END King Sejong Codex Guidance" "$agents_file"; then
+    echo "King Sejong Codex guidance block is missing from AGENTS.md" >&2
+    return 1
+  fi
+  if ! grep -q 'Do not use `.omx` paths as Sejong state.' "$agents_file"; then
+    echo "King Sejong Codex guidance block is missing OMX-independent state rule" >&2
+    return 1
+  fi
+}
+
 verify_repo_install() {
   local root=$1
   local missing=0
@@ -628,12 +732,18 @@ verify_repo_install() {
     ".agents/skills/uigwe/SKILL.md"
     ".agents/skills/seungjeongwon/SKILL.md"
     "docs/sejong/README.md"
+    "docs/sejong/RUNTIME_CONTRACT.md"
+    "docs/sejong/ROLE_SEPARATION.md"
+    "docs/sejong/OUTCOME_EVALUATION.md"
     "docs/sejong/ROUTER.md"
     "docs/sejong/REPO_CONTEXT.md"
     "docs/sejong/HOOKS.md"
     "docs/sejong/SECURITY.md"
     "docs/sejong/SILLOK_TRACE.md"
     "docs/sejong/king-sejong-context.schema.json"
+    "docs/sejong/seungjeongwon-run.schema.json"
+    "docs/sejong/outcome-quality.schema.json"
+    "docs/sejong/product-evidence.schema.json"
     "docs/sejong/sillok-trace-event.schema.json"
     "docs/sejong/PROMPT_OVERLAYS.md"
     "docs/sejong/PROTOCOL.md"
@@ -641,9 +751,18 @@ verify_repo_install() {
     "docs/sejong/BUNDLE_VALIDATOR.md"
     "docs/sejong/TEAM_EXECUTOR.md"
     "docs/sejong/scripts/king_sejong_hooks.py"
+    "docs/sejong/scripts/sejong_integrated_quality_gate.py"
+    "docs/sejong/scripts/seungjeongwon_run.py"
+    "docs/sejong/scripts/outcome_quality_evaluator.py"
+    "docs/sejong/scripts/product_evidence_gate.py"
     "docs/sejong/scripts/sejong_context.py"
     "docs/sejong/scripts/sillok_trace.py"
     "docs/sejong/scripts/test_king_sejong_hooks.py"
+    "docs/sejong/scripts/test_sejong_integrated_quality_gate.py"
+    "docs/sejong/scripts/test_seungjeongwon_run.py"
+    "docs/sejong/scripts/test_outcome_quality_evaluator.py"
+    "docs/sejong/scripts/test_product_evidence_gate.py"
+    "docs/sejong/scripts/test_install_sejong.py"
     "docs/sejong/scripts/test_king_sejong_e2e.py"
     "docs/sejong/scripts/test_sejong_context.py"
     "docs/sejong/scripts/test_sillok_trace.py"
@@ -691,12 +810,18 @@ verify_user_install() {
     "skills/jangyeongsil/SKILL.md"
     "skills/jiphyeonjeon/SKILL.md"
     "skills/sejong/docs/README.md"
+    "skills/sejong/docs/RUNTIME_CONTRACT.md"
+    "skills/sejong/docs/ROLE_SEPARATION.md"
+    "skills/sejong/docs/OUTCOME_EVALUATION.md"
     "skills/sejong/docs/ROUTER.md"
     "skills/sejong/docs/REPO_CONTEXT.md"
     "skills/sejong/docs/HOOKS.md"
     "skills/sejong/docs/SECURITY.md"
     "skills/sejong/docs/SILLOK_TRACE.md"
     "skills/sejong/docs/king-sejong-context.schema.json"
+    "skills/sejong/docs/seungjeongwon-run.schema.json"
+    "skills/sejong/docs/outcome-quality.schema.json"
+    "skills/sejong/docs/product-evidence.schema.json"
     "skills/sejong/docs/sillok-trace-event.schema.json"
     "skills/sejong/docs/PROMPT_OVERLAYS.md"
     "skills/sejong/docs/PROTOCOL.md"
@@ -704,9 +829,18 @@ verify_user_install() {
     "skills/sejong/docs/BUNDLE_VALIDATOR.md"
     "skills/sejong/docs/TEAM_EXECUTOR.md"
     "skills/sejong/docs/scripts/king_sejong_hooks.py"
+    "skills/sejong/docs/scripts/sejong_integrated_quality_gate.py"
+    "skills/sejong/docs/scripts/seungjeongwon_run.py"
+    "skills/sejong/docs/scripts/outcome_quality_evaluator.py"
+    "skills/sejong/docs/scripts/product_evidence_gate.py"
     "skills/sejong/docs/scripts/sejong_context.py"
     "skills/sejong/docs/scripts/sillok_trace.py"
     "skills/sejong/docs/scripts/test_king_sejong_hooks.py"
+    "skills/sejong/docs/scripts/test_sejong_integrated_quality_gate.py"
+    "skills/sejong/docs/scripts/test_seungjeongwon_run.py"
+    "skills/sejong/docs/scripts/test_outcome_quality_evaluator.py"
+    "skills/sejong/docs/scripts/test_product_evidence_gate.py"
+    "skills/sejong/docs/scripts/test_install_sejong.py"
     "skills/sejong/docs/scripts/test_king_sejong_e2e.py"
     "skills/sejong/docs/scripts/test_sejong_context.py"
     "skills/sejong/docs/scripts/test_sillok_trace.py"
@@ -743,6 +877,7 @@ verify_user_install() {
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/seungjeongwon/agents" "$root/skills/seungjeongwon/agents" "skills/seungjeongwon/agents/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/docs/sejong" "$root/skills/sejong/docs" "skills/sejong/docs/" || drift=1
   verify_user_hooks_config "$root" || drift=1
+  verify_user_codex_guidance "$root" || drift=1
 
   if [[ "$drift" -ne 0 ]]; then
     echo "King Sejong user install verification failed: managed content is stale or modified in $root" >&2
@@ -895,6 +1030,9 @@ install_user_scope() {
   rewrite_skill_doc_paths "$skill_root/uigwe/SKILL.md" "../sejong/docs/"
   rewrite_skill_doc_paths "$skill_root/seungjeongwon/SKILL.md" "../sejong/docs/"
   configure_user_hooks "$codex_home"
+  if [[ "$CODEX_GUIDANCE" == "user" ]]; then
+    write_codex_guidance_block "$codex_home"
+  fi
 
   verify_user_install "$codex_home"
 
@@ -929,6 +1067,11 @@ fi
 
 if [[ "$AUTO_UPDATE" -eq 1 ]]; then
   auto_update_source
+fi
+
+if [[ "$CODEX_GUIDANCE" == "print" || "$PRINT_CODEX_GUIDANCE" -eq 1 ]]; then
+  print_codex_guidance_block
+  exit 0
 fi
 
 case "$SCOPE" in

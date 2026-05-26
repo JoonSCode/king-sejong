@@ -41,6 +41,19 @@ MESSAGE_DIRECTIONS = {
     "system",
 }
 
+ROUND_KINDS = {
+    "challenge",
+    "persuasion",
+}
+
+ROUND_CLOSURE_REASONS = {
+    "completed",
+    "apparent_convergence",
+    "deadlock_30m",
+    "lead_decision",
+    "timeout",
+}
+
 ENDPOINT_TYPES = {
     "lead",
     "worker",
@@ -438,13 +451,28 @@ def open_round(args: argparse.Namespace) -> int:
     round_id = args.round_id or f"round-{len(rounds.get('rounds', [])) + 1}"
     if any(item["round_id"] == round_id for item in rounds.get("rounds", [])):
         raise SystemExit(f"round already exists: {round_id}")
+    max_duration = args.max_duration_minutes
+    if args.round_kind == "persuasion":
+        max_duration = 30 if max_duration is None else max_duration
+        if max_duration > 30:
+            raise SystemExit("persuasion rounds are capped at 30 minutes")
+    elif max_duration is not None and max_duration <= 0:
+        raise SystemExit("max_duration_minutes must be positive")
     rounds.setdefault("rounds", []).append(
         {
             "round_id": round_id,
             "status": "open",
             "purpose": args.purpose,
+            "round_kind": args.round_kind,
+            "max_duration_minutes": max_duration,
+            "closure_policy": (
+                "lead_synthesis_after_convergence_or_30m_deadlock"
+                if args.round_kind == "persuasion"
+                else "lead_closes_after_bounded_challenge"
+            ),
             "opened_at": now_utc(),
             "closed_at": None,
+            "closed_reason": None,
         }
     )
     write_json(rounds_path(run_dir), rounds)
@@ -461,6 +489,7 @@ def close_round(args: argparse.Namespace) -> int:
                 raise SystemExit(f"round already closed: {args.round_id}")
             item["status"] = "closed"
             item["closed_at"] = now_utc()
+            item["closed_reason"] = args.closed_reason
             write_json(rounds_path(run_dir), rounds)
             print(f"round closed: {args.round_id}")
             return 0
@@ -838,7 +867,21 @@ def check_run(args: argparse.Namespace) -> int:
         if invalid_kinds:
             failures.append(f"worker has unsupported allowed_message_kinds: {worker.get('worker_id')}: {invalid_kinds}")
 
-    round_ids = {str(item.get("round_id") or "") for item in load_json(rounds_path(run_dir)).get("rounds", [])}
+    round_items = load_json(rounds_path(run_dir)).get("rounds", [])
+    round_ids = {str(item.get("round_id") or "") for item in round_items}
+    for item in round_items:
+        round_id = str(item.get("round_id") or "")
+        round_kind = item.get("round_kind", "challenge")
+        if round_kind not in ROUND_KINDS:
+            failures.append(f"unsupported round_kind: {round_id}")
+        if round_kind == "persuasion":
+            max_duration = item.get("max_duration_minutes")
+            if max_duration is None or max_duration > 30:
+                failures.append(f"persuasion round exceeds 30 minute cap: {round_id}")
+            if item.get("closure_policy") != "lead_synthesis_after_convergence_or_30m_deadlock":
+                failures.append(f"persuasion round has invalid closure_policy: {round_id}")
+        if item.get("status") == "closed" and item.get("closed_reason") not in ROUND_CLOSURE_REASONS:
+            failures.append(f"closed round missing supported closed_reason: {round_id}")
     seen_messages: set[str] = set()
     for message in read_mailbox(run_dir):
         failures.extend(mailbox_message_failures(team, message, seen_messages=seen_messages, round_ids=round_ids))
@@ -1001,11 +1044,14 @@ def build_parser() -> argparse.ArgumentParser:
     open_cmd.add_argument("run_dir")
     open_cmd.add_argument("--round-id")
     open_cmd.add_argument("--purpose", required=True)
+    open_cmd.add_argument("--round-kind", choices=sorted(ROUND_KINDS), default="challenge")
+    open_cmd.add_argument("--max-duration-minutes", type=int)
     open_cmd.set_defaults(func=open_round)
 
     close_cmd = subparsers.add_parser("close-round", help="Close a mailbox challenge round")
     close_cmd.add_argument("run_dir")
     close_cmd.add_argument("round_id")
+    close_cmd.add_argument("--closed-reason", choices=sorted(ROUND_CLOSURE_REASONS), default="completed")
     close_cmd.set_defaults(func=close_round)
 
     send = subparsers.add_parser("send-message", help="Send one versioned mailbox message")

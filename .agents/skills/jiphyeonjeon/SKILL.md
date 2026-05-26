@@ -34,7 +34,9 @@ For substantial decisions, Jiphyeonjeon may use a bounded council:
 
 1. Lead writes one shared council brief.
 2. Workers produce independent first-round briefs from advocate, critic, specialist, operator, or risk-review lenses.
-3. The lead opens at most one default challenge round for the strongest objections.
-4. The lead synthesizes the final recommendation, rejected options, risks, confidence, and next surface.
+3. The lead opens at most one default challenge round for the strongest objections, or a `persuasion` round when workers should answer each other's objections before synthesis.
+4. In a persuasion round, workers may try to change each other's position through bounded mailbox `claim`, `objection`, `question`, and `response` messages.
+5. The lead closes persuasion when apparent convergence appears or after 30 minutes of deadlock.
+6. The lead synthesizes the final recommendation, rejected options, risks, confidence, and next surface.
 
 When official peer/team messaging is available in the host runtime, use it for bounded teammate messages and shared task state. Otherwise use `$team` / TeamExecutor mailbox messages. Peer messages are allowed only inside a bounded round and never become approval, final synthesis, or verification by themselves.

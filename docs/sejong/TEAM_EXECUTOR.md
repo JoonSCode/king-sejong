@@ -239,6 +239,19 @@ Default Jiphyeonjeon shape:
 
 More rounds require an explicit reason such as a new blocker, material contradiction, or unresolved high-risk trade-off.
 
+For Jiphyeonjeon persuasion, use `round_kind=persuasion`. Persuasion rounds are for workers to answer each other's strongest objections, not only submit one independent opinion. They are capped at 30 minutes. Close the round when apparent convergence appears or when the 30-minute deadlock cap is reached, then let the Sejong lead synthesize. Supported closure reasons are `apparent_convergence`, `deadlock_30m`, `lead_decision`, `timeout`, and `completed`.
+
+Example:
+
+```bash
+python3 docs/sejong/scripts/team_executor.py open-round <run-dir> \
+  --purpose "mutual persuasion before lead synthesis" \
+  --round-kind persuasion \
+  --max-duration-minutes 30
+python3 docs/sejong/scripts/team_executor.py close-round <run-dir> round-1 \
+  --closed-reason apparent_convergence
+```
+
 ## File Leases
 
 When workers may edit files, `leases.json` controls write ownership.

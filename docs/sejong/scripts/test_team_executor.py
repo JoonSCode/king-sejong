@@ -250,6 +250,92 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             self.assertEqual(message["recipients"][0]["id"], "advocate")
             self.assertTrue(message["requires_response"])
 
+    def test_persuasion_round_is_bounded_to_thirty_minutes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "persuasion-cap",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--worker",
+                    "ux:ux:UX perspective",
+                    "--worker",
+                    "risk:risk:Risk perspective",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "persuasion-cap"
+
+            result = run_team_command(
+                [
+                    "open-round",
+                    str(run_dir),
+                    "--round-id",
+                    "persuade-1",
+                    "--purpose",
+                    "persuade opposing perspectives before lead synthesis",
+                    "--round-kind",
+                    "persuasion",
+                    "--max-duration-minutes",
+                    "45",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("persuasion rounds are capped at 30 minutes", result.stderr)
+
+    def test_persuasion_round_records_closure_reason(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "persuasion-close",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--worker",
+                    "architect:architect:architecture perspective",
+                    "--worker",
+                    "critic:critic:devil advocate perspective",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "persuasion-close"
+            opened = run_team_command(
+                [
+                    "open-round",
+                    str(run_dir),
+                    "--round-id",
+                    "persuade-1",
+                    "--purpose",
+                    "mutual persuasion before lead synthesis",
+                    "--round-kind",
+                    "persuasion",
+                    "--max-duration-minutes",
+                    "30",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(opened.returncode, 0, opened.stderr)
+
+            closed = run_team_command(
+                ["close-round", str(run_dir), "persuade-1", "--closed-reason", "apparent_convergence"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(closed.returncode, 0, closed.stderr)
+            rounds = json.loads((run_dir / "rounds.json").read_text(encoding="utf-8"))
+            round_record = rounds["rounds"][0]
+            self.assertEqual(round_record["round_kind"], "persuasion")
+            self.assertEqual(round_record["max_duration_minutes"], 30)
+            self.assertEqual(round_record["closure_policy"], "lead_synthesis_after_convergence_or_30m_deadlock")
+            self.assertEqual(round_record["closed_reason"], "apparent_convergence")
+
     def test_launch_injects_surface_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)

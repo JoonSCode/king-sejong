@@ -150,6 +150,47 @@ python3 docs/sejong/scripts/benchmark_sejong_surface.py --write --require-target
 
 This benchmark does not call an LLM. It validates that `examples/validation/sejong-seed-task-set.json` remains a complete, gradeable Sejong-level scenario set with route sequences, acceptable alternatives, forbidden surfaces, guardrail expectations, observable artifacts, and resource budgets.
 
+### Phase 2D: Outcome Quality Pairwise Evaluation
+
+Run this when the change claims that Sejong produces better work products, not only better routing or guardrail behavior:
+
+```bash
+python3 docs/sejong/scripts/outcome_quality_evaluator.py compare \
+  --task docs/sejong/examples/outcome-evaluation/tagback-growth/task.json \
+  --baseline docs/sejong/examples/outcome-evaluation/tagback-growth/baseline-current-sot.result.json \
+  --candidate docs/sejong/examples/outcome-evaluation/tagback-growth/candidate-runtime-contracts.result.json \
+  --min-delta 0.12
+```
+
+The seed TagBack growth scenario grades causal diagnosis, audience/JTBD clarity, marketing strategy, experiment prioritization, instrumentation, owner split, risk controls, evidence quality, and actionability. It is a deterministic artifact-quality gate. It does not replace real product analytics, A/B tests, user interviews, or human judgment.
+
+### Phase 2E: Integrated Quality Gate
+
+Run this when a change must prove it composes with the latest Sejong SOT rather than only passing in isolation:
+
+```bash
+python3 docs/sejong/scripts/sejong_integrated_quality_gate.py --work-dir "$(mktemp -d)"
+python3 docs/sejong/scripts/test_sejong_integrated_quality_gate.py
+```
+
+This gate checks that the TagBack outcome-quality comparison, research-to-Uigwe write gate, active Seungjeongwon run state, TeamExecutor persuasion mailbox, visible todo events, paired result comparison, and product-evidence gate can all operate together. Passing this gate means the Sejong runtime pieces are compatible and produce a stronger strategy artifact for the seed goal. It still does not prove real-world product success.
+
+### Phase 2F: Product Evidence Gate
+
+Run this when Sejong would otherwise be tempted to claim that a product, marketing, or growth plan actually succeeded:
+
+```bash
+python3 docs/sejong/scripts/product_evidence_gate.py check-plan \
+  --plan docs/sejong/examples/outcome-evaluation/tagback-growth/field-validation-plan.json
+python3 docs/sejong/scripts/product_evidence_gate.py judge-result \
+  --plan docs/sejong/examples/outcome-evaluation/tagback-growth/field-validation-plan.json \
+  --result docs/sejong/examples/outcome-evaluation/tagback-growth/field-validation-result.example.json \
+  --require-success
+python3 docs/sejong/scripts/test_product_evidence_gate.py
+```
+
+This gate separates artifact-quality promotion from real product-success claims. It requires external evidence refs plus analytics, controlled experiment, and user research results before `can_claim_product_success=true`.
+
 ### Phase 3: Frozen Planning Benchmark
 
 Use `examples/validation/uigwe-seed-task-set.json` as the first task set.
@@ -316,6 +357,10 @@ This validation pack includes:
 - a scorecard comparison helper with token and cost deltas
 - a Sillok trace-event schema for evidence, verification, handoff, and security-review records
 - King Sejong hook, TeamExecutor, and end-to-end guardrail tests
+- Seungjeongwon active run schema and lifecycle helper
+- a deterministic outcome-quality evaluator and TagBack growth paired-comparison fixture
+- an integrated quality gate that combines latest SOT guardrails with the runtime-quality additions
+- a product-evidence gate for analytics, controlled experiment, and user-research based success claims
 - a run output directory for benchmark scorecards
 
 ## Failure Cases

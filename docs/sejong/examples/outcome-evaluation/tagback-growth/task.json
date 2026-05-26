@@ -1,0 +1,88 @@
+{
+  "format": "sejong.outcome-quality-task/v0.1-draft",
+  "task_id": "tagback-growth",
+  "prompt": "TagBack 앱을 성공시키려면 어떻게 해야 하는지, 특히 마케팅이라면 방법, 이유, 원인 분석, 계획까지 제시한다.",
+  "goal": "Compare whether Sejong runtime-contract improvements produce a better strategy artifact than the latest SOT baseline.",
+  "min_promote_delta": 0.12,
+  "required_dimensions": [
+    {
+      "id": "causal_diagnosis",
+      "weight": 1.2,
+      "checks": [
+        "root_causes",
+        "why_now",
+        "rejected_hypotheses"
+      ]
+    },
+    {
+      "id": "audience_jtbd",
+      "weight": 1.0,
+      "checks": [
+        "primary_segment",
+        "job_to_be_done",
+        "activation_trigger"
+      ]
+    },
+    {
+      "id": "marketing_strategy",
+      "weight": 1.0,
+      "checks": [
+        "positioning",
+        "channels",
+        "message_tests"
+      ]
+    },
+    {
+      "id": "experiment_prioritization",
+      "weight": 1.2,
+      "checks": [
+        "ranked_experiments",
+        "selection_reason",
+        "kill_or_continue_rule"
+      ]
+    },
+    {
+      "id": "instrumentation",
+      "weight": 1.0,
+      "checks": [
+        "north_star_metric",
+        "funnel_metrics",
+        "event_tracking"
+      ]
+    },
+    {
+      "id": "owner_split",
+      "weight": 0.8,
+      "checks": [
+        "codex_owned_actions",
+        "user_owned_actions"
+      ]
+    },
+    {
+      "id": "risk_controls",
+      "weight": 0.8,
+      "checks": [
+        "risks",
+        "guardrails"
+      ]
+    },
+    {
+      "id": "evidence_quality",
+      "weight": 0.8,
+      "checks": [
+        "known",
+        "inferred",
+        "unknown"
+      ]
+    },
+    {
+      "id": "actionable_plan",
+      "weight": 1.2,
+      "checks": [
+        "first_week_plan",
+        "dependencies",
+        "verification_steps"
+      ]
+    }
+  ]
+}

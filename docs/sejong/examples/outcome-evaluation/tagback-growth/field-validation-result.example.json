@@ -1,0 +1,60 @@
+{
+  "format": "sejong.product-evidence-result/v0.1-draft",
+  "task_id": "tagback-growth",
+  "result_id": "tagback-growth-field-validation-example",
+  "collected_at": "2026-05-26T00:00:00Z",
+  "external_evidence_refs": [
+    "external:analytics/tagback/week-01-export.csv",
+    "external:experiments/tagback/recall-positioning-ab.csv",
+    "external:user-research/tagback/interview-notes-redacted.md"
+  ],
+  "analytics": {
+    "source_type": "manual_measurement",
+    "metrics": {
+      "weekly_retrieval_users": {
+        "baseline": 12,
+        "candidate": 20,
+        "relative_delta": 0.667
+      },
+      "install_to_first_tag": {
+        "baseline": 0.32,
+        "candidate": 0.43,
+        "relative_delta": 0.344
+      },
+      "first_tag_to_first_retrieval": {
+        "baseline": 0.18,
+        "candidate": 0.24,
+        "relative_delta": 0.333
+      }
+    }
+  },
+  "controlled_experiment": {
+    "variants": [
+      {
+        "id": "control_current_store_or_onboarding",
+        "sample_size": 41
+      },
+      {
+        "id": "candidate_recall_positioning",
+        "sample_size": 44
+      }
+    ],
+    "duration_days": 8,
+    "primary_metric_id": "first_tag_to_first_retrieval",
+    "observed_effect": 0.333,
+    "winner": "candidate",
+    "guardrail_regressions": []
+  },
+  "user_research": {
+    "segment": "people_who_save_items_and_need_later_retrieval",
+    "participants": 6,
+    "findings": [
+      "Participants understood recall positioning faster than generic organization copy.",
+      "Five participants could describe when they would use TagBack after seeing the candidate flow.",
+      "Retrieval moments, not tag creation itself, were described as the value proof."
+    ],
+    "contradictions": [
+      "Two participants expected automatic capture integrations that are not yet available."
+    ]
+  }
+}

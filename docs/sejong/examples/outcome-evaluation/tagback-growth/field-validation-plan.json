@@ -1,0 +1,57 @@
+{
+  "format": "sejong.product-evidence-plan/v0.1-draft",
+  "task_id": "tagback-growth",
+  "claim_under_test": "TagBack growth strategy improved real activation and retrieval behavior, not only the plan artifact.",
+  "success_claim_policy": "no_success_claim_without_external_result",
+  "evidence_classes": [
+    "analytics",
+    "controlled_experiment",
+    "user_research"
+  ],
+  "analytics_requirements": {
+    "accepted_source_types": [
+      "app_analytics",
+      "app_store_connect",
+      "manual_measurement"
+    ],
+    "required_metrics": [
+      {
+        "metric_id": "weekly_retrieval_users",
+        "description": "Users who retrieve a previously tagged item within a week."
+      },
+      {
+        "metric_id": "install_to_first_tag",
+        "description": "Installers who create at least one tag."
+      },
+      {
+        "metric_id": "first_tag_to_first_retrieval",
+        "description": "Users who retrieve an item after creating the first tag."
+      }
+    ]
+  },
+  "controlled_experiment": {
+    "variants": [
+      "control_current_store_or_onboarding",
+      "candidate_recall_positioning"
+    ],
+    "assignment_unit": "new_user_or_qualified_store_session",
+    "primary_metric_id": "first_tag_to_first_retrieval",
+    "minimum_sample_per_variant": 30,
+    "minimum_duration_days": 7,
+    "minimum_effect": 0.15,
+    "guardrail_metrics": [
+      "day_one_uninstall_or_churn",
+      "support_complaints",
+      "misleading_claim_reports"
+    ]
+  },
+  "user_research": {
+    "segment": "people_who_save_items_and_need_later_retrieval",
+    "minimum_participants": 5,
+    "required_outputs": [
+      "raw_notes_ref",
+      "findings",
+      "contradictions"
+    ]
+  }
+}

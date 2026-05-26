@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/seungjeongwon-run.schema.json",
+  "title": "Seungjeongwon Active Run Schema Draft",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "sejong.seungjeongwon-run/v0.1-draft"
+    },
+    "run_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "repo_root": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "goal": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "blocked",
+        "invalidated",
+        "failed"
+      ]
+    },
+    "success_criteria": {
+      "$ref": "#/$defs/StringList"
+    },
+    "verification_methods": {
+      "$ref": "#/$defs/StringList"
+    },
+    "todos": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Todo"
+      }
+    },
+    "attempt_ledger": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Attempt"
+      }
+    },
+    "verification_evidence": {
+      "$ref": "#/$defs/StringList"
+    },
+    "blockers": {
+      "$ref": "#/$defs/StringList"
+    },
+    "uigwe_reentry_requests": {
+      "$ref": "#/$defs/StringList"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "format",
+    "run_id",
+    "repo_root",
+    "goal",
+    "status",
+    "success_criteria",
+    "verification_methods",
+    "todos",
+    "attempt_ledger",
+    "verification_evidence",
+    "blockers",
+    "uigwe_reentry_requests",
+    "created_at",
+    "updated_at"
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      }
+    },
+    "TodoStatus": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "in_progress",
+        "completed",
+        "blocked",
+        "invalidated",
+        "replaced"
+      ]
+    },
+    "Todo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "todo_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "description": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "done_criteria": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "verification_method": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "status": {
+          "$ref": "#/$defs/TodoStatus"
+        },
+        "attempt_ids": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "todo_id",
+        "description",
+        "done_criteria",
+        "verification_method",
+        "status",
+        "attempt_ids"
+      ]
+    },
+    "Attempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "attempt_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "todo_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "hypothesis": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "action": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "verification": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "result": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "finding": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "next_decision": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/StringList"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "attempt_id",
+        "todo_id",
+        "hypothesis",
+        "action",
+        "verification",
+        "result",
+        "finding",
+        "next_decision",
+        "evidence_refs",
+        "created_at"
+      ]
+    }
+  }
+}

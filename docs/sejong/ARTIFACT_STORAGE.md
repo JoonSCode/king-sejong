@@ -38,6 +38,7 @@ Active King Sejong context checkpoints should be stored inside the same run dire
 ```text
 king-sejong-context.json
 ambiguity-register.json
+seungjeongwon-run.json
 route-decisions.jsonl
 execution-feedback.json
 execution-ledger.jsonl
@@ -49,6 +50,11 @@ The context checkpoint should follow `docs/sejong/king-sejong-context.schema.jso
 Ambiguity registers should follow `docs/sejong/ambiguity-register.schema.json`.
 The active context should reference them through `artifact_refs` rather than
 duplicating the full clarification state.
+
+Seungjeongwon active run artifacts should follow
+`docs/sejong/seungjeongwon-run.schema.json`. The active context should reference
+them through `artifact_refs` so hooks can block premature stop or compaction
+while execution remains active or invalid.
 
 Sillok trace events should follow `docs/sejong/sillok-trace-event.schema.json`.
 Use [SILLOK_TRACE.md](SILLOK_TRACE.md) for the JSONL event contract and security
@@ -77,6 +83,8 @@ External nontracked artifacts include:
 - wrapper results produced during live planning
 - Seungjeongwon execution evidence snapshots
 - Seungjeongwon actionable decomposition notes and execution attempt ledgers
+- Seungjeongwon active run artifacts
+- outcome-quality comparison artifacts
 - Sillok evidence logs that were not explicitly requested as repository records
 
 Repository-tracked artifacts are allowed only by explicit user request. Suitable promoted artifacts include:

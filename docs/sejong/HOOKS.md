@@ -67,6 +67,10 @@ When `artifact_refs` includes a readable artifact whose `format` is
 `sejong.ambiguity-register/v0.1-draft`, hooks treat it as the active ambiguity
 register. See [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md).
 
+When `artifact_refs` includes a readable artifact whose `format` is
+`sejong.seungjeongwon-run/v0.1-draft`, hooks treat it as an active
+Seungjeongwon execution run. See [seungjeongwon-run.schema.json](seungjeongwon-run.schema.json).
+
 ## Event Responsibilities
 
 `SessionStart`
@@ -122,11 +126,13 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 - Continue the turn when pending gates or missing verification would make completion premature.
 - Continue the turn when `uigwe_promotion_required` remains pending, so decision-prep research cannot end as a final conclusion before Uigwe.
 - Continue the turn when any referenced ambiguity register still has `open` ambiguity items.
+- Continue the turn when any referenced Seungjeongwon run is active, broken, or invalid.
 
 `PreCompact`
 
 - Check that the active context checkpoint has the required fields before compaction.
 - Block compaction when an ambiguity-register reference is broken.
+- Block compaction when a Seungjeongwon run reference is broken or invalid.
 
 `PostCompact`
 

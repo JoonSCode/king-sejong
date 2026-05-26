@@ -35,6 +35,8 @@ In user scope, this docs tree is installed under `skills/sejong/docs/`, and the 
 
 User-scope install also manages the King Sejong hook block in `${CODEX_HOME:-~/.codex}/config.toml`, sets `[features].hooks = true`, and creates `${CODEX_HOME:-~/.codex}/sejong/state/active-context.json` if it does not already exist. The hook block is marked and idempotent, so rerunning the installer replaces only King Sejong's managed hook section.
 
+User-scope install can also print or write a compact generic Codex guidance block with `--print-codex-guidance` or `--codex-guidance user`. This is optional and does not copy this source repository's `AGENTS.md`. The guidance is generic Codex wording and includes the rule: do not use `.omx` paths as Sejong state.
+
 The installer also owns explicit update maintenance. `--check-updates` fetches the configured upstream and reports whether the King Sejong source checkout is up to date, behind, ahead, dirty, or diverged. `--auto-update` refuses dirty or diverged source checkouts, uses `git pull --ff-only` when updates are available, then refreshes the selected managed install with force semantics and normal verification. Hooks must not silently self-update King Sejong during ordinary session start.
 
 The skill files stay short by design. They load the detailed contracts from the installed Sejong docs only when needed.
@@ -43,18 +45,21 @@ The skill files stay short by design. They load the detailed contracts from the 
 
 For normal use:
 
-1. Read [ROUTER.md](ROUTER.md) to understand Sejong's lanes.
-2. Read [PROTOCOL.md](PROTOCOL.md) to understand Uigwe's planning model.
-3. Read [WRAPPER.md](WRAPPER.md) if you want machine-consumable packet flow.
-4. Read [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md) to understand where research, planning, runtime, and evidence artifacts are stored.
-5. Read [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) if you want repo-local role prompt overlays.
-6. Read [HOOKS.md](HOOKS.md) if you want deterministic Codex lifecycle guardrails.
-7. Read [SECURITY.md](SECURITY.md) and [SILLOK_TRACE.md](SILLOK_TRACE.md) if a workflow mixes private data, untrusted content, external actions, or durable evidence records.
-8. Read [REPO_CONTEXT.md](REPO_CONTEXT.md) if you want guarded `AGENTS.md` init or refresh behavior.
-9. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
-10. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
-11. Read [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md) when live clarification needs a durable readiness and open-ambiguity record.
-12. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
+1. Read [RUNTIME_CONTRACT.md](RUNTIME_CONTRACT.md) for the Codex-native runtime contract.
+2. Read [ROLE_SEPARATION.md](ROLE_SEPARATION.md) for court-mode boundaries.
+3. Read [ROUTER.md](ROUTER.md) to understand Sejong's lanes.
+4. Read [PROTOCOL.md](PROTOCOL.md) to understand Uigwe's planning model.
+5. Read [WRAPPER.md](WRAPPER.md) if you want machine-consumable packet flow.
+6. Read [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md) to understand where research, planning, runtime, and evidence artifacts are stored.
+7. Read [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) if you want repo-local role prompt overlays.
+8. Read [HOOKS.md](HOOKS.md) if you want deterministic Codex lifecycle guardrails.
+9. Read [SECURITY.md](SECURITY.md) and [SILLOK_TRACE.md](SILLOK_TRACE.md) if a workflow mixes private data, untrusted content, external actions, or durable evidence records.
+10. Read [REPO_CONTEXT.md](REPO_CONTEXT.md) if you want guarded `AGENTS.md` init or refresh behavior.
+11. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
+12. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
+13. Read [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md) when live clarification needs a durable readiness and open-ambiguity record.
+14. Read [OUTCOME_EVALUATION.md](OUTCOME_EVALUATION.md) when behavior changes must prove better resulting artifacts, not only correct routing.
+15. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
 
 ## Practical Usage
 
@@ -81,6 +86,8 @@ When the user asks Sejong to achieve a goal, research and advice are helper surf
 For substantial workflows, this active state can be mirrored into an external King Sejong context checkpoint. The checkpoint is validated by [king-sejong-context.schema.json](king-sejong-context.schema.json) and can be used by hooks, subagents, TeamExecutor, and Seungjeongwon evidence records.
 
 When live clarification must be preserved across a long run, reference an ambiguity register from the active context `artifact_refs`. The register records the current stage, readiness percentage, unclear items, recommended options, free-response path, user responses, and next required user action. If any item remains `open`, Sejong must not advance or claim completion unless the user explicitly waives it.
+
+When long-run execution must survive compaction or unattended continuation, reference a Seungjeongwon run artifact from active context `artifact_refs`. The run follows [seungjeongwon-run.schema.json](seungjeongwon-run.schema.json) and records active todos, attempts, verification evidence, blockers, and Uigwe re-entry requests. `Stop` should not conclude while that run is active or invalid.
 
 Use Sejong repo-context init/refresh when a target repository needs an initial `AGENTS.md` or an existing instruction file should absorb durable lessons from recent work. That workflow is candidate-diff first: inspect the repo, deduplicate lessons, reject transient or unsafe material, and apply tracked instruction edits only after explicit user approval or an explicit apply instruction. See [REPO_CONTEXT.md](REPO_CONTEXT.md).
 
@@ -140,9 +147,17 @@ python3 docs/sejong/scripts/validate_json_contracts.py
 python3 docs/sejong/scripts/validate_bundle.py docs/sejong/examples/greenfield-full-flow
 python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets
 python3 docs/sejong/scripts/benchmark_sejong_surface.py --require-targets
+python3 docs/sejong/scripts/sejong_integrated_quality_gate.py --work-dir "$(mktemp -d)"
 python3 docs/sejong/scripts/compare_scorecards.py <baseline.scorecard.json> <candidate.scorecard.json>
+python3 docs/sejong/scripts/outcome_quality_evaluator.py compare --task docs/sejong/examples/outcome-evaluation/tagback-growth/task.json --baseline docs/sejong/examples/outcome-evaluation/tagback-growth/baseline-current-sot.result.json --candidate docs/sejong/examples/outcome-evaluation/tagback-growth/candidate-runtime-contracts.result.json --min-delta 0.12
+python3 docs/sejong/scripts/product_evidence_gate.py check-plan --plan docs/sejong/examples/outcome-evaluation/tagback-growth/field-validation-plan.json
+python3 docs/sejong/scripts/seungjeongwon_run.py check --path <seungjeongwon-run.json>
 python3 docs/sejong/scripts/test_king_sejong_hooks.py
+python3 docs/sejong/scripts/test_sejong_integrated_quality_gate.py
+python3 docs/sejong/scripts/test_product_evidence_gate.py
 python3 docs/sejong/scripts/test_sejong_context.py
+python3 docs/sejong/scripts/test_seungjeongwon_run.py
+python3 docs/sejong/scripts/test_outcome_quality_evaluator.py
 python3 docs/sejong/scripts/test_team_executor.py
 python3 docs/sejong/scripts/test_sillok_trace.py
 SEJONG_HOME="$(mktemp -d)" python3 docs/sejong/scripts/test_king_sejong_e2e.py
