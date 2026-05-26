@@ -19,6 +19,7 @@
 - `instruction-live-session-gates`
 - `instruction-output-contract`
 - `instruction-recursive-decomposition`
+- `instruction-implicit-native-goal-handoff`
 - `instruction-validation-benchmark`
 - `instruction-sejong-boundary`
 - `instruction-cross-stage-helper-calls`
@@ -58,4 +59,5 @@
 - `continuity-follow-up-same-workflow`: follow-up remains inside active Sejong workflow
 - `continuity-compaction-pending-gate`: compaction preserves pending gates
 - `chain-research-plan-execute-record`: end-to-end chain records evidence
+- `chain-tagback-growth-goal-backed`: TagBack growth strategy chains evidence, planning, implicit native goal handoff, executable Codex tasks, and user-owned actions
 - `efficiency-direct-overhead-budget`: direct task token overhead stays bounded

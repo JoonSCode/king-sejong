@@ -49,6 +49,7 @@ SCENARIO_IDS = (
     "instruction-live-session-gates",
     "instruction-output-contract",
     "instruction-recursive-decomposition",
+    "instruction-implicit-native-goal-handoff",
     "instruction-validation-benchmark",
     "instruction-sejong-boundary",
     "instruction-cross-stage-helper-calls",
@@ -198,6 +199,16 @@ def evaluate_recursive_decomposition() -> list[dict[str, Any]]:
         "Use the execution attempt ledger, not new visible todos, for small implementation hypotheses",
         "visible_todo_events",
         "`T2` is marked replaced, and replacement todos `T2a` and `T2b` are added",
+        "Verification Decomposition Loop",
+        "`verification_perspectives`",
+        "`paired_result_comparison`",
+        "verification perspectives",
+        "verification question",
+        "sufficiency threshold",
+        "falsification signal",
+        "verify the verification plan",
+        "Weak perspectives are split, replaced, or escalated",
+        "Do not promote a candidate only because the route, goal activation, or visible board behavior worked.",
     ]
     passed, missing = contains_all(combined, required)
     return [
@@ -205,6 +216,52 @@ def evaluate_recursive_decomposition() -> list[dict[str, Any]]:
             "recursive_decomposition_contract_present",
             passed,
             "Uigwe decomposition remains a recursive select-review-reselect loop down to Seungjeongwon handoff leaves.",
+            missing=missing,
+        )
+    ]
+
+
+def evaluate_implicit_native_goal_handoff() -> list[dict[str, Any]]:
+    protocol = load_text(PROTOCOL_PATH)
+    executor = load_text(SEUNGJEONGWON_EXECUTOR_PATH)
+    seungjeongwon_skill = load_text(SEUNGJEONGWON_SKILL_PATH)
+    validation = load_text(VALIDATION_PATH)
+    combined = "\n".join([protocol, executor, seungjeongwon_skill, validation])
+    required = [
+        "implicit native goal handoff",
+        "does not require the user to type `/goal` separately",
+        "outcome-completion work, not research-only, advice-only, plan-only, or no-execution work",
+        "live ambiguity is closed or explicitly waived",
+        "success criteria, verification plan, and re-entry triggers",
+        "The native goal payload must stay broad.",
+        "Seungjeongwon keeps the detailed todo list",
+        "native_goal_unavailable",
+        "goal_activation_accuracy",
+        "goal_payload_quality",
+        "adaptive_todo_preservation",
+        "outcome_result_quality",
+        "hypothesis_quality",
+        "actionability_delta",
+        "completion_evidence_quality",
+        "blocked_state_quality",
+        "The comparison must judge the resulting work product, not only route intent or goal activation.",
+        "run through Seungjeongwon's verification decomposition loop",
+        "list the perspectives needed to judge the result",
+        "verify whether those checks are sufficient",
+        "verification_perspectives",
+        "paired_result_comparison",
+        "baseline final result",
+        "candidate final result",
+        "final recommendation: promote, reject, or keep shadowing implicit native goal handoff",
+        "TagBack growth scenario",
+        "separate Codex-owned actions from user-owned business actions",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check(
+            "implicit_native_goal_handoff_present",
+            passed,
+            "Goal-backed Seungjeongwon handoff is implicit for handoff-ready outcome work while preserving executor-owned todo recursion.",
             missing=missing,
         )
     ]
@@ -580,6 +637,7 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-live-session-gates": evaluate_live_session,
     "instruction-output-contract": evaluate_output_contract,
     "instruction-recursive-decomposition": evaluate_recursive_decomposition,
+    "instruction-implicit-native-goal-handoff": evaluate_implicit_native_goal_handoff,
     "instruction-validation-benchmark": evaluate_validation_benchmark,
     "instruction-sejong-boundary": evaluate_sejong_boundary,
     "instruction-cross-stage-helper-calls": evaluate_cross_stage_helper_calls,

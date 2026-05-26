@@ -64,6 +64,7 @@ REQUIRED_SCENARIO_IDS = {
     "continuity-compaction-pending-gate",
     "continuity-ambiguity-register-open-item",
     "chain-research-plan-execute-record",
+    "chain-tagback-growth-goal-backed",
     "efficiency-direct-overhead-budget",
 }
 

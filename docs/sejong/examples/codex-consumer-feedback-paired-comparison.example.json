@@ -1,0 +1,152 @@
+{
+  "format": "uigwe.codex-consumer-feedback/v0.2-draft",
+  "metadata": {
+    "profile": "brownfield",
+    "generated_at": "2026-05-26T00:00:00Z",
+    "consumer": "codex",
+    "plan_id": "plan_tagback_growth_goal_handoff",
+    "goal_tree_path": "external:sejong/runs/tagback-growth/goal-tree.json",
+    "attempt_id": "seungjeongwon-attempt-tagback-growth-001",
+    "attempt_number": 1,
+    "bundle_fingerprint": "sha256:5c0d03a6472637a59928a28a7a2d9700315be01d0873ad0e34bd165c4d2ffead",
+    "executor_result_path": "external:sejong/runs/tagback-growth/execution-feedback.json"
+  },
+  "summary": {
+    "completed_count": 1,
+    "blocked_count": 0,
+    "invalidated_count": 0,
+    "requires_planner_reentry": false,
+    "recommended_reentry_target": "none"
+  },
+  "leaf_updates": [
+    {
+      "node_id": "leaf_compare_goal_backed_growth_strategy",
+      "previous_status": "actionable_leaf",
+      "new_status": "completed",
+      "execution_lane": "direct_session",
+      "artifacts": [
+        "external:sejong/runs/tagback-growth/paired-result-comparison.md"
+      ],
+      "commit_group_ids": [],
+      "evidence": [
+        {
+          "type": "app_store_lookup",
+          "description": "Live listing showed TagBack 1.0.3 with zero ratings and reviews."
+        },
+        {
+          "type": "asc_readonly",
+          "description": "ASC reported 1.0.3 READY_FOR_SALE and localized screenshot sets with five screenshots each."
+        }
+      ],
+      "notes": "Goal-backed candidate won because it produced stronger verification perspectives and action-owner separation.",
+      "recommended_reentry_target": "none"
+    }
+  ],
+  "visible_todo_events": [
+    {
+      "event_id": "E1",
+      "event_type": "publish",
+      "todo_id": "T1",
+      "related_todo_ids": [
+        "leaf_compare_goal_backed_growth_strategy"
+      ],
+      "summary": "Publish paired result comparison as the active Seungjeongwon verification todo.",
+      "status": "pending",
+      "evidence_refs": []
+    },
+    {
+      "event_id": "E2",
+      "event_type": "verify",
+      "todo_id": "T1",
+      "related_todo_ids": [
+        "leaf_compare_goal_backed_growth_strategy"
+      ],
+      "summary": "Verify that candidate and baseline used the same evidence bundle and acceptance criteria.",
+      "status": "in_progress",
+      "evidence_refs": [
+        "external:sejong/runs/tagback-growth/evidence-bundle.md"
+      ]
+    },
+    {
+      "event_id": "E3",
+      "event_type": "complete",
+      "todo_id": "T1",
+      "related_todo_ids": [
+        "leaf_compare_goal_backed_growth_strategy"
+      ],
+      "summary": "Complete the paired comparison and recommend goal-backed shadow promotion for similar growth-diagnosis tasks.",
+      "status": "completed",
+      "evidence_refs": [
+        "external:sejong/runs/tagback-growth/paired-result-comparison.md"
+      ]
+    }
+  ],
+  "verification_perspectives": [
+    {
+      "perspective_id": "vp_store_surface",
+      "question": "Does the candidate inspect the public App Store and ASC surfaces before diagnosing growth?",
+      "evidence_target": "Live listing, ASC version state, screenshot sets, rating count, and localization state.",
+      "method": "Compare cited evidence refs against the shared evidence bundle.",
+      "sufficiency_threshold": "At least public listing and ASC read-only state are represented before root-cause selection.",
+      "falsification_signal": "Candidate declares marketing, product, or pricing as the cause without checking listing or ASC evidence.",
+      "owner_boundary": "Codex can inspect listing and ASC state; user owns private analytics and campaign data.",
+      "status": "sufficient",
+      "evidence_refs": [
+        "app-store-lookup:6761936589",
+        "asc:versions:list:6761936589"
+      ]
+    },
+    {
+      "perspective_id": "vp_actionability",
+      "question": "Does the candidate separate Codex-owned actions from user-owned business actions?",
+      "evidence_target": "Action list with owners, prerequisites, first verification step, and blocked user inputs.",
+      "method": "Grade each action for owner, dependency, and measurable next proof.",
+      "sufficiency_threshold": "Every top action has an owner and first verification step.",
+      "falsification_signal": "User-only actions are buried inside Codex todos or Codex actions require unavailable analytics.",
+      "owner_boundary": "Codex owns repo, ASC read-only, copy drafts, and scripts; user owns device pilot, analytics, audience contact, and ad spend.",
+      "status": "sufficient",
+      "evidence_refs": [
+        "external:sejong/runs/tagback-growth/paired-result-comparison.md"
+      ]
+    }
+  ],
+  "paired_result_comparison": {
+    "comparison_id": "tagback-growth-goal-backed-vs-baseline",
+    "baseline_label": "non-goal-backed single-pass Seungjeongwon result",
+    "candidate_label": "goal-backed adaptive Seungjeongwon result",
+    "same_starting_evidence": true,
+    "acceptance_criteria": [
+      "separates facts, assumptions, and unknowns",
+      "identifies stronger root-cause hypotheses",
+      "separates Codex-owned actions from user-owned actions",
+      "names measurable verification steps",
+      "does not claim product success without external evidence"
+    ],
+    "dimensions": [
+      {
+        "dimension": "hypothesis_quality",
+        "baseline_result": "Baseline converged quickly on marketing and ASO improvement.",
+        "candidate_result": "Candidate separated store-surface, real-device trust, analytics, and conversion hypotheses.",
+        "winner": "candidate",
+        "evidence_refs": [
+          "external:sejong/runs/tagback-growth/paired-result-comparison.md"
+        ]
+      },
+      {
+        "dimension": "actionability",
+        "baseline_result": "Baseline named broad marketing and pilot actions.",
+        "candidate_result": "Candidate ordered store-surface verification, real-device pilot, analytics collection, and owned action split.",
+        "winner": "candidate",
+        "evidence_refs": [
+          "external:sejong/runs/tagback-growth/paired-result-comparison.md"
+        ]
+      }
+    ],
+    "unsupported_claim_count_baseline": 1,
+    "unsupported_claim_count_candidate": 0,
+    "final_recommendation": "promote_candidate",
+    "rationale": "Goal-backed execution produced better result quality because verification perspectives forced evidence checks and owner boundaries before selecting actions.",
+    "overhead_notes": "Goal-backed execution used more tokens and time, so promotion applies to strategy, validation, and growth-diagnosis tasks rather than tiny direct edits."
+  },
+  "escalations": []
+}

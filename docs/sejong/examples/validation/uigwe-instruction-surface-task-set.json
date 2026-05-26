@@ -92,6 +92,10 @@
         "weak or invalid candidates trigger local reselection or re-entry",
         "leaf status requires handoff-leaf readiness rather than smallness alone",
         "Seungjeongwon owns the later todo listup, todo verification, subtodo decomposition, actionable leaf detection, and execution loop",
+        "validation-heavy work decomposes the verification objective into task-specific verification perspectives before judging results",
+        "each verification perspective defines a question, evidence target, method, sufficiency threshold, falsification signal, owner boundary, and first action",
+        "weak verification perspectives are split, replaced, or escalated before scoring results",
+        "machine-readable execution feedback can record verification_perspectives and paired_result_comparison",
         "Seungjeongwon publishes actionable leaves through Codex todo tooling as the visible execution board when that tooling is available",
         "execution reshaping appends redefinition and replacement todos instead of silently overwriting the visible board",
         "machine-readable execution feedback records visible todo board changes as visible_todo_events"
@@ -100,8 +104,47 @@
         "treating Uigwe decomposition as a one-shot implementation task list",
         "marking small but ambiguous nodes as handoff leaves",
         "making Uigwe own Seungjeongwon actionable todo loops",
+        "treating verification as a single known command or subjective judgment when the verification goal itself needs decomposition",
         "hiding material Seungjeongwon todo redefinition only in a private ledger",
         "omitting visible_todo_events from machine-readable execution feedback"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    },
+    {
+      "id": "instruction-implicit-native-goal-handoff",
+      "title": "Goal-backed Seungjeongwon handoff stays adaptive",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that handoff-ready outcome-completion Uigwe bundles implicitly enter goal-backed Seungjeongwon execution when native goal support exists, without moving executor todo recursion into the goal.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        "docs/sejong/PROTOCOL.md",
+        "docs/sejong/SEUNGJEONGWON_EXECUTOR.md",
+        ".agents/skills/seungjeongwon/SKILL.md",
+        "docs/sejong/VALIDATION.md"
+      ],
+      "expected_behavior": [
+        "handoff-ready outcome-completion bundles use implicit native goal handoff when host support exists",
+        "users do not need to type /goal separately after Uigwe produces the execution contract",
+        "research-only, advice-only, plan-only, open-ambiguity, non-handoff-ready, and Sejong-direct work do not create native goals",
+        "native goal payloads stay broad and carry objective, completion criteria, verification evidence, blocker policy, and Uigwe re-entry triggers",
+        "Seungjeongwon keeps todo verification, subtodo decomposition, visible board updates, redefinition events, attempt ledgers, and verification loops",
+        "validation compares current non-goal-backed execution against implicit native goal handoff",
+        "validation judges baseline and candidate final results against the same acceptance criteria instead of checking only route intent or goal activation",
+        "result comparison is itself run through Seungjeongwon verification decomposition before scoring paired outputs",
+        "result comparison includes hypothesis quality, actionability delta, evidence quality, unsupported-claim count, and final promote/reject/shadow recommendation",
+        "paired comparisons are persisted as paired_result_comparison when machine-readable execution feedback is produced",
+        "TagBack-style growth strategy tasks distinguish Codex-owned actions from user-owned business actions"
+      ],
+      "forbidden_behavior": [
+        "requiring the user to manually type /goal for ordinary Sejong Uigwe execution handoff",
+        "putting the executor's full todo tree inside the native goal",
+        "marking a goal complete without fresh verification evidence",
+        "creating native goals for research-only or open-ambiguity sessions",
+        "promoting implicit native goal handoff based only on route correctness or goal activation",
+        "claiming product success from TagBack strategy work without measurable external evidence"
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."

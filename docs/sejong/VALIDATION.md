@@ -188,6 +188,53 @@ Record the result with:
 
 Do not claim full executor readiness from a limited dry run. Use it to expose whether handoff leaves decompose into actionable leaves and whether the execution attempt ledger produces useful evidence.
 
+### Phase 5B: Implicit Native Goal Handoff Comparison
+
+Compare the current non-goal-backed Seungjeongwon handoff against `implicit native goal handoff` before promoting goal-backed execution as the default for a workflow class.
+
+Baseline:
+
+- Uigwe produces a handoff-ready bundle.
+- Seungjeongwon runs the adaptive todo loop without a host-native goal.
+- Completion relies on visible board state, execution feedback, verification evidence, and the final assistant report.
+
+Candidate:
+
+- Uigwe produces the same handoff-ready bundle.
+- Seungjeongwon creates or attaches a native goal automatically at execution entry when the host supports it.
+- The native goal carries only the broad objective, completion criteria, verification evidence requirements, blocker policy, and Uigwe re-entry triggers.
+- Seungjeongwon still owns todo verification, subtodo decomposition, redefinition events, attempt ledger entries, verification, and execution feedback.
+
+Score both runs on:
+
+- `goal_activation_accuracy`: native goals are created for handoff-ready outcome-completion work and not created for research-only, advice-only, plan-only, open-ambiguity, or Sejong-direct work
+- `goal_payload_quality`: the goal captures the approved objective and completion bar without embedding the executor todo tree
+- `adaptive_todo_preservation`: Seungjeongwon still performs todo verification, decomposition, visible board updates, and redefinition/replacement events
+- `outcome_result_quality`: the candidate's final answer, chosen experiments, implementation patch, or action split is better than the baseline against the same acceptance criteria
+- `hypothesis_quality`: the candidate identifies stronger root-cause hypotheses, separates known facts from assumptions, and rejects weak hypotheses with reasons
+- `actionability_delta`: the candidate produces clearer Codex-owned next actions, user-owned next actions, dependencies, and first verification steps
+- `completion_evidence_quality`: completion is tied to fresh verification evidence, not only goal status
+- `blocked_state_quality`: blockers name the repeated condition, required user or external action, and Uigwe re-entry target when applicable
+- `continuity_gain`: compacted or resumed work has enough state to continue without the user reconstructing context
+- `overhead_delta`: native goal backing does not add ceremony when the work is small or direct
+
+The comparison must judge the resulting work product, not only route intent or goal activation. For each paired run, record:
+
+- same starting prompt and same available evidence
+- baseline final result
+- candidate final result
+- acceptance-criteria score for each result
+- evidence quality and unsupported-claim count
+- executable Codex action quality
+- user-owned action quality
+- verification or measurement plan quality
+- cost, turns, and tool-call overhead
+- final recommendation: promote, reject, or keep shadowing implicit native goal handoff for that task class
+
+The comparison itself should be run through Seungjeongwon's verification decomposition loop. First list the perspectives needed to judge the result, then define how each perspective will be checked, verify whether those checks are sufficient, split weak perspectives, and only then score the paired outputs.
+
+Use strategy tasks such as the TagBack growth scenario to test this comparison. A good run investigates product, marketing, distribution, monetization, onboarding, App Store presence, user feedback, analytics gaps, and code/release constraints before selecting experiments. It must separate Codex-owned actions from user-owned business actions and must not claim product success without measurable external evidence.
+
 ### Phase 6: Scorecard Comparison
 
 Compare a baseline scorecard and candidate scorecard before promoting a Sejong or Uigwe behavior change:

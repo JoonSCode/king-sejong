@@ -1280,6 +1280,104 @@
       }
     },
     {
+      "id": "chain-tagback-growth-goal-backed",
+      "title": "TagBack growth strategy uses implicit goal-backed execution",
+      "profile": "sejong",
+      "input_shape": "product growth diagnosis, strategy, execution split",
+      "prompt": "/sejong TagBack 앱을 성공시키려면 무엇이 문제인지 찾아보고, 마케팅 문제인지 제품 문제인지 가정과 근거를 나누고, 지금 Codex가 할 수 있는 일과 유저가 해야 할 일을 분리해서 실행 가능한 다음 행동까지 이어가줘.",
+      "expected_mode": "design-to-plan",
+      "expected_route_sequence": [
+        "jangyeongsil",
+        "jiphyeonjeon",
+        "uigwe",
+        "seungjeongwon",
+        "sillok"
+      ],
+      "acceptable_route_sequences": [
+        [
+          "jangyeongsil",
+          "jiphyeonjeon",
+          "uigwe",
+          "seungjeongwon",
+          "sillok"
+        ],
+        [
+          "jangyeongsil",
+          "uigwe",
+          "seungjeongwon",
+          "sillok"
+        ]
+      ],
+      "forbidden_surfaces": [
+        "sejong-direct",
+        "danjong"
+      ],
+      "clarification_required": false,
+      "expected_artifacts": [
+        "evidence brief",
+        "decision note",
+        "Uigwe handoff contract",
+        "implicit native goal objective",
+        "visible actionable todo board",
+        "baseline vs candidate result comparison",
+        "verification_perspectives",
+        "paired_result_comparison",
+        "Codex-owned action list",
+        "user-owned action list",
+        "Sillok-ready evidence summary"
+      ],
+      "expected_behavior": [
+        "checks product, App Store presence, marketing, distribution, onboarding, monetization, user feedback, analytics gaps, release constraints, or codebase evidence before selecting hypotheses",
+        "separates known facts, assumptions, and unknowns instead of collapsing everything into a marketing diagnosis",
+        "compares at least two plausible root-cause hypotheses before choosing experiments",
+        "uses Uigwe to create a bounded experiment-oriented handoff contract with measurable success criteria",
+        "enters Seungjeongwon with implicit native goal backing when the handoff is ready and host support exists",
+        "keeps Seungjeongwon todo verification and subtodo decomposition outside the native goal payload",
+        "lists the verification perspectives needed to judge baseline versus candidate TagBack results before scoring them",
+        "verifies whether each perspective has enough evidence, method, threshold, and falsification signal before using it",
+        "compares the final TagBack growth result against a non-goal-backed baseline on hypothesis quality, actionability, evidence quality, unsupported claims, and verification plan quality",
+        "distinguishes Codex-owned execution from user-owned business actions",
+        "records verification or blocker evidence before claiming progress"
+      ],
+      "forbidden_behavior": [
+        "declaring marketing as the cause without evidence",
+        "claiming app success without measurable external evidence",
+        "creating implementation todos before the growth hypothesis is selected",
+        "burying user-owned business actions inside Codex-owned todos",
+        "putting the full experiment backlog into the native goal payload",
+        "calling implicit native goal handoff better just because the route or goal activation worked",
+        "skipping Sillok-style evidence after execution"
+      ],
+      "grading_notes": [
+        "This scenario tests whether implicit native goal handoff preserves Seungjeongwon recursion on an open-ended product strategy task.",
+        "Pass requires judging the resulting growth diagnosis and action split, not only the intended call structure.",
+        "A good answer should identify what Codex can inspect or change now and what requires the user to supply analytics, ad spend, audience, or customer evidence."
+      ],
+      "guardrail_expectations": {
+        "required_state_fields": [
+          "active_context_id",
+          "route_id",
+          "current_surface",
+          "route_sequence",
+          "source_of_truth_refs"
+        ],
+        "exit_conditions": [
+          "verified outcome",
+          "blocked on user-owned analytics, business, or external market evidence",
+          "Uigwe re-entry when success criteria or hypothesis choice changes"
+        ],
+        "artifact_retention_policy": [
+          "external nontracked evidence by default"
+        ]
+      },
+      "resource_expectations": {
+        "max_turns": 8,
+        "max_tool_calls": 90,
+        "max_total_tokens": 220000,
+        "overhead_budget_note": "Product-growth diagnosis is allowed to be expensive only when it prevents unsupported marketing/product conclusions and produces executable Codex/user action split."
+      }
+    },
+    {
       "id": "efficiency-direct-overhead-budget",
       "title": "Direct task token overhead stays bounded",
       "profile": "routing",

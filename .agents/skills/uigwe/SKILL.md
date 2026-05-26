@@ -60,6 +60,7 @@ Stage meanings should be explained like this:
 - `1단계: 기획 명확화` = clarify what to build, why now, scope, non-goals, constraints, and success criteria
 - `2단계: 설계 명확화` = clarify how to solve it, what alternatives exist, and what trade-offs matter
 - `3단계: 실행 계약화` = turn the chosen design into a bounded Seungjeongwon handoff contract, dependencies, verification bar, and re-entry triggers
+- Handoff-ready outcome-completion bundles implicitly hand off to goal-backed Seungjeongwon execution when host-native goal support is available; Uigwe prepares the broad objective and guardrails, while Seungjeongwon owns adaptive todo decomposition.
 
 Progress reporting rules:
 

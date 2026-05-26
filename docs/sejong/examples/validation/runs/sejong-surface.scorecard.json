@@ -4,12 +4,12 @@
     "fail_count": 0,
     "meets_targets": true,
     "partial_count": 0,
-    "pass_count": 26,
-    "scenario_count": 26
+    "pass_count": 27,
+    "scenario_count": 27
   },
   "format": "uigwe.validation-scorecard/v0.1-draft",
   "metadata": {
-    "generated_at": "2026-05-24T15:21:49Z",
+    "generated_at": "2026-05-25T17:09:06Z",
     "id": "sejong-surface-scorecard",
     "runner": "benchmark_sejong_surface.py",
     "system_under_test": "sejong-surface",
@@ -1780,6 +1780,76 @@
       "score": 1.0,
       "status": "pass",
       "title": "End-to-end chain records evidence"
+    },
+    {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "Scenario names the primary expected Sejong route sequence.",
+          "id": "expected_route_sequence_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names at least one acceptable route sequence.",
+          "id": "acceptable_route_sequences_present",
+          "passed": true
+        },
+        {
+          "detail": "All route and forbidden surface names are valid Sejong surfaces.",
+          "id": "route_surfaces_valid",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete expected behavior bullets.",
+          "id": "expected_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario has concrete forbidden behavior bullets.",
+          "id": "forbidden_behavior_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario names observable artifacts or evidence to grade.",
+          "id": "expected_artifacts_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario includes grading notes for human or LLM judge use.",
+          "id": "grading_notes_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenario records token, tool, turn, and overhead budget expectations.",
+          "id": "resource_expectations_present",
+          "passed": true
+        },
+        {
+          "detail": "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+          "id": "guardrail_expectations_present_when_needed",
+          "passed": true
+        }
+      ],
+      "notes": [
+        "profile=sejong",
+        "expected_route_sequence=jangyeongsil,jiphyeonjeon,uigwe,seungjeongwon,sillok"
+      ],
+      "resource_usage": {
+        "cached_tokens": 0,
+        "estimated_cost_usd": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "retry_count": 0,
+        "tool_calls": 0,
+        "total_tokens": 0,
+        "turn_count": 0,
+        "wall_time_sec": 0
+      },
+      "scenario_id": "chain-tagback-growth-goal-backed",
+      "score": 1.0,
+      "status": "pass",
+      "title": "TagBack growth strategy uses implicit goal-backed execution"
     },
     {
       "blockers": [],

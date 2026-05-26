@@ -29,6 +29,15 @@
         "$ref": "#/$defs/VisibleTodoEvent"
       }
     },
+    "verification_perspectives": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/VerificationPerspective"
+      }
+    },
+    "paired_result_comparison": {
+      "$ref": "#/$defs/PairedResultComparison"
+    },
     "escalations": {
       "type": "array",
       "items": {
@@ -129,6 +138,34 @@
         "brainstorming",
         "deep_interview",
         "human_review"
+      ]
+    },
+    "PerspectiveStatus": {
+      "type": "string",
+      "enum": [
+        "sufficient",
+        "weak",
+        "split",
+        "replaced",
+        "escalated"
+      ]
+    },
+    "ComparisonWinner": {
+      "type": "string",
+      "enum": [
+        "baseline",
+        "candidate",
+        "tie",
+        "inconclusive"
+      ]
+    },
+    "ComparisonRecommendation": {
+      "type": "string",
+      "enum": [
+        "promote_candidate",
+        "reject_candidate",
+        "keep_shadowing",
+        "inconclusive"
       ]
     },
     "Metadata": {
@@ -304,6 +341,141 @@
         "summary",
         "status",
         "evidence_refs"
+      ]
+    },
+    "VerificationPerspective": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "perspective_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "question": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "evidence_target": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "method": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "sufficiency_threshold": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "falsification_signal": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "owner_boundary": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "status": {
+          "$ref": "#/$defs/PerspectiveStatus"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/StringList"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "perspective_id",
+        "question",
+        "evidence_target",
+        "method",
+        "sufficiency_threshold",
+        "falsification_signal",
+        "owner_boundary",
+        "status",
+        "evidence_refs"
+      ]
+    },
+    "ComparisonDimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dimension": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "baseline_result": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "candidate_result": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "winner": {
+          "$ref": "#/$defs/ComparisonWinner"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/StringList"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "dimension",
+        "baseline_result",
+        "candidate_result",
+        "winner",
+        "evidence_refs"
+      ]
+    },
+    "PairedResultComparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "comparison_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "baseline_label": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "candidate_label": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "same_starting_evidence": {
+          "type": "boolean"
+        },
+        "acceptance_criteria": {
+          "$ref": "#/$defs/StringList"
+        },
+        "dimensions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/ComparisonDimension"
+          }
+        },
+        "unsupported_claim_count_baseline": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unsupported_claim_count_candidate": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "final_recommendation": {
+          "$ref": "#/$defs/ComparisonRecommendation"
+        },
+        "rationale": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "overhead_notes": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "comparison_id",
+        "baseline_label",
+        "candidate_label",
+        "same_starting_evidence",
+        "acceptance_criteria",
+        "dimensions",
+        "unsupported_claim_count_baseline",
+        "unsupported_claim_count_candidate",
+        "final_recommendation",
+        "rationale"
       ]
     },
     "Escalation": {

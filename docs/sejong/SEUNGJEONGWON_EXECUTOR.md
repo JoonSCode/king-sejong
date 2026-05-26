@@ -47,6 +47,12 @@ The native default is:
 - verify in Codex
 - report execution feedback directly
 
+For a handoff-ready Uigwe bundle whose original request asks for an outcome to be completed, Seungjeongwon should attach execution to a host-native goal automatically when that surface is available. The user does not need to type `/goal` separately after Uigwe has produced the execution contract.
+
+Native goal backing is a runtime persistence aid, not the execution plan. The goal should contain the approved objective, completion criteria, verification evidence requirements, blocker policy, and Uigwe re-entry triggers. Seungjeongwon keeps the detailed todo list, replacements, redefinitions, attempt hypotheses, and verification steps in the visible execution board and execution feedback.
+
+Do not activate a native goal for research-only, advice-only, plan-only, open-ambiguity, non-handoff-ready, or tiny Sejong-direct maintenance work. If the host lacks native goal support, continue with the normal Seungjeongwon loop and record that native goal support was unavailable when structured execution feedback is produced.
+
 ## Execution Inputs
 
 For a Uigwe bundle:
@@ -54,6 +60,7 @@ For a Uigwe bundle:
 - bundle directory or `wrapper.result.json`
 - selected handoff leaf ids, or all handoff leaves by default
 - optional git policy from the user or repo rules
+- optional native goal id, or enough Uigwe handoff data to create an implicit native goal when the host supports it
 
 For direct action:
 
@@ -72,8 +79,9 @@ For direct action:
    - planning uncertainty -> return to Uigwe
    - implementation failure -> debug and continue
    - blocked external decision -> ask the user
-6. Verify each completed actionable leaf or direct task.
-7. Record evidence before reporting completion.
+6. For validation-heavy work, decompose the verification objective into task-specific verification perspectives before judging the result.
+7. Verify each completed actionable leaf or direct task.
+8. Record evidence before reporting completion.
 
 ## Actionable Decomposition Loop
 
@@ -105,6 +113,8 @@ An actionable leaf must have:
 
 Seungjeongwon may split, merge, reorder, or locally reshape todos while preserving the Uigwe contract. It must not broaden scope, weaken the verification bar, remove must-preserve behavior, or redefine success to make a todo pass.
 
+When native goal backing is active, the same loop remains authoritative. Failed verification should update the visible board or attempt ledger before any goal status changes. Mark the native goal complete only after the Uigwe success criteria are satisfied with fresh verification evidence. Mark it blocked only when blocker evidence shows no meaningful local progress is possible without user input, external state change, or Uigwe re-entry.
+
 If the 4-6 loop keeps failing because the todo is too broad, dependency order is wrong, or the first implementation hypothesis was weak, Seungjeongwon continues local decomposition. If the handoff leaf itself is wrong, it recommends Uigwe `local_reexploration`. If the chosen design is wrong, it recommends `brainstorming`. If the goal, non-goals, success criteria, or must-preserve behavior are incomplete or contradicted, it recommends `deep_interview` or `human_review`.
 
 ## Visible Execution Board
@@ -118,6 +128,47 @@ Seungjeongwon must not silently overwrite an existing visible todo when executio
 Use the execution attempt ledger, not new visible todos, for small implementation hypotheses that stay inside the same actionable todo. A visible redefinition event is required when the actionable todo itself changes. Uigwe re-entry is required when the approved goal, non-goals, success criteria, must-preserve behavior, verification bar, or other guardrails become unstable.
 
 When execution feedback is persisted or handed back as JSON, record the same user-visible board movement in `visible_todo_events`. This ordered event list should include initial publication, starts, verification results, redefinitions, replacements, completions, blocks, or `board_unavailable` when the host lacks todo tooling. A typical visible reshaping sequence is `T2` published, `T2` verification fails, `R1` records the redefinition, `T2` is marked replaced, and replacement todos `T2a` and `T2b` are added before execution continues.
+
+## Verification Decomposition Loop
+
+When the work is to validate, compare, review, prove readiness, or decide whether a new behavior is actually better, Seungjeongwon treats verification itself as an execution objective.
+
+Before judging the result, list the task-specific verification perspectives needed for that objective. The perspectives are not fixed, but typical examples include:
+
+- contract and scope preservation
+- result quality against acceptance criteria
+- evidence quality and unsupported-claim risk
+- regression or compatibility risk
+- actionability and owner split
+- verification or measurement plan quality
+- cost, turn, tool-call, or operational overhead
+- safety, privacy, or guardrail risk
+
+For each perspective, define:
+
+- verification question
+- evidence target
+- method or command
+- sufficiency threshold
+- falsification signal
+- owner or responsibility boundary
+- first action
+
+Then verify the verification plan before executing it. A perspective is weak when it is too broad, unmeasurable, disconnected from acceptance criteria, missing evidence, duplicative, or likely to produce only a subjective opinion. Weak perspectives are split, replaced, or escalated the same way weak actionable todos are.
+
+This loop is recursive:
+
+```text
+verification goal
+-> perspective listup
+-> perspective verification
+-> sub-perspective decomposition
+-> execute verification
+-> judge result quality
+-> add, replace, or close perspectives
+```
+
+For paired comparisons, such as baseline execution versus implicit native goal handoff, Seungjeongwon must compare the resulting work products against the same acceptance criteria. Do not promote a candidate only because the route, goal activation, or visible board behavior worked. Promote it only when the final result is better enough to justify the overhead, or keep it shadowed when evidence is inconclusive.
 
 ## Execution Attempt Loop
 
@@ -178,6 +229,8 @@ Seungjeongwon reports:
 - actionable decomposition evidence
 - visible todo board updates, including replacement or redefinition events when they occurred
 - `visible_todo_events` when machine-readable execution feedback is produced
+- `verification_perspectives` when validation-heavy work decomposes verification into perspectives
+- `paired_result_comparison` when baseline and candidate outputs are compared against the same acceptance criteria
 - execution attempt ledger summary
 - verification evidence
 - recommended Uigwe re-entry target:

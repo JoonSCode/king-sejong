@@ -166,6 +166,32 @@ This is intentionally similar to test-first development: the success bar and ver
 
 Uigwe handoff leaves are not final implementation todos. They are bounded objectives that are clear enough for Seungjeongwon to begin executor-side decomposition. Seungjeongwon owns the later todo listup, todo verification, subtodo decomposition, actionable-leaf detection, execution attempts, verification, and retry ledger.
 
+### Implicit Native Goal Handoff
+
+When a live Sejong/Uigwe workflow is goal-bearing and reaches `ready_for_handoff=true`, the default handoff to Seungjeongwon is `implicit native goal handoff` when the host runtime exposes native goal support.
+
+This does not require the user to type `/goal` separately. The user's request for Sejong/Uigwe to carry an outcome through execution is treated as delegation for goal-backed execution once Uigwe has produced a stable handoff contract.
+
+Implicit native goal handoff is allowed only when all of these are true:
+
+- the original request is outcome-completion work, not research-only, advice-only, plan-only, or no-execution work
+- live ambiguity is closed or explicitly waived
+- the bundle is handoff-ready with success criteria, verification plan, and re-entry triggers
+- the next surface is Seungjeongwon execution, not Sejong direct maintenance
+- the host runtime provides a native goal surface
+
+Uigwe prepares the goal payload at the handoff boundary:
+
+- objective tied to the approved Uigwe contract
+- completion criteria
+- verification evidence requirements
+- blocker and re-entry policy
+- source refs for the selected bundle or handoff leaves
+
+The native goal payload must stay broad. It must not contain the executor's full todo tree, speculative implementation steps, or first-attempt tactics. Seungjeongwon owns those details through its adaptive todo decomposition, visible execution board, attempt ledger, and verification loop.
+
+If native goal support is unavailable, Seungjeongwon still runs the same execution loop and records `native_goal_unavailable` in execution feedback when machine-readable feedback is produced.
+
 ## Readiness-Gated Entry
 
 A stage may be skipped only when the incoming packet is strong enough.

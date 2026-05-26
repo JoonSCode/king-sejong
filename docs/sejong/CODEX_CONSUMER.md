@@ -211,6 +211,8 @@ At minimum, feedback should carry:
 - the same bundle fingerprint used by the executor result when available
 - commit group ids for leaf updates when the executor uses commit-producing git policy
 - `visible_todo_events` that mirror the user-visible Codex todo/update_plan board, including publication, verification, redefinition, replacement, completion, block, or `board_unavailable` events
+- `verification_perspectives` when the work validates, compares, reviews, or proves readiness; each perspective records the question, evidence target, method, sufficiency threshold, falsification signal, owner boundary, status, and evidence refs
+- `paired_result_comparison` when Seungjeongwon compares a baseline and candidate result, such as non-goal-backed execution versus implicit native goal handoff
 
 Default persistence rule for the current Uigwe draft:
 
