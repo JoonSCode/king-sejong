@@ -7,11 +7,15 @@ usage() {
 Usage:
   scripts/install-sejong.sh [--scope repo|user] [--force] [--dry-run] [target-repo]
   scripts/install-sejong.sh --verify [--scope repo|user] [target-repo]
+  scripts/install-sejong.sh --check-updates
+  scripts/install-sejong.sh --auto-update [--scope repo|user] [target-repo]
 
 Examples:
   scripts/install-sejong.sh /path/to/your-repo
   scripts/install-sejong.sh --force /path/to/your-repo
   scripts/install-sejong.sh --verify /path/to/your-repo
+  scripts/install-sejong.sh --check-updates
+  scripts/install-sejong.sh --auto-update --scope user
   scripts/install-sejong.sh --scope user
   scripts/install-sejong.sh --scope user --verify
   CODEX_HOME=/path/to/codex-home scripts/install-sejong.sh --scope user --force
@@ -41,6 +45,8 @@ EOF
 FORCE=0
 DRY_RUN=0
 VERIFY_ONLY=0
+UPDATE_CHECK=0
+AUTO_UPDATE=0
 SCOPE=repo
 TARGET_REPO="."
 
@@ -60,6 +66,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --verify|--check)
       VERIFY_ONLY=1
+      shift
+      ;;
+    --check-update|--check-updates)
+      UPDATE_CHECK=1
+      shift
+      ;;
+    --update|--auto-update)
+      AUTO_UPDATE=1
       shift
       ;;
     --scope)
@@ -96,6 +110,23 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ "$AUTO_UPDATE" -eq 1 ]]; then
+  if [[ "$VERIFY_ONLY" -eq 1 ]]; then
+    echo "--auto-update cannot be combined with --verify" >&2
+    exit 1
+  fi
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "--auto-update cannot be combined with --dry-run; use --check-updates to inspect remote state" >&2
+    exit 1
+  fi
+  FORCE=1
+fi
+
+if [[ "$UPDATE_CHECK" -eq 1 && "$VERIFY_ONLY" -eq 1 ]]; then
+  echo "--check-updates cannot be combined with --verify" >&2
+  exit 1
+fi
 
 canonical_path() {
   python3 - "$1" <<'PY'
@@ -162,6 +193,88 @@ SOURCE_ROOT=$(canonical_path "$SCRIPT_DIR/..")
 SOURCE_ONLY_PATHS=(
   "AGENTS.md"
 )
+
+require_source_git_repo() {
+  if ! git -C "$SOURCE_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "King Sejong update check requires a git checkout: $SOURCE_ROOT" >&2
+    exit 1
+  fi
+}
+
+source_tree_dirty() {
+  [[ -n "$(git -C "$SOURCE_ROOT" status --porcelain)" ]]
+}
+
+load_update_state() {
+  require_source_git_repo
+
+  if ! UPDATE_UPSTREAM=$(git -C "$SOURCE_ROOT" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null); then
+    echo "King Sejong source branch has no upstream; cannot check for updates." >&2
+    exit 1
+  fi
+
+  if ! git -C "$SOURCE_ROOT" fetch --quiet; then
+    echo "failed to fetch King Sejong upstream: $UPDATE_UPSTREAM" >&2
+    exit 1
+  fi
+
+  read -r UPDATE_AHEAD UPDATE_BEHIND < <(git -C "$SOURCE_ROOT" rev-list --left-right --count "HEAD...$UPDATE_UPSTREAM")
+  UPDATE_HEAD=$(git -C "$SOURCE_ROOT" rev-parse --short HEAD)
+  UPDATE_UPSTREAM_HEAD=$(git -C "$SOURCE_ROOT" rev-parse --short "$UPDATE_UPSTREAM")
+}
+
+report_update_state() {
+  load_update_state
+
+  echo "King Sejong source update check:"
+  echo "  source: $SOURCE_ROOT"
+  echo "  upstream: $UPDATE_UPSTREAM"
+  echo "  local HEAD: $UPDATE_HEAD"
+  echo "  upstream HEAD: $UPDATE_UPSTREAM_HEAD"
+
+  if source_tree_dirty; then
+    echo "  status: local changes present; auto-update will refuse until the source tree is clean"
+  elif [[ "$UPDATE_AHEAD" -eq 0 && "$UPDATE_BEHIND" -eq 0 ]]; then
+    echo "  status: up to date"
+  elif [[ "$UPDATE_AHEAD" -eq 0 ]]; then
+    echo "  status: update available; behind by $UPDATE_BEHIND commit(s)"
+    echo "  next: scripts/install-sejong.sh --auto-update --scope user"
+  elif [[ "$UPDATE_BEHIND" -eq 0 ]]; then
+    echo "  status: local branch is ahead by $UPDATE_AHEAD commit(s); nothing to auto-update"
+  else
+    echo "  status: local branch diverged; resolve git history before auto-update"
+  fi
+}
+
+auto_update_source() {
+  require_source_git_repo
+
+  if source_tree_dirty; then
+    echo "King Sejong source has local changes; refusing auto-update:" >&2
+    git -C "$SOURCE_ROOT" status --short >&2
+    exit 1
+  fi
+
+  load_update_state
+
+  if [[ "$UPDATE_AHEAD" -gt 0 && "$UPDATE_BEHIND" -gt 0 ]]; then
+    echo "King Sejong source diverged from $UPDATE_UPSTREAM; refusing auto-update." >&2
+    exit 1
+  fi
+  if [[ "$UPDATE_AHEAD" -gt 0 ]]; then
+    echo "King Sejong source is ahead of $UPDATE_UPSTREAM; refusing auto-update." >&2
+    exit 1
+  fi
+
+  if [[ "$UPDATE_BEHIND" -gt 0 ]]; then
+    echo "Updating King Sejong source from $UPDATE_UPSTREAM..."
+    git -C "$SOURCE_ROOT" pull --ff-only
+  else
+    echo "King Sejong source is already up to date with $UPDATE_UPSTREAM."
+  fi
+
+  echo "Refreshing managed install with --force semantics."
+}
 
 verify_source_only_paths_not_installed() {
   local root=$1
@@ -808,6 +921,15 @@ Invoke from any Codex workspace with:
   \$seungjeongwon <execution request>
 EOF
 }
+
+if [[ "$UPDATE_CHECK" -eq 1 ]]; then
+  report_update_state
+  exit 0
+fi
+
+if [[ "$AUTO_UPDATE" -eq 1 ]]; then
+  auto_update_source
+fi
 
 case "$SCOPE" in
   repo)

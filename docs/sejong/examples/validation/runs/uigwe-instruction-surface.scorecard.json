@@ -3,13 +3,13 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-25T17:09:06Z",
+    "generated_at": "2026-05-26T04:19:14Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
   "aggregate": {
-    "scenario_count": 19,
-    "pass_count": 19,
+    "scenario_count": 20,
+    "pass_count": 20,
     "partial_count": 0,
     "fail_count": 0,
     "average_score": 1.0,
@@ -204,6 +204,23 @@
           "id": "court_skill_frontdoors_present",
           "passed": true,
           "detail": "JangYeongsil and Jiphyeonjeon remain installed thin front doors with installer verification."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-installer-update-maintenance",
+      "title": "Installer exposes guarded update maintenance",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "installer_update_maintenance_present",
+          "passed": true,
+          "detail": "Installer update checks and explicit auto-update behavior remain documented and guarded."
         }
       ],
       "blockers": [],

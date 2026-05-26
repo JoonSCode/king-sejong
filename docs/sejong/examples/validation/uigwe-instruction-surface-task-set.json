@@ -311,6 +311,35 @@
       ]
     },
     {
+      "id": "instruction-installer-update-maintenance",
+      "title": "Installer exposes guarded update maintenance",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that King Sejong can explicitly check for upstream updates and auto-update only through guarded installer behavior.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        "scripts/install-sejong.sh",
+        "README.md",
+        "README.ko.md",
+        "docs/sejong/README.md"
+      ],
+      "expected_behavior": [
+        "installer exposes --check-updates for non-installing source update inspection",
+        "installer exposes --auto-update for fast-forward source refresh followed by managed install verification",
+        "auto-update refuses dirty or diverged source checkouts",
+        "auto-update uses git pull --ff-only",
+        "ordinary King Sejong hooks do not silently self-update the installed surface"
+      ],
+      "forbidden_behavior": [
+        "silently mutating King Sejong from a normal session hook",
+        "auto-updating over local source changes",
+        "auto-updating a diverged branch without human git resolution"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    },
+    {
       "id": "instruction-bounded-parallelism",
       "title": "Bounded parallelism remains lead-owned",
       "profile": "instruction",

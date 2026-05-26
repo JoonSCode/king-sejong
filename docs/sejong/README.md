@@ -35,6 +35,8 @@ In user scope, this docs tree is installed under `skills/sejong/docs/`, and the 
 
 User-scope install also manages the King Sejong hook block in `${CODEX_HOME:-~/.codex}/config.toml`, sets `[features].hooks = true`, and creates `${CODEX_HOME:-~/.codex}/sejong/state/active-context.json` if it does not already exist. The hook block is marked and idempotent, so rerunning the installer replaces only King Sejong's managed hook section.
 
+The installer also owns explicit update maintenance. `--check-updates` fetches the configured upstream and reports whether the King Sejong source checkout is up to date, behind, ahead, dirty, or diverged. `--auto-update` refuses dirty or diverged source checkouts, uses `git pull --ff-only` when updates are available, then refreshes the selected managed install with force semantics and normal verification. Hooks must not silently self-update King Sejong during ordinary session start.
+
 The skill files stay short by design. They load the detailed contracts from the installed Sejong docs only when needed.
 
 ## Start Here

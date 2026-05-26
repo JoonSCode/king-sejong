@@ -2,7 +2,7 @@
   "format": "king-sejong.context/v0.1-draft",
   "active_context_id": "ctx-king-sejong-example",
   "repo_id": "king-sejong-176324a6",
-  "repo_root": "/Users/example/Develop/king-sejong",
+  "repo_root": ".",
   "run_id": "20260523T074733Z-king-sejong-enforcement-uigwe",
   "session_id": "example-session",
   "route_id": "route-king-sejong-guardrails",

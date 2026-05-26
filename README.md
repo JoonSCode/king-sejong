@@ -82,6 +82,20 @@ To check an existing install without copying files:
 bash scripts/install-sejong.sh --verify /path/to/your-repo
 ```
 
+To check whether your King Sejong source checkout has upstream updates:
+
+```bash
+bash scripts/install-sejong.sh --check-updates
+```
+
+To fast-forward the King Sejong source checkout and refresh the Codex user-scope install:
+
+```bash
+bash scripts/install-sejong.sh --auto-update --scope user
+```
+
+`--auto-update` refuses dirty or diverged source checkouts, uses `git pull --ff-only`, then refreshes the selected managed install with force semantics and normal verification. King Sejong hooks do not silently self-update during ordinary sessions.
+
 To install into the current Codex user scope instead:
 
 ```bash

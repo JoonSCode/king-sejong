@@ -80,6 +80,20 @@ bash scripts/install-sejong.sh --force /path/to/your-repo
 bash scripts/install-sejong.sh --verify /path/to/your-repo
 ```
 
+킹 세종 원본 체크아웃에 원격 업데이트가 있는지 살피려면 이리 하시옵소서.
+
+```bash
+bash scripts/install-sejong.sh --check-updates
+```
+
+킹 세종 원본 체크아웃을 fast-forward로 당긴 뒤 Codex 사용자 범위 설치까지 갈아 넣으려면 이리 하시옵소서.
+
+```bash
+bash scripts/install-sejong.sh --auto-update --scope user
+```
+
+`--auto-update`는 원본 체크아웃에 작업 중 변경이 있거나 브랜치가 갈라졌으면 멈추며, `git pull --ff-only` 뒤 선택된 관리 설치 경로를 force 의미로 새로 쓰고 평소 검증을 거치옵니다. 킹 세종 훅은 일반 세션 중 조용히 자기 자신을 자동 업데이트하지 않사옵니다.
+
 Codex 사용자 범위에 들이고자 하면 이리 하시옵소서.
 
 ```bash

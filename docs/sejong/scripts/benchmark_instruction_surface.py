@@ -23,6 +23,9 @@ SEUNGJEONGWON_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "seungjeongwon" / 
 JANGYEONGSIL_OPENAI_YAML_PATH = REPO_ROOT / ".agents" / "skills" / "jangyeongsil" / "agents" / "openai.yaml"
 JIPHYEONJEON_OPENAI_YAML_PATH = REPO_ROOT / ".agents" / "skills" / "jiphyeonjeon" / "agents" / "openai.yaml"
 README_PATH = SEJONG_ROOT / "README.md"
+PUBLIC_README_PATH = REPO_ROOT / "README.md"
+README_KO_PATH = REPO_ROOT / "README.ko.md"
+INSTALLER_PATH = REPO_ROOT / "scripts" / "install-sejong.sh"
 ROUTER_PATH = SEJONG_ROOT / "ROUTER.md"
 REPO_CONTEXT_PATH = SEJONG_ROOT / "REPO_CONTEXT.md"
 PROTOCOL_PATH = SEJONG_ROOT / "PROTOCOL.md"
@@ -55,6 +58,7 @@ SCENARIO_IDS = (
     "instruction-cross-stage-helper-calls",
     "instruction-research-to-uigwe-promotion",
     "instruction-court-skill-frontdoors",
+    "instruction-installer-update-maintenance",
     "instruction-bounded-parallelism",
     "instruction-king-sejong-hooks",
     "instruction-sejong-continuation",
@@ -381,7 +385,7 @@ def evaluate_court_skill_frontdoors() -> list[dict[str, Any]]:
     jiphyeonjeon_ui = load_text(JIPHYEONJEON_OPENAI_YAML_PATH)
     router = load_text(ROUTER_PATH)
     team = load_text(TEAM_EXECUTOR_PATH)
-    installer = load_text(REPO_ROOT / "scripts" / "install-sejong.sh")
+    installer = load_text(INSTALLER_PATH)
     combined = "\n".join([jangyeongsil_skill, jiphyeonjeon_skill, jangyeongsil_ui, jiphyeonjeon_ui, router, team, installer])
     required = [
         "`JangYeongsil` is the King Sejong evidence and experiment front door.",
@@ -401,6 +405,31 @@ def evaluate_court_skill_frontdoors() -> list[dict[str, Any]]:
             "court_skill_frontdoors_present",
             passed,
             "JangYeongsil and Jiphyeonjeon remain installed thin front doors with installer verification.",
+            missing=missing,
+        )
+    ]
+
+
+def evaluate_installer_update_maintenance() -> list[dict[str, Any]]:
+    installer = load_text(INSTALLER_PATH)
+    docs_readme = load_text(README_PATH)
+    public_readme = load_text(PUBLIC_README_PATH)
+    public_readme_ko = load_text(README_KO_PATH)
+    combined = "\n".join([installer, docs_readme, public_readme, public_readme_ko])
+    required = [
+        "--check-updates",
+        "--auto-update",
+        "git pull --ff-only",
+        "dirty or diverged source checkouts",
+        "force semantics",
+        "Hooks must not silently self-update King Sejong during ordinary session start.",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check(
+            "installer_update_maintenance_present",
+            passed,
+            "Installer update checks and explicit auto-update behavior remain documented and guarded.",
             missing=missing,
         )
     ]
@@ -643,6 +672,7 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-cross-stage-helper-calls": evaluate_cross_stage_helper_calls,
     "instruction-research-to-uigwe-promotion": evaluate_research_to_uigwe_promotion,
     "instruction-court-skill-frontdoors": evaluate_court_skill_frontdoors,
+    "instruction-installer-update-maintenance": evaluate_installer_update_maintenance,
     "instruction-bounded-parallelism": evaluate_bounded_parallelism,
     "instruction-king-sejong-hooks": evaluate_king_sejong_hooks,
     "instruction-sejong-continuation": evaluate_sejong_continuation,
