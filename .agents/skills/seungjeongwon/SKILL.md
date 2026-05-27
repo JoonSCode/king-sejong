@@ -24,17 +24,18 @@ Read only what is needed:
 1. Identify the source of truth:
    - validated Uigwe bundle when present
    - explicit user scope when the task is direct and clear
-2. Do not reopen planning unless execution discovers a real contradiction.
-3. For a handoff-ready Uigwe bundle whose original request asks for outcome completion, attach execution to a host-native goal when available; the user does not need to type `/goal` separately.
-4. Keep native goal payloads broad: approved objective, completion criteria, verification evidence, blocker policy, and Uigwe re-entry triggers. Do not move the executor todo tree into the goal.
-5. For Uigwe handoff leaves, run todo listup, todo verification, and subtodo decomposition until actionable leaves exist.
-6. For validation, comparison, review, readiness, or proof goals, decompose the verification objective into task-specific perspectives, verify those perspectives are sufficient, split weak perspectives, and then execute the verification.
-7. When Codex todo tooling is available, publish actionable leaves as the visible execution board before implementation; append explicit redefinition todos and replacement todos when the execution shape changes instead of silently overwriting the board. When producing machine-readable execution feedback, mirror those visible board changes in `visible_todo_events`.
-8. Execute dependency-ready actionable work in the current Codex session when possible.
-9. Use parallel workers only when file scopes are independent and verification remains clear. `$team` workers require Sejong-owned state, mailbox evidence, and file leases.
-10. Preserve the approved goal, non-goals, success criteria, must-preserve behavior, and verification bar. Adjust tactics when implementation hypotheses are wrong, but return to Uigwe or human review when those guardrails are unstable.
-11. Verify before claiming completion.
-12. Return execution feedback:
+2. When a validated Uigwe bundle or handoff-ready Uigwe state exists, do not replace Seungjeongwon with Sejong direct or ordinary direct edits.
+3. Do not reopen planning unless execution discovers a real contradiction.
+4. For a handoff-ready Uigwe bundle whose original request asks for outcome completion, attach execution to a host-native goal when available; the user does not need to type `/goal` separately.
+5. Keep native goal payloads broad: approved objective, completion criteria, verification evidence, blocker policy, and Uigwe re-entry triggers. Do not move the executor todo tree into the goal.
+6. For Uigwe handoff leaves, run todo listup, todo verification, and subtodo decomposition until actionable leaves exist.
+7. For validation, comparison, review, readiness, or proof goals, decompose the verification objective into task-specific perspectives, verify those perspectives are sufficient, split weak perspectives, and then execute the verification.
+8. When Codex todo tooling is available, publish actionable leaves as the visible execution board before implementation; append explicit redefinition todos and replacement todos when the execution shape changes instead of silently overwriting the board. When producing machine-readable execution feedback, mirror those visible board changes in `visible_todo_events`.
+9. Execute dependency-ready actionable work in the current Codex session when possible.
+10. Use parallel workers only when file scopes are independent and verification remains clear. `$team` workers require Sejong-owned state, mailbox evidence, and file leases.
+11. Preserve the approved goal, non-goals, success criteria, must-preserve behavior, and verification bar. Adjust tactics when implementation hypotheses are wrong, but return to Uigwe or human review when those guardrails are unstable.
+12. Verify before claiming completion.
+13. Return execution feedback:
    - completed, blocked, invalidated, or failed scope
    - files changed or artifacts produced
    - native goal id or `native_goal_unavailable` when relevant

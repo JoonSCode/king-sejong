@@ -81,7 +81,7 @@ $jiphyeonjeon compare these options with advocate, critic, and risk-review lense
 
 After Sejong is invoked, follow-up turns remain inside the active Sejong workflow until the user explicitly exits Sejong or switches to another non-Sejong workflow. The user should not have to repeat `$sejong` for every clarification, approval, correction, implementation step, or verification request.
 
-When the user asks Sejong to achieve a goal, research and advice are helper surfaces rather than terminal outputs. Research-only and advice-only requests may stop at evidence or a recommendation, but approving that recommendation, asking to make it concrete, or asking to execute it routes the work into Uigwe before Seungjeongwon execution. `Sejong direct` is reserved for small exact commands, simple answers, obvious non-behavioral fixes, and mechanical corrections.
+When the user asks Sejong to achieve a goal, research and advice are helper surfaces rather than terminal outputs. Research-only and advice-only requests may stop at evidence or a recommendation, but approving that recommendation, asking to make it concrete, or asking to execute it routes the work into Uigwe before Seungjeongwon execution. After Uigwe reaches a handoff-ready outcome contract, execution and verification go through Seungjeongwon, not Sejong direct. `Sejong direct` is reserved for small exact commands, simple answers, obvious non-behavioral fixes, and mechanical corrections.
 
 For substantial workflows, this active state can be mirrored into an external King Sejong context checkpoint. The checkpoint is validated by [king-sejong-context.schema.json](king-sejong-context.schema.json) and can be used by hooks, subagents, TeamExecutor, and Seungjeongwon evidence records.
 

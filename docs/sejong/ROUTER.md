@@ -99,6 +99,25 @@ Use `JangYeongsil` before Uigwe when evidence is missing. Use `Jiphyeonjeon` bef
 
 When in doubt, ask the smallest missing clarification needed to decide whether the user wants advice-only/research-only or goal completion. If the answer is goal completion, enter Uigwe.
 
+## Uigwe-To-Seungjeongwon Handoff Gate
+
+Uigwe is the boundary before goal-bearing execution. Once Sejong has entered Uigwe for an outcome-completion request, the next execution surface is Seungjeongwon after the Uigwe contract is handoff-ready.
+
+Do not skip from JangYeongsil or Jiphyeonjeon directly to Seungjeongwon for write-like execution when Uigwe promotion is pending. Do not skip from handoff-ready Uigwe output to Sejong direct edits merely because the first implementation step is obvious.
+
+The allowed exits from Uigwe before Seungjeongwon are:
+
+- the user explicitly narrows the request to research-only, advice-only, plan-only, or no-execution output
+- live ambiguity remains open and the workflow is waiting for user clarification or waiver
+- Uigwe discovers that the selected direction is not ready and re-enters JangYeongsil, Jiphyeonjeon, or an earlier Uigwe stage
+- the task is reclassified as a small exact non-goal operation, such as a one-command check or non-behavioral typo/link correction
+
+For goal-bearing implementation, cleanup, validation, artifact creation, or shipping work, the default route is:
+
+```text
+Uigwe handoff-ready contract -> Seungjeongwon actionable decomposition -> execution -> verification
+```
+
 ## Recursive Goal Planning
 
 For nested goals, use one top-level Uigwe bundle and recursive `goal-tree.json` decomposition by default. A child objective may call JangYeongsil for missing facts or Jiphyeonjeon for option judgment, but the result returns to the active Uigwe node before handoff.
@@ -394,7 +413,7 @@ Skip this surface when research already settles the direction, when the task is 
 
 ### `Uigwe`
 
-Use when the desired output is a canonical Uigwe bundle.
+Use when the desired output is a canonical Uigwe bundle, or when a goal-bearing implementation request needs a durable execution contract before Seungjeongwon.
 
 Mode resolution:
 
@@ -408,7 +427,7 @@ The router must call into the Uigwe skill or protocol surface rather than duplic
 
 Use after planning succeeds and the user wants execution, verification, or a persistent completion loop.
 
-The router should invoke Seungjeongwon by default.
+The router should invoke Seungjeongwon by default after handoff-ready Uigwe output. Sejong direct is not a replacement for Seungjeongwon on goal-bearing work.
 
 ### `Sejong Direct`
 

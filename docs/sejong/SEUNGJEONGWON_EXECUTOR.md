@@ -71,6 +71,8 @@ For direct action:
 - done criteria
 - verification command or observable proof when known
 
+Direct action is exceptional. It is for clear non-goal maintenance or user-explicit direct scope when no Uigwe handoff contract is active. When a validated Uigwe bundle or handoff-ready Uigwe state exists, Seungjeongwon must execute from that contract rather than letting Sejong direct or ordinary direct edits bypass the executor.
+
 ## Execution Rules
 
 1. Read the source of truth before editing.

@@ -20,7 +20,7 @@ Use it to produce canonical Uigwe planning artifacts:
 
 This skill is a planning surface, not an execution surface.
 
-If execution is requested after planning, hand off through the documented executor or consumer path instead of collapsing planning and execution together.
+If execution is requested after planning, hand off to Seungjeongwon through the documented executor path instead of collapsing planning and execution together or returning to Sejong direct edits.
 
 `deep-interview`, `brainstorming`, and `decomposition` are Uigwe's own protocol stage ids.
 Machine-readable re-entry target ids are `local_reexploration`, `brainstorming`, `deep_interview`, and `human_review`.
@@ -123,8 +123,8 @@ Read only what is needed, in this order:
 
 ## Do Not Use When
 
-- The task is already a clear implementation task and planning would be performative
-- The user explicitly wants direct execution right now
+- The task is only a small exact command, simple answer, or obvious non-behavioral correction where planning would be performative
+- The user explicitly wants research-only, advice-only, plan-only, or no-execution output
 - The user only wants a lightweight opinion or quick comparison without artifact generation
 
 ## Inputs

@@ -128,6 +128,7 @@
       "expected_behavior": [
         "handoff-ready outcome-completion bundles use implicit native goal handoff when host support exists",
         "users do not need to type /goal separately after Uigwe produces the execution contract",
+        "handoff-ready Uigwe bundles cannot be satisfied with Sejong direct edits",
         "research-only, advice-only, plan-only, open-ambiguity, non-handoff-ready, and Sejong-direct work do not create native goals",
         "native goal payloads stay broad and carry objective, completion criteria, verification evidence, blocker policy, and Uigwe re-entry triggers",
         "Seungjeongwon keeps todo verification, subtodo decomposition, visible board updates, redefinition events, attempt ledgers, and verification loops",
@@ -185,11 +186,15 @@
       ],
       "expected_behavior": [
         "Sejong is not a shim over another skill",
-        "formal planning routes through Uigwe"
+        "formal planning routes through Uigwe",
+        "goal-bearing implementation requests enter Uigwe before Seungjeongwon",
+        "handoff-ready Uigwe output routes to Seungjeongwon instead of Sejong direct"
       ],
       "forbidden_behavior": [
         "duplicating Uigwe packet rules inside the router",
-        "weakening Uigwe live-session gates"
+        "weakening Uigwe live-session gates",
+        "treating clear goal-bearing implementation work as Sejong direct",
+        "bypassing Seungjeongwon after Uigwe handoff readiness"
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."

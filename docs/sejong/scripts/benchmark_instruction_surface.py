@@ -300,6 +300,9 @@ def evaluate_sejong_boundary() -> list[dict[str, Any]]:
         "The router must call into the Uigwe skill or protocol surface rather than duplicating its packet rules.",
         "It does not weaken Uigwe live-session approval gates.",
         "Sejong keeps Uigwe focused on its strongest job",
+        "Uigwe-To-Seungjeongwon Handoff Gate",
+        "handoff-ready Uigwe output to Sejong direct edits",
+        "Sejong direct is not a replacement for Seungjeongwon on goal-bearing work",
     ]
     passed, missing = contains_all("\n".join([skill, router]), required)
     return [
@@ -354,6 +357,7 @@ def evaluate_research_to_uigwe_promotion() -> list[dict[str, Any]]:
     )
     required = [
         "Research-To-Uigwe Promotion Gate",
+        "Uigwe-To-Seungjeongwon Handoff Gate",
         "research result is not the conclusion",
         "Research-to-Uigwe rule",
         "Advice-only rule",
@@ -364,6 +368,7 @@ def evaluate_research_to_uigwe_promotion() -> list[dict[str, Any]]:
         "next_surface: uigwe",
         "If the user approves a Jiphyeonjeon recommendation, asks to make it concrete, or asks to carry it out",
         "Do not classify a goal-bearing implementation request as `Sejong direct`",
+        "Once Uigwe reaches a handoff-ready outcome contract, route execution and verification to `Seungjeongwon`",
         "write-like execution",
         "Research or council output must enter Uigwe before write-like execution",
     ]

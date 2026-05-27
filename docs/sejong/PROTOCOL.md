@@ -166,6 +166,14 @@ This is intentionally similar to test-first development: the success bar and ver
 
 Uigwe handoff leaves are not final implementation todos. They are bounded objectives that are clear enough for Seungjeongwon to begin executor-side decomposition. Seungjeongwon owns the later todo listup, todo verification, subtodo decomposition, actionable-leaf detection, execution attempts, verification, and retry ledger.
 
+### Uigwe To Seungjeongwon Boundary
+
+For outcome-completion work, `ready_for_handoff=true` means the work is ready to enter Seungjeongwon, not ready for ordinary direct edits. Uigwe defines the execution contract; Seungjeongwon performs actionable decomposition, implementation, verification, and execution feedback.
+
+Uigwe must not mark a goal-bearing bundle complete by assuming the executor step away. The handoff is complete only when the next surface is explicitly Seungjeongwon, or when the user explicitly converts the request to plan-only/no-execution output before handoff.
+
+Sejong direct may handle small exact non-goal operations, but it must not replace Seungjeongwon for a handoff-ready Uigwe contract.
+
 ### Implicit Native Goal Handoff
 
 When a live Sejong/Uigwe workflow is goal-bearing and reaches `ready_for_handoff=true`, the default handoff to Seungjeongwon is `implicit native goal handoff` when the host runtime exposes native goal support.

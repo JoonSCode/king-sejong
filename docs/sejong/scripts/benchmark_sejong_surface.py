@@ -44,6 +44,7 @@ REQUIRED_SCENARIO_IDS = {
     "route-vague-product-plan",
     "route-approved-bundle-execution",
     "route-clear-direct-task",
+    "route-goal-bearing-clear-task-handoff",
     "route-material-self-modification",
     "repo-context-refresh-candidate-first",
     "research-stale-external-facts",
