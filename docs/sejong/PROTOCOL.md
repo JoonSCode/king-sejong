@@ -70,6 +70,23 @@ valid only when the user explicitly asks to skip, waive, or proceed despite that
 ambiguity. Readiness percentages are progress signals; they do not permit
 advancing while any item remains open.
 
+## Context-Engineered Guardrail Planning
+
+Uigwe should guide the model with compact, decision-relevant context and durable artifacts rather than a massive prompt.
+
+For material planning or design decisions, Uigwe must make the decision boundary visible before downstream execution:
+
+- source context the model should rely on
+- user-owned decisions that require explicit choice or approval
+- agent-owned low-risk implementation details that may be chosen autonomously
+- 2-3 credible options when a choice materially changes scope, architecture, validation, cost, or risk
+- the recommended option with trade-offs, rejected alternatives, and a free-response path
+- success criteria, verification plan, and re-entry triggers
+
+Plan-mode-style clarification is a useful live interaction pattern: gather context, expose options, ask for the missing decision, and then proceed. It is not the durable source of truth. The durable Uigwe result remains the approved packets, ambiguity-register state when used, and the Seungjeongwon handoff contract.
+
+`PLANS.md`-style living plans may be useful for long-running implementation sessions, but they are optional executor-side aids. They must not replace canonical Uigwe artifacts or move Seungjeongwon's adaptive todo tree into the planning contract.
+
 ## Sejong Helper Calls During Uigwe
 
 When Uigwe is running inside Sejong, it may call other court modes as bounded helpers without leaving the Uigwe protocol.

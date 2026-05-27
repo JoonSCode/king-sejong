@@ -53,6 +53,37 @@
       ]
     },
     {
+      "id": "instruction-context-engineered-guardrail-planning",
+      "title": "Uigwe keeps Plan-mode-like clarification durable",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that Uigwe guides design with compact context, options, recommendations, and durable execution guardrails instead of relying on prompt-only behavior.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        ".agents/skills/uigwe/SKILL.md",
+        "docs/sejong/PROTOCOL.md",
+        "docs/sejong/RUNTIME_CONTRACT.md",
+        "docs/sejong/ROLE_SEPARATION.md"
+      ],
+      "expected_behavior": [
+        "material design choices expose 2-3 credible options, trade-offs, a recommended default, and a free-response path",
+        "Uigwe distinguishes user-owned decisions from agent-owned low-risk implementation details",
+        "source context, success criteria, verification plan, and re-entry triggers are made explicit before handoff",
+        "Plan-mode-style clarification is treated as live UX rather than the durable source of truth",
+        "PLANS.md-style living plans are optional executor-side continuity aids, not canonical Uigwe artifacts",
+        "runtime behavior is constrained by docs, active context, ambiguity registers, Uigwe packets, Seungjeongwon run state, hooks, schemas, examples, and benchmarks"
+      ],
+      "forbidden_behavior": [
+        "asking bare open-ended design questions when concrete options are available",
+        "letting the agent silently choose material architecture, validation, cost, or risk trade-offs",
+        "treating Plan mode or PLANS.md as a replacement for approved Uigwe packets",
+        "depending on a massive prompt without artifacts, guardrails, or deterministic regression checks"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ]
+    },
+    {
       "id": "instruction-output-contract",
       "title": "Canonical artifact contract remains visible",
       "profile": "instruction",

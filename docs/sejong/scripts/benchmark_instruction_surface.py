@@ -29,6 +29,7 @@ INSTALLER_PATH = REPO_ROOT / "scripts" / "install-sejong.sh"
 ROUTER_PATH = SEJONG_ROOT / "ROUTER.md"
 REPO_CONTEXT_PATH = SEJONG_ROOT / "REPO_CONTEXT.md"
 PROTOCOL_PATH = SEJONG_ROOT / "PROTOCOL.md"
+RUNTIME_CONTRACT_PATH = SEJONG_ROOT / "RUNTIME_CONTRACT.md"
 SEUNGJEONGWON_EXECUTOR_PATH = SEJONG_ROOT / "SEUNGJEONGWON_EXECUTOR.md"
 VALIDATION_PATH = SEJONG_ROOT / "VALIDATION.md"
 ARTIFACT_STORAGE_PATH = SEJONG_ROOT / "ARTIFACT_STORAGE.md"
@@ -50,6 +51,7 @@ COURT_HELPER_SKILL_LINE_BUDGET = 80
 SCENARIO_IDS = (
     "instruction-routing-modes",
     "instruction-live-session-gates",
+    "instruction-context-engineered-guardrail-planning",
     "instruction-output-contract",
     "instruction-recursive-decomposition",
     "instruction-implicit-native-goal-handoff",
@@ -162,6 +164,40 @@ def evaluate_live_session() -> list[dict[str, Any]]:
     return [
         check("live_session_rules_present", passed, "Live-session clarification and approval rules remain in SKILL.md.", missing=missing),
         check("readme_live_session_summary_present", readme_passed, "README still summarizes interactive live-session behavior."),
+    ]
+
+
+def evaluate_context_engineered_guardrail_planning() -> list[dict[str, Any]]:
+    skill = load_text(UIGWE_SKILL_PATH)
+    protocol = load_text(PROTOCOL_PATH)
+    runtime = load_text(RUNTIME_CONTRACT_PATH)
+    role_separation = load_text(SEJONG_ROOT / "ROLE_SEPARATION.md")
+    combined = "\n".join([skill, protocol, runtime, role_separation])
+    required = [
+        "Context-Engineered Guardrail Planning",
+        "compact, decision-relevant context and durable artifacts rather than a massive prompt",
+        "source context the model should rely on",
+        "user-owned decisions that require explicit choice or approval",
+        "agent-owned low-risk implementation details that may be chosen autonomously",
+        "2-3 credible options when a choice materially changes scope, architecture, validation, cost, or risk",
+        "recommended option with trade-offs, rejected alternatives, and a free-response path",
+        "Plan-mode-style clarification is a useful live interaction pattern",
+        "It is not the durable source of truth.",
+        "`PLANS.md`-style living plans may be useful for long-running implementation sessions",
+        "they are optional executor-side aids",
+        "Host features such as Plan mode or `PLANS.md`-style living plans can improve live clarification",
+        "hooks, permission policy, schemas, examples, and deterministic benchmarks as guardrails and regression checks",
+        "For material design choices, show credible options, trade-offs, a recommended default, and a free-response path",
+        "Clarification should not be a bare question list.",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check(
+            "context_engineered_guardrail_planning_present",
+            passed,
+            "Uigwe keeps Plan-mode-like clarification as live UX while preserving durable Uigwe and Seungjeongwon contracts.",
+            missing=missing,
+        )
     ]
 
 
@@ -669,6 +705,7 @@ def evaluate_compression() -> list[dict[str, Any]]:
 EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-routing-modes": evaluate_routing,
     "instruction-live-session-gates": evaluate_live_session,
+    "instruction-context-engineered-guardrail-planning": evaluate_context_engineered_guardrail_planning,
     "instruction-output-contract": evaluate_output_contract,
     "instruction-recursive-decomposition": evaluate_recursive_decomposition,
     "instruction-implicit-native-goal-handoff": evaluate_implicit_native_goal_handoff,
@@ -718,6 +755,15 @@ def expectation_text_for_scenario(scenario_id: str) -> str:
                 load_text(UIGWE_SKILL_PATH),
                 load_text(ROUTER_PATH),
                 load_text(ARTIFACT_STORAGE_PATH),
+            ]
+        )
+    if scenario_id == "instruction-context-engineered-guardrail-planning":
+        return "\n".join(
+            [
+                load_text(PROTOCOL_PATH),
+                load_text(RUNTIME_CONTRACT_PATH),
+                load_text(UIGWE_SKILL_PATH),
+                load_text(SEJONG_ROOT / "ROLE_SEPARATION.md"),
             ]
         )
     if scenario_id == "instruction-research-to-uigwe-promotion":

@@ -3,13 +3,13 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-26T04:59:42Z",
+    "generated_at": "2026-05-27T07:18:25Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
   "aggregate": {
-    "scenario_count": 20,
-    "pass_count": 20,
+    "scenario_count": 21,
+    "pass_count": 21,
     "partial_count": 0,
     "fail_count": 0,
     "average_score": 1.0,
@@ -48,6 +48,23 @@
           "id": "readme_live_session_summary_present",
           "passed": true,
           "detail": "README still summarizes interactive live-session behavior."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-context-engineered-guardrail-planning",
+      "title": "Uigwe keeps Plan-mode-like clarification durable",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "context_engineered_guardrail_planning_present",
+          "passed": true,
+          "detail": "Uigwe keeps Plan-mode-like clarification as live UX while preserving durable Uigwe and Seungjeongwon contracts."
         }
       ],
       "blockers": [],
@@ -463,7 +480,7 @@
         {
           "id": "uigwe_skill_line_budget",
           "passed": true,
-          "detail": "Uigwe SKILL.md line count is 284; budget is 320."
+          "detail": "Uigwe SKILL.md line count is 286; budget is 320."
         },
         {
           "id": "sejong_skill_line_budget",

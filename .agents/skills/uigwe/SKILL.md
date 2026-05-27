@@ -39,6 +39,7 @@ Mandatory rules:
 - Ask targeted clarification questions in small batches and wait for the user's answers before advancing the stage.
 - Do not generate an `Intent Packet` until intent, scope, non-goals, decision boundaries, constraints, and acceptance criteria are explicit enough to summarize back to the user.
 - Do not generate a `Design Packet` until the design-stage ambiguities have been discussed with the user when they materially affect architecture, trade-offs, or validation.
+- For material design choices, show credible options, trade-offs, a recommended default, and a free-response path before asking for approval.
 - Do not mark an approval gate as `waived` in a live session unless the user explicitly says to skip approval.
 - Offline artifact generation and other non-interactive evaluation contexts must be labeled explicitly. Only those contexts may auto-fill assumptions and waive approval gates by default.
 - When an ambiguity register is active, do not advance the live stage until readiness is `100%` and there are no `open` ambiguity items, unless the user explicitly waives the remaining ambiguity.
@@ -61,6 +62,7 @@ Stage meanings should be explained like this:
 - `2단계: 설계 명확화` = clarify how to solve it, what alternatives exist, and what trade-offs matter
 - `3단계: 실행 계약화` = turn the chosen design into a bounded Seungjeongwon handoff contract, dependencies, verification bar, and re-entry triggers
 - Handoff-ready outcome-completion bundles implicitly hand off to goal-backed Seungjeongwon execution when host-native goal support is available; Uigwe prepares the broad objective and guardrails, while Seungjeongwon owns adaptive todo decomposition.
+- Plan-mode-style clarification is allowed as live UX, but approved Uigwe packets and the Seungjeongwon handoff contract remain the durable source of truth.
 
 Progress reporting rules:
 

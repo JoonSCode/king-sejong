@@ -62,6 +62,21 @@ Uigwe clarifies the idea and design
 
 The active Seungjeongwon run artifact follows [seungjeongwon-run.schema.json](seungjeongwon-run.schema.json). Use `docs/sejong/scripts/seungjeongwon_run.py` to create and check that artifact.
 
+## Context Stack
+
+King Sejong behavior should be constrained by layered context, artifacts, and checks rather than prompt wording alone.
+
+The normal context stack is:
+
+- source-of-truth docs and thin skill front doors
+- active King Sejong context with route, surface, gates, refs, and exit conditions
+- ambiguity registers for live clarification state when material uncertainty remains
+- Uigwe packets and handoff contracts for selected direction, decision boundaries, success criteria, verification, and re-entry triggers
+- Seungjeongwon run artifacts, visible boards, attempt ledgers, and verification evidence during execution
+- hooks, permission policy, schemas, examples, and deterministic benchmarks as guardrails and regression checks
+
+Host features such as Plan mode or `PLANS.md`-style living plans can improve live clarification and long-running execution continuity, but they do not override the Uigwe contract, Seungjeongwon run state, or explicit user approval gates.
+
 ## Result Quality
 
 Behavioral guardrails are necessary but not sufficient. A Sejong change is not better merely because routing, hooks, or todo events fired correctly.
