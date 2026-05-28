@@ -41,6 +41,12 @@ JangYeongsil, Jiphyeonjeon, Uigwe, and Seungjeongwon are Sejong court modes, not
 
 Peer messages are allowed only as bounded worker messages inside an open round. They must name the role, scope, message kind, target message when replying, and evidence refs. Peer messages may challenge claims, ask questions, or answer objections, but they do not approve gates, finalize packets, declare consensus, or replace lead synthesis.
 
+This is the `Bounded Worker Authority` discipline gate from
+[DISCIPLINE_GATES.md](DISCIPLINE_GATES.md). Worker output is useful because it
+widens evidence and challenges assumptions; it is unsafe when agreement,
+silence, or majority vote becomes approval. The lead Sejong agent owns synthesis,
+Uigwe owns planning gates, and Seungjeongwon owns final verification.
+
 Court-mode helper calls may also use `TeamExecutor`. For example, Uigwe can run a JangYeongsil evidence-helper team while Uigwe prepares non-blocking preflight checks, or run a Jiphyeonjeon option-review team while decomposition shape is still being challenged. In those cases, initialize the team run with `current_surface` set to the helper mode, include the calling Uigwe bundle, council brief, or active context in `source_of_truth_refs`, and require the worker output to return to the calling mode. Helper-team workers must not approve Uigwe gates, finalize packets, claim consensus, or override lead synthesis.
 
 ## State Root

@@ -15,6 +15,10 @@ When security-sensitive evidence, verification, or tool actions are involved, fo
 
 When repo instruction context such as `AGENTS.md` should be initialized or refreshed, use the guarded candidate-diff workflow in `../../../docs/sejong/REPO_CONTEXT.md`; do not silently rewrite tracked instruction files.
 
+When a request depends on workflow discipline, quality gates, subordinate
+runtime behavior, worker authority, or completion evidence, follow
+`../../../docs/sejong/DISCIPLINE_GATES.md`.
+
 ## Routing
 
 1. Load `../../../docs/sejong/ROUTER.md`.

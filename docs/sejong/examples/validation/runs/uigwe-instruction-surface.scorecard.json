@@ -3,7 +3,7 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-27T07:18:25Z",
+    "generated_at": "2026-05-28T09:48:50Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
@@ -485,7 +485,7 @@
         {
           "id": "sejong_skill_line_budget",
           "passed": true,
-          "detail": "Sejong SKILL.md line count is 54; budget is 90."
+          "detail": "Sejong SKILL.md line count is 58; budget is 90."
         },
         {
           "id": "jangyeongsil_skill_line_budget",

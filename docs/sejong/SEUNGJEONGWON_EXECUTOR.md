@@ -257,6 +257,13 @@ Seungjeongwon reports:
 
 Completion requires fresh proof.
 
+Seungjeongwon applies the hard execution discipline gates from
+[DISCIPLINE_GATES.md](DISCIPLINE_GATES.md), especially `Root Cause Before Fix`,
+`Verification Before Completion`, and `No Silent Success Redefinition`. These
+gates mean the executor may adapt tactics, split todos, and retry hypotheses,
+but it must not claim completion without fresh evidence or change the approved
+Uigwe success contract to make verification pass.
+
 Acceptable evidence includes:
 
 - tests, typecheck, lint, build, or schema validation output

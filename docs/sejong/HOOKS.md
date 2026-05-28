@@ -23,6 +23,13 @@ python3 docs/sejong/scripts/sejong_context.py doctor --repo-root .
 python3 docs/sejong/scripts/sejong_context.py close
 ```
 
+Hook behavior is scoped by the why-based force levels in
+[DISCIPLINE_GATES.md](DISCIPLINE_GATES.md). Hooks may enforce `hard` gates such
+as protected self-modification, premature completion, worker authority claims,
+open ambiguity, and active Seungjeongwon runs. They may route or add context for
+`route` gates such as research-to-Uigwe promotion. They should not turn every
+advisory practice into a hard block.
+
 The reference tests are:
 
 ```bash

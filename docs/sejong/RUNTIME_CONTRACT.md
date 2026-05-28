@@ -21,6 +21,12 @@ Use the lightest layer that can actually enforce the behavior:
 
 Prompt text alone is not the enforcement mechanism. It is only the entrypoint into the contract.
 
+Discipline gates are the why-based bridge between instruction text and runtime
+behavior. [DISCIPLINE_GATES.md](DISCIPLINE_GATES.md) defines each gate by the
+failure it prevents, the owning Sejong surface, the force level (`hard`,
+`route`, `advisory`, or `shadow`), and the verification evidence required before
+promotion or completion.
+
 ## Runtime State
 
 Runtime state belongs under:
@@ -69,6 +75,7 @@ King Sejong behavior should be constrained by layered context, artifacts, and ch
 The normal context stack is:
 
 - source-of-truth docs and thin skill front doors
+- discipline gates that explain why a behavior is enforced and how strongly
 - active King Sejong context with route, surface, gates, refs, and exit conditions
 - ambiguity registers for live clarification state when material uncertainty remains
 - Uigwe packets and handoff contracts for selected direction, decision boundaries, success criteria, verification, and re-entry triggers

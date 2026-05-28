@@ -164,6 +164,28 @@ python3 docs/sejong/scripts/outcome_quality_evaluator.py compare \
 
 The seed TagBack growth scenario grades causal diagnosis, audience/JTBD clarity, marketing strategy, experiment prioritization, instrumentation, owner split, risk controls, evidence quality, and actionability. It is a deterministic artifact-quality gate. It does not replace real product analytics, A/B tests, user interviews, or human judgment.
 
+### Phase 2D.1: Discipline Gate Contract Review
+
+Run this review when adding or changing why-based Sejong discipline gates:
+
+```bash
+python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets
+python3 docs/sejong/scripts/benchmark_sejong_surface.py --require-targets
+```
+
+Each gate must state:
+
+- why the behavior exists
+- what failure it prevents
+- owning court surface
+- force level: `hard`, `route`, `advisory`, or `shadow`
+- verification evidence
+
+Do not promote an external workflow pattern into Sejong unless it maps to a
+Sejong-owned surface and a concrete prevented failure. Keep unproven patterns in
+`shadow` until outcome-quality or integrated validation justifies stronger
+enforcement.
+
 ### Phase 2E: Integrated Quality Gate
 
 Run this when a change must prove it composes with the latest Sejong SOT rather than only passing in isolation:

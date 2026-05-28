@@ -47,19 +47,20 @@ For normal use:
 
 1. Read [RUNTIME_CONTRACT.md](RUNTIME_CONTRACT.md) for the Codex-native runtime contract.
 2. Read [ROLE_SEPARATION.md](ROLE_SEPARATION.md) for court-mode boundaries.
-3. Read [ROUTER.md](ROUTER.md) to understand Sejong's lanes.
-4. Read [PROTOCOL.md](PROTOCOL.md) to understand Uigwe's planning model.
-5. Read [WRAPPER.md](WRAPPER.md) if you want machine-consumable packet flow.
-6. Read [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md) to understand where research, planning, runtime, and evidence artifacts are stored.
-7. Read [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) if you want repo-local role prompt overlays.
-8. Read [HOOKS.md](HOOKS.md) if you want deterministic Codex lifecycle guardrails.
-9. Read [SECURITY.md](SECURITY.md) and [SILLOK_TRACE.md](SILLOK_TRACE.md) if a workflow mixes private data, untrusted content, external actions, or durable evidence records.
-10. Read [REPO_CONTEXT.md](REPO_CONTEXT.md) if you want guarded `AGENTS.md` init or refresh behavior.
-11. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
-12. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
-13. Read [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md) when live clarification needs a durable readiness and open-ambiguity record.
-14. Read [OUTCOME_EVALUATION.md](OUTCOME_EVALUATION.md) when behavior changes must prove better resulting artifacts, not only correct routing.
-15. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
+3. Read [DISCIPLINE_GATES.md](DISCIPLINE_GATES.md) for why-based force levels and quality gates.
+4. Read [ROUTER.md](ROUTER.md) to understand Sejong's lanes.
+5. Read [PROTOCOL.md](PROTOCOL.md) to understand Uigwe's planning model.
+6. Read [WRAPPER.md](WRAPPER.md) if you want machine-consumable packet flow.
+7. Read [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md) to understand where research, planning, runtime, and evidence artifacts are stored.
+8. Read [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) if you want repo-local role prompt overlays.
+9. Read [HOOKS.md](HOOKS.md) if you want deterministic Codex lifecycle guardrails.
+10. Read [SECURITY.md](SECURITY.md) and [SILLOK_TRACE.md](SILLOK_TRACE.md) if a workflow mixes private data, untrusted content, external actions, or durable evidence records.
+11. Read [REPO_CONTEXT.md](REPO_CONTEXT.md) if you want guarded `AGENTS.md` init or refresh behavior.
+12. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
+13. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
+14. Read [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md) when live clarification needs a durable readiness and open-ambiguity record.
+15. Read [OUTCOME_EVALUATION.md](OUTCOME_EVALUATION.md) when behavior changes must prove better resulting artifacts, not only correct routing.
+16. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
 
 ## Practical Usage
 

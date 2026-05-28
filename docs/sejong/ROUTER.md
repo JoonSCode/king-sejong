@@ -55,6 +55,13 @@ In short: `JangYeongsil` gathers the evidence, `Jiphyeonjeon` discusses and deci
 
 `Jiphyeonjeon` is not mandatory in every Sejong chain. Use it as a short deliberation pass only when the gathered evidence leaves a meaningful choice.
 
+Route decisions also follow the why-based discipline gates in
+[DISCIPLINE_GATES.md](DISCIPLINE_GATES.md). In particular, Sejong remains the
+router-first authority when a Sejong workflow is active; research that feeds a
+decision routes to Uigwe, outcome-completion work continues to execution and
+verification, and subordinate runtimes or skills stay below the selected court
+surface.
+
 ## Research-To-Uigwe Promotion Gate
 
 Research can stop at `JangYeongsil` only when the user asks for evidence by itself: source history, facts, examples, status, or a lightweight situation read with no downstream decision or plan.
