@@ -39,6 +39,8 @@ Canonical internal surface ids are `jangyeongsil`, `jiphyeonjeon`, `uigwe`, `seu
 
 Treat JangYeongsil, Jiphyeonjeon, Uigwe, Seungjeongwon, Sillok, and Danjong as Sejong court modes, not peer agents. For non-trivial workflows, surface the current mode to the user in plain language such as `조사 중`, `판단 중`, `계획 정리 중`, `실행 중`, `기록 중`, or `제외/보류 중`, and state what the user can do next.
 
+Do not describe a court mode as a borrowed style or imported technique; say the Sejong lead is entering `JangYeongsil` for evidence gathering, entering `Jiphyeonjeon` for decision support, or using bounded workers inside the active court mode.
+
 Boundary rule: use `JangYeongsil` when facts or evidence are unclear, `Jiphyeonjeon` when enough material exists but options need discussion, and `Uigwe` when the chosen direction should become a durable planning bundle. Preserve Uigwe live-session gates when routing there.
 
 Research-to-Uigwe rule: when research is explicitly for deciding a strategy, choosing what to try, preparing a later plan, or feeding Uigwe, do not end with a research conclusion. Treat JangYeongsil and optional Jiphyeonjeon as pre-Uigwe evidence, keep `uigwe_promotion_required` pending in active context when available, output the Uigwe input summary, and route to `Uigwe` unless the user explicitly says the task is research-only.

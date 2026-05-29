@@ -256,13 +256,15 @@
         "JangYeongsil research can overlap with Uigwe preflight",
         "Jiphyeonjeon option review can overlap with Uigwe artifact inventory or decomposition challenge",
         "official host-native team messaging is preferred when the runtime supports direct worker messages",
-        "$team helper runs keep current_surface set to the helper mode and source_of_truth_refs pointed at the calling context"
+        "$team helper runs keep current_surface set to the helper mode and source_of_truth_refs pointed at the calling context",
+        "user-facing progress notes name actual court modes rather than style shorthand"
       ],
       "forbidden_behavior": [
         "helper calls approving Uigwe gates",
         "helper calls finalizing canonical packets",
         "worker or helper consensus replacing lead synthesis",
-        "serializing every research, discussion, and planning step when bounded preflight overlap is safe"
+        "serializing every research, discussion, and planning step when bounded preflight overlap is safe",
+        "describing court modes as borrowed styles such as JangYeongsil-style or Jiphyeonjeon-style"
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."

@@ -151,6 +151,8 @@ JangYeongsil, Jiphyeonjeon, Uigwe, Seungjeongwon, Sillok, and Danjong are Sejong
 
 `JangYeongsil` and `Jiphyeonjeon` also have thin installed skill front doors so the user can invoke them directly. Those skills load this router contract and return bounded evidence or decision support to the Sejong lead. They do not become peer agents that overrule Sejong.
 
+Do not describe a Sejong court mode as a borrowed style or imported technique. In progress notes, say the Sejong lead is entering `JangYeongsil` for evidence gathering, entering `Jiphyeonjeon` for decision support, or using bounded workers inside the active court mode.
+
 When speaking to a human user during a non-trivial Sejong workflow, state the workflow position in plain language before dense internal ids. For Korean users, prefer:
 
 | Internal surface | User-facing state |

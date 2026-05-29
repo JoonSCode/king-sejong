@@ -370,6 +370,9 @@ def evaluate_cross_stage_helper_calls() -> list[dict[str, Any]]:
         "Jiphyeonjeon option review may run while Uigwe inventories artifacts",
         "Host-native team or teammate messaging is preferred when the runtime officially supports direct worker messages",
         "with `current_surface` set to the helper mode",
+        "Do not describe a Sejong court mode as a borrowed style",
+        "entering `JangYeongsil` for evidence gathering",
+        "entering `Jiphyeonjeon` for decision support",
         "Helper calls do not approve Uigwe gates, finalize `spec.md`, finalize `rationale.md`, finalize `goal-tree.json`, claim consensus, or override lead synthesis.",
     ]
     passed, missing = contains_all(combined, required)
