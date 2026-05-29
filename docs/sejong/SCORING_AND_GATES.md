@@ -268,6 +268,7 @@ For example, a `design_readiness` score above threshold still does not justify d
 - approval is still pending
 - the selected approach is missing
 - alternatives were never seriously compared
+- the selected approach lacks a Decision Justification record for material trade-offs
 - critical assumptions remain unresolved
 
 Likewise, a Uigwe leaf may not be marked `handoff_leaf` if:
@@ -275,6 +276,7 @@ Likewise, a Uigwe leaf may not be marked `handoff_leaf` if:
 - file scope is still ambiguous
 - verification is nominal rather than actionable
 - re-entry triggers are missing
+- the handoff choice cannot explain why this leaf is needed instead of a simpler viable alternative
 - Seungjeongwon would still need to guess planning boundaries
 
 Likewise, a Seungjeongwon todo may not be marked `actionable_leaf` if:

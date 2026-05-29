@@ -709,6 +709,48 @@
       }
     },
     {
+      "id": "instruction-decision-justification",
+      "title": "Material decisions keep why and alternatives visible",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that Sejong, Uigwe, and Seungjeongwon preserve why a material choice was selected, what serious alternatives were rejected, and what evidence would reopen the decision.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        "docs/sejong/DISCIPLINE_GATES.md",
+        "docs/sejong/PROTOCOL.md",
+        "docs/sejong/SCORING_AND_GATES.md",
+        "docs/sejong/CODEX_CONSUMER.md"
+      ],
+      "expected_behavior": [
+        "Decision Justification is documented as a discipline gate",
+        "material choices record selected option, serious alternatives, rejection reasons, simplest viable alternative, and falsification or re-entry signal",
+        "Jiphyeonjeon, Uigwe, and Seungjeongwon keep their existing ownership boundaries",
+        "low-risk local choices can remain advisory instead of becoming hard blockers"
+      ],
+      "forbidden_behavior": [
+        "creating a separate why court mode",
+        "making every low-risk local choice a hard gate",
+        "allowing unsupported material decisions to bypass Uigwe or Jiphyeonjeon re-entry"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ],
+      "guardrail_expectations": {
+        "decision_justification_fields": [
+          "selected option",
+          "serious alternatives",
+          "rejection reasons",
+          "simplest viable alternative",
+          "falsification or re-entry signal"
+        ],
+        "ownership_boundaries": [
+          "Jiphyeonjeon owns option comparison",
+          "Uigwe owns design and handoff choices",
+          "Seungjeongwon owns tactical execution choices"
+        ]
+      }
+    },
+    {
       "id": "instruction-compression-budget",
       "title": "Skill files stay small enough to load",
       "profile": "instruction",

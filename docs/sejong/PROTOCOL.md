@@ -83,6 +83,12 @@ For material planning or design decisions, Uigwe must make the decision boundary
 - the recommended option with trade-offs, rejected alternatives, and a free-response path
 - success criteria, verification plan, and re-entry triggers
 
+Material choices also follow the `Decision Justification` gate in
+[DISCIPLINE_GATES.md](DISCIPLINE_GATES.md): the selected option, serious
+alternatives, rejection reasons, simplest viable alternative, and falsification
+or re-entry signal must be visible before downstream execution relies on the
+choice.
+
 Plan-mode-style clarification is a useful live interaction pattern: gather context, expose options, ask for the missing decision, and then proceed. It is not the durable source of truth. The durable Uigwe result remains the approved packets, ambiguity-register state when used, and the Seungjeongwon handoff contract.
 
 `PLANS.md`-style living plans may be useful for long-running implementation sessions, but they are optional executor-side aids. They must not replace canonical Uigwe artifacts or move Seungjeongwon's adaptive todo tree into the planning contract.
@@ -248,7 +254,7 @@ For each expandable node:
 
 1. Define the node objective from the parent goal, selected design, constraints, non-goals, and expected done state.
 2. Select `2-3` candidate child objective sets that could satisfy that local objective.
-3. Review each candidate set against hard gates before scoring.
+3. Review each candidate set against hard gates and the Decision Justification gate before scoring.
 4. Reselect locally when the candidate set is invalid, weak, duplicated, unverifiable, or misaligned with the parent objective.
 5. Commit the selected child set when it satisfies the local objective, and preserve strong upper-level alternatives where useful.
 6. Recurse into each selected child until it is either expanded again or marked `handoff_leaf`.
@@ -260,6 +266,8 @@ For each expandable node:
 - reject invalid candidates through hard gates before scoring
 - keep `1` selected candidate and preserve `2-3` strong alternatives at upper levels
 - merge duplicated work into shared dependencies when appropriate, allowing a DAG rather than a strict tree
+- for material choices, preserve why the selected branch beats serious
+  alternatives and what evidence would reopen that choice
 
 ### Hard Gates
 
@@ -533,6 +541,7 @@ Bias toward:
 - intent clarity
 - scope discipline
 - alternative exploration
+- explicit decision justification
 - risk shaping
 - wider early exploration beam
 - later convergence only after sufficient design confidence

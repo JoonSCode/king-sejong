@@ -35,6 +35,7 @@ VALIDATION_PATH = SEJONG_ROOT / "VALIDATION.md"
 ARTIFACT_STORAGE_PATH = SEJONG_ROOT / "ARTIFACT_STORAGE.md"
 TEAM_EXECUTOR_PATH = SEJONG_ROOT / "TEAM_EXECUTOR.md"
 HOOKS_PATH = SEJONG_ROOT / "HOOKS.md"
+DISCIPLINE_GATES_PATH = SEJONG_ROOT / "DISCIPLINE_GATES.md"
 AMBIGUITY_REGISTER_PATH = SEJONG_ROOT / "AMBIGUITY_REGISTER.md"
 AMBIGUITY_REGISTER_SCHEMA_PATH = SEJONG_ROOT / "ambiguity-register.schema.json"
 SECURITY_PATH = SEJONG_ROOT / "SECURITY.md"
@@ -69,6 +70,7 @@ SCENARIO_IDS = (
     "instruction-artifact-storage",
     "instruction-repo-context-refresh",
     "instruction-sillok-security-trace",
+    "instruction-decision-justification",
     "instruction-compression-budget",
 )
 
@@ -82,6 +84,7 @@ REQUIRED_GUARDRAIL_SCENARIOS = {
     "instruction-artifact-storage",
     "instruction-repo-context-refresh",
     "instruction-sillok-security-trace",
+    "instruction-decision-justification",
 }
 
 
@@ -667,6 +670,36 @@ def evaluate_sillok_security_trace() -> list[dict[str, Any]]:
     ]
 
 
+def evaluate_decision_justification() -> list[dict[str, Any]]:
+    discipline = load_text(DISCIPLINE_GATES_PATH)
+    protocol = load_text(PROTOCOL_PATH)
+    scoring = load_text(SEJONG_ROOT / "SCORING_AND_GATES.md")
+    consumer = load_text(SEJONG_ROOT / "CODEX_CONSUMER.md")
+    combined = "\n".join([discipline, protocol, scoring, consumer])
+    required = [
+        "Decision Justification",
+        "selected option",
+        "serious alternatives",
+        "rejection reasons",
+        "simplest viable alternative",
+        "falsification or re-entry signal",
+        "Jiphyeonjeon owns option comparison",
+        "Uigwe owns design and handoff choices",
+        "Seungjeongwon owns tactical execution choices",
+        "unsupported material decisions or missing rejection reasons",
+        "the selected approach lacks a Decision Justification record",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check(
+            "decision_justification_gate_present",
+            passed,
+            "Material choices preserve why the selected path beats serious alternatives and when to re-enter.",
+            missing=missing,
+        )
+    ]
+
+
 def evaluate_compression() -> list[dict[str, Any]]:
     uigwe_lines = line_count(UIGWE_SKILL_PATH)
     sejong_lines = line_count(SEJONG_SKILL_PATH)
@@ -723,6 +756,7 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-artifact-storage": evaluate_artifact_storage,
     "instruction-repo-context-refresh": evaluate_repo_context_refresh,
     "instruction-sillok-security-trace": evaluate_sillok_security_trace,
+    "instruction-decision-justification": evaluate_decision_justification,
     "instruction-compression-budget": evaluate_compression,
 }
 
@@ -743,6 +777,15 @@ def expectation_text_for_scenario(scenario_id: str) -> str:
     ]
     if scenario_id == "instruction-artifact-storage":
         return "\n".join([load_text(ARTIFACT_STORAGE_PATH), load_text(ROUTER_PATH), load_text(HOOKS_PATH)])
+    if scenario_id == "instruction-decision-justification":
+        return "\n".join(
+            [
+                load_text(DISCIPLINE_GATES_PATH),
+                load_text(PROTOCOL_PATH),
+                load_text(SEJONG_ROOT / "SCORING_AND_GATES.md"),
+                load_text(SEJONG_ROOT / "CODEX_CONSUMER.md"),
+            ]
+        )
     if scenario_id == "instruction-bounded-parallelism":
         return "\n".join([load_text(TEAM_EXECUTOR_PATH), load_text(ROUTER_PATH), load_text(HOOKS_PATH)])
     if scenario_id == "instruction-ambiguity-register":

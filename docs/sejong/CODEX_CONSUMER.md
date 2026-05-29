@@ -164,7 +164,9 @@ The critic should check:
 
 - consistency with the selected plan
 - architectural boundary violations
+- unsupported material decisions or missing rejection reasons
 - missed simpler alternatives
+- missing falsification or planner re-entry signal for risky choices
 - scope creep
 
 The critic should not reopen planning unless the issue cannot be resolved within the leaf boundary.

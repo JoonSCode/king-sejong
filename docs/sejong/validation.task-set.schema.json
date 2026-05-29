@@ -210,6 +210,12 @@
         },
         "repo_context_guardrails": {
           "$ref": "#/$defs/StringList"
+        },
+        "decision_justification_fields": {
+          "$ref": "#/$defs/StringList"
+        },
+        "ownership_boundaries": {
+          "$ref": "#/$defs/StringList"
         }
       }
     },

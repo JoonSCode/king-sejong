@@ -122,6 +122,22 @@ same failure the gate was meant to prevent.
   observable proof, schema check, bundle validation, manual runtime result, or
   explicit blocker evidence.
 
+### Decision Justification
+
+- **Why:** Material choices should pass because they are better for the stated
+  goal, not because they are the first plausible option.
+- **Prevents:** Arbitrary selection, overbuilt designs, missed simpler
+  alternatives, hidden trade-offs, and execution that cannot explain why it is
+  changing the current system.
+- **Owner:** Jiphyeonjeon owns option comparison; Uigwe owns design and handoff choices; Seungjeongwon owns tactical execution choices inside the approved contract.
+- **Force:** `route` for material design, planning, or policy choices;
+  `advisory` for low-risk local tactics; `hard` only when a choice changes
+  protected scope, success criteria, non-goals, or verification bars.
+- **Behavior:** For material choices, record the selected option, serious alternatives, rejection reasons, simplest viable alternative, and the falsification or re-entry signal that would reopen the decision.
+- **Verification:** Decision notes, `rationale.md`, `goal-tree.json`
+  alternatives, or execution feedback show why the selected path remains valid
+  and what evidence would make Jiphyeonjeon or Uigwe re-enter the decision.
+
 ### Bounded Worker Authority
 
 - **Why:** Parallel workers improve coverage, but they do not own the decision.
@@ -196,6 +212,7 @@ mapped into Sejong surfaces:
 | Skill-first discipline | Sejong Router First | Sejong is the authority; skills are subordinate. |
 | Systematic debugging | Root Cause Before Fix | Use JangYeongsil evidence and Seungjeongwon attempts. |
 | Verification before completion | Verification Before Completion | Hard gate before completion claims. |
+| Decision records / why review | Decision Justification | Material choices keep alternatives, rejection reasons, and re-entry signals visible. |
 | TDD / test-first | Uigwe To Seungjeongwon, Verification Before Completion | Use when behavior changes need executable proof; do not force for every doc/config edit. |
 | Brainstorming approval | Uigwe live-session gates | Use for material design choices, not tiny exact tasks. |
 | Subagent review loops | Bounded Worker Authority | Reviewers provide evidence; lead owns synthesis. |
@@ -214,4 +231,3 @@ mapped into Sejong surfaces:
    validation justifies promotion.
 5. If a gate creates more process than risk reduction, lower its force level or
    narrow its trigger.
-

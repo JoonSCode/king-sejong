@@ -3,13 +3,13 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-28T09:48:50Z",
+    "generated_at": "2026-05-28T10:37:46Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
   "aggregate": {
-    "scenario_count": 21,
-    "pass_count": 21,
+    "scenario_count": 22,
+    "pass_count": 22,
     "partial_count": 0,
     "fail_count": 0,
     "average_score": 1.0,
@@ -464,6 +464,33 @@
           "id": "guardrail_artifact_retention_policy",
           "passed": true,
           "detail": "Typed guardrail expectation artifact_retention_policy is represented in the instruction surface."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-decision-justification",
+      "title": "Material decisions keep why and alternatives visible",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "decision_justification_gate_present",
+          "passed": true,
+          "detail": "Material choices preserve why the selected path beats serious alternatives and when to re-enter."
+        },
+        {
+          "id": "guardrail_decision_justification_fields",
+          "passed": true,
+          "detail": "Typed guardrail expectation decision_justification_fields is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_ownership_boundaries",
+          "passed": true,
+          "detail": "Typed guardrail expectation ownership_boundaries is represented in the instruction surface."
         }
       ],
       "blockers": [],
