@@ -1,10 +1,10 @@
 # King Sejong Surface Scorecard
 
 - Task set: `sejong-seed-task-set`
-- Generated at: `2026-05-27T07:04:17Z`
+- Generated at: `2026-05-29T15:24:01Z`
 - Status: `pass`
 - Average score: `1.0`
-- Pass/partial/fail: `28/0/0`
+- Pass/partial/fail: `29/0/0`
 
 ## Scenarios
 - `route-evidence-only-history`: `pass` (1.0)
@@ -26,6 +26,7 @@
 - `execution-small-doc-fix`: `pass` (1.0)
 - `execution-validated-leaf`: `pass` (1.0)
 - `team-jiphyeonjeon-challenge-round`: `pass` (1.0)
+- `team-jiphyeonjeon-scholar-research-lane`: `pass` (1.0)
 - `team-execution-disjoint-leases`: `pass` (1.0)
 - `hook-protected-path-route-gate`: `pass` (1.0)
 - `hook-subagent-final-claim`: `pass` (1.0)

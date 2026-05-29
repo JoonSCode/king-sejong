@@ -49,6 +49,8 @@ Uigwe owns planning gates, and Seungjeongwon owns final verification.
 
 Court-mode helper calls may also use `TeamExecutor`. For example, Uigwe can run a JangYeongsil evidence-helper team while Uigwe prepares non-blocking preflight checks, or run a Jiphyeonjeon option-review team while decomposition shape is still being challenged. In those cases, initialize the team run with `current_surface` set to the helper mode, include the calling Uigwe bundle, council brief, or active context in `source_of_truth_refs`, and require the worker output to return to the calling mode. Helper-team workers must not approve Uigwe gates, finalize packets, claim consensus, or override lead synthesis.
 
+In Jiphyeonjeon, a scholar may open or request a scholar-scoped JangYeongsil helper lane for a specific `research_question` tied to a visible `decision_claim`, objection, or question. The result must be written back as shared evidence, not private scholar evidence, and must separate `known`, `inferred`, `unknown`, source refs, confidence, and residual risk. The council brief or team state should record a spawn budget and an extra-lane reason when that budget is exceeded. Scholar helper lanes must not create child councils, approve Uigwe gates, claim final synthesis, or turn evidence into a majority-vote decision.
+
 ## State Root
 
 `TeamExecutor` state belongs under the Sejong artifact root:
@@ -106,6 +108,7 @@ Each worker must have:
 - assigned scope
 - allowed message kinds
 - allowed outputs
+- linked research question, when the worker is a scholar-scoped helper lane
 - allowed file scope, if it can write
 - verification expectation
 - stop condition

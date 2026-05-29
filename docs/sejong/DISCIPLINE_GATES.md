@@ -153,6 +153,36 @@ same failure the gate was meant to prevent.
   reject claims of Uigwe gate approval, final synthesis, final verification, or
   majority-vote authority.
 
+### Jiphyeonjeon Scholar Sub-Research
+
+- **Why:** A Jiphyeonjeon scholar can make a stronger bounded argument when the
+  factual issue behind a claim, objection, or question is checked directly
+  instead of left as rhetoric.
+- **Prevents:** Lead-only research bottlenecks, evidence-free debate,
+  scholar-private evidence hoarding, cherry-picked support, unbounded recursive
+  councils, and helper research becoming a hidden decision authority.
+- **Owner:** Jiphyeonjeon owns the council brief, scholar scopes, challenge
+  rounds, and final synthesis. JangYeongsil-style helper lanes own evidence
+  separation only. Sejong owns route authority, and Uigwe owns later planning
+  gates.
+- **Force:** `route` when a scholar needs a bounded evidence lane; `hard` for
+  shared evidence, no final-authority claims, no Uigwe gate approval, and no
+  private evidence; `advisory` for ordinary spawn-budget tuning unless the
+  workflow is large enough that cost, traceability, or promotion claims make the
+  budget part of the success contract.
+- **Behavior:** A scholar may open or request sub-research only for an explicit
+  `research_question` tied to a visible `decision_claim`, objection, or
+  question, with a note on whether the answer could change the decision. The
+  lane returns `known`, `inferred`, `unknown`, source refs, confidence, and
+  residual risk into the shared evidence bundle. Scholars may cite or rebut that
+  evidence during the bounded challenge or persuasion round, but the lead
+  synthesizes the decision note.
+- **Verification:** The council record or TeamExecutor run shows the
+  `research_question`, linked claim or objection, shared evidence ref, source
+  refs, separated known/inferred/unknown output, spawn budget or extra-lane
+  reason, and absence of claims that the scholar, helper lane, consensus, or
+  majority vote approved the final decision or Uigwe gate.
+
 ### External Dynamic Workflow Adoption
 
 - **Why:** Dynamic workflow runtimes can improve large research, review, and

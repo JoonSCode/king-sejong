@@ -950,6 +950,76 @@
       }
     },
     {
+      "id": "team-jiphyeonjeon-scholar-research-lane",
+      "title": "Jiphyeonjeon scholar research stays shared and bounded",
+      "profile": "team",
+      "input_shape": "council debate with one factual dispute",
+      "prompt": "/sejong 집현전으로 advocate와 critic이 서로 반박하게 하고, critic이 제기한 repo-history 사실 쟁점 하나는 critic-scoped research lane으로 확인한 뒤 shared evidence로 합쳐서 최종 판단해줘.",
+      "expected_mode": "none",
+      "expected_route_sequence": [
+        "jiphyeonjeon"
+      ],
+      "acceptable_route_sequences": [
+        [
+          "jiphyeonjeon"
+        ],
+        [
+          "jiphyeonjeon",
+          "jangyeongsil",
+          "jiphyeonjeon"
+        ]
+      ],
+      "forbidden_surfaces": [
+        "uigwe",
+        "seungjeongwon"
+      ],
+      "clarification_required": false,
+      "expected_artifacts": [
+        "council brief",
+        "research question",
+        "shared evidence ref",
+        "lead synthesis"
+      ],
+      "expected_behavior": [
+        "ties the scholar research lane to an explicit research_question and linked claim or objection",
+        "records whether the research could change the decision",
+        "returns known, inferred, unknown, source refs, confidence, and residual risk into shared evidence",
+        "lets other scholars cite or rebut the shared evidence during a bounded challenge round",
+        "records spawn budget or an extra-lane reason",
+        "lead synthesis names recommendation, rejected options, unresolved unknowns, and next surface"
+      ],
+      "forbidden_behavior": [
+        "private scholar evidence hoarding",
+        "scholar sub-research approving the decision",
+        "creating an unbounded child council",
+        "majority vote as final decision",
+        "Uigwe gate approval by scholar or helper lane"
+      ],
+      "grading_notes": [
+        "Scholar research is allowed because it closes a visible factual dispute; it remains shared evidence, not scholar authority."
+      ],
+      "guardrail_expectations": {
+        "required_state_fields": [
+          "current_surface",
+          "route_sequence",
+          "source_of_truth_refs",
+          "spawn_budget"
+        ],
+        "worker_authority_forbidden_claims": [
+          "Uigwe gate approval",
+          "final synthesis",
+          "majority-vote decisions",
+          "private evidence"
+        ]
+      },
+      "resource_expectations": {
+        "max_turns": 2,
+        "max_tool_calls": 24,
+        "max_total_tokens": 90000,
+        "overhead_budget_note": "Sub-research is justified only when the factual dispute could change the council decision."
+      }
+    },
+    {
       "id": "team-execution-disjoint-leases",
       "title": "Parallel execution requires disjoint leases",
       "profile": "team",

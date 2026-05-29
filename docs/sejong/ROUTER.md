@@ -312,6 +312,7 @@ behavior itself is changing materially.
 - Start with a shared council brief: `decision_question`, `shared_evidence_bundle`, `fixed_options`, criteria, constraints, non-goals, allowed output, forbidden decisions, stop condition, and verification requirement.
 - Start bounded perspectives such as option advocate, counter-advocate, critic, domain specialist, operator, or risk reviewer.
 - Prefer independent first-round briefs, then a lead-mediated challenge round when the strongest objections need response.
+- A scholar may open or request a scholar-scoped JangYeongsil helper lane only for a specific research question tied to a claim, objection, or question that could change the decision. The result must return to the shared evidence bundle as `known`, `inferred`, `unknown`, source refs, and confidence; it is not private evidence for that scholar.
 - For substantial Jiphyeonjeon work, a mailbox-mediated `$team` challenge round is allowed: workers may append bounded `claim`, `objection`, `question`, `response`, `evidence_ref`, or `risk` messages to the run mailbox, and may reference earlier message ids when answering each other.
 - Treat subagent agreement as signal, not evidence or approval. The lead synthesizes the final recommendation, rejected options, risks, confidence, and next surface.
 - Do not run open-ended worker-to-worker chat, majority voting, or debate-as-verification. The lead Sejong agent opens and closes each challenge round, resolves conflicts, and owns the final decision note.
@@ -321,6 +322,7 @@ Mailbox-mediated Jiphyeonjeon is useful when cross-examination will improve the 
 - use one shared council brief and fixed option set unless the lead explicitly reopens the question
 - require every message to name its role, scope, message kind, and target message id when replying
 - cap challenge rounds; default to one challenge round after independent briefs
+- cap scholar-scoped helper research with a visible spawn budget, and require an extra-lane reason when a new lane is needed after the default budget is spent
 - store the mailbox as external run evidence, not as a tracked repository artifact unless explicitly promoted
 - never allow a worker message to approve Uigwe gates, finalize packets, claim consensus, or override lead synthesis
 

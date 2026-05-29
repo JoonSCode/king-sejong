@@ -58,6 +58,7 @@ REQUIRED_SCENARIO_IDS = {
     "execution-small-doc-fix",
     "execution-validated-leaf",
     "team-jiphyeonjeon-challenge-round",
+    "team-jiphyeonjeon-scholar-research-lane",
     "team-execution-disjoint-leases",
     "hook-protected-path-route-gate",
     "hook-subagent-final-claim",

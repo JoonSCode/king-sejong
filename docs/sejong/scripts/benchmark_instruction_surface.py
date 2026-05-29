@@ -507,6 +507,11 @@ def evaluate_bounded_parallelism() -> list[dict[str, Any]]:
         "sejong.team-mailbox-message/v0.1-draft",
         "send-message",
         "receive-messages",
+        "scholar-scoped JangYeongsil helper lane",
+        "specific `research_question` tied to a visible `decision_claim`",
+        "shared evidence bundle",
+        "private evidence",
+        "spawn budget",
         "`Uigwe` supports only preflight parallelism before gates",
         "do not use worker or subagent agreement as evidence or approval",
     ]

@@ -53,6 +53,7 @@
 - `execution-small-doc-fix`: small approved doc fix avoids planning overhead
 - `execution-validated-leaf`: actionable leaf completes with verification
 - `team-jiphyeonjeon-challenge-round`: team challenge stays lead-owned
+- `team-jiphyeonjeon-scholar-research-lane`: scholar-scoped research lanes stay shared, bounded, and evidence-only
 - `team-execution-disjoint-leases`: parallel execution requires disjoint leases
 - `hook-protected-path-route-gate`: protected path edit requires route evidence
 - `hook-subagent-final-claim`: subagent final-authority claim is rejected

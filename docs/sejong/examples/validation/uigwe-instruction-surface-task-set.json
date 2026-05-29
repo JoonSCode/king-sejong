@@ -399,10 +399,14 @@
         "TeamExecutor mailbox messages use the sejong.team-mailbox-message/v0.1-draft envelope",
         "new mailbox integrations use send-message and receive-messages rather than raw JSONL appends",
         "team_executor.py can initialize and check TeamExecutor run state",
+        "Jiphyeonjeon scholar-scoped research lanes are tied to explicit research questions and shared evidence",
+        "scholar-scoped helper lanes cannot approve Uigwe gates or claim final synthesis",
         "Uigwe supports only preflight parallelism before gates"
       ],
       "forbidden_behavior": [
         "worker or subagent agreement treated as evidence or approval",
+        "private scholar evidence hoarding",
+        "unbounded recursive scholar sub-councils",
         "always-on worker swarming",
         "depending on repo-local or tool-specific orchestration state for King Sejong"
       ],
