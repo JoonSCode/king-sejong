@@ -6,7 +6,7 @@
 
 `TeamExecutor` is King Sejong's optional team-work backend for work that benefits from multiple independent workers.
 
-It is designed for wrappers such as `$team` that launch separate Codex CLI, Claude CLI, or other compatible worker processes in `tmux` panes and coordinate them through Sejong-owned state files.
+It is designed for wrappers such as `$team` that launch separate Codex CLI or explicitly configured compatible worker processes in `tmux` panes and coordinate them through Sejong-owned state files.
 
 `TeamExecutor` is not the default Sejong executor. The default remains `Seungjeongwon`.
 
@@ -93,7 +93,11 @@ The source of truth can be a council brief, an Uigwe bundle, or a direct Seungje
 
 ## Worker Model
 
-`$team` may launch workers in `tmux` panes. A worker can be backed by Codex CLI, Claude CLI, or another compatible command-line agent.
+`$team` may launch workers in `tmux` panes. A worker can be backed by Codex CLI or another explicitly configured compatible command-line agent.
+
+Do not configure Claude CLI, Claude API, or an external Claude workflow runtime
+as a hidden backend for King Sejong. External workflow ideas must be migrated to
+Codex-native execution, represented by a mock, or left unpromoted.
 
 Each worker must have:
 
@@ -145,7 +149,7 @@ python3 docs/sejong/scripts/team_executor.py send-message <run-dir> --worker-id 
 python3 docs/sejong/scripts/team_executor.py receive-messages <run-dir> --worker-id advocate
 python3 docs/sejong/scripts/team_executor.py acquire-lease <run-dir> --worker-id implementer --scope "src/example.py"
 python3 docs/sejong/scripts/team_executor.py check <run-dir>
-python3 docs/sejong/scripts/team_executor.py launch <run-dir> --worker-command 'critic=claude ...' --dry-run
+python3 docs/sejong/scripts/team_executor.py launch <run-dir> --worker-command 'critic=codex ...' --dry-run
 ```
 
 `append-message` remains a compatibility alias for `send-message`, but wrappers should use `send-message` and `receive-messages` for new mailbox integrations.

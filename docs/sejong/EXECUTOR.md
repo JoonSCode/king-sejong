@@ -135,7 +135,7 @@ Best for:
 
 - coordination-heavy or strongly parallel work
 - explicit staged multi-agent execution
-- `$team` wrappers that launch separate Codex CLI, Claude CLI, or compatible workers in `tmux` panes
+- `$team` wrappers that launch separate Codex CLI or explicitly configured compatible workers in `tmux` panes
 
 `TeamExecutor` is optional. It is not the default executor, and it should not replace Seungjeongwon for ordinary execution.
 

@@ -60,7 +60,8 @@ For normal use:
 13. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
 14. Read [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md) when live clarification needs a durable readiness and open-ambiguity record.
 15. Read [OUTCOME_EVALUATION.md](OUTCOME_EVALUATION.md) when behavior changes must prove better resulting artifacts, not only correct routing.
-16. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
+16. Read [WORKFLOW_RUN.md](WORKFLOW_RUN.md) when evaluating dynamic workflow, deep-research, ultracode-style, or many-agent backend ideas without giving them Sejong authority.
+17. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
 
 ## Practical Usage
 
@@ -146,6 +147,11 @@ Useful commands:
 ```bash
 python3 docs/sejong/scripts/validate_json_contracts.py
 python3 docs/sejong/scripts/validate_bundle.py docs/sejong/examples/greenfield-full-flow
+python3 docs/sejong/scripts/sejong_workflow_run.py check --path docs/sejong/examples/workflow-run.example.json
+python3 docs/sejong/scripts/benchmark_workflow_run.py
+python3 docs/sejong/scripts/benchmark_workflow_run_comparison.py --min-score-delta 0.10 --min-multi-metric-score 0.90
+python3 docs/sejong/scripts/benchmark_workflow_run_stability.py --samples 9 --warmups 1
+python3 docs/sejong/scripts/audit_workflow_run_risks.py --repo-root . --artifact docs/sejong/examples/workflow-run.example.json
 python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets
 python3 docs/sejong/scripts/benchmark_sejong_surface.py --require-targets
 python3 docs/sejong/scripts/sejong_integrated_quality_gate.py --work-dir "$(mktemp -d)"

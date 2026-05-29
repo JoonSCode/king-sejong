@@ -243,6 +243,7 @@ When changing King Sejong itself, material behavior changes should follow the fu
 - [Repo context init and refresh](docs/sejong/REPO_CONTEXT.md)
 - [Artifact storage](docs/sejong/ARTIFACT_STORAGE.md)
 - [Team executor](docs/sejong/TEAM_EXECUTOR.md)
+- [Workflow-run dynamic workflow evidence contract](docs/sejong/WORKFLOW_RUN.md)
 - [Prompt overlays](docs/sejong/PROMPT_OVERLAYS.md)
 - [Uigwe protocol](docs/sejong/PROTOCOL.md)
 - [Uigwe wrapper](docs/sejong/WRAPPER.md)

@@ -39,6 +39,7 @@ Active King Sejong context checkpoints should be stored inside the same run dire
 king-sejong-context.json
 ambiguity-register.json
 seungjeongwon-run.json
+workflow-run.json
 route-decisions.jsonl
 execution-feedback.json
 execution-ledger.jsonl
@@ -55,6 +56,17 @@ Seungjeongwon active run artifacts should follow
 `docs/sejong/seungjeongwon-run.schema.json`. The active context should reference
 them through `artifact_refs` so hooks can block premature stop or compaction
 while execution remains active or invalid.
+
+Codex-migrated or mocked workflow-like backend runs should follow
+`docs/sejong/workflow-run.schema.json`. Use
+`docs/sejong/scripts/sejong_workflow_run.py` to record mapped court surfaces,
+bounded workers, backend provenance, worker/concurrency metrics, evidence
+ledgers, quality comparison, authority violations, and the final recommendation.
+These artifacts are subordinate evidence for Sejong and Seungjeongwon; they are
+not Uigwe packets, do not approve gates, and do not permit hidden calls to
+Claude CLI, Claude API, or an external Claude workflow runtime.
+The helper rejects repo-local workflow-run creation unless the caller provides
+an explicit promoted-artifact ref.
 
 Sillok trace events should follow `docs/sejong/sillok-trace-event.schema.json`.
 Use [SILLOK_TRACE.md](SILLOK_TRACE.md) for the JSONL event contract and security
@@ -84,6 +96,8 @@ External nontracked artifacts include:
 - Seungjeongwon execution evidence snapshots
 - Seungjeongwon actionable decomposition notes and execution attempt ledgers
 - Seungjeongwon active run artifacts
+- workflow-run shadow comparisons for Codex-migrated dynamic workflow,
+  deep-research-style, or mocked backends
 - outcome-quality comparison artifacts
 - Sillok evidence logs that were not explicitly requested as repository records
 

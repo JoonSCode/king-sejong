@@ -153,6 +153,84 @@ same failure the gate was meant to prevent.
   reject claims of Uigwe gate approval, final synthesis, final verification, or
   majority-vote authority.
 
+### External Dynamic Workflow Adoption
+
+- **Why:** Dynamic workflow runtimes can improve large research, review, and
+  verification work by keeping intermediate worker state outside the lead model
+  context and by making fan-out, cross-checking, retry, and synthesis steps
+  repeatable. They are useful because they reduce context pollution, make
+  independent evidence lanes easier to compare, and can run the same validation
+  pattern again instead of relying on one-off prompting.
+- **Benefit summary:** dynamic workflow runtimes can improve large research, review, and verification work when the task benefits from repeatable fan-out, cross-checking, retry, and synthesis outside the lead context.
+- **Prevents:** Treating an external workflow script, deep-research report,
+  ultracode-style mode, or many-agent backend as a new Sejong authority layer;
+  promoting a workflow because it ran rather than because it produced a better
+  verified result; letting runtime state become a competing Uigwe plan; or
+  secretly calling an external Claude CLI, Claude API, or Claude workflow
+  runtime as a Sejong backend.
+- **Blocked authority summary:** external workflow script, deep-research report, ultracode-style mode, or many-agent backend output is evidence or runtime feedback, not court authority.
+- **Owner:** Sejong owns route selection and synthesis. JangYeongsil owns
+  research evidence. Jiphyeonjeon owns material option comparison. Uigwe owns
+  the normative contract and approval gates. Seungjeongwon owns execution,
+  workflow-backend use, verification, and feedback. Sillok owns durable evidence
+  records.
+- **Force:** `shadow` by default for new workflow-backed behavior; `route` when a
+  request should enter JangYeongsil, Jiphyeonjeon, Uigwe, or Seungjeongwon before
+  workflow use; `hard` for protected edits, live ambiguity, worker authority
+  claims, external actions, and completion claims.
+- **Behavior:** Map `/deep-research`-style workflows to JangYeongsil evidence
+  gathering plus optional Sillok evidence, not to a final decision or plan. Map
+  dynamic workflow concepts to Codex native subagents, host-native teams,
+  TeamExecutor, `manual_shadow`, or `codex_mock_workflow` tactics after an
+  approved Uigwe contract or clear direct scope, not to a new court mode. Do not
+  invoke Claude CLI, Claude API, or an external Claude workflow runtime as a
+  hidden backend. Migrate the concept, mock the operational shape, or keep it
+  shadowed. A workflow run may hold operational state, but the Uigwe contract
+  remains the source of truth for goal, non-goals, success criteria,
+  verification bar, must-preserve behavior, and re-entry triggers. Store
+  workflow evidence under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`
+  unless the user explicitly promotes a reviewed artifact. Record shadowed or
+  limited backend runs as `sejong.workflow-run/v0.1-draft` artifacts validated
+  by `docs/sejong/scripts/sejong_workflow_run.py`. See
+  `docs/sejong/WORKFLOW_RUN.md` for the lifecycle, promotion rules, and
+  remaining-risk audit model.
+- **Ownership summary:** Sejong owns route selection and synthesis. JangYeongsil owns research evidence. Uigwe owns the normative contract and approval gates. Seungjeongwon owns execution, workflow-backend use, verification, and feedback.
+- **Deep research mapping summary:** Map `/deep-research`-style workflows to JangYeongsil evidence gathering plus optional Sillok evidence.
+- **Mapping summary:** Map `/deep-research`-style concepts to JangYeongsil evidence gathering plus optional Sillok evidence. Map dynamic workflow concepts to Codex-native or mocked Seungjeongwon and TeamExecutor tactics. In both cases, the Uigwe contract remains the source of truth and Claude runtimes are not invoked.
+- **No hidden runtime summary:** Do not invoke Claude CLI, Claude API, or an external Claude workflow runtime.
+- **Storage summary:** Store workflow evidence under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` unless the user explicitly promotes a reviewed artifact.
+- **Worker output summary:** worker outputs remain evidence-only.
+- **Verification:** Shadow-run workflow-backed candidates against the same
+  acceptance criteria as the baseline. Record worker counts, discarded claims,
+  unsupported-claim counts, max concurrency, disjoint write scopes, backend
+  provenance, cost or token overhead, verification refs, authority violations,
+  and outcome-quality delta. Promote only when guardrail scenarios pass, worker
+  outputs remain evidence-only, runtime state is externally retained, and the
+  candidate result is better enough to justify the overhead.
+  Validate the workflow-run artifact with
+  `python3 docs/sejong/scripts/sejong_workflow_run.py check --path <workflow-run.json>`
+  before using it as promotion evidence.
+- **Comparison benchmark:** Run
+  `python3 docs/sejong/scripts/benchmark_workflow_run_comparison.py --min-score-delta 0.10 --min-multi-metric-score 0.90`
+  before promotion. If the hardened workflow-run validator does not beat the
+  legacy lightweight baseline by at least `0.10`, reach weighted multi-metric
+  score `0.90`, and keep `critical_miss_rate` at `0` on the representative
+  use-case matrix, keep it shadowed and redesign the workflow contract. Promoted
+  behavior also requires `outcome_quality_delta >= 0.10`, reviewable
+  baseline/candidate refs, task-specific acceptance criteria, matching
+  comparison/final recommendations, and dimension hard minimums for promotion
+  decision quality, outcome quality, efficiency/cost, parallelism, reliability,
+  observability, and human/developer experience.
+- **Remaining-risk verification:** Use
+  `python3 docs/sejong/scripts/benchmark_workflow_run_stability.py --samples 9 --warmups 1`
+  for timing flake risk and
+  `python3 docs/sejong/scripts/audit_workflow_run_risks.py --repo-root . --artifact <workflow-run.json>`
+  or `--artifact-dir <workflow-run-corpus-dir> --strict-local-refs` for
+  evidence/provenance string risk and real-work corpus risk. These checks make
+  residual risk observable; they do not replace actual product or engineering
+  success evidence.
+- **Promotion summary:** Shadow-run workflow-backed candidates against the same acceptance criteria as the baseline. Promote only when candidate quality that beats the baseline enough to justify orchestration overhead is shown with fresh verification evidence.
+
 ### Durable Runtime State
 
 - **Why:** Long workflows must survive compaction, follow-up turns, and handoff
@@ -216,6 +294,8 @@ mapped into Sejong surfaces:
 | TDD / test-first | Uigwe To Seungjeongwon, Verification Before Completion | Use when behavior changes need executable proof; do not force for every doc/config edit. |
 | Brainstorming approval | Uigwe live-session gates | Use for material design choices, not tiny exact tasks. |
 | Subagent review loops | Bounded Worker Authority | Reviewers provide evidence; lead owns synthesis. |
+| Dynamic workflow scripts | External Dynamic Workflow Adoption / Seungjeongwon backend | Useful for repeatable fan-out, cross-checking, and verification; never a new court mode or Uigwe replacement. |
+| Deep-research workflows | JangYeongsil evidence + Sillok evidence | Cited reports and claim ledgers are evidence; decision-prep research still promotes to Uigwe. |
 | Worktree isolation | Durable Runtime State / execution safety | Useful tactic, not a Sejong authority requirement. |
 | OMX Team | TeamExecutor backend | Optional runtime backend under Sejong state and lead ownership. |
 | OMX Ultragoal ledger | Durable Runtime State | Useful ledger pattern; do not store Sejong state in `.omx`. |

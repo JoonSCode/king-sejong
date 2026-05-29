@@ -227,7 +227,7 @@ Supported worker backends include:
 
 - Codex native subagents for host-managed bounded delegation
 - host-native team or teammate messaging when the active runtime officially supports shared tasks and direct worker messages
-- `$team` / `TeamExecutor` wrappers that launch separate Codex CLI, Claude CLI, or compatible workers in `tmux` panes and coordinate through Sejong-owned state files
+- `$team` / `TeamExecutor` wrappers that launch separate Codex CLI or explicitly configured compatible workers in `tmux` panes and coordinate through Sejong-owned state files
 
 `$team` state belongs under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/`. It must use Sejong-owned state rooted at `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` rather than repo-local or tool-specific orchestration state. See [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) for the mailbox, tmux worker, and lease contract.
 

@@ -38,6 +38,9 @@ ${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}
 Do not use `.omx` paths as Sejong state.
 
 Target repositories should not receive Sejong runtime files unless the user explicitly asks to promote a reviewed artifact. This rule covers active contexts, ambiguity registers, TeamExecutor mailboxes, Seungjeongwon run artifacts, attempt ledgers, outcome comparisons, and Sillok traces.
+It also covers workflow-run artifacts used to shadow Codex-migrated dynamic
+workflow, deep-research-style, ultracode-style, host-native team, or
+TeamExecutor backend candidates.
 
 ## Active Context
 
@@ -68,6 +71,20 @@ Uigwe clarifies the idea and design
 
 The active Seungjeongwon run artifact follows [seungjeongwon-run.schema.json](seungjeongwon-run.schema.json). Use `docs/sejong/scripts/seungjeongwon_run.py` to create and check that artifact.
 
+When Seungjeongwon uses or evaluates a workflow-like backend, create a separate
+[workflow-run.schema.json](workflow-run.schema.json) artifact and check it with
+`docs/sejong/scripts/sejong_workflow_run.py`. That artifact records mapped
+surfaces, backend provenance, bounded workers, worker/concurrency metrics,
+evidence ledgers, authority violations, and baseline-vs-candidate quality
+comparison. It is subordinate runtime evidence; it must not replace Uigwe
+packets, route ownership, final synthesis, or final verification.
+
+Workflow-like backends are Codex-native, host-native, TeamExecutor, manual
+shadow, or mocked equivalents. Do not invoke Claude CLI, Claude API, or an
+external Claude workflow runtime from behind Sejong. If a source idea comes from
+another agent system, migrate the behavior into Codex-owned execution or model
+it as a mock before promotion.
+
 ## Context Stack
 
 King Sejong behavior should be constrained by layered context, artifacts, and checks rather than prompt wording alone.
@@ -80,6 +97,8 @@ The normal context stack is:
 - ambiguity registers for live clarification state when material uncertainty remains
 - Uigwe packets and handoff contracts for selected direction, decision boundaries, success criteria, verification, and re-entry triggers
 - Seungjeongwon run artifacts, visible boards, attempt ledgers, and verification evidence during execution
+- workflow-run artifacts for shadowed or limited external backends, with
+  mapped surfaces, evidence ledgers, and outcome-quality deltas
 - hooks, permission policy, schemas, examples, and deterministic benchmarks as guardrails and regression checks
 
 Host features such as Plan mode or `PLANS.md`-style living plans can improve live clarification and long-running execution continuity, but they do not override the Uigwe contract, Seungjeongwon run state, or explicit user approval gates.

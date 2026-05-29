@@ -1,0 +1,123 @@
+{
+  "backend": "codex_mock_workflow",
+  "backend_provenance": {
+    "command_refs": [
+      "docs/sejong/scripts/sejong_workflow_run.py",
+      "mock:codex-native-shadow"
+    ],
+    "migration_type": "codex_mock",
+    "non_claude_runtime": true,
+    "summary": "External workflow concepts are represented as a Codex-side mock, not as a hidden external runtime."
+  },
+  "artifact_storage": {
+    "ref": "docs/sejong/examples/workflow-run.example.json is an explicitly promoted schema example",
+    "scope": "promoted_example"
+  },
+  "created_at": "2026-05-29T00:00:00Z",
+  "evidence_ledger": [
+    {
+      "evidence_id": "source-external-workflow-concepts",
+      "kind": "source_ref",
+      "refs": [
+        "docs/sejong/DISCIPLINE_GATES.md"
+      ],
+      "status": "supported",
+      "summary": "External workflow runtimes can be evaluated as subordinate execution or research backends."
+    },
+    {
+      "evidence_id": "discarded-authority-claim",
+      "kind": "discarded_claim",
+      "refs": [
+        "docs/sejong/TEAM_EXECUTOR.md"
+      ],
+      "status": "rejected",
+      "summary": "Worker agreement, majority, or script completion does not approve Uigwe gates or final synthesis."
+    },
+    {
+      "evidence_id": "cross-check-storage",
+      "kind": "cross_check",
+      "refs": [
+        "docs/sejong/ARTIFACT_STORAGE.md"
+      ],
+      "status": "verified",
+      "summary": "Workflow state belongs under the Sejong artifact store unless explicitly exported."
+    },
+    {
+      "evidence_id": "verification-workflow-run",
+      "kind": "verification_ref",
+      "refs": [
+        "python3 docs/sejong/scripts/sejong_workflow_run.py check --path docs/sejong/examples/workflow-run.example.json"
+      ],
+      "status": "verified",
+      "summary": "Workflow-run artifact validates under the Codex-owned helper."
+    }
+  ],
+  "final_recommendation": "keep_shadowing",
+  "forbidden_authority_claims": [
+    "uigwe gate approval",
+    "final synthesis",
+    "final verification",
+    "consensus approval",
+    "majority-vote authority"
+  ],
+  "format": "sejong.workflow-run/v0.1-draft",
+  "mapped_surfaces": [
+    "jangyeongsil",
+    "sillok"
+  ],
+  "mode": "shadow",
+  "metrics": {
+    "max_concurrency": 1,
+    "token_or_cost_overhead_ref": "manual-shadow:low-overhead",
+    "unsupported_claim_count": 0,
+    "worker_count": 1,
+    "write_scopes_disjoint": true
+  },
+  "quality_comparison": {
+    "acceptance_criteria": [
+      "Candidate improves claim separation without authority drift.",
+      "Candidate records discarded claims and cost overhead."
+    ],
+    "baseline_result_ref": "baseline:single-agent-research-note",
+    "candidate_result_ref": "candidate:workflow-run-ledger",
+    "outcome_quality_delta": 0.05,
+    "overhead_ratio": 1.1,
+    "recommendation": "keep_shadowing"
+  },
+  "repo_root": "/Users/junsu/develop/king-sejong",
+  "run_id": "workflow-shadow-2026-05-29",
+  "source_of_truth_refs": [
+    "docs/sejong/DISCIPLINE_GATES.md",
+    "docs/sejong/VALIDATION.md",
+    "docs/sejong/ARTIFACT_STORAGE.md"
+  ],
+  "status": "completed",
+  "success_criteria": [
+    "Known, inferred, unknown, and discarded claims are separated.",
+    "No worker, script, or external backend claims court authority.",
+    "Quality comparison records outcome delta and overhead before promotion."
+  ],
+  "updated_at": "2026-05-29T00:00:00Z",
+  "verification_evidence": [
+    "python3 docs/sejong/scripts/sejong_workflow_run.py check --path docs/sejong/examples/workflow-run.example.json"
+  ],
+  "violations": [],
+  "workflow_kind": "deep_research",
+  "workflow_name": "jangyeongsil-claim-cross-check-shadow",
+  "workers": [
+    {
+      "allowed_outputs": [
+        "known/inferred/unknown evidence only",
+        "discarded claims with source references",
+        "cost and overhead observations"
+      ],
+      "role": "bounded research lane",
+      "scope": "Cross-check external workflow claims against Sejong source-of-truth documents.",
+      "status": "completed",
+      "worker_id": "research-lane-1",
+      "write_scope": [
+        "workflow-run.evidence_ledger"
+      ]
+    }
+  ]
+}

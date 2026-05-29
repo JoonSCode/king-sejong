@@ -3,13 +3,13 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-29T13:20:19Z",
+    "generated_at": "2026-05-29T14:52:33Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
   "aggregate": {
-    "scenario_count": 22,
-    "pass_count": 22,
+    "scenario_count": 23,
+    "pass_count": 23,
     "partial_count": 0,
     "fail_count": 0,
     "average_score": 1.0,
@@ -491,6 +491,43 @@
           "id": "guardrail_ownership_boundaries",
           "passed": true,
           "detail": "Typed guardrail expectation ownership_boundaries is represented in the instruction surface."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-dynamic-workflow-adoption",
+      "title": "External dynamic workflows stay subordinate and shadowed",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "dynamic_workflow_adoption_gate_present",
+          "passed": true,
+          "detail": "External dynamic workflow adoption remains shadowed, Sejong-owned, and quality-gated before promotion."
+        },
+        {
+          "id": "guardrail_promotion_gate",
+          "passed": true,
+          "detail": "Typed guardrail expectation promotion_gate is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_ownership_boundaries",
+          "passed": true,
+          "detail": "Typed guardrail expectation ownership_boundaries is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_worker_authority_forbidden_claims",
+          "passed": true,
+          "detail": "Typed guardrail expectation worker_authority_forbidden_claims is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_artifact_retention_policy",
+          "passed": true,
+          "detail": "Typed guardrail expectation artifact_retention_policy is represented in the instruction surface."
         }
       ],
       "blockers": [],

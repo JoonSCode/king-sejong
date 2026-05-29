@@ -55,6 +55,22 @@ Do not activate a native goal for research-only, advice-only, plan-only, open-am
 
 For long-running or compaction-sensitive work, Seungjeongwon should also maintain a `sejong.seungjeongwon-run/v0.1-draft` artifact. The artifact records the approved goal, success criteria, verification methods, active todos, attempt ledger, verification evidence, blockers, and Uigwe re-entry requests. Hooks can block `Stop` and `PreCompact` when this artifact is active or invalid.
 
+When Seungjeongwon evaluates or uses a workflow-like backend such as migrated
+dynamic workflow concepts, `/deep-research`-style research fan-out,
+ultracode-style orchestration, Codex native subagents, host-native team
+messaging, TeamExecutor workers, or Codex-side mocks, it should also maintain a
+`sejong.workflow-run/v0.1-draft` artifact. The workflow-run artifact records
+the mapped court surfaces, backend mode, bounded workers, allowed outputs,
+backend provenance, worker/concurrency metrics, evidence ledger, authority
+violations, quality comparison, and final recommendation. It is execution or
+research evidence only; it cannot approve Uigwe gates, claim consensus, replace
+final synthesis, or complete final verification.
+
+Seungjeongwon must not invoke Claude CLI, Claude API, or an external Claude
+workflow runtime as a hidden backend. External workflow ideas may be migrated to
+Codex-native execution, represented by `codex_mock_workflow`, or kept in shadow
+until a Codex-owned implementation is justified.
+
 ## Execution Inputs
 
 For a Uigwe bundle:
@@ -174,6 +190,13 @@ verification goal
 
 For paired comparisons, such as baseline execution versus implicit native goal handoff, Seungjeongwon must compare the resulting work products against the same acceptance criteria. Do not promote a candidate only because the route, goal activation, or visible board behavior worked. Promote it only when the final result is better enough to justify the overhead, or keep it shadowed when evidence is inconclusive.
 
+For workflow-like backends, record the same paired comparison in a
+`workflow-run.json` artifact and validate it with:
+
+```bash
+python3 docs/sejong/scripts/sejong_workflow_run.py check --path <workflow-run.json>
+```
+
 ## Execution Attempt Loop
 
 After actionable leaves exist, Seungjeongwon runs:
@@ -209,6 +232,16 @@ Use the reference helper when a machine-checkable active run artifact is useful:
 python3 docs/sejong/scripts/seungjeongwon_run.py start --path <run.json> --run-id <id> --goal "..." --success-criterion "..." --verification-method "..."
 python3 docs/sejong/scripts/seungjeongwon_run.py record-attempt --path <run.json> --todo-id T1 --hypothesis "..." --action "..." --verification "..." --result pass --finding "..." --next-decision "..."
 python3 docs/sejong/scripts/seungjeongwon_run.py check --path <run.json>
+```
+
+Use the workflow-run helper when a machine-checkable backend shadow comparison
+is useful:
+
+```bash
+python3 docs/sejong/scripts/sejong_workflow_run.py start --path <workflow-run.json> --run-id <id> --workflow-kind dynamic_workflow --workflow-name "..." --backend codex_mock_workflow --mapped-surface seungjeongwon --source-of-truth-ref docs/sejong/VALIDATION.md --success-criterion "..."
+python3 docs/sejong/scripts/sejong_workflow_run.py record-metrics --path <workflow-run.json> --worker-count 3 --max-concurrency 3 --unsupported-claim-count 0 --token-or-cost-overhead-ref benchmark:workflow-run --write-scopes-disjoint
+python3 docs/sejong/scripts/sejong_workflow_run.py record-comparison --path <workflow-run.json> --baseline-result-ref baseline --candidate-result-ref candidate --acceptance-criterion "..." --outcome-quality-delta 0.1 --overhead-ratio 1.2 --recommendation keep_shadowing
+python3 docs/sejong/scripts/sejong_workflow_run.py check --path <workflow-run.json>
 ```
 
 ## Execution Feedback And Re-entry

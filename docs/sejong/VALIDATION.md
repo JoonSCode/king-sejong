@@ -186,6 +186,138 @@ Sejong-owned surface and a concrete prevented failure. Keep unproven patterns in
 `shadow` until outcome-quality or integrated validation justifies stronger
 enforcement.
 
+### Phase 2D.2: Dynamic Workflow Shadow Comparison
+
+Run this when evaluating external dynamic workflow concepts such as documented
+Claude Code dynamic workflows, `/deep-research`, `ultracode`-style behavior, or
+any workflow-like backend idea for King Sejong:
+
+See [WORKFLOW_RUN.md](WORKFLOW_RUN.md) for the workflow-run lifecycle, promotion
+rules, result interpretation, and remaining-risk audit model.
+
+```bash
+python3 docs/sejong/scripts/sejong_workflow_run.py check --path <workflow-run.json>
+python3 docs/sejong/scripts/benchmark_workflow_run.py
+python3 docs/sejong/scripts/benchmark_workflow_run_comparison.py --min-score-delta 0.10 --min-multi-metric-score 0.90
+python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets
+python3 docs/sejong/scripts/benchmark_sejong_surface.py --require-targets
+python3 docs/sejong/scripts/sejong_integrated_quality_gate.py --work-dir "$(mktemp -d)"
+```
+
+Start in `shadow`. The candidate workflow may produce evidence, a proposed route,
+or a proposed Seungjeongwon backend plan, but it must not alter Uigwe approval
+gates, final route selection, execution scope, or completion status during the
+shadow run.
+
+Do not call Claude CLI, Claude API, or an external Claude workflow runtime as a
+hidden backend. The candidate must be migrated to Codex-native subagents,
+host-native team support, TeamExecutor, `manual_shadow`, or
+`codex_mock_workflow`, or it must remain unpromoted.
+
+Record at minimum:
+
+- a `sejong.workflow-run/v0.1-draft` artifact that validates against
+  `docs/sejong/workflow-run.schema.json`
+- structured `backend_provenance` proving the backend is Codex-native,
+  host-native, TeamExecutor, `manual_shadow`, `codex_mock_workflow`, or an
+  explicitly approved non-Claude mock
+- structured `artifact_storage`; repo-local workflow-run files require an
+  explicit promotion ref, while normal runtime artifacts remain under the
+  external Sejong store
+- structured `metrics` with `worker_count`, `max_concurrency`,
+  `unsupported_claim_count`, `token_or_cost_overhead_ref`, and
+  `write_scopes_disjoint`
+- whether the workflow maps to JangYeongsil, Jiphyeonjeon, Uigwe,
+  Seungjeongwon, TeamExecutor, or Sillok rather than becoming a new court mode
+- worker count, max concurrency, and whether write scopes were disjoint
+- backend value, proving it is Codex-native, host-native, TeamExecutor,
+  `manual_shadow`, `codex_mock_workflow`, or another explicitly approved
+  non-Claude mock
+- source refs, discarded claims, unsupported-claim count, and cross-check status
+  for deep-research-style runs
+- whether any worker claimed Uigwe gate approval, final synthesis, final
+  verification, consensus approval, or majority-vote authority
+- whether runtime state was retained under
+  `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`
+- baseline result, candidate result, outcome-quality delta, token or cost
+  overhead, and the final recommendation: promote, reject, or keep shadowing
+- reviewable baseline/candidate refs, non-empty task-specific acceptance
+  criteria, and matching quality-comparison and final recommendations once the
+  run is completed
+
+Promotion requires:
+
+- no protected guardrail scenario regressions
+- no approval-gate or worker-authority violations
+- no live ambiguity bypass
+- fresh verification evidence against the original Uigwe or direct-scope
+  success criteria
+- `outcome_quality_delta >= 0.10` for promoted behavior
+- `manual_shadow` must not be the promoted backend; migrate the behavior to a
+  Codex-native, host-native, TeamExecutor, or approved mock backend first
+- `backend=other` provenance must use specific summaries and reviewable command
+  refs rather than self-attested text
+- candidate quality that beats the baseline enough to justify orchestration
+  overhead under the promotion thresholds below
+
+Use `docs/sejong/scripts/benchmark_workflow_run.py` and
+`docs/sejong/scripts/test_sejong_workflow_run.py` to exercise the representative
+matrix: deep-research shadow evidence, dynamic workflow Codex mock promotion,
+TeamExecutor rejection after authority violation, ultracode-style subagent
+shadowing, hidden-Claude rejection, weak positive-delta promotion rejection,
+empty acceptance-criteria rejection, final-recommendation mismatch rejection,
+manual-shadow promoted-backend rejection, overhead-adjusted promotion rejection,
+explicit `other` backend provenance, repo-local artifact hygiene, duplicate ids,
+unsupported surfaces, overlapping write scopes, and large-ledger validation performance.
+
+Use `docs/sejong/scripts/benchmark_workflow_run_comparison.py` to compare the
+hardened workflow-run validator against the legacy lightweight ledger baseline.
+Promotion requires at least `0.10` score improvement on the same use-case matrix,
+candidate score `1.0`, candidate weighted multi-metric score at least `0.90`,
+zero critical misses, and passing large-ledger validation. The multi-metric
+scorecard weights `promotion_decision_quality` first, then `outcome_quality`,
+`efficiency_cost`, `parallelism_efficiency`, `reliability_reproducibility`,
+`observability_diagnosability`, and `human_developer_experience`. Candidate
+dimension hard minimums are `1.00` for promotion decision quality, parallelism,
+and reliability, `0.90` for outcome quality, observability, and human/developer
+experience, and `0.60` for efficiency/cost. If the comparison misses either the
+10 percent improvement gate, the multi-metric gate, or any dimension hard
+minimum, keep the workflow shadowed and redesign the validator before promotion.
+
+Dynamic workflow promotion summary: candidate quality that beats the baseline enough to justify orchestration overhead must be shown before a shadowed workflow-backed behavior is promoted.
+
+### Phase 2D.3: Dynamic Workflow Remaining-Risk Verification
+
+Run this after Phase 2D.2 when the remaining concern is not whether the
+workflow-run contract works, but whether its residual risks are observable:
+
+```bash
+python3 docs/sejong/scripts/benchmark_workflow_run_stability.py --samples 9 --warmups 1 --max-large-ledger-seconds 1.0 --max-p95-seconds 1.0
+python3 docs/sejong/scripts/audit_workflow_run_risks.py --repo-root . --artifact <workflow-run.json>
+python3 docs/sejong/scripts/audit_workflow_run_risks.py --repo-root . --artifact-dir <workflow-run-corpus-dir> --strict-local-refs --min-artifacts 5 --min-workflow-kinds 3 --min-backends 3 --require-promoted
+python3 docs/sejong/scripts/test_benchmark_workflow_run_stability.py
+python3 docs/sejong/scripts/test_audit_workflow_run_risks.py
+```
+
+This phase verifies three residual risks:
+
+- **Timing flake risk:** repeated large-ledger samples report candidate
+  `median`, `p95`, `max`, failure rate, and per-sample timings instead of a
+  single wall-clock run.
+- **Evidence/provenance string risk:** workflow-run artifacts are audited for
+  schema validity, hidden runtime failures, repo-local artifact policy,
+  baseline/candidate ref kinds, missing local evidence refs, and symbolic refs
+  that cannot serve as promotion proof.
+- **Real-work corpus risk:** a workflow-backed behavior may not leave `shadow`
+  solely from curated fixtures. Promotion proof needs a corpus audit with enough
+  artifacts, workflow kinds, backend types, and at least one promoted run when
+  `--require-promoted` is set. Use `--strict-local-refs` so baseline and
+  candidate refs resolve to existing local files or URLs.
+
+Passing this phase still does not claim real product or engineering success by
+itself. It proves that the remaining risks are measurable and that promotion
+claims have concrete workflow-run evidence to inspect.
+
 ### Phase 2E: Integrated Quality Gate
 
 Run this when a change must prove it composes with the latest Sejong SOT rather than only passing in isolation:

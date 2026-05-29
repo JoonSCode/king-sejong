@@ -1,0 +1,381 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/workflow-run.schema.json",
+  "title": "Sejong Workflow Run Schema Draft",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "sejong.workflow-run/v0.1-draft"
+    },
+    "run_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "repo_root": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "shadow",
+        "active",
+        "completed",
+        "blocked",
+        "invalidated",
+        "failed"
+      ]
+    },
+    "workflow_kind": {
+      "type": "string",
+      "enum": [
+        "dynamic_workflow",
+        "deep_research",
+        "ultracode_style",
+        "team_backend",
+        "other"
+      ]
+    },
+    "workflow_name": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "mapped_surfaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Surface"
+      }
+    },
+    "backend": {
+      "type": "string",
+      "enum": [
+        "codex_native_subagents",
+        "codex_mock_workflow",
+        "host_native_team",
+        "team_executor",
+        "manual_shadow",
+        "other"
+      ]
+    },
+    "backend_provenance": {
+      "$ref": "#/$defs/BackendProvenance"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "shadow",
+        "limited_backend",
+        "promoted_backend"
+      ]
+    },
+    "artifact_storage": {
+      "$ref": "#/$defs/ArtifactStorage"
+    },
+    "source_of_truth_refs": {
+      "$ref": "#/$defs/StringList"
+    },
+    "success_criteria": {
+      "$ref": "#/$defs/StringList"
+    },
+    "forbidden_authority_claims": {
+      "$ref": "#/$defs/StringList"
+    },
+    "workers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Worker"
+      }
+    },
+    "evidence_ledger": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Evidence"
+      }
+    },
+    "quality_comparison": {
+      "$ref": "#/$defs/QualityComparison"
+    },
+    "metrics": {
+      "$ref": "#/$defs/Metrics"
+    },
+    "verification_evidence": {
+      "$ref": "#/$defs/StringList"
+    },
+    "violations": {
+      "$ref": "#/$defs/StringList"
+    },
+    "final_recommendation": {
+      "type": "string",
+      "enum": [
+        "promote",
+        "reject",
+        "keep_shadowing",
+        "unknown"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "format",
+    "run_id",
+    "repo_root",
+    "status",
+    "workflow_kind",
+    "workflow_name",
+    "mapped_surfaces",
+    "backend",
+    "backend_provenance",
+    "mode",
+    "artifact_storage",
+    "source_of_truth_refs",
+    "success_criteria",
+    "forbidden_authority_claims",
+    "workers",
+    "evidence_ledger",
+    "quality_comparison",
+    "metrics",
+    "verification_evidence",
+    "violations",
+    "final_recommendation",
+    "created_at",
+    "updated_at"
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      }
+    },
+    "Surface": {
+      "type": "string",
+      "enum": [
+        "sejong",
+        "jangyeongsil",
+        "jiphyeonjeon",
+        "uigwe",
+        "seungjeongwon",
+        "sillok",
+        "danjong",
+        "sejong-direct"
+      ]
+    },
+    "Worker": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "worker_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "role": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "scope": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "allowed_outputs": {
+          "$ref": "#/$defs/StringList"
+        },
+        "write_scope": {
+          "$ref": "#/$defs/StringList"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "active",
+            "completed",
+            "blocked",
+            "failed"
+          ]
+        }
+      },
+      "required": [
+        "worker_id",
+        "role",
+        "scope",
+        "allowed_outputs",
+        "write_scope",
+        "status"
+      ]
+    },
+    "BackendProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "migration_type": {
+          "type": "string",
+          "enum": [
+            "codex_native",
+            "codex_mock",
+            "host_native",
+            "team_executor",
+            "manual_shadow",
+            "approved_other"
+          ]
+        },
+        "non_claude_runtime": {
+          "const": true
+        },
+        "summary": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "command_refs": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "migration_type",
+        "non_claude_runtime",
+        "summary",
+        "command_refs"
+      ]
+    },
+    "ArtifactStorage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scope": {
+          "type": "string",
+          "enum": [
+            "external",
+            "promoted_example",
+            "promoted_repo_artifact"
+          ]
+        },
+        "ref": {
+          "$ref": "#/$defs/NonEmptyString"
+        }
+      },
+      "required": [
+        "scope",
+        "ref"
+      ]
+    },
+    "Evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "source_ref",
+            "claim",
+            "discarded_claim",
+            "cross_check",
+            "verification_ref",
+            "cost",
+            "finding",
+            "authority_violation"
+          ]
+        },
+        "summary": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "refs": {
+          "$ref": "#/$defs/StringList"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "supported",
+            "rejected",
+            "verified",
+            "violating"
+          ]
+        }
+      },
+      "required": [
+        "evidence_id",
+        "kind",
+        "summary",
+        "refs",
+        "status"
+      ]
+    },
+    "QualityComparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "baseline_result_ref": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "candidate_result_ref": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "acceptance_criteria": {
+          "$ref": "#/$defs/StringList"
+        },
+        "outcome_quality_delta": {
+          "type": "number"
+        },
+        "overhead_ratio": {
+          "type": "number",
+          "minimum": 0
+        },
+        "recommendation": {
+          "type": "string",
+          "enum": [
+            "promote",
+            "reject",
+            "keep_shadowing",
+            "unknown"
+          ]
+        }
+      },
+      "required": [
+        "baseline_result_ref",
+        "candidate_result_ref",
+        "acceptance_criteria",
+        "outcome_quality_delta",
+        "overhead_ratio",
+        "recommendation"
+      ]
+    },
+    "Metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "worker_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_concurrency": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unsupported_claim_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "token_or_cost_overhead_ref": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "write_scopes_disjoint": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "worker_count",
+        "max_concurrency",
+        "unsupported_claim_count",
+        "token_or_cost_overhead_ref",
+        "write_scopes_disjoint"
+      ]
+    }
+  }
+}

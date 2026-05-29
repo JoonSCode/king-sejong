@@ -42,8 +42,14 @@ SECURITY_PATH = SEJONG_ROOT / "SECURITY.md"
 SILLOK_TRACE_PATH = SEJONG_ROOT / "SILLOK_TRACE.md"
 CONTEXT_SCHEMA_PATH = SEJONG_ROOT / "king-sejong-context.schema.json"
 CONTEXT_EXAMPLE_PATH = SEJONG_ROOT / "examples" / "king-sejong-context.example.json"
+WORKFLOW_RUN_SCHEMA_PATH = SEJONG_ROOT / "workflow-run.schema.json"
 HOOK_SCRIPT_PATH = SEJONG_ROOT / "scripts" / "king_sejong_hooks.py"
 SILLOK_TRACE_SCRIPT_PATH = SEJONG_ROOT / "scripts" / "sillok_trace.py"
+WORKFLOW_RUN_SCRIPT_PATH = SEJONG_ROOT / "scripts" / "sejong_workflow_run.py"
+WORKFLOW_RUN_BENCHMARK_PATH = SEJONG_ROOT / "scripts" / "benchmark_workflow_run.py"
+WORKFLOW_RUN_COMPARISON_BENCHMARK_PATH = SEJONG_ROOT / "scripts" / "benchmark_workflow_run_comparison.py"
+WORKFLOW_RUN_STABILITY_BENCHMARK_PATH = SEJONG_ROOT / "scripts" / "benchmark_workflow_run_stability.py"
+WORKFLOW_RUN_RISK_AUDIT_PATH = SEJONG_ROOT / "scripts" / "audit_workflow_run_risks.py"
 
 UIGWE_SKILL_LINE_BUDGET = 320
 SEJONG_SKILL_LINE_BUDGET = 90
@@ -71,6 +77,7 @@ SCENARIO_IDS = (
     "instruction-repo-context-refresh",
     "instruction-sillok-security-trace",
     "instruction-decision-justification",
+    "instruction-dynamic-workflow-adoption",
     "instruction-compression-budget",
 )
 
@@ -85,6 +92,7 @@ REQUIRED_GUARDRAIL_SCENARIOS = {
     "instruction-repo-context-refresh",
     "instruction-sillok-security-trace",
     "instruction-decision-justification",
+    "instruction-dynamic-workflow-adoption",
 }
 
 
@@ -703,6 +711,108 @@ def evaluate_decision_justification() -> list[dict[str, Any]]:
     ]
 
 
+def evaluate_dynamic_workflow_adoption() -> list[dict[str, Any]]:
+    discipline = load_text(DISCIPLINE_GATES_PATH)
+    validation = load_text(VALIDATION_PATH)
+    security = load_text(SECURITY_PATH)
+    executor = load_text(SEUNGJEONGWON_EXECUTOR_PATH)
+    router = load_text(ROUTER_PATH)
+    storage = load_text(ARTIFACT_STORAGE_PATH)
+    workflow_schema = load_text(WORKFLOW_RUN_SCHEMA_PATH)
+    workflow_script = load_text(WORKFLOW_RUN_SCRIPT_PATH)
+    workflow_benchmark = load_text(WORKFLOW_RUN_BENCHMARK_PATH)
+    workflow_comparison_benchmark = load_text(WORKFLOW_RUN_COMPARISON_BENCHMARK_PATH)
+    workflow_stability_benchmark = load_text(WORKFLOW_RUN_STABILITY_BENCHMARK_PATH)
+    workflow_risk_audit = load_text(WORKFLOW_RUN_RISK_AUDIT_PATH)
+    combined = "\n".join(
+        [
+            discipline,
+            validation,
+            security,
+            executor,
+            router,
+            storage,
+            workflow_schema,
+            workflow_script,
+            workflow_benchmark,
+            workflow_comparison_benchmark,
+            workflow_stability_benchmark,
+            workflow_risk_audit,
+        ]
+    )
+    required = [
+        "External Dynamic Workflow Adoption",
+        "dynamic workflow runtimes can improve large research, review, and verification work",
+        "reduce context pollution",
+        "repeatable",
+        "external workflow script, deep-research report, ultracode-style mode, or many-agent backend",
+        "Sejong owns route selection and synthesis",
+        "JangYeongsil owns research evidence",
+        "Uigwe owns the normative contract and approval gates",
+        "Seungjeongwon owns execution, workflow-backend use, verification, and feedback",
+        "`shadow` by default for new workflow-backed behavior",
+        "Map `/deep-research`-style workflows to JangYeongsil evidence gathering plus optional Sillok evidence",
+        "Map dynamic workflow concepts to Codex-native or mocked Seungjeongwon and TeamExecutor tactics",
+        "codex_mock_workflow",
+        "Do not invoke Claude CLI, Claude API, or an external Claude workflow runtime",
+        "not to a new court mode",
+        "the Uigwe contract remains the source of truth",
+        "Store workflow evidence under",
+        "sejong.workflow-run/v0.1-draft",
+        "workflow-run.schema.json",
+        "sejong_workflow_run.py",
+        "benchmark_workflow_run.py",
+        "benchmark_workflow_run_comparison.py",
+        "benchmark_workflow_run_stability.py",
+        "audit_workflow_run_risks.py",
+        "workflow-run.json",
+        "backend_provenance",
+        "artifact_storage",
+        "metrics",
+        "max_concurrency",
+        "write_scopes_disjoint",
+        "Shadow-run workflow-backed candidates against the same acceptance criteria as the baseline",
+        "discarded claims",
+        "unsupported-claim count",
+        "outcome-quality delta",
+        "worker outputs remain evidence-only",
+        "Dynamic Workflow Shadow Comparison",
+        "final recommendation: promote, reject, or keep shadowing",
+        "no approval-gate or worker-authority violations",
+        "candidate quality that beats the baseline enough to justify orchestration overhead",
+        "min-score-delta 0.10",
+        "min-multi-metric-score 0.90",
+        "promotion_decision_quality",
+        "outcome_quality",
+        "efficiency_cost",
+        "parallelism_efficiency",
+        "reliability_reproducibility",
+        "observability_diagnosability",
+        "human_developer_experience",
+        "critical_miss_rate",
+        "outcome_quality_delta >= 0.10",
+        "reviewable baseline/candidate refs",
+        "task-specific acceptance criteria",
+        "dimension hard minimums",
+        "Dynamic Workflow Remaining-Risk Verification",
+        "Timing flake risk",
+        "Evidence/provenance string risk",
+        "Real-work corpus risk",
+        "strict-local-refs",
+        "workflow-run artifact audits",
+        "legacy lightweight baseline",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check(
+            "dynamic_workflow_adoption_gate_present",
+            passed,
+            "External dynamic workflow adoption remains shadowed, Sejong-owned, and quality-gated before promotion.",
+            missing=missing,
+        )
+    ]
+
+
 def evaluate_compression() -> list[dict[str, Any]]:
     uigwe_lines = line_count(UIGWE_SKILL_PATH)
     sejong_lines = line_count(SEJONG_SKILL_PATH)
@@ -760,6 +870,7 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-repo-context-refresh": evaluate_repo_context_refresh,
     "instruction-sillok-security-trace": evaluate_sillok_security_trace,
     "instruction-decision-justification": evaluate_decision_justification,
+    "instruction-dynamic-workflow-adoption": evaluate_dynamic_workflow_adoption,
     "instruction-compression-budget": evaluate_compression,
 }
 
@@ -787,6 +898,21 @@ def expectation_text_for_scenario(scenario_id: str) -> str:
                 load_text(PROTOCOL_PATH),
                 load_text(SEJONG_ROOT / "SCORING_AND_GATES.md"),
                 load_text(SEJONG_ROOT / "CODEX_CONSUMER.md"),
+            ]
+        )
+    if scenario_id == "instruction-dynamic-workflow-adoption":
+        return "\n".join(
+            [
+                load_text(DISCIPLINE_GATES_PATH),
+                load_text(VALIDATION_PATH),
+                load_text(SECURITY_PATH),
+                load_text(SEUNGJEONGWON_EXECUTOR_PATH),
+                load_text(ROUTER_PATH),
+                load_text(ARTIFACT_STORAGE_PATH),
+                load_text(WORKFLOW_RUN_SCHEMA_PATH),
+                load_text(WORKFLOW_RUN_SCRIPT_PATH),
+                load_text(WORKFLOW_RUN_BENCHMARK_PATH),
+                load_text(WORKFLOW_RUN_COMPARISON_BENCHMARK_PATH),
             ]
         )
     if scenario_id == "instruction-bounded-parallelism":
