@@ -1,0 +1,113 @@
+{
+  "artifact_storage": {
+    "ref": "docs/sejong/examples/workflow-run-corpus/dynamic-codex-mock/workflow-run.json",
+    "scope": "promoted_repo_artifact"
+  },
+  "backend": "codex_mock_workflow",
+  "backend_provenance": {
+    "command_refs": [
+      "docs/sejong/scripts/benchmark_workflow_run.py",
+      "docs/sejong/scripts/benchmark_workflow_run_comparison.py"
+    ],
+    "migration_type": "codex_mock",
+    "non_claude_runtime": true,
+    "summary": "External dynamic workflow concepts are promoted only as Codex-owned mock evidence contracts, not hidden external runtimes."
+  },
+  "created_at": "2026-05-30T00:00:00Z",
+  "evidence_ledger": [
+    {
+      "evidence_id": "source-dynamic-workflow",
+      "kind": "source_ref",
+      "refs": [
+        "docs/sejong/WORKFLOW_RUN.md",
+        "docs/sejong/RUNTIME_CONTRACT.md"
+      ],
+      "status": "supported",
+      "summary": "Dynamic workflow concepts must map to Sejong-owned surfaces and remain subordinate to Uigwe and Seungjeongwon."
+    },
+    {
+      "evidence_id": "verification-benchmark",
+      "kind": "verification_ref",
+      "refs": [
+        "python3 docs/sejong/scripts/benchmark_workflow_run.py",
+        "python3 docs/sejong/scripts/benchmark_workflow_run_comparison.py --min-score-delta 0.10 --min-multi-metric-score 0.90"
+      ],
+      "status": "verified",
+      "summary": "The hardened workflow-run gate beats the legacy baseline and preserves protected guardrails."
+    }
+  ],
+  "final_recommendation": "promote",
+  "forbidden_authority_claims": [
+    "uigwe gate approval",
+    "final synthesis",
+    "final verification",
+    "consensus approval",
+    "majority-vote authority"
+  ],
+  "format": "sejong.workflow-run/v0.1-draft",
+  "mapped_surfaces": [
+    "uigwe",
+    "seungjeongwon"
+  ],
+  "metrics": {
+    "max_concurrency": 1,
+    "token_or_cost_overhead_ref": "docs/sejong/examples/workflow-run-corpus/evidence/candidate-hardened-workflow-run.md",
+    "unsupported_claim_count": 0,
+    "worker_count": 1,
+    "write_scopes_disjoint": true
+  },
+  "mode": "promoted_backend",
+  "promotion_approval": {
+    "approval_ref": "user:2026-05-30-promote-workflow-run-corpus",
+    "approval_type": "explicit_user_request",
+    "approved": true,
+    "required": true
+  },
+  "quality_comparison": {
+    "acceptance_criteria": [
+      "Dynamic workflow ideas must prove quality improvement against the same acceptance criteria as baseline execution.",
+      "Mocked workflow evidence must not hide external runtime authority."
+    ],
+    "baseline_result_ref": "docs/sejong/examples/workflow-run-corpus/evidence/baseline-legacy-lightweight-ledger.md",
+    "candidate_result_ref": "docs/sejong/examples/workflow-run-corpus/evidence/candidate-hardened-workflow-run.md",
+    "outcome_quality_delta": 0.18,
+    "overhead_ratio": 1.15,
+    "recommendation": "promote"
+  },
+  "repo_root": ".",
+  "run_id": "dynamic-codex-mock-promoted-2026-05-30",
+  "source_of_truth_refs": [
+    "docs/sejong/WORKFLOW_RUN.md",
+    "docs/sejong/RUNTIME_CONTRACT.md",
+    "docs/sejong/VALIDATION.md"
+  ],
+  "status": "completed",
+  "success_criteria": [
+    "The promoted backend remains Codex-owned or mocked.",
+    "The candidate beats the legacy baseline under the workflow-run comparison benchmark.",
+    "Promotion approval is explicit and reviewable."
+  ],
+  "updated_at": "2026-05-30T00:00:00Z",
+  "verification_evidence": [
+    "python3 docs/sejong/scripts/sejong_workflow_run.py check --path docs/sejong/examples/workflow-run-corpus/dynamic-codex-mock/workflow-run.json",
+    "python3 docs/sejong/scripts/benchmark_workflow_run_comparison.py --min-score-delta 0.10 --min-multi-metric-score 0.90"
+  ],
+  "violations": [],
+  "workflow_kind": "dynamic_workflow",
+  "workflow_name": "dynamic-codex-mock",
+  "workers": [
+    {
+      "allowed_outputs": [
+        "workflow-run evidence only",
+        "backend provenance observations"
+      ],
+      "role": "mock workflow lane",
+      "scope": "Represent external workflow ideas as Codex-side evidence without runtime authority.",
+      "status": "completed",
+      "worker_id": "mock-lane",
+      "write_scope": [
+        "workflow-run.evidence_ledger.mock-lane"
+      ]
+    }
+  ]
+}

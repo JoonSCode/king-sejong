@@ -1,0 +1,143 @@
+{
+  "artifact_storage": {
+    "ref": "docs/sejong/examples/workflow-run-corpus/ultracode-style-shadow-retained/workflow-run.json",
+    "scope": "promoted_repo_artifact"
+  },
+  "backend": "codex_native_subagents",
+  "backend_provenance": {
+    "command_refs": [
+      "docs/sejong/scripts/benchmark_workflow_run.py",
+      "docs/sejong/scripts/benchmark_workflow_run_stability.py"
+    ],
+    "migration_type": "codex_native",
+    "non_claude_runtime": true,
+    "summary": "Ultracode-style parallel execution remains shadowed when overhead exceeds the proven result-quality improvement."
+  },
+  "created_at": "2026-05-30T00:00:00Z",
+  "evidence_ledger": [
+    {
+      "evidence_id": "source-overhead-gate",
+      "kind": "source_ref",
+      "refs": [
+        "docs/sejong/VALIDATION.md",
+        "docs/sejong/SEUNGJEONGWON_EXECUTOR.md"
+      ],
+      "status": "supported",
+      "summary": "Promotion is denied when orchestration overhead is not justified by result quality."
+    },
+    {
+      "evidence_id": "cost-overhead",
+      "kind": "cost",
+      "refs": [
+        "docs/sejong/examples/workflow-run-corpus/evidence/candidate-hardened-workflow-run.md"
+      ],
+      "status": "supported",
+      "summary": "High fan-out remains a cost concern even when the validator itself is stable."
+    },
+    {
+      "evidence_id": "verification-stability",
+      "kind": "verification_ref",
+      "refs": [
+        "python3 docs/sejong/scripts/benchmark_workflow_run_stability.py --samples 9 --warmups 1 --max-large-ledger-seconds 1.0 --max-p95-seconds 1.0"
+      ],
+      "status": "verified",
+      "summary": "Stability passed, but this negative-control artifact keeps broad fan-out shadowed."
+    }
+  ],
+  "final_recommendation": "keep_shadowing",
+  "forbidden_authority_claims": [
+    "uigwe gate approval",
+    "final synthesis",
+    "final verification",
+    "consensus approval",
+    "majority-vote authority"
+  ],
+  "format": "sejong.workflow-run/v0.1-draft",
+  "mapped_surfaces": [
+    "seungjeongwon"
+  ],
+  "metrics": {
+    "max_concurrency": 3,
+    "token_or_cost_overhead_ref": "docs/sejong/examples/workflow-run-corpus/evidence/candidate-hardened-workflow-run.md",
+    "unsupported_claim_count": 0,
+    "worker_count": 3,
+    "write_scopes_disjoint": true
+  },
+  "mode": "shadow",
+  "promotion_approval": {
+    "approval_ref": "not-required",
+    "approval_type": "not_applicable",
+    "approved": false,
+    "required": false
+  },
+  "quality_comparison": {
+    "acceptance_criteria": [
+      "Parallel execution should improve final result quality enough to justify orchestration overhead.",
+      "Broad fan-out remains shadowed when quality improvement is weak or task scope is too small."
+    ],
+    "baseline_result_ref": "docs/sejong/examples/workflow-run-corpus/evidence/baseline-legacy-lightweight-ledger.md",
+    "candidate_result_ref": "docs/sejong/examples/workflow-run-corpus/evidence/candidate-hardened-workflow-run.md",
+    "outcome_quality_delta": 0.03,
+    "overhead_ratio": 1.8,
+    "recommendation": "keep_shadowing"
+  },
+  "repo_root": ".",
+  "run_id": "ultracode-style-shadow-retained-2026-05-30",
+  "source_of_truth_refs": [
+    "docs/sejong/WORKFLOW_RUN.md",
+    "docs/sejong/VALIDATION.md",
+    "docs/sejong/SEUNGJEONGWON_EXECUTOR.md"
+  ],
+  "status": "completed",
+  "success_criteria": [
+    "High fan-out stays shadowed unless result quality clears the promotion bar.",
+    "Cost and concurrency evidence are recorded before any promotion claim.",
+    "The corpus includes a negative control rather than promoting every workflow-like tactic."
+  ],
+  "updated_at": "2026-05-30T00:00:00Z",
+  "verification_evidence": [
+    "python3 docs/sejong/scripts/sejong_workflow_run.py check --path docs/sejong/examples/workflow-run-corpus/ultracode-style-shadow-retained/workflow-run.json",
+    "python3 docs/sejong/scripts/benchmark_workflow_run_stability.py --samples 9 --warmups 1 --max-large-ledger-seconds 1.0 --max-p95-seconds 1.0"
+  ],
+  "violations": [],
+  "workflow_kind": "ultracode_style",
+  "workflow_name": "ultracode-style-shadow-retained",
+  "workers": [
+    {
+      "allowed_outputs": [
+        "implementation slice evidence only"
+      ],
+      "role": "parallel slice lane",
+      "scope": "Represent high-throughput execution without authority promotion.",
+      "status": "completed",
+      "worker_id": "slice-lane",
+      "write_scope": [
+        "workflow-run.evidence_ledger.slice-lane"
+      ]
+    },
+    {
+      "allowed_outputs": [
+        "cost evidence only"
+      ],
+      "role": "cost lane",
+      "scope": "Record overhead and fan-out cost.",
+      "status": "completed",
+      "worker_id": "cost-lane",
+      "write_scope": [
+        "workflow-run.evidence_ledger.cost-lane"
+      ]
+    },
+    {
+      "allowed_outputs": [
+        "verification evidence only"
+      ],
+      "role": "verification lane",
+      "scope": "Confirm stability without broad promotion.",
+      "status": "completed",
+      "worker_id": "stability-lane",
+      "write_scope": [
+        "workflow-run.evidence_ledger.stability-lane"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+{
+  "artifact_storage": {
+    "ref": "docs/sejong/examples/workflow-run-corpus/team-executor/workflow-run.json",
+    "scope": "promoted_repo_artifact"
+  },
+  "backend": "team_executor",
+  "backend_provenance": {
+    "command_refs": [
+      "docs/sejong/scripts/team_executor.py",
+      "docs/sejong/TEAM_EXECUTOR.md"
+    ],
+    "migration_type": "team_executor",
+    "non_claude_runtime": true,
+    "summary": "TeamExecutor is promoted only as a Sejong-owned backend for bounded mailbox, lease, and evidence lanes."
+  },
+  "created_at": "2026-05-30T00:00:00Z",
+  "evidence_ledger": [
+    {
+      "evidence_id": "source-team-executor",
+      "kind": "source_ref",
+      "refs": [
+        "docs/sejong/TEAM_EXECUTOR.md",
+        "docs/sejong/examples/team-executor/valid-context/team.json"
+      ],
+      "status": "supported",
+      "summary": "TeamExecutor has a versioned mailbox and bounded worker contract."
+    },
+    {
+      "evidence_id": "cross-check-invalid-majority",
+      "kind": "cross_check",
+      "refs": [
+        "docs/sejong/examples/team-executor/invalid-majority-decision/mailbox.jsonl"
+      ],
+      "status": "verified",
+      "summary": "Majority or worker agreement remains invalid as final Sejong authority."
+    },
+    {
+      "evidence_id": "verification-workflow-run",
+      "kind": "verification_ref",
+      "refs": [
+        "python3 docs/sejong/scripts/sejong_workflow_run.py check --path docs/sejong/examples/workflow-run-corpus/team-executor/workflow-run.json"
+      ],
+      "status": "verified",
+      "summary": "TeamExecutor promotion artifact validates under the workflow-run helper."
+    }
+  ],
+  "final_recommendation": "promote",
+  "forbidden_authority_claims": [
+    "uigwe gate approval",
+    "final synthesis",
+    "final verification",
+    "consensus approval",
+    "majority-vote authority"
+  ],
+  "format": "sejong.workflow-run/v0.1-draft",
+  "mapped_surfaces": [
+    "jiphyeonjeon",
+    "seungjeongwon"
+  ],
+  "metrics": {
+    "max_concurrency": 2,
+    "token_or_cost_overhead_ref": "docs/sejong/examples/workflow-run-corpus/evidence/candidate-hardened-workflow-run.md",
+    "unsupported_claim_count": 0,
+    "worker_count": 2,
+    "write_scopes_disjoint": true
+  },
+  "mode": "promoted_backend",
+  "promotion_approval": {
+    "approval_ref": "user:2026-05-30-promote-workflow-run-corpus",
+    "approval_type": "explicit_user_request",
+    "approved": true,
+    "required": true
+  },
+  "quality_comparison": {
+    "acceptance_criteria": [
+      "TeamExecutor workers may provide bounded briefs but cannot approve gates, synthesis, or final verification.",
+      "Mailbox and lease evidence must remain reviewable before promotion."
+    ],
+    "baseline_result_ref": "docs/sejong/examples/workflow-run-corpus/evidence/baseline-legacy-lightweight-ledger.md",
+    "candidate_result_ref": "docs/sejong/examples/workflow-run-corpus/evidence/candidate-hardened-workflow-run.md",
+    "outcome_quality_delta": 0.16,
+    "overhead_ratio": 1.2,
+    "recommendation": "promote"
+  },
+  "repo_root": ".",
+  "run_id": "team-executor-promoted-2026-05-30",
+  "source_of_truth_refs": [
+    "docs/sejong/WORKFLOW_RUN.md",
+    "docs/sejong/TEAM_EXECUTOR.md",
+    "docs/sejong/VALIDATION.md"
+  ],
+  "status": "completed",
+  "success_criteria": [
+    "TeamExecutor state remains Sejong-owned runtime evidence.",
+    "Workers return bounded evidence or implementation slices only.",
+    "Promotion rejects worker majority authority."
+  ],
+  "updated_at": "2026-05-30T00:00:00Z",
+  "verification_evidence": [
+    "python3 docs/sejong/scripts/sejong_workflow_run.py check --path docs/sejong/examples/workflow-run-corpus/team-executor/workflow-run.json",
+    "python3 docs/sejong/scripts/audit_workflow_run_risks.py --repo-root . --artifact-dir docs/sejong/examples/workflow-run-corpus --strict-local-refs --min-artifacts 5 --min-workflow-kinds 3 --min-backends 3 --require-promoted"
+  ],
+  "violations": [],
+  "workflow_kind": "team_backend",
+  "workflow_name": "team-executor",
+  "workers": [
+    {
+      "allowed_outputs": [
+        "bounded implementation slice",
+        "mailbox evidence only"
+      ],
+      "role": "execution lane",
+      "scope": "Execute an independent slice without changing lead-owned decisions.",
+      "status": "completed",
+      "worker_id": "execution-lane",
+      "write_scope": [
+        "workflow-run.evidence_ledger.execution-lane"
+      ]
+    },
+    {
+      "allowed_outputs": [
+        "review brief only"
+      ],
+      "role": "review lane",
+      "scope": "Review authority boundaries and mailbox evidence.",
+      "status": "completed",
+      "worker_id": "review-lane",
+      "write_scope": [
+        "workflow-run.evidence_ledger.review-lane"
+      ]
+    }
+  ]
+}

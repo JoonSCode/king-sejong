@@ -1,6 +1,6 @@
 # Workflow Run Contract
 
-**Status:** Draft
+**Status:** Promoted evidence gate
 
 ## Purpose
 
@@ -181,3 +181,28 @@ beat ordinary execution on every real task.
 For product-success claims, use the product evidence gate in
 `docs/sejong/VALIDATION.md`. For real workflow promotion, keep a reviewed corpus
 of workflow-run artifacts and run strict risk audit before changing defaults.
+
+## Promoted Source Corpus
+
+The source repository ships a promoted corpus at
+`docs/sejong/examples/workflow-run-corpus/`. It records the explicit user
+promotion request for the workflow-run evidence gate and includes a negative
+control that stays in `keep_shadowing`.
+
+Use the corpus to prove the promotion evidence shape:
+
+```bash
+python3 docs/sejong/scripts/audit_workflow_run_risks.py \
+  --repo-root . \
+  --artifact-dir docs/sejong/examples/workflow-run-corpus \
+  --strict-local-refs \
+  --min-artifacts 5 \
+  --min-workflow-kinds 3 \
+  --min-backends 3 \
+  --require-promoted
+```
+
+The promoted corpus does not make every dynamic workflow idea a default. Each
+new workflow-backed behavior still needs its own workflow-run artifact, explicit
+approval, reviewable baseline/candidate evidence, and strict audit evidence
+before leaving shadow mode.

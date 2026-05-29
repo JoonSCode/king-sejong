@@ -1,0 +1,123 @@
+{
+  "artifact_storage": {
+    "ref": "docs/sejong/examples/workflow-run-corpus/host-native-team/workflow-run.json",
+    "scope": "promoted_repo_artifact"
+  },
+  "backend": "host_native_team",
+  "backend_provenance": {
+    "command_refs": [
+      "docs/sejong/WORKFLOW_RUN.md",
+      "docs/sejong/TEAM_EXECUTOR.md"
+    ],
+    "migration_type": "host_native",
+    "non_claude_runtime": true,
+    "summary": "Host-native team support is promoted only as bounded evidence or implementation lanes whose outputs remain below Sejong lead authority."
+  },
+  "created_at": "2026-05-30T00:00:00Z",
+  "evidence_ledger": [
+    {
+      "evidence_id": "source-team-boundary",
+      "kind": "source_ref",
+      "refs": [
+        "docs/sejong/TEAM_EXECUTOR.md",
+        "docs/sejong/ROUTER.md"
+      ],
+      "status": "supported",
+      "summary": "Host team outputs are worker evidence and do not replace lead synthesis or verification."
+    },
+    {
+      "evidence_id": "verification-risk-audit",
+      "kind": "verification_ref",
+      "refs": [
+        "python3 docs/sejong/scripts/audit_workflow_run_risks.py --repo-root . --artifact-dir docs/sejong/examples/workflow-run-corpus --strict-local-refs --min-artifacts 5 --min-workflow-kinds 3 --min-backends 3 --require-promoted"
+      ],
+      "status": "verified",
+      "summary": "Strict corpus audit validates backend diversity and promoted evidence refs."
+    }
+  ],
+  "final_recommendation": "promote",
+  "forbidden_authority_claims": [
+    "uigwe gate approval",
+    "final synthesis",
+    "final verification",
+    "consensus approval",
+    "majority-vote authority"
+  ],
+  "format": "sejong.workflow-run/v0.1-draft",
+  "mapped_surfaces": [
+    "jiphyeonjeon",
+    "seungjeongwon"
+  ],
+  "metrics": {
+    "max_concurrency": 2,
+    "token_or_cost_overhead_ref": "docs/sejong/examples/workflow-run-corpus/evidence/candidate-hardened-workflow-run.md",
+    "unsupported_claim_count": 0,
+    "worker_count": 2,
+    "write_scopes_disjoint": true
+  },
+  "mode": "promoted_backend",
+  "promotion_approval": {
+    "approval_ref": "user:2026-05-30-promote-workflow-run-corpus",
+    "approval_type": "explicit_user_request",
+    "approved": true,
+    "required": true
+  },
+  "quality_comparison": {
+    "acceptance_criteria": [
+      "Host-native team lanes must keep write scopes disjoint and preserve lead-owned synthesis.",
+      "Team evidence must be auditable with local or URL baseline and candidate refs."
+    ],
+    "baseline_result_ref": "docs/sejong/examples/workflow-run-corpus/evidence/baseline-legacy-lightweight-ledger.md",
+    "candidate_result_ref": "docs/sejong/examples/workflow-run-corpus/evidence/candidate-hardened-workflow-run.md",
+    "outcome_quality_delta": 0.13,
+    "overhead_ratio": 1.18,
+    "recommendation": "promote"
+  },
+  "repo_root": ".",
+  "run_id": "host-native-team-promoted-2026-05-30",
+  "source_of_truth_refs": [
+    "docs/sejong/WORKFLOW_RUN.md",
+    "docs/sejong/TEAM_EXECUTOR.md",
+    "docs/sejong/ROUTER.md"
+  ],
+  "status": "completed",
+  "success_criteria": [
+    "Host-native workers stay bounded to evidence or implementation slices.",
+    "Lead Sejong synthesis and final verification remain non-delegated.",
+    "Strict risk audit sees host-native team evidence as one backend class."
+  ],
+  "updated_at": "2026-05-30T00:00:00Z",
+  "verification_evidence": [
+    "python3 docs/sejong/scripts/sejong_workflow_run.py check --path docs/sejong/examples/workflow-run-corpus/host-native-team/workflow-run.json",
+    "python3 docs/sejong/scripts/audit_workflow_run_risks.py --repo-root . --artifact-dir docs/sejong/examples/workflow-run-corpus --strict-local-refs --min-artifacts 5 --min-workflow-kinds 3 --min-backends 3 --require-promoted"
+  ],
+  "violations": [],
+  "workflow_kind": "team_backend",
+  "workflow_name": "host-native-team",
+  "workers": [
+    {
+      "allowed_outputs": [
+        "bounded option comparison brief"
+      ],
+      "role": "challenge lane",
+      "scope": "Challenge a proposed workflow promotion without deciding it.",
+      "status": "completed",
+      "worker_id": "challenge-lane",
+      "write_scope": [
+        "workflow-run.evidence_ledger.challenge-lane"
+      ]
+    },
+    {
+      "allowed_outputs": [
+        "verification evidence brief"
+      ],
+      "role": "verification lane",
+      "scope": "Gather verification evidence for lead review.",
+      "status": "completed",
+      "worker_id": "verification-lane",
+      "write_scope": [
+        "workflow-run.evidence_ledger.verification-lane"
+      ]
+    }
+  ]
+}

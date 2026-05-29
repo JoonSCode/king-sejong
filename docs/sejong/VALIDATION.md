@@ -307,6 +307,12 @@ python3 docs/sejong/scripts/test_benchmark_workflow_run_stability.py
 python3 docs/sejong/scripts/test_audit_workflow_run_risks.py
 ```
 
+The source repository's promoted workflow-run evidence-gate corpus is
+`docs/sejong/examples/workflow-run-corpus/`. It should pass the strict corpus
+audit command above with `--require-promoted`. Passing that corpus promotes the
+workflow-run gate as the checked evidence shape; it does not grant default
+authority to any new external workflow backend.
+
 This phase verifies three residual risks:
 
 - **Timing flake risk:** repeated large-ledger samples report candidate

@@ -1,0 +1,134 @@
+{
+  "artifact_storage": {
+    "ref": "docs/sejong/examples/workflow-run-corpus/deep-research-codex-subagents/workflow-run.json",
+    "scope": "promoted_repo_artifact"
+  },
+  "backend": "codex_native_subagents",
+  "backend_provenance": {
+    "command_refs": [
+      "docs/sejong/scripts/sejong_workflow_run.py",
+      "docs/sejong/scripts/audit_workflow_run_risks.py"
+    ],
+    "migration_type": "codex_native",
+    "non_claude_runtime": true,
+    "summary": "Deep-research-style fan-out is promoted only as bounded Codex-native evidence gathering under JangYeongsil and Sillok."
+  },
+  "created_at": "2026-05-30T00:00:00Z",
+  "evidence_ledger": [
+    {
+      "evidence_id": "source-workflow-contract",
+      "kind": "source_ref",
+      "refs": [
+        "docs/sejong/WORKFLOW_RUN.md",
+        "docs/sejong/VALIDATION.md"
+      ],
+      "status": "supported",
+      "summary": "The workflow-run contract requires source separation, court mapping, and promotion approval."
+    },
+    {
+      "evidence_id": "cross-check-authority",
+      "kind": "cross_check",
+      "refs": [
+        "docs/sejong/DISCIPLINE_GATES.md",
+        "docs/sejong/TEAM_EXECUTOR.md"
+      ],
+      "status": "verified",
+      "summary": "Research workers remain evidence lanes and do not approve Uigwe gates or final synthesis."
+    },
+    {
+      "evidence_id": "verification-corpus-audit",
+      "kind": "verification_ref",
+      "refs": [
+        "python3 docs/sejong/scripts/audit_workflow_run_risks.py --repo-root . --artifact-dir docs/sejong/examples/workflow-run-corpus --strict-local-refs --min-artifacts 5 --min-workflow-kinds 3 --min-backends 3 --require-promoted"
+      ],
+      "status": "verified",
+      "summary": "Strict corpus audit covers promoted workflow-run evidence."
+    }
+  ],
+  "final_recommendation": "promote",
+  "forbidden_authority_claims": [
+    "uigwe gate approval",
+    "final synthesis",
+    "final verification",
+    "consensus approval",
+    "majority-vote authority"
+  ],
+  "format": "sejong.workflow-run/v0.1-draft",
+  "mapped_surfaces": [
+    "jangyeongsil",
+    "sillok"
+  ],
+  "metrics": {
+    "max_concurrency": 2,
+    "token_or_cost_overhead_ref": "docs/sejong/examples/workflow-run-corpus/evidence/candidate-hardened-workflow-run.md",
+    "unsupported_claim_count": 0,
+    "worker_count": 2,
+    "write_scopes_disjoint": true
+  },
+  "mode": "promoted_backend",
+  "promotion_approval": {
+    "approval_ref": "user:2026-05-30-promote-workflow-run-corpus",
+    "approval_type": "explicit_user_request",
+    "approved": true,
+    "required": true
+  },
+  "quality_comparison": {
+    "acceptance_criteria": [
+      "Deep-research fan-out separates known, inferred, unknown, and discarded claims before synthesis.",
+      "Research lanes provide evidence only and do not claim court authority."
+    ],
+    "baseline_result_ref": "docs/sejong/examples/workflow-run-corpus/evidence/baseline-legacy-lightweight-ledger.md",
+    "candidate_result_ref": "docs/sejong/examples/workflow-run-corpus/evidence/candidate-hardened-workflow-run.md",
+    "outcome_quality_delta": 0.14,
+    "overhead_ratio": 1.2,
+    "recommendation": "promote"
+  },
+  "repo_root": ".",
+  "run_id": "deep-research-codex-subagents-promoted-2026-05-30",
+  "source_of_truth_refs": [
+    "docs/sejong/WORKFLOW_RUN.md",
+    "docs/sejong/VALIDATION.md",
+    "docs/sejong/DISCIPLINE_GATES.md"
+  ],
+  "status": "completed",
+  "success_criteria": [
+    "Research evidence remains subordinate to JangYeongsil and Sillok.",
+    "Promotion uses reviewable baseline and candidate refs.",
+    "No worker or backend claims final Sejong authority."
+  ],
+  "updated_at": "2026-05-30T00:00:00Z",
+  "verification_evidence": [
+    "python3 docs/sejong/scripts/sejong_workflow_run.py check --path docs/sejong/examples/workflow-run-corpus/deep-research-codex-subagents/workflow-run.json",
+    "python3 docs/sejong/scripts/audit_workflow_run_risks.py --repo-root . --artifact-dir docs/sejong/examples/workflow-run-corpus --strict-local-refs --min-artifacts 5 --min-workflow-kinds 3 --min-backends 3 --require-promoted"
+  ],
+  "violations": [],
+  "workflow_kind": "deep_research",
+  "workflow_name": "deep-research-codex-subagents",
+  "workers": [
+    {
+      "allowed_outputs": [
+        "known/inferred/unknown evidence only",
+        "discarded claims with source references"
+      ],
+      "role": "bounded research lane",
+      "scope": "Separate evidence claims before lead synthesis.",
+      "status": "completed",
+      "worker_id": "research-lane",
+      "write_scope": [
+        "workflow-run.evidence_ledger.research-lane"
+      ]
+    },
+    {
+      "allowed_outputs": [
+        "cross-check findings only"
+      ],
+      "role": "cross-check lane",
+      "scope": "Check authority and source boundaries.",
+      "status": "completed",
+      "worker_id": "cross-check-lane",
+      "write_scope": [
+        "workflow-run.evidence_ledger.cross-check-lane"
+      ]
+    }
+  ]
+}

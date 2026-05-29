@@ -31,6 +31,16 @@ Demonstrates:
   - `plan.packet.json`
   - `goal-tree.json`
 
+### `workflow-run-corpus/`
+
+Demonstrates:
+
+- promoted workflow-run evidence-gate artifacts
+- strict local baseline/candidate refs for promotion proof
+- backend diversity across Codex-native, host-native, TeamExecutor, and mock
+  workflow tactics
+- a negative-control artifact that remains in `keep_shadowing`
+
 ## Notes
 
 - These examples are illustrative protocol artifacts, not production task plans.

@@ -152,6 +152,7 @@ python3 docs/sejong/scripts/benchmark_workflow_run.py
 python3 docs/sejong/scripts/benchmark_workflow_run_comparison.py --min-score-delta 0.10 --min-multi-metric-score 0.90
 python3 docs/sejong/scripts/benchmark_workflow_run_stability.py --samples 9 --warmups 1
 python3 docs/sejong/scripts/audit_workflow_run_risks.py --repo-root . --artifact docs/sejong/examples/workflow-run.example.json
+python3 docs/sejong/scripts/audit_workflow_run_risks.py --repo-root . --artifact-dir docs/sejong/examples/workflow-run-corpus --strict-local-refs --min-artifacts 5 --min-workflow-kinds 3 --min-backends 3 --require-promoted
 python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets
 python3 docs/sejong/scripts/benchmark_sejong_surface.py --require-targets
 python3 docs/sejong/scripts/sejong_integrated_quality_gate.py --work-dir "$(mktemp -d)"
