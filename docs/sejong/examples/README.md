@@ -35,6 +35,8 @@ Demonstrates:
 
 Demonstrates:
 
+- the top-level `workflow-run.example.json` and corpus as directly promoted
+  evidence-gate artifacts after explicit user approval
 - promoted workflow-run evidence-gate artifacts
 - strict local baseline/candidate refs for promotion proof
 - backend diversity across Codex-native, host-native, TeamExecutor, and mock

@@ -313,6 +313,11 @@ audit command above with `--require-promoted`. Passing that corpus promotes the
 workflow-run gate as the checked evidence shape; it does not grant default
 authority to any new external workflow backend.
 
+The checked workflow-run evidence gate is applied directly in this repository
+after explicit user approval. Future unproven workflow-backed behaviors still
+start shadowed until their own artifact, comparison, approval, and strict audit
+evidence pass.
+
 This phase verifies three residual risks:
 
 - **Timing flake risk:** repeated large-ledger samples report candidate

@@ -38,7 +38,10 @@ gates, does not vote, and does not replace lead synthesis.
 
 ## Lifecycle
 
-New workflow-backed behavior starts in `shadow`.
+New unproven workflow-backed behavior starts in shadow mode (`shadow`). The
+workflow-run evidence gate itself is already promoted in this source repository
+after explicit user approval and validation; its shipped example is a promoted
+artifact, not a shadow-only fixture.
 
 Recommended lifecycle:
 
@@ -184,9 +187,10 @@ of workflow-run artifacts and run strict risk audit before changing defaults.
 
 ## Promoted Source Corpus
 
-The source repository ships a promoted corpus at
-`docs/sejong/examples/workflow-run-corpus/`. It records the explicit user
-promotion request for the workflow-run evidence gate and includes a negative
+The source repository ships a promoted example at
+`docs/sejong/examples/workflow-run.example.json` and a promoted corpus at
+`docs/sejong/examples/workflow-run-corpus/`. They record explicit user
+promotion requests for the workflow-run evidence gate and include a negative
 control that stays in `keep_shadowing`.
 
 Use the corpus to prove the promotion evidence shape:
@@ -202,7 +206,8 @@ python3 docs/sejong/scripts/audit_workflow_run_risks.py \
   --require-promoted
 ```
 
-The promoted corpus does not make every dynamic workflow idea a default. Each
-new workflow-backed behavior still needs its own workflow-run artifact, explicit
+This is direct application of the workflow-run evidence gate, not an indefinite
+shadow trial. It does not make every dynamic workflow idea a default. Each new
+workflow-backed behavior still needs its own workflow-run artifact, explicit
 approval, reviewable baseline/candidate evidence, and strict audit evidence
 before leaving shadow mode.

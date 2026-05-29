@@ -758,7 +758,7 @@
     },
     {
       "id": "instruction-dynamic-workflow-adoption",
-      "title": "External dynamic workflows stay subordinate and shadowed",
+      "title": "External dynamic workflows stay subordinate and approval-gated",
       "profile": "instruction",
       "input_shape": "instruction-surface check",
       "prompt": "Check that external dynamic workflow concepts such as Claude Code dynamic workflows, deep-research, ultracode-style behavior, or many-agent workflow backends can be migrated or mocked in Codex without becoming Sejong authority.",
@@ -779,7 +779,8 @@
       "expected_behavior": [
         "External Dynamic Workflow Adoption is documented as a discipline gate",
         "dynamic workflow runtimes are valued for reducing context pollution, repeatable fan-out, cross-checking, retry, and synthesis",
-        "new workflow-backed behavior starts in shadow mode",
+        "new unproven workflow-backed behavior starts in shadow mode",
+        "the workflow-run evidence gate itself is directly promoted after explicit user approval and validation",
         "deep-research-style workflows map to JangYeongsil evidence plus optional Sillok evidence",
         "dynamic workflow concepts map to Codex-native subagents, host-native teams, TeamExecutor, manual_shadow, or codex_mock_workflow after an approved Uigwe contract or clear direct scope",
         "Claude CLI, Claude API, and external Claude workflow runtimes are not hidden backends",

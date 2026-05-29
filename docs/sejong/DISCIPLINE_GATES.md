@@ -204,10 +204,12 @@ same failure the gate was meant to prevent.
   the normative contract and approval gates. Seungjeongwon owns execution,
   workflow-backend use, verification, and feedback. Sillok owns durable evidence
   records.
-- **Force:** `shadow` by default for new workflow-backed behavior; `route` when a
-  request should enter JangYeongsil, Jiphyeonjeon, Uigwe, or Seungjeongwon before
-  workflow use; `hard` for protected edits, live ambiguity, worker authority
-  claims, external actions, and completion claims.
+- **Force:** `shadow` by default for new workflow-backed behavior that is
+  unproven. The workflow-run evidence gate itself is directly promoted after
+  explicit user approval and validation. Use `route` when a request should enter
+  JangYeongsil, Jiphyeonjeon, Uigwe, or Seungjeongwon before workflow use; use
+  `hard` for protected edits, live ambiguity, worker authority claims, external
+  actions, and completion claims.
 - **Behavior:** Map `/deep-research`-style workflows to JangYeongsil evidence
   gathering plus optional Sillok evidence, not to a final decision or plan. Map
   dynamic workflow concepts to Codex native subagents, host-native teams,
@@ -267,7 +269,12 @@ same failure the gate was meant to prevent.
   evidence/provenance string risk and real-work corpus risk. These checks make
   residual risk observable; they do not replace actual product or engineering
   success evidence.
-- **Promotion summary:** Shadow-run workflow-backed candidates against the same acceptance criteria as the baseline. Promote only when candidate quality that beats the baseline enough to justify orchestration overhead is shown with fresh verification evidence.
+- **Promotion summary:** The workflow-run evidence gate is promoted directly in
+  this repository by explicit user request.
+  Shadow-run workflow-backed candidates against the same acceptance criteria as the baseline before promotion.
+  Promote only when future unproven workflow-backed candidate quality beats the
+  baseline enough to justify orchestration overhead with fresh verification
+  evidence.
 
 ### Durable Runtime State
 

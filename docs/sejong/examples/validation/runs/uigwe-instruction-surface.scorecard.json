@@ -3,7 +3,7 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-29T14:52:33Z",
+    "generated_at": "2026-05-29T20:35:47Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
@@ -500,7 +500,7 @@
     },
     {
       "scenario_id": "instruction-dynamic-workflow-adoption",
-      "title": "External dynamic workflows stay subordinate and shadowed",
+      "title": "External dynamic workflows stay subordinate and approval-gated",
       "status": "pass",
       "score": 1.0,
       "checks": [

@@ -3,7 +3,7 @@
   "backend_provenance": {
     "command_refs": [
       "docs/sejong/scripts/sejong_workflow_run.py",
-      "mock:codex-native-shadow"
+      "docs/sejong/examples/workflow-run-corpus/evidence/candidate-hardened-workflow-run.md"
     ],
     "migration_type": "codex_mock",
     "non_claude_runtime": true,
@@ -52,7 +52,7 @@
       "summary": "Workflow-run artifact validates under the Codex-owned helper."
     }
   ],
-  "final_recommendation": "keep_shadowing",
+  "final_recommendation": "promote",
   "forbidden_authority_claims": [
     "uigwe gate approval",
     "final synthesis",
@@ -65,10 +65,10 @@
     "jangyeongsil",
     "sillok"
   ],
-  "mode": "shadow",
+  "mode": "promoted_backend",
   "metrics": {
     "max_concurrency": 1,
-    "token_or_cost_overhead_ref": "manual-shadow:low-overhead",
+    "token_or_cost_overhead_ref": "docs/sejong/examples/workflow-run-corpus/evidence/candidate-hardened-workflow-run.md",
     "unsupported_claim_count": 0,
     "worker_count": 1,
     "write_scopes_disjoint": true
@@ -78,20 +78,20 @@
       "Candidate improves claim separation without authority drift.",
       "Candidate records discarded claims and cost overhead."
     ],
-    "baseline_result_ref": "baseline:single-agent-research-note",
-    "candidate_result_ref": "candidate:workflow-run-ledger",
-    "outcome_quality_delta": 0.05,
+    "baseline_result_ref": "docs/sejong/examples/workflow-run-corpus/evidence/baseline-legacy-lightweight-ledger.md",
+    "candidate_result_ref": "docs/sejong/examples/workflow-run-corpus/evidence/candidate-hardened-workflow-run.md",
+    "outcome_quality_delta": 0.14,
     "overhead_ratio": 1.1,
-    "recommendation": "keep_shadowing"
+    "recommendation": "promote"
   },
   "promotion_approval": {
-    "approval_ref": "not-required",
-    "approval_type": "not_applicable",
-    "approved": false,
-    "required": false
+    "approval_ref": "user:2026-05-30-directly-apply-workflow-run-promotion",
+    "approval_type": "explicit_user_request",
+    "approved": true,
+    "required": true
   },
   "repo_root": "/Users/junsu/develop/king-sejong",
-  "run_id": "workflow-shadow-2026-05-29",
+  "run_id": "workflow-run-promoted-2026-05-30",
   "source_of_truth_refs": [
     "docs/sejong/DISCIPLINE_GATES.md",
     "docs/sejong/VALIDATION.md",
@@ -101,15 +101,16 @@
   "success_criteria": [
     "Known, inferred, unknown, and discarded claims are separated.",
     "No worker, script, or external backend claims court authority.",
-    "Quality comparison records outcome delta and overhead before promotion."
+    "Quality comparison records outcome delta and overhead before direct promotion."
   ],
-  "updated_at": "2026-05-29T00:00:00Z",
+  "updated_at": "2026-05-30T00:00:00Z",
   "verification_evidence": [
-    "python3 docs/sejong/scripts/sejong_workflow_run.py check --path docs/sejong/examples/workflow-run.example.json"
+    "python3 docs/sejong/scripts/sejong_workflow_run.py check --path docs/sejong/examples/workflow-run.example.json",
+    "python3 docs/sejong/scripts/audit_workflow_run_risks.py --repo-root . --artifact docs/sejong/examples/workflow-run.example.json --strict-local-refs --require-promoted"
   ],
   "violations": [],
   "workflow_kind": "deep_research",
-  "workflow_name": "jangyeongsil-claim-cross-check-shadow",
+  "workflow_name": "jangyeongsil-claim-cross-check-promoted",
   "workers": [
     {
       "allowed_outputs": [
