@@ -29,6 +29,7 @@ WORKER_STATUSES = {"pending", "active", "completed", "blocked", "failed"}
 EVIDENCE_KINDS = {"source_ref", "claim", "discarded_claim", "cross_check", "verification_ref", "cost", "finding", "authority_violation"}
 EVIDENCE_STATUSES = {"open", "supported", "rejected", "verified", "violating"}
 RECOMMENDATIONS = {"promote", "reject", "keep_shadowing", "unknown"}
+PROMOTION_APPROVAL_TYPES = {"not_applicable", "explicit_user_request", "uigwe_approved_scope"}
 FORBIDDEN_AUTHORITY_TERMS = (
     "uigwe gate approval",
     "final synthesis",
@@ -81,6 +82,15 @@ def quality_comparison() -> dict[str, Any]:
         "outcome_quality_delta": 0,
         "overhead_ratio": 1,
         "recommendation": "unknown",
+    }
+
+
+def promotion_approval() -> dict[str, Any]:
+    return {
+        "required": False,
+        "approved": False,
+        "approval_type": "not_applicable",
+        "approval_ref": "not-required",
     }
 
 
@@ -211,6 +221,7 @@ def run_failures(data: dict[str, Any]) -> list[str]:
         "workers",
         "evidence_ledger",
         "quality_comparison",
+        "promotion_approval",
         "metrics",
         "verification_evidence",
         "violations",
@@ -484,10 +495,36 @@ def run_failures(data: dict[str, Any]) -> list[str]:
         if metrics.get("write_scopes_disjoint") is not True:
             failures.append("metrics write_scopes_disjoint must be true")
 
+    approval = data.get("promotion_approval")
+    if not isinstance(approval, dict):
+        failures.append("promotion_approval must be an object")
+        approval = {}
+    else:
+        allowed_approval_fields = {"required", "approved", "approval_type", "approval_ref"}
+        for field in approval:
+            if field not in allowed_approval_fields:
+                failures.append(f"promotion_approval has unexpected field: {field}")
+        if not isinstance(approval.get("required"), bool):
+            failures.append("promotion_approval required must be a boolean")
+        if not isinstance(approval.get("approved"), bool):
+            failures.append("promotion_approval approved must be a boolean")
+        if approval.get("approval_type") not in PROMOTION_APPROVAL_TYPES:
+            failures.append(f"unsupported promotion approval type: {approval.get('approval_type')}")
+        if not isinstance(approval.get("approval_ref"), str) or not approval.get("approval_ref"):
+            failures.append("promotion_approval approval_ref must be a non-empty string")
+
     if data.get("mode") == "promoted_backend" and data.get("final_recommendation") != "promote":
         failures.append("promoted_backend mode requires final_recommendation promote")
 
     if data.get("final_recommendation") == "promote":
+        if approval.get("required") is not True:
+            failures.append("promote requires promotion_approval required true")
+        if approval.get("approved") is not True:
+            failures.append("promote requires explicit promotion approval")
+        if approval.get("approval_type") not in {"explicit_user_request", "uigwe_approved_scope"}:
+            failures.append("promote requires user or approved Uigwe promotion approval type")
+        if not reviewable_ref(approval.get("approval_ref")):
+            failures.append("promote requires a reviewable promotion approval_ref")
         if comparison.get("recommendation") != "promote":
             failures.append("promote requires quality_comparison recommendation promote")
         quality_delta = comparison.get("outcome_quality_delta", 0)
@@ -568,6 +605,7 @@ def start(args: argparse.Namespace) -> int:
         "workers": [],
         "evidence_ledger": [],
         "quality_comparison": quality_comparison(),
+        "promotion_approval": promotion_approval(),
         "metrics": metrics_for(),
         "verification_evidence": [],
         "violations": [],
@@ -675,6 +713,24 @@ def record_metrics(args: argparse.Namespace) -> int:
     return 0
 
 
+def record_approval(args: argparse.Namespace) -> int:
+    path = Path(args.path)
+    data = load_json(path)
+    data["promotion_approval"] = {
+        "required": True,
+        "approved": True,
+        "approval_type": args.approval_type,
+        "approval_ref": args.approval_ref,
+    }
+    data["updated_at"] = now_utc()
+    failures = run_failures(data)
+    if failures:
+        return emit_failures(failures)
+    write_json(path, data)
+    print(f"promotion approval recorded: {path}")
+    return 0
+
+
 def add_violation(args: argparse.Namespace) -> int:
     path = Path(args.path)
     data = load_json(path)
@@ -765,6 +821,12 @@ def build_parser() -> argparse.ArgumentParser:
     metrics_parser.add_argument("--token-or-cost-overhead-ref", required=True)
     metrics_parser.add_argument("--write-scopes-disjoint", action=argparse.BooleanOptionalAction, default=True)
     metrics_parser.set_defaults(func=record_metrics)
+
+    approval_parser = subparsers.add_parser("record-approval", help="Record explicit user or approved Uigwe promotion approval.")
+    approval_parser.add_argument("--path", required=True)
+    approval_parser.add_argument("--approval-type", required=True, choices=sorted(PROMOTION_APPROVAL_TYPES - {"not_applicable"}))
+    approval_parser.add_argument("--approval-ref", required=True)
+    approval_parser.set_defaults(func=record_approval)
 
     violation_parser = subparsers.add_parser("add-violation", help="Record a workflow authority or safety violation.")
     violation_parser.add_argument("--path", required=True)

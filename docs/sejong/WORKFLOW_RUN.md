@@ -61,8 +61,16 @@ python3 docs/sejong/scripts/sejong_workflow_run.py check --path <workflow-run.js
 
 Promotion requires more than "many agents ran".
 
+The agent should be proactive about promotion candidates. If the workflow-run
+checks, comparison benchmark, stability benchmark, and risk audit pass, Sejong
+should summarize the candidate as `promotion-ready for user review`, list the
+evidence that passed, list remaining limits, and ask for an explicit promotion
+decision. It must not silently promote.
+
 A promoted workflow-backed behavior must show:
 
+- explicit user approval or an already approved Uigwe scope recorded in
+  `promotion_approval`
 - no hidden Claude runtime reference
 - no worker authority violation
 - no live ambiguity bypass
@@ -84,6 +92,38 @@ before promotion.
 
 `backend=other` must have a specific provenance summary and reviewable command
 refs. Self-attested text such as "trust me" is not promotion evidence.
+
+## User-Facing Promotion Proposal
+
+The user should not need to inspect raw benchmark JSON to know whether a
+workflow is worth promoting.
+
+When evidence is strong enough, report:
+
+- `Promotion candidate: yes`
+- what improved compared with baseline
+- which gates passed
+- which residual risks remain
+- exactly what would change if promoted
+- the required explicit approval phrase or Uigwe approval ref
+
+When evidence is not strong enough, report:
+
+- `Promotion candidate: no`
+- the failed gate or missing evidence
+- whether to keep shadowing, reject, or collect more corpus evidence
+
+The promotion action itself still requires explicit approval. A recommendation
+is not approval.
+
+Use:
+
+```bash
+python3 docs/sejong/scripts/sejong_workflow_run.py record-approval \
+  --path <workflow-run.json> \
+  --approval-type explicit_user_request \
+  --approval-ref "user:<request or decision id>"
+```
 
 ## Validation Commands
 

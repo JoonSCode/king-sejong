@@ -94,6 +94,9 @@
     "quality_comparison": {
       "$ref": "#/$defs/QualityComparison"
     },
+    "promotion_approval": {
+      "$ref": "#/$defs/PromotionApproval"
+    },
     "metrics": {
       "$ref": "#/$defs/Metrics"
     },
@@ -139,6 +142,7 @@
     "workers",
     "evidence_ledger",
     "quality_comparison",
+    "promotion_approval",
     "metrics",
     "verification_evidence",
     "violations",
@@ -344,6 +348,35 @@
         "outcome_quality_delta",
         "overhead_ratio",
         "recommendation"
+      ]
+    },
+    "PromotionApproval": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "approved": {
+          "type": "boolean"
+        },
+        "approval_type": {
+          "type": "string",
+          "enum": [
+            "not_applicable",
+            "explicit_user_request",
+            "uigwe_approved_scope"
+          ]
+        },
+        "approval_ref": {
+          "$ref": "#/$defs/NonEmptyString"
+        }
+      },
+      "required": [
+        "required",
+        "approved",
+        "approval_type",
+        "approval_ref"
       ]
     },
     "Metrics": {

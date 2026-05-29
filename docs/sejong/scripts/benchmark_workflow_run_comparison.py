@@ -36,6 +36,7 @@ DIMENSION_MINIMUMS = {
 }
 REQUIRED_MATRIX_CASE_IDS = {
     "weak-positive-delta-promotion",
+    "promotion-without-approval",
     "empty-acceptance-criteria",
     "final-recommendation-mismatch",
     "high-overhead-weak-promotion",
@@ -193,7 +194,7 @@ def case_tags(case_id: str) -> set[str]:
     tags: set[str] = set()
     if case_id.startswith("hidden-claude"):
         tags.update({"critical", "hidden_runtime", "security"})
-    if case_id in {"promote-with-violation", "high-overhead-weak-promotion", "weak-positive-delta-promotion", "final-recommendation-mismatch", "manual-shadow-promoted"}:
+    if case_id in {"promote-with-violation", "high-overhead-weak-promotion", "weak-positive-delta-promotion", "promotion-without-approval", "final-recommendation-mismatch", "manual-shadow-promoted"}:
         tags.update({"critical", "promotion"})
     if case_id in {"other-without-provenance", "weak-other-provenance", "missing-artifact-storage", "missing-metrics"}:
         tags.update({"critical", "provenance"})

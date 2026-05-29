@@ -250,6 +250,8 @@ Promotion requires:
 - no protected guardrail scenario regressions
 - no approval-gate or worker-authority violations
 - no live ambiguity bypass
+- explicit `promotion_approval` from the user or from an already approved Uigwe
+  scope
 - fresh verification evidence against the original Uigwe or direct-scope
   success criteria
 - `outcome_quality_delta >= 0.10` for promoted behavior
@@ -259,6 +261,12 @@ Promotion requires:
   refs rather than self-attested text
 - candidate quality that beats the baseline enough to justify orchestration
   overhead under the promotion thresholds below
+
+Sejong should be proactive after these checks. If all promotion gates pass,
+report `Promotion candidate: yes` with the evidence summary, remaining risks,
+and concrete behavior change, then wait for explicit promotion approval. If any
+gate fails, report `Promotion candidate: no` with the failed gate and the next
+evidence needed. A recommendation is not approval.
 
 Use `docs/sejong/scripts/benchmark_workflow_run.py` and
 `docs/sejong/scripts/test_sejong_workflow_run.py` to exercise the representative

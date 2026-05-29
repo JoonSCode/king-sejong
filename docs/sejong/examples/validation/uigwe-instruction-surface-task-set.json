@@ -789,6 +789,8 @@
         "benchmark_workflow_run_stability.py verifies Timing flake risk with repeated large-ledger p95 and max samples",
         "audit_workflow_run_risks.py verifies Evidence/provenance string risk and Real-work corpus risk through workflow-run artifact audits and strict-local-refs",
         "promotion keeps critical_miss_rate at 0 before workflow-backed behavior can leave shadow mode",
+        "Sejong proactively reports Promotion candidate: yes or Promotion candidate: no so users do not need to inspect raw benchmark JSON",
+        "promotion requires explicit promotion_approval and recommendation is not approval",
         "promotion requires outcome_quality_delta >= 0.10, reviewable baseline/candidate refs, task-specific acceptance criteria, and matching comparison/final recommendations",
         "promotion enforces dimension hard minimums and rejects weak other provenance or manual_shadow as a promoted backend",
         "promotion requires baseline-vs-candidate outcome-quality comparison, no guardrail regressions, no worker-authority violations, and justified overhead"

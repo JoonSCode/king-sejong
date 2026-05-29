@@ -109,6 +109,12 @@ def base_run(
             "overhead_ratio": overhead_ratio,
             "recommendation": comparison_recommendation,
         },
+        "promotion_approval": {
+            "required": final_recommendation == "promote",
+            "approved": final_recommendation == "promote",
+            "approval_type": "explicit_user_request" if final_recommendation == "promote" else "not_applicable",
+            "approval_ref": f"user:{run_id}:promotion-approved" if final_recommendation == "promote" else "not-required",
+        },
         "metrics": {
             "worker_count": 1,
             "max_concurrency": 1,
@@ -311,6 +317,24 @@ def invalid_cases() -> list[tuple[dict[str, Any], list[str]]]:
         overhead_ratio=999,
     )
 
+    promotion_without_approval = base_run(
+        run_id="promotion-without-approval",
+        workflow_kind="dynamic_workflow",
+        backend="codex_mock_workflow",
+        mode="promoted_backend",
+        mapped_surfaces=["seungjeongwon"],
+        final_recommendation="promote",
+        comparison_recommendation="promote",
+        quality_delta=0.2,
+        overhead_ratio=1.0,
+    )
+    promotion_without_approval["promotion_approval"] = {
+        "required": False,
+        "approved": False,
+        "approval_type": "not_applicable",
+        "approval_ref": "not-required",
+    }
+
     weak_positive_delta_promotion = base_run(
         run_id="weak-positive-delta-promotion",
         workflow_kind="dynamic_workflow",
@@ -439,6 +463,7 @@ def invalid_cases() -> list[tuple[dict[str, Any], list[str]]]:
         (promote_with_violation, ["promote requires no violations", "promote cannot include authority violation evidence"]),
         (missing_comparison, ["completed run requires quality comparison recommendation", "completed run requires baseline and candidate result refs"]),
         (high_overhead_promotion, ["overhead_ratio > 1.25"]),
+        (promotion_without_approval, ["promote requires explicit promotion approval"]),
         (weak_positive_delta_promotion, ["promote requires outcome_quality_delta >= 0.10"]),
         (empty_acceptance_criteria, ["quality_comparison acceptance_criteria must be a non-empty list once recorded"]),
         (final_recommendation_mismatch, ["completed run final_recommendation must match quality_comparison recommendation"]),

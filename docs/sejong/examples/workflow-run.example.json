@@ -84,6 +84,12 @@
     "overhead_ratio": 1.1,
     "recommendation": "keep_shadowing"
   },
+  "promotion_approval": {
+    "approval_ref": "not-required",
+    "approval_type": "not_applicable",
+    "approved": false,
+    "required": false
+  },
   "repo_root": "/Users/junsu/develop/king-sejong",
   "run_id": "workflow-shadow-2026-05-29",
   "source_of_truth_refs": [

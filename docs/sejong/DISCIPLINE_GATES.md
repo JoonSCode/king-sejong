@@ -210,6 +210,13 @@ same failure the gate was meant to prevent.
   Validate the workflow-run artifact with
   `python3 docs/sejong/scripts/sejong_workflow_run.py check --path <workflow-run.json>`
   before using it as promotion evidence.
+- **Promotion proposal behavior:** Users should not need to read raw benchmark
+  JSON to notice promotion readiness. When all gates pass, Sejong should
+  proactively report `Promotion candidate: yes`, summarize the evidence,
+  residual risks, and concrete behavior change, then request an explicit user
+  decision or cite an already approved Uigwe scope. When gates fail, report
+  `Promotion candidate: no` with the failed gate and next evidence needed.
+  Recommendation is not approval.
 - **Comparison benchmark:** Run
   `python3 docs/sejong/scripts/benchmark_workflow_run_comparison.py --min-score-delta 0.10 --min-multi-metric-score 0.90`
   before promotion. If the hardened workflow-run validator does not beat the
@@ -218,9 +225,10 @@ same failure the gate was meant to prevent.
   use-case matrix, keep it shadowed and redesign the workflow contract. Promoted
   behavior also requires `outcome_quality_delta >= 0.10`, reviewable
   baseline/candidate refs, task-specific acceptance criteria, matching
-  comparison/final recommendations, and dimension hard minimums for promotion
-  decision quality, outcome quality, efficiency/cost, parallelism, reliability,
-  observability, and human/developer experience.
+  comparison/final recommendations, explicit `promotion_approval`, and
+  dimension hard minimums for promotion decision quality, outcome quality,
+  efficiency/cost, parallelism, reliability, observability, and human/developer
+  experience.
 - **Remaining-risk verification:** Use
   `python3 docs/sejong/scripts/benchmark_workflow_run_stability.py --samples 9 --warmups 1`
   for timing flake risk and

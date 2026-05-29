@@ -314,6 +314,93 @@ class SejongWorkflowRunTests(unittest.TestCase):
             self.assertNotEqual(promote.returncode, 0)
             self.assertIn("promote requires outcome_quality_delta >= 0.10", promote.stderr)
 
+    def test_promote_requires_explicit_user_or_uigwe_approval(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "workflow-run.json"
+            data = {
+                "format": "sejong.workflow-run/v0.1-draft",
+                "run_id": "promotion-without-approval",
+                "repo_root": str(REPO_ROOT),
+                "status": "completed",
+                "workflow_kind": "dynamic_workflow",
+                "workflow_name": "promotion-without-approval",
+                "mapped_surfaces": ["seungjeongwon"],
+                "backend": "codex_mock_workflow",
+                "backend_provenance": {
+                    "migration_type": "codex_mock",
+                    "non_claude_runtime": True,
+                    "summary": "Codex-owned mock backend with no external runtime.",
+                    "command_refs": ["docs/sejong/scripts/sejong_workflow_run.py"],
+                },
+                "mode": "promoted_backend",
+                "artifact_storage": {"scope": "external", "ref": "${SEJONG_HOME}/runs/test"},
+                "source_of_truth_refs": ["docs/sejong/VALIDATION.md"],
+                "success_criteria": ["Promotion requires explicit approval evidence."],
+                "forbidden_authority_claims": [
+                    "uigwe gate approval",
+                    "final synthesis",
+                    "final verification",
+                    "consensus approval",
+                    "majority-vote authority",
+                ],
+                "workers": [],
+                "evidence_ledger": [
+                    {
+                        "evidence_id": "verification-1",
+                        "kind": "verification_ref",
+                        "summary": "Workflow validation passed.",
+                        "refs": ["python3 docs/sejong/scripts/sejong_workflow_run.py check"],
+                        "status": "verified",
+                    }
+                ],
+                "quality_comparison": {
+                    "baseline_result_ref": "baseline:promotion-without-approval",
+                    "candidate_result_ref": "candidate:promotion-without-approval",
+                    "acceptance_criteria": ["Candidate beats baseline under the same rubric."],
+                    "outcome_quality_delta": 0.2,
+                    "overhead_ratio": 1.0,
+                    "recommendation": "promote",
+                },
+                "promotion_approval": {
+                    "required": False,
+                    "approved": False,
+                    "approval_type": "not_applicable",
+                    "approval_ref": "not-required",
+                },
+                "metrics": {
+                    "worker_count": 0,
+                    "max_concurrency": 0,
+                    "unsupported_claim_count": 0,
+                    "token_or_cost_overhead_ref": "benchmark:approval",
+                    "write_scopes_disjoint": True,
+                },
+                "verification_evidence": ["workflow validation passed"],
+                "violations": [],
+                "final_recommendation": "promote",
+                "created_at": "2026-05-29T00:00:00Z",
+                "updated_at": "2026-05-29T00:00:00Z",
+            }
+            run_path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+            check = run_command(["check", "--path", str(run_path)])
+            self.assertNotEqual(check.returncode, 0)
+            self.assertIn("promote requires explicit promotion approval", check.stderr)
+
+            approval = run_command(
+                [
+                    "record-approval",
+                    "--path",
+                    str(run_path),
+                    "--approval-type",
+                    "explicit_user_request",
+                    "--approval-ref",
+                    "user:promote promotion-without-approval",
+                ]
+            )
+            self.assertEqual(approval.returncode, 0, approval.stderr)
+            check_after = run_command(["check", "--path", str(run_path)])
+            self.assertEqual(check_after.returncode, 0, check_after.stderr)
+
     def test_completed_run_rejects_empty_acceptance_criteria_and_mismatched_recommendation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             run_path = Path(tmp) / "workflow-run.json"

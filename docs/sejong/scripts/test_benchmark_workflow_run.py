@@ -35,8 +35,9 @@ class WorkflowRunBenchmarkTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         data = json.loads(result.stdout)
         self.assertTrue(data["passed"])
-        self.assertEqual(len(data["cases"]), 17)
+        self.assertEqual(len(data["cases"]), 18)
         case_ids = {case["id"] for case in data["cases"]}
+        self.assertIn("promotion-without-approval", case_ids)
         self.assertIn("weak-positive-delta-promotion", case_ids)
         self.assertIn("empty-acceptance-criteria", case_ids)
         self.assertIn("final-recommendation-mismatch", case_ids)
