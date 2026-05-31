@@ -37,7 +37,7 @@ Installs:
     ${CODEX_HOME:-~/.codex}/skills/jiphyeonjeon/
     ${CODEX_HOME:-~/.codex}/skills/uigwe/
     ${CODEX_HOME:-~/.codex}/skills/seungjeongwon/
-    ${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/local/
+    ${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/
     ${CODEX_HOME:-~/.codex}/config.toml managed King Sejong hooks block
     ${CODEX_HOME:-~/.codex}/config.toml managed King Sejong plugin block
     ${CODEX_HOME:-~/.codex}/sejong/state/active-context.json
@@ -66,7 +66,7 @@ SCOPE=repo
 TARGET_REPO="."
 PLUGIN_MARKETPLACE="king-sejong-local"
 PLUGIN_NAME="king-sejong"
-PLUGIN_VERSION="local"
+PLUGIN_VERSION="0.1.0"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

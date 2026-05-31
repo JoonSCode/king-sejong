@@ -16,12 +16,11 @@
     "verification",
     "orchestration"
   ],
-  "skills": "./skills/",
   "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "King Sejong",
     "shortDescription": "Route Codex work through Sejong, Uigwe, and Seungjeongwon.",
-    "longDescription": "Plugin adapter for King Sejong discovery and plugin-scoped hook metadata. Runtime wiring, durable docs, active context, and verification contracts remain installer-owned under the Codex user skill tree.",
+    "longDescription": "Plugin adapter for King Sejong hook metadata. Runtime wiring, durable docs, active context, and verification contracts remain installer-owned under the Codex user skill tree; use the canonical user-scope $sejong skill.",
     "developerName": "Junsu",
     "category": "Developer Tools",
     "capabilities": [

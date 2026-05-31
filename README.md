@@ -127,9 +127,9 @@ User scope copies these managed paths into `${CODEX_HOME:-~/.codex}/skills`:
 - `seungjeongwon/`
 
 In user scope, shared Sejong docs are installed under `skills/sejong/docs/`, and the installed skill files are rewritten to load those docs from the user skill tree.
-User scope also copies the Codex plugin adapter to `${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/local/` and enables it through a marked King Sejong plugin block in `${CODEX_HOME:-~/.codex}/config.toml`.
+User scope also copies the Codex plugin adapter to `${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/` and enables it through a marked King Sejong plugin block in `${CODEX_HOME:-~/.codex}/config.toml`.
 
-Keep each scope's managed paths together. The skills and plugin adapter are intentionally small and load their routing, planning, schema, and handoff contracts from the installed Sejong docs.
+Keep each scope's managed paths together. The skills are intentionally small and load their routing, planning, schema, and handoff contracts from the installed Sejong docs. The plugin adapter is hook metadata only, so the user-facing skill remains `$sejong`.
 
 ## Compatibility
 
@@ -138,7 +138,7 @@ King Sejong is distributed as Codex skills with a thin Codex plugin adapter, not
 | Host | Support | Notes |
 | --- | --- | --- |
 | Codex with repo-local `.agents/skills` | Supported | Primary target for repository-specific use. |
-| Codex with user-scope `${CODEX_HOME:-~/.codex}/skills` plus the local plugin cache | Supported | Use when you want `$sejong`, `$jangyeongsil`, `$jiphyeonjeon`, `$uigwe`, and `$seungjeongwon` available across workspaces with plugin discovery and hook metadata. |
+| Codex with user-scope `${CODEX_HOME:-~/.codex}/skills` plus the local plugin cache | Supported | Use when you want `$sejong`, `$jangyeongsil`, `$jiphyeonjeon`, `$uigwe`, and `$seungjeongwon` available across workspaces with plugin hook metadata. |
 | Codex-style hosts that read `.agents/skills` and repo docs | Possible | Install the same managed paths and verify behavior in that host. |
 | OpenCode, Claude Code, Gemini CLI, Cursor | Not packaged yet | Their plugin/extension formats need separate adapters. |
 
@@ -150,7 +150,7 @@ This package is explicitly for Codex-style skills:
 
 - In repo scope, Codex loads `.agents/skills/sejong/SKILL.md` for `$sejong`.
 - In user scope, Codex loads `${CODEX_HOME:-~/.codex}/skills/sejong/SKILL.md` for `$sejong`.
-- In plugin discovery mode, the `king-sejong` plugin exposes adapter skills and hook metadata, but the installed user-scope skill tree and docs remain the source of truth.
+- The `king-sejong` plugin exposes hook metadata only; it does not add a second plugin-scoped `$sejong` skill.
 - The same scope contains `$jangyeongsil`, `$jiphyeonjeon`, `$uigwe`, and `$seungjeongwon`.
 - Codex can execute clear tasks directly through Sejong when formal planning is not needed.
 - The docs include Codex consumer contracts for downstream execution feedback.

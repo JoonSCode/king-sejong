@@ -69,11 +69,12 @@ class InstallSejongTests(unittest.TestCase):
                 / "cache"
                 / "king-sejong-local"
                 / "king-sejong"
-                / "local"
+                / "0.1.0"
             )
             manifest_path = plugin_root / ".codex-plugin" / "plugin.json"
             hooks_path = plugin_root / "hooks" / "hooks.json"
             hook_runner_path = plugin_root / "hooks" / "king-sejong-hook.py"
+            plugin_skill_path = plugin_root / "skills" / "sejong" / "SKILL.md"
             marketplace_path = (
                 codex_home
                 / "plugins"
@@ -90,8 +91,9 @@ class InstallSejongTests(unittest.TestCase):
 
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             self.assertEqual(manifest["name"], "king-sejong")
-            self.assertEqual(manifest["skills"], "./skills/")
             self.assertEqual(manifest["hooks"], "./hooks/hooks.json")
+            self.assertNotIn("skills", manifest)
+            self.assertFalse(plugin_skill_path.exists())
 
             marketplace = json.loads(marketplace_path.read_text(encoding="utf-8"))
             self.assertEqual(
@@ -99,7 +101,7 @@ class InstallSejongTests(unittest.TestCase):
                 [
                     {
                         "name": "king-sejong",
-                        "source": {"source": "local", "path": "./king-sejong/local"},
+                        "source": {"source": "local", "path": "./king-sejong/0.1.0"},
                     }
                 ],
             )
