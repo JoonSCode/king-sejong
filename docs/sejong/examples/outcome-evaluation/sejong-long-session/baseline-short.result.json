@@ -1,0 +1,45 @@
+{
+  "format": "sejong.outcome-quality-result/v0.1-draft",
+  "run_id": "baseline-short",
+  "label": "baseline",
+  "task_class": "strategy-research-synthesis",
+  "summary": "The baseline identifies that a longer loop may help, but it does not create an execution contract, verification board, or promotion-safe comparison.",
+  "route_sequence": [
+    "sejong",
+    "seungjeongwon"
+  ],
+  "terminal_state": "answered",
+  "long_session_evidence": {
+    "research_evidence": true,
+    "decision_record": true
+  },
+  "resource_usage": {
+    "total_tokens": 50000,
+    "tool_calls": 20,
+    "turn_count": 3
+  },
+  "artifact_evidence": {
+    "created_paths": [],
+    "verified_paths": [],
+    "checks": {
+      "expected_paths": false,
+      "repo_conventions": false,
+      "artifact_shape": false
+    }
+  },
+  "dimensions": {
+    "goal_alignment": {
+      "user_goal_restated": "The answer restates that King Sejong feels shorter than OMX or OMO."
+    },
+    "evidence_quality": {
+      "known_inferred_unknown": "Known, inferred, and unknown claims are partially separated."
+    },
+    "planning_quality": {},
+    "execution_quality": {},
+    "promotion_safety": {
+      "promotion_boundary": "The answer says live proof is still required."
+    },
+    "artifact_contract": {
+    }
+  }
+}

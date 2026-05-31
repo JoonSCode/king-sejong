@@ -71,6 +71,10 @@ Uigwe clarifies the idea and design
 
 The active Seungjeongwon run artifact follows [seungjeongwon-run.schema.json](seungjeongwon-run.schema.json). Use `docs/sejong/scripts/seungjeongwon_run.py` to create and check that artifact.
 
+For explicit Long-Session Outcome Entry requests, active context must be checked against the new objective before execution resumes. A stale active context from another task does not satisfy a new long-session goal. Refresh the route, surface, pending gates, artifact refs, and `task_class` when the user asks for `장기실행`, `긴 세션`, `끝까지`, `long-session`, or an equivalent persistent outcome loop. Small direct commands still bypass this path.
+
+Task class is part of long-session evidence because promotion is class-specific. Record whether the request is `strategy-research-synthesis`, `code-review-defect-analysis`, `small-artifact`, `simple-direct`, or another explicitly named class. For `code-review-defect-analysis`, the context must include a defect-first critic requirement before Uigwe handoff: identify concrete failure modes, distinguish confirmed defects from test gaps, keep fixes proportional, and avoid hiding actionable defects behind broad process advice.
+
 When Seungjeongwon uses or evaluates a workflow-like backend, create a separate
 [workflow-run.schema.json](workflow-run.schema.json) artifact and check it with
 `docs/sejong/scripts/sejong_workflow_run.py`. That artifact records mapped

@@ -106,6 +106,27 @@ Use `JangYeongsil` before Uigwe when evidence is missing. Use `Jiphyeonjeon` bef
 
 When in doubt, ask the smallest missing clarification needed to decide whether the user wants advice-only/research-only or goal completion. If the answer is goal completion, enter Uigwe.
 
+## Long-Session Outcome Entry
+
+Use this entry when the user asks for `장기실행`, `긴 세션`, `끝까지`, `long-session`, "keep going until it is verified", or an equivalent persistent outcome loop.
+
+This entry is a routing and evidence contract, not a request to make a massive prompt:
+
+```text
+fresh goal check -> task-class classification -> JangYeongsil evidence when needed -> Jiphyeonjeon challenge when useful -> Uigwe pass criteria -> Seungjeongwon verified execution
+```
+
+A stale active context from another install, cleanup, or execution run does not satisfy a new goal. If the objective, repo, acceptance criteria, task class, or evidence basis changes, refresh the active Sejong context before continuing.
+
+Classify the request into the smallest useful task class:
+
+- `strategy-research-synthesis`: strategy, research synthesis, marketing, planning, or multi-source artifact work where evidence breadth and synthesis are likely quality drivers.
+- `code-review-defect-analysis`: code review, bug hunt, readiness review, failure analysis, or regression diagnosis where concrete failure modes matter more than broad process structure. Require a defect-first Jiphyeonjeon critic lane before Uigwe handoff.
+- `small-artifact`: short content or artifact work where long-session overhead may outweigh value.
+- `simple-direct`: exact commands, small factual answers, deterministic regeneration under an approved contract, or obvious non-behavioral edits. Keep these on Sejong direct.
+
+Long-session promotion is task-class gated. A win in one class does not promote the behavior globally; keep it opt-in or shadowed until strict evidence shows repeatable wins for that class.
+
 ## Uigwe-To-Seungjeongwon Handoff Gate
 
 Uigwe is the boundary before goal-bearing execution. Once Sejong has entered Uigwe for an outcome-completion request, the next execution surface is Seungjeongwon after the Uigwe contract is handoff-ready.

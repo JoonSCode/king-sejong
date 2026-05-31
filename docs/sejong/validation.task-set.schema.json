@@ -216,6 +216,15 @@
         },
         "ownership_boundaries": {
           "$ref": "#/$defs/StringList"
+        },
+        "task_class_promotion": {
+          "$ref": "#/$defs/StringList"
+        },
+        "strict_promotion_evidence": {
+          "$ref": "#/$defs/StringList"
+        },
+        "defect_first_review": {
+          "$ref": "#/$defs/StringList"
         }
       }
     },

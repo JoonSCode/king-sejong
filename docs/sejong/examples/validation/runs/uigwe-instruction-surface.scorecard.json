@@ -3,13 +3,13 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-29T20:35:47Z",
+    "generated_at": "2026-05-31T05:21:50Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
   "aggregate": {
-    "scenario_count": 23,
-    "pass_count": 23,
+    "scenario_count": 24,
+    "pass_count": 24,
     "partial_count": 0,
     "fail_count": 0,
     "average_score": 1.0,
@@ -204,6 +204,38 @@
           "id": "guardrail_hook_enforcement",
           "passed": true,
           "detail": "Typed guardrail expectation hook_enforcement is represented in the instruction surface."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-long-session-outcome-entry",
+      "title": "Long-session outcome entry is task-class gated and strict-evidence promoted",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "long_session_outcome_entry_present",
+          "passed": true,
+          "detail": "Long-session entry remains task-class gated and strict-evidence-only for promotion."
+        },
+        {
+          "id": "guardrail_task_class_promotion",
+          "passed": true,
+          "detail": "Typed guardrail expectation task_class_promotion is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_strict_promotion_evidence",
+          "passed": true,
+          "detail": "Typed guardrail expectation strict_promotion_evidence is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_defect_first_review",
+          "passed": true,
+          "detail": "Typed guardrail expectation defect_first_review is represented in the instruction surface."
         }
       ],
       "blockers": [],
@@ -549,7 +581,7 @@
         {
           "id": "sejong_skill_line_budget",
           "passed": true,
-          "detail": "Sejong SKILL.md line count is 60; budget is 90."
+          "detail": "Sejong SKILL.md line count is 62; budget is 90."
         },
         {
           "id": "jangyeongsil_skill_line_budget",

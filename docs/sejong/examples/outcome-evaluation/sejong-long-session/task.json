@@ -1,0 +1,107 @@
+{
+  "format": "sejong.outcome-quality-task/v0.1-draft",
+  "task_id": "sejong-long-session",
+  "task_class": "strategy-research-synthesis",
+  "prompt": "Improve King Sejong so substantial repo changes are researched, planned, implemented, and verified instead of ending as short one-shot replies.",
+  "goal": "Judge whether a long-session Sejong entry behavior produces a better engineering outcome than the current short-session Sejong baseline.",
+  "min_promote_delta": 0.2,
+  "baseline_requirements": {
+    "required_route_sequence": [
+      "sejong"
+    ],
+    "forbidden_route_sequence": [
+      "jangyeongsil",
+      "jiphyeonjeon",
+      "uigwe",
+      "seungjeongwon"
+    ]
+  },
+  "long_session_requirements": {
+    "required_route_sequence": [
+      "jangyeongsil",
+      "jiphyeonjeon",
+      "uigwe",
+      "seungjeongwon"
+    ],
+    "required_terminal_state": "verified_complete",
+    "required_evidence": [
+      "research_evidence",
+      "decision_record",
+      "uigwe_handoff_contract",
+      "visible_execution_board",
+      "verification_evidence",
+      "paired_result_comparison"
+    ]
+  },
+  "artifact_contract": {
+    "required_paths": [
+      ".agents/skills/sejong/SKILL.md",
+      "docs/sejong/scripts/long_session_experiment_gate.py",
+      "docs/sejong/scripts/test_long_session_experiment_gate.py"
+    ],
+    "forbidden_paths": [
+      ".codex/prompts/sejong.md"
+    ],
+    "required_checks": [
+      "expected_paths",
+      "repo_conventions",
+      "artifact_shape"
+    ]
+  },
+  "required_dimensions": [
+    {
+      "id": "goal_alignment",
+      "weight": 1.0,
+      "checks": [
+        "user_goal_restated",
+        "non_goals",
+        "acceptance_criteria"
+      ]
+    },
+    {
+      "id": "evidence_quality",
+      "weight": 1.2,
+      "checks": [
+        "known_inferred_unknown",
+        "source_refs",
+        "unsupported_claims_rejected"
+      ]
+    },
+    {
+      "id": "planning_quality",
+      "weight": 1.1,
+      "checks": [
+        "tradeoffs",
+        "handoff_contract",
+        "verification_bar"
+      ]
+    },
+    {
+      "id": "execution_quality",
+      "weight": 1.2,
+      "checks": [
+        "actionable_todos",
+        "attempt_ledger",
+        "verification_evidence"
+      ]
+    },
+    {
+      "id": "promotion_safety",
+      "weight": 1.0,
+      "checks": [
+        "overhead_budget",
+        "regression_checks",
+        "promotion_boundary"
+      ]
+    },
+    {
+      "id": "artifact_contract",
+      "weight": 1.4,
+      "checks": [
+        "expected_paths",
+        "repo_conventions",
+        "artifact_shape"
+      ]
+    }
+  ]
+}

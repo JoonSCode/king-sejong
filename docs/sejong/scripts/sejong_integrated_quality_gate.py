@@ -397,6 +397,111 @@ def product_evidence_check(sejong_root: Path, repo_root: Path) -> dict[str, Any]
     )
 
 
+def long_session_gate_check(sejong_root: Path, repo_root: Path, work_dir: Path) -> dict[str, Any]:
+    gate = sejong_root / "scripts" / "long_session_experiment_gate.py"
+    fixture = sejong_root / "examples" / "outcome-evaluation" / "sejong-long-session"
+    route_only_path = work_dir / "long-session-route-only.result.json"
+    promoted_path = work_dir / "long-session-promoted.result.json"
+    baseline_root = work_dir / "long-session-baseline-root"
+    candidate_root = work_dir / "long-session-candidate-root"
+    baseline_events = work_dir / "long-session-baseline.events.jsonl"
+    candidate_events = work_dir / "long-session-candidate.events.jsonl"
+
+    baseline_root.mkdir(parents=True, exist_ok=True)
+    candidate_root.mkdir(parents=True, exist_ok=True)
+    for path in [
+        ".agents/skills/sejong/SKILL.md",
+        "docs/sejong/scripts/long_session_experiment_gate.py",
+        "docs/sejong/scripts/test_long_session_experiment_gate.py",
+    ]:
+        artifact_path = candidate_root / path
+        artifact_path.parent.mkdir(parents=True, exist_ok=True)
+        artifact_path.write_text(f"{path}\n", encoding="utf-8")
+    baseline_events.write_text(
+        json.dumps({"type": "turn.completed", "usage": {"input_tokens": 700, "output_tokens": 300}}) + "\n",
+        encoding="utf-8",
+    )
+    candidate_events.write_text(
+        json.dumps({"type": "turn.completed", "usage": {"input_tokens": 1100, "output_tokens": 500}}) + "\n",
+        encoding="utf-8",
+    )
+
+    common = [
+        sys.executable,
+        str(gate),
+        "judge",
+        "--task",
+        str(fixture / "task.json"),
+        "--baseline",
+        str(fixture / "baseline-short.result.json"),
+        "--min-delta",
+        "0.2",
+        "--max-token-ratio",
+        "2.0",
+    ]
+    route_only = run_command(
+        [
+            *common,
+            "--candidate",
+            str(fixture / "candidate-route-only.result.json"),
+            "--write",
+            str(route_only_path),
+        ],
+        cwd=repo_root,
+    )
+    promoted = run_command(
+        [
+            *common,
+            "--candidate",
+            str(fixture / "candidate-long-session.result.json"),
+            "--baseline-root",
+            str(baseline_root),
+            "--candidate-root",
+            str(candidate_root),
+            "--baseline-events",
+            str(baseline_events),
+            "--candidate-events",
+            str(candidate_events),
+            "--write",
+            str(promoted_path),
+            "--require-promotion",
+        ],
+        cwd=repo_root,
+    )
+    if route_only.returncode != 0 or promoted.returncode != 0:
+        return check_result(
+            "long_session_gate_requires_strict_task_class_evidence",
+            False,
+            (route_only.stderr or route_only.stdout) + (promoted.stderr or promoted.stdout),
+            [str(route_only_path), str(promoted_path)],
+        )
+
+    route_payload = json.loads(route_only.stdout)
+    promoted_payload = json.loads(promoted.stdout)
+    route_only_rejected = (
+        route_payload.get("recommendation") == "keep_shadowing"
+        and "outcome quality delta is below promotion threshold" in route_payload.get("blockers", [])
+    )
+    strict_promoted = (
+        promoted_payload.get("recommendation") == "promote_candidate"
+        and promoted_payload.get("task_class", {}).get("passed")
+        and promoted_payload.get("artifact_contract", {}).get("candidate", {}).get("source") == "filesystem"
+        and promoted_payload.get("resource_budget", {}).get("candidate", {}).get("total_tokens") == 1600
+    )
+    passed = route_only_rejected and strict_promoted
+    detail = (
+        "route-only stayed shadowed; strict task-class candidate used filesystem artifacts and event usage"
+        if passed
+        else f"route_only_rejected={route_only_rejected} strict_promoted={strict_promoted}"
+    )
+    return check_result(
+        "long_session_gate_requires_strict_task_class_evidence",
+        passed,
+        detail,
+        [str(route_only_path), str(promoted_path), str(candidate_root), str(candidate_events)],
+    )
+
+
 def run_gate(args: argparse.Namespace) -> int:
     sejong_root = Path(args.sejong_root).expanduser().resolve()
     repo_root = sejong_root.parents[1]
@@ -411,6 +516,7 @@ def run_gate(args: argparse.Namespace) -> int:
     checks.append(team_persuasion_check(sejong_root, repo_root, work_dir))
     checks.append(feedback_contract_check(sejong_root))
     checks.append(product_evidence_check(sejong_root, repo_root))
+    checks.append(long_session_gate_check(sejong_root, repo_root, work_dir))
 
     passed = all(check["passed"] for check in checks)
     payload = {

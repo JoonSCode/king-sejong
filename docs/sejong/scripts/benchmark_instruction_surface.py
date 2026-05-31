@@ -66,6 +66,7 @@ SCENARIO_IDS = (
     "instruction-sejong-boundary",
     "instruction-cross-stage-helper-calls",
     "instruction-research-to-uigwe-promotion",
+    "instruction-long-session-outcome-entry",
     "instruction-court-skill-frontdoors",
     "instruction-installer-update-maintenance",
     "instruction-bounded-parallelism",
@@ -87,6 +88,7 @@ REQUIRED_GUARDRAIL_SCENARIOS = {
     "instruction-sejong-continuation",
     "instruction-ambiguity-register",
     "instruction-research-to-uigwe-promotion",
+    "instruction-long-session-outcome-entry",
     "instruction-sejong-self-modification",
     "instruction-artifact-storage",
     "instruction-repo-context-refresh",
@@ -428,6 +430,42 @@ def evaluate_research_to_uigwe_promotion() -> list[dict[str, Any]]:
             "research_to_uigwe_promotion_present",
             passed,
             "Decision-prep research must promote to Uigwe instead of ending as a final conclusion.",
+            missing=missing,
+        )
+    ]
+
+
+def evaluate_long_session_outcome_entry() -> list[dict[str, Any]]:
+    sejong_skill = load_text(SEJONG_SKILL_PATH)
+    router = load_text(ROUTER_PATH)
+    runtime = load_text(RUNTIME_CONTRACT_PATH)
+    validation = load_text(VALIDATION_PATH)
+    outcome = load_text(SEJONG_ROOT / "OUTCOME_EVALUATION.md")
+    gate = load_text(SEJONG_ROOT / "scripts" / "long_session_experiment_gate.py")
+    combined = "\n".join([sejong_skill, router, runtime, validation, outcome, gate])
+    required = [
+        "Long-Session Outcome Entry",
+        "`장기실행`",
+        "`long-session`",
+        "fresh goal check",
+        "task-class classification",
+        "task-class gated",
+        "`strategy-research-synthesis`",
+        "`code-review-defect-analysis`",
+        "defect-first critic",
+        "`--require-promotion`",
+        "`--baseline-root`",
+        "`--candidate-events`",
+        "A synthetic fixture that passes without roots or event logs is not promotion evidence.",
+        "Simple direct",
+        "candidate task class does not match task",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check(
+            "long_session_outcome_entry_present",
+            passed,
+            "Long-session entry remains task-class gated and strict-evidence-only for promotion.",
             missing=missing,
         )
     ]
@@ -868,6 +906,7 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-sejong-boundary": evaluate_sejong_boundary,
     "instruction-cross-stage-helper-calls": evaluate_cross_stage_helper_calls,
     "instruction-research-to-uigwe-promotion": evaluate_research_to_uigwe_promotion,
+    "instruction-long-session-outcome-entry": evaluate_long_session_outcome_entry,
     "instruction-court-skill-frontdoors": evaluate_court_skill_frontdoors,
     "instruction-installer-update-maintenance": evaluate_installer_update_maintenance,
     "instruction-bounded-parallelism": evaluate_bounded_parallelism,
@@ -922,6 +961,17 @@ def expectation_text_for_scenario(scenario_id: str) -> str:
                 load_text(WORKFLOW_RUN_SCRIPT_PATH),
                 load_text(WORKFLOW_RUN_BENCHMARK_PATH),
                 load_text(WORKFLOW_RUN_COMPARISON_BENCHMARK_PATH),
+            ]
+        )
+    if scenario_id == "instruction-long-session-outcome-entry":
+        return "\n".join(
+            [
+                load_text(ROUTER_PATH),
+                load_text(SEJONG_SKILL_PATH),
+                load_text(RUNTIME_CONTRACT_PATH),
+                load_text(VALIDATION_PATH),
+                load_text(SEJONG_ROOT / "OUTCOME_EVALUATION.md"),
+                load_text(SEJONG_ROOT / "scripts" / "long_session_experiment_gate.py"),
             ]
         )
     if scenario_id == "instruction-bounded-parallelism":

@@ -44,6 +44,7 @@ class SejongIntegratedQualityGateTests(unittest.TestCase):
         self.assertIn("team_persuasion_round_uses_existing_mailbox_contract", check_ids)
         self.assertIn("visible_todo_and_paired_result_feedback_still_present", check_ids)
         self.assertIn("product_evidence_gate_requires_external_success_evidence", check_ids)
+        self.assertIn("long_session_gate_requires_strict_task_class_evidence", check_ids)
 
 
 if __name__ == "__main__":

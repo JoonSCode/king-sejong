@@ -11,6 +11,21 @@
     },
     {
       "$ref": "#/$defs/Comparison"
+    },
+    {
+      "$ref": "#/$defs/LongSessionGate"
+    },
+    {
+      "$ref": "#/$defs/BlindSemanticPacket"
+    },
+    {
+      "$ref": "#/$defs/BlindSemanticKey"
+    },
+    {
+      "$ref": "#/$defs/BlindSemanticJudgment"
+    },
+    {
+      "$ref": "#/$defs/BlindSemanticGate"
     }
   ],
   "$defs": {
@@ -45,6 +60,106 @@
         "checks"
       ]
     },
+    "ResourceUsage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "total_tokens": {
+          "type": "number",
+          "minimum": 0
+        },
+        "tool_calls": {
+          "type": "number",
+          "minimum": 0
+        },
+        "turn_count": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "BaselineRequirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required_route_sequence": {
+          "$ref": "#/$defs/StringList"
+        },
+        "forbidden_route_sequence": {
+          "$ref": "#/$defs/StringList"
+        }
+      }
+    },
+    "LongSessionRequirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required_route_sequence": {
+          "$ref": "#/$defs/StringList"
+        },
+        "required_terminal_state": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "allowed_terminal_states": {
+          "$ref": "#/$defs/StringList"
+        },
+        "required_evidence": {
+          "$ref": "#/$defs/StringList"
+        }
+      }
+    },
+    "ArtifactContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required_paths": {
+          "$ref": "#/$defs/StringList"
+        },
+        "forbidden_paths": {
+          "$ref": "#/$defs/StringList"
+        },
+        "required_checks": {
+          "$ref": "#/$defs/StringList"
+        },
+        "required_markers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/NonEmptyString"
+              },
+              "markers": {
+                "$ref": "#/$defs/StringList"
+              }
+            },
+            "required": [
+              "path",
+              "markers"
+            ]
+          }
+        }
+      }
+    },
+    "ArtifactEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "created_paths": {
+          "$ref": "#/$defs/StringList"
+        },
+        "verified_paths": {
+          "$ref": "#/$defs/StringList"
+        },
+        "checks": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
     "Task": {
       "type": "object",
       "additionalProperties": false,
@@ -55,10 +170,16 @@
         "task_id": {
           "$ref": "#/$defs/NonEmptyString"
         },
+        "task_class": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
         "prompt": {
           "$ref": "#/$defs/NonEmptyString"
         },
         "goal": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "semantic_goal": {
           "$ref": "#/$defs/NonEmptyString"
         },
         "min_promote_delta": {
@@ -71,6 +192,15 @@
           "items": {
             "$ref": "#/$defs/Dimension"
           }
+        },
+        "baseline_requirements": {
+          "$ref": "#/$defs/BaselineRequirements"
+        },
+        "long_session_requirements": {
+          "$ref": "#/$defs/LongSessionRequirements"
+        },
+        "artifact_contract": {
+          "$ref": "#/$defs/ArtifactContract"
         }
       },
       "required": [
@@ -95,8 +225,29 @@
         "label": {
           "$ref": "#/$defs/NonEmptyString"
         },
+        "task_class": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
         "summary": {
           "$ref": "#/$defs/NonEmptyString"
+        },
+        "route_sequence": {
+          "$ref": "#/$defs/StringList"
+        },
+        "terminal_state": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "long_session_evidence": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "resource_usage": {
+          "$ref": "#/$defs/ResourceUsage"
+        },
+        "artifact_evidence": {
+          "$ref": "#/$defs/ArtifactEvidence"
         },
         "dimensions": {
           "type": "object",
@@ -248,6 +399,381 @@
         "recommendation",
         "dimension_scores",
         "notes"
+      ]
+    },
+    "GateSection": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "LongSessionGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "sejong.long-session-experiment-gate/v0.1-draft"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "task_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "baseline_run_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "candidate_run_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "task_class": {
+          "$ref": "#/$defs/GateSection"
+        },
+        "baseline_behavior": {
+          "$ref": "#/$defs/GateSection"
+        },
+        "intended_behavior": {
+          "$ref": "#/$defs/GateSection"
+        },
+        "artifact_contract": {
+          "$ref": "#/$defs/GateSection"
+        },
+        "outcome_quality": {
+          "$ref": "#/$defs/GateSection"
+        },
+        "resource_budget": {
+          "$ref": "#/$defs/GateSection"
+        },
+        "recommendation": {
+          "type": "string",
+          "enum": [
+            "promote_candidate",
+            "keep_shadowing"
+          ]
+        },
+        "blockers": {
+          "$ref": "#/$defs/StringList"
+        },
+        "notes": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "format",
+        "generated_at",
+        "task_id",
+        "baseline_run_id",
+        "candidate_run_id",
+        "task_class",
+        "baseline_behavior",
+        "intended_behavior",
+        "artifact_contract",
+        "outcome_quality",
+        "resource_budget",
+        "recommendation",
+        "blockers",
+        "notes"
+      ]
+    },
+    "BlindOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": [
+            "A",
+            "B"
+          ]
+        },
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "artifacts"
+      ]
+    },
+    "BlindSemanticPacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "sejong.blind-semantic-packet/v0.1-draft"
+        },
+        "packet_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "task_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "prompt": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "goal": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "rubric": {
+          "$ref": "#/$defs/StringList"
+        },
+        "artifact_paths": {
+          "$ref": "#/$defs/StringList"
+        },
+        "outputs": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/BlindOutput"
+          }
+        },
+        "judge_instructions": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "format",
+        "packet_id",
+        "generated_at",
+        "task_id",
+        "prompt",
+        "goal",
+        "rubric",
+        "artifact_paths",
+        "outputs",
+        "judge_instructions"
+      ]
+    },
+    "BlindSemanticKey": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "sejong.blind-semantic-key/v0.1-draft"
+        },
+        "packet_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "task_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "seed": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "mapping": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "baseline",
+              "candidate"
+            ]
+          }
+        },
+        "baseline_run_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "candidate_run_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        }
+      },
+      "required": [
+        "format",
+        "packet_id",
+        "generated_at",
+        "task_id",
+        "seed",
+        "mapping",
+        "baseline_run_id",
+        "candidate_run_id"
+      ]
+    },
+    "BlindScore": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "rationale": {
+          "$ref": "#/$defs/NonEmptyString"
+        }
+      },
+      "required": [
+        "score",
+        "rationale"
+      ]
+    },
+    "BlindSemanticJudgment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "sejong.blind-semantic-judgment/v0.1-draft"
+        },
+        "packet_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "task_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "winner": {
+          "type": "string",
+          "enum": [
+            "A",
+            "B",
+            "tie"
+          ]
+        },
+        "scores": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "A": {
+              "$ref": "#/$defs/BlindScore"
+            },
+            "B": {
+              "$ref": "#/$defs/BlindScore"
+            }
+          },
+          "required": [
+            "A",
+            "B"
+          ]
+        },
+        "confidence": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "judge_notes": {
+          "$ref": "#/$defs/NonEmptyString"
+        }
+      },
+      "required": [
+        "format",
+        "packet_id",
+        "task_id",
+        "winner",
+        "scores",
+        "confidence",
+        "judge_notes"
+      ]
+    },
+    "BlindSemanticGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "sejong.blind-semantic-gate/v0.1-draft"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "packet_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "task_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "baseline_run_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "candidate_run_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "mapping": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "baseline",
+              "candidate"
+            ]
+          }
+        },
+        "blind_winner": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "winner_side": {
+          "type": "string",
+          "enum": [
+            "baseline",
+            "candidate",
+            "tie"
+          ]
+        },
+        "baseline_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "candidate_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "score_delta": {
+          "type": "number"
+        },
+        "min_delta": {
+          "type": "number",
+          "minimum": 0
+        },
+        "recommendation": {
+          "type": "string",
+          "enum": [
+            "promote_candidate",
+            "reject_candidate",
+            "keep_shadowing",
+            "inconclusive"
+          ]
+        },
+        "confidence": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "judge_notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "format",
+        "generated_at",
+        "packet_id",
+        "task_id",
+        "baseline_run_id",
+        "candidate_run_id",
+        "mapping",
+        "blind_winner",
+        "winner_side",
+        "baseline_score",
+        "candidate_score",
+        "score_delta",
+        "min_delta",
+        "recommendation",
+        "confidence",
+        "judge_notes"
       ]
     }
   }

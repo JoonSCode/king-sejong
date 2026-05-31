@@ -1,0 +1,52 @@
+{
+  "format": "sejong.outcome-quality-result/v0.1-draft",
+  "run_id": "candidate-route-only",
+  "label": "candidate",
+  "task_class": "strategy-research-synthesis",
+  "summary": "The candidate forces the desired route and records loop artifacts, but its final artifact is not more complete against the task rubric.",
+  "route_sequence": [
+    "sejong",
+    "jangyeongsil",
+    "jiphyeonjeon",
+    "uigwe",
+    "seungjeongwon"
+  ],
+  "terminal_state": "verified_complete",
+  "long_session_evidence": {
+    "research_evidence": true,
+    "decision_record": true,
+    "uigwe_handoff_contract": true,
+    "visible_execution_board": true,
+    "verification_evidence": true,
+    "paired_result_comparison": true
+  },
+  "resource_usage": {
+    "total_tokens": 85000,
+    "tool_calls": 35,
+    "turn_count": 5
+  },
+  "artifact_evidence": {
+    "created_paths": [],
+    "verified_paths": [],
+    "checks": {
+      "expected_paths": false,
+      "repo_conventions": false,
+      "artifact_shape": false
+    }
+  },
+  "dimensions": {
+    "goal_alignment": {
+      "user_goal_restated": "The answer restates that King Sejong feels shorter than OMX or OMO."
+    },
+    "evidence_quality": {
+      "known_inferred_unknown": "Known, inferred, and unknown claims are partially separated."
+    },
+    "planning_quality": {},
+    "execution_quality": {},
+    "promotion_safety": {
+      "promotion_boundary": "The answer says live proof is still required."
+    },
+    "artifact_contract": {
+    }
+  }
+}

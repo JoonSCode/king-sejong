@@ -140,3 +140,26 @@ Promote a candidate only when:
 If the candidate improves contract behavior but not artifact quality, keep it shadowed.
 
 If the candidate improves artifact quality but lacks external product evidence, do not claim product success. Promote only the strategy artifact and proceed to field validation.
+
+## Long-Session Outcome Gate
+
+Use [long_session_experiment_gate.py](scripts/long_session_experiment_gate.py) when evaluating a Long-Session Outcome Entry candidate. Compare it against the current short/default Sejong behavior for the same `task_class`, not against an unconfigured Codex run and not against a different kind of task.
+
+The gate combines:
+
+- baseline behavior: the baseline run must show current Sejong behavior and must not already be the long-session route under test
+- task class: task, baseline, and candidate must match; `code-review-defect-analysis` also requires defect-first critic evidence
+- intended behavior: the candidate follows the required route, reaches an accepted terminal state, and records required long-session evidence
+- artifact contract: the candidate produces expected paths, avoids forbidden paths, and passes task-specific artifact checks
+- outcome quality delta: the candidate beats the baseline against the same rubric
+- resource budget: the candidate stays within token and tool-call overhead limits
+
+Smoke fixtures may use self-reported result JSON to test gate behavior. Promotion proof must use `--require-promotion`, `--baseline-root`, `--candidate-root`, `--baseline-events`, and `--candidate-events`; in that mode, filesystem artifacts and host-observed event usage replace model-authored claims. A synthetic fixture that passes without roots or event logs is not promotion evidence.
+
+Long-session promotion is task-class specific. A win on `strategy-research-synthesis` remains shadowed for `code-review-defect-analysis`, `small-artifact`, and `simple-direct` until those classes have their own repeatable evidence. Simple direct tasks keep the Sejong direct escape hatch.
+
+## Blind Semantic Judge
+
+Use [blind_semantic_quality_gate.py](scripts/blind_semantic_quality_gate.py) when deterministic checks pass but the remaining question is semantic artifact quality. The blind packet contains the task prompt, semantic judge goal, rubric, required artifact paths, and anonymized `A`/`B` artifact contents. The semantic judge goal must describe the user artifact objective, not the experiment's baseline/candidate comparison. A separate key maps `A`/`B` back to `baseline` and `candidate` after scoring.
+
+Blind judging is supporting evidence, not automatic promotion. It can catch cases where both outputs satisfy structural acceptance criteria but one artifact is materially more useful, better grounded, or more actionable. It still depends on artifact content not leaking route labels or experiment metadata.

@@ -317,6 +317,56 @@
       }
     },
     {
+      "id": "instruction-long-session-outcome-entry",
+      "title": "Long-session outcome entry is task-class gated and strict-evidence promoted",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that long-session behavior is a task-class gated evidence contract, not a global prompt-length preference.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        ".agents/skills/sejong/SKILL.md",
+        "docs/sejong/ROUTER.md",
+        "docs/sejong/RUNTIME_CONTRACT.md",
+        "docs/sejong/OUTCOME_EVALUATION.md",
+        "docs/sejong/VALIDATION.md",
+        "docs/sejong/scripts/long_session_experiment_gate.py"
+      ],
+      "expected_behavior": [
+        "explicit long-session triggers perform a fresh goal check",
+        "task class is recorded before promotion evidence is interpreted",
+        "strategy/research synthesis and code-review/defect-analysis are separate classes",
+        "code-review/defect-analysis requires a defect-first critic lane",
+        "promotion proof requires filesystem roots and host event logs",
+        "synthetic fixtures are smoke checks, not promotion evidence",
+        "simple direct tasks keep the Sejong direct escape hatch"
+      ],
+      "forbidden_behavior": [
+        "promoting long-session globally from a win in one task class",
+        "using self-reported artifact evidence as promotion proof",
+        "letting long-session ceremony hide concrete defects in code review"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py."
+      ],
+      "guardrail_expectations": {
+        "task_class_promotion": [
+          "Long-session promotion is task-class gated",
+          "`strategy-research-synthesis`",
+          "`code-review-defect-analysis`"
+        ],
+        "strict_promotion_evidence": [
+          "`--require-promotion`",
+          "`--baseline-root`",
+          "`--candidate-events`",
+          "A synthetic fixture that passes without roots or event logs is not promotion evidence."
+        ],
+        "defect_first_review": [
+          "defect-first critic",
+          "defect-first critic evidence missing for code-review-defect-analysis"
+        ]
+      }
+    },
+    {
       "id": "instruction-court-skill-frontdoors",
       "title": "JangYeongsil and Jiphyeonjeon remain installed thin front doors",
       "profile": "instruction",

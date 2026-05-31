@@ -348,6 +348,49 @@ python3 docs/sejong/scripts/test_sejong_integrated_quality_gate.py
 
 This gate checks that the TagBack outcome-quality comparison, research-to-Uigwe write gate, active Seungjeongwon run state, TeamExecutor persuasion mailbox, visible todo events, paired result comparison, and product-evidence gate can all operate together. Passing this gate means the Sejong runtime pieces are compatible and produce a stronger strategy artifact for the seed goal. It still does not prove real-world product success.
 
+### Phase 2E.1: Long-Session Outcome Entry Gate
+
+Use this phase before promoting long-session behavior for any task class:
+
+```bash
+python3 docs/sejong/scripts/long_session_experiment_gate.py judge \
+  --task docs/sejong/examples/outcome-evaluation/sejong-long-session/task.json \
+  --baseline docs/sejong/examples/outcome-evaluation/sejong-long-session/baseline-short.result.json \
+  --candidate docs/sejong/examples/outcome-evaluation/sejong-long-session/candidate-route-only.result.json \
+  --min-delta 0.2 \
+  --max-token-ratio 2.0
+python3 docs/sejong/scripts/long_session_experiment_gate.py judge \
+  --task docs/sejong/examples/outcome-evaluation/sejong-long-session/task.json \
+  --baseline docs/sejong/examples/outcome-evaluation/sejong-long-session/baseline-short.result.json \
+  --candidate docs/sejong/examples/outcome-evaluation/sejong-long-session/candidate-long-session.result.json \
+  --min-delta 0.2 \
+  --max-token-ratio 2.0
+python3 docs/sejong/scripts/test_long_session_experiment_gate.py
+```
+
+The bundled long-session examples are smoke fixtures. A real promotion proof must pass the same gate with `--require-promotion`, real `--baseline-root` and `--candidate-root` directories, and host-observed `--baseline-events` and `--candidate-events` from the runs. The task and both results must carry the same `task_class`; `code-review-defect-analysis` additionally requires defect-first critic evidence.
+
+Use [blind_semantic_quality_gate.py](scripts/blind_semantic_quality_gate.py) only as supporting semantic evidence after deterministic gates pass:
+
+```bash
+python3 docs/sejong/scripts/blind_semantic_quality_gate.py pack \
+  --task <task.json> \
+  --baseline-result <baseline.result.json> \
+  --candidate-result <candidate.result.json> \
+  --baseline-root <baseline-worktree> \
+  --candidate-root <candidate-worktree> \
+  --judge-goal "<artifact-quality objective, not the experiment comparison>" \
+  --write-packet <blind.packet.json> \
+  --write-key <blind.key.json>
+python3 docs/sejong/scripts/blind_semantic_quality_gate.py judge-result \
+  --packet <blind.packet.json> \
+  --key <blind.key.json> \
+  --judgment <blind.judgment.json> \
+  --min-delta 0.5
+```
+
+Do not promote long-session globally from one class. Keep it shadowed for each class until repeated strict evidence shows better artifacts with acceptable overhead and no direct-task regression.
+
 ### Phase 2F: Product Evidence Gate
 
 Run this when Sejong would otherwise be tempted to claim that a product, marketing, or growth plan actually succeeded:
