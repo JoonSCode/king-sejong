@@ -48,9 +48,13 @@ King Sejong is distributed through these managed paths:
 - `.agents/skills/jiphyeonjeon/`
 - `.agents/skills/uigwe/`
 - `.agents/skills/seungjeongwon/`
+- `plugins/king-sejong/`
+- `.agents/plugins/marketplace.json`
 - `docs/sejong/`
 
 For Codex user-scope installs, those same surfaces are copied under `${CODEX_HOME:-~/.codex}/skills`, with shared docs installed under `skills/sejong/docs/`.
+The Codex plugin adapter is copied under `${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/local/` and enabled through a marked King Sejong plugin block in `${CODEX_HOME:-~/.codex}/config.toml`.
+The plugin is a discovery and hook-metadata adapter; it must not become the source of truth for runtime behavior, durable docs, active context, or verification contracts.
 
 Do not add root-level repository files such as `AGENTS.md` to the managed install surface unless the installer, README files, and verification docs are intentionally updated together.
 
@@ -70,6 +74,7 @@ Do not add root-level repository files such as `AGENTS.md` to the managed instal
 - Sillok trace and security guardrails: `docs/sejong/SILLOK_TRACE.md`, `docs/sejong/SECURITY.md`, and `docs/sejong/scripts/sillok_trace.py`
 - Prompt overlays: `docs/sejong/PROMPT_OVERLAYS.md`
 - Install behavior: `scripts/install-sejong.sh`
+- Codex plugin adapter: `plugins/king-sejong/.codex-plugin/plugin.json` and `plugins/king-sejong/hooks/hooks.json`
 
 ## Maintenance Rules
 
@@ -78,6 +83,7 @@ Do not add root-level repository files such as `AGENTS.md` to the managed instal
 - Do not add `.codex/prompts/{role}.md` as a required install surface.
 - Do not treat missing repo-local prompt overlays as an install failure.
 - Do not reintroduce repo-local or tool-specific orchestration state as a Sejong dependency.
+- Keep the Codex plugin adapter thin. It may expose skills, hook metadata, and marketplace packaging, but installer-owned user-scope skills and `docs/sejong/` remain the durable contract.
 - Preserve bounded parallelism: subagents and `$team` workers may return bounded briefs, mailbox messages, implementation slices, or verification evidence, but the lead Sejong agent owns synthesis, routing, gates, and final verification.
 - Prefer officially supported host team or teammate messaging when it exists and a bounded Jiphyeonjeon or JangYeongsil round needs peer challenge; otherwise use Sejong TeamExecutor mailbox state. Peer messages are worker evidence, not court-mode authority.
 - Keep TeamExecutor mailbox traffic on the versioned `send-message` / `receive-messages` envelope; raw mailbox appends are compatibility-only and must not become the primary worker contract.

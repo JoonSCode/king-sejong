@@ -33,9 +33,11 @@ User scope under `${CODEX_HOME:-~/.codex}/skills`:
 
 In user scope, this docs tree is installed under `skills/sejong/docs/`, and the installed skill files are rewritten to load contracts from that user-scope docs copy.
 
-User-scope install also manages the King Sejong hook block in `${CODEX_HOME:-~/.codex}/config.toml`, sets `[features].hooks = true`, and creates `${CODEX_HOME:-~/.codex}/sejong/state/active-context.json` if it does not already exist. The hook block is marked and idempotent, so rerunning the installer replaces only King Sejong's managed hook section.
+User-scope install also copies the Codex plugin adapter to `${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/local/`, manages the King Sejong hook and plugin blocks in `${CODEX_HOME:-~/.codex}/config.toml`, sets `[features].hooks = true`, and creates `${CODEX_HOME:-~/.codex}/sejong/state/active-context.json` if it does not already exist. The managed blocks are marked and idempotent, so rerunning the installer replaces only King Sejong's sections.
 
-User-scope install can also print or write a compact generic Codex guidance block with `--print-codex-guidance` or `--codex-guidance user`. This is optional and does not copy this source repository's `AGENTS.md`. The guidance is generic Codex wording and includes the rule: do not use `.omx` paths as Sejong state.
+The plugin adapter is a discovery and hook-metadata surface. It does not replace the installer-owned skills, docs, active context, or verification contracts.
+
+User-scope install writes a compact generic Codex guidance block to `${CODEX_HOME:-~/.codex}/AGENTS.md` by default so King Sejong stays available as an always-on research, analysis, debate, planning, execution, and verification discipline across workspaces. Use `--codex-guidance none` to opt out, or `--print-codex-guidance` to inspect the block without installing. This does not copy this source repository's `AGENTS.md`. The guidance is generic Codex wording and includes the rule: do not use `.omx` paths as Sejong state.
 
 The installer also owns explicit update maintenance. `--check-updates` fetches the configured upstream and reports whether the King Sejong source checkout is up to date, behind, ahead, dirty, or diverged. `--auto-update` refuses dirty or diverged source checkouts, uses `git pull --ff-only` when updates are available, then refreshes the selected managed install with force semantics and normal verification. Hooks must not silently self-update King Sejong during ordinary session start.
 

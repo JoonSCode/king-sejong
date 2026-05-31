@@ -1,0 +1,40 @@
+{
+  "name": "king-sejong",
+  "version": "0.1.0",
+  "description": "Codex-native King Sejong skill and workflow adapter.",
+  "author": {
+    "name": "Junsu"
+  },
+  "homepage": "https://github.com/junsu/king-sejong",
+  "repository": "https://github.com/junsu/king-sejong",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "skills",
+    "workflow",
+    "planning",
+    "verification",
+    "orchestration"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "King Sejong",
+    "shortDescription": "Route Codex work through Sejong, Uigwe, and Seungjeongwon.",
+    "longDescription": "Plugin adapter for King Sejong discovery and plugin-scoped hook metadata. Runtime wiring, durable docs, active context, and verification contracts remain installer-owned under the Codex user skill tree.",
+    "developerName": "Junsu",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Hooks",
+      "Workflow",
+      "Context Injection"
+    ],
+    "defaultPrompt": [
+      "$sejong plan and execute this change with verification",
+      "$uigwe turn this direction into an execution contract",
+      "$seungjeongwon execute this approved scope and verify it"
+    ],
+    "brandColor": "#1F6F8B",
+    "screenshots": []
+  }
+}

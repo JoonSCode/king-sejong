@@ -5,7 +5,7 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  scripts/install-sejong.sh [--scope repo|user] [--force] [--dry-run] [--codex-guidance none|print|user] [target-repo]
+  scripts/install-sejong.sh [--scope repo|user] [--force] [--dry-run] [--codex-guidance default|none|print|user] [target-repo]
   scripts/install-sejong.sh --verify [--scope repo|user] [target-repo]
   scripts/install-sejong.sh --check-updates
   scripts/install-sejong.sh --auto-update [--scope repo|user] [target-repo]
@@ -18,7 +18,7 @@ Examples:
   scripts/install-sejong.sh --check-updates
   scripts/install-sejong.sh --auto-update --scope user
   scripts/install-sejong.sh --scope user
-  scripts/install-sejong.sh --scope user --codex-guidance user
+  scripts/install-sejong.sh --scope user --codex-guidance none
   scripts/install-sejong.sh --scope user --verify
   scripts/install-sejong.sh --print-codex-guidance
   CODEX_HOME=/path/to/codex-home scripts/install-sejong.sh --scope user --force
@@ -37,13 +37,17 @@ Installs:
     ${CODEX_HOME:-~/.codex}/skills/jiphyeonjeon/
     ${CODEX_HOME:-~/.codex}/skills/uigwe/
     ${CODEX_HOME:-~/.codex}/skills/seungjeongwon/
+    ${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/local/
     ${CODEX_HOME:-~/.codex}/config.toml managed King Sejong hooks block
+    ${CODEX_HOME:-~/.codex}/config.toml managed King Sejong plugin block
     ${CODEX_HOME:-~/.codex}/sejong/state/active-context.json
 
 Source-only:
   AGENTS.md is maintainer guidance for this source repository and is never installed.
 
-Optional Codex guidance:
+Codex guidance:
+  User-scope install writes a compact generic AGENTS.md block by default.
+  --codex-guidance none skips writing ${CODEX_HOME:-~/.codex}/AGENTS.md.
   --codex-guidance print prints a compact generic AGENTS.md block.
   --codex-guidance user writes that block to ${CODEX_HOME:-~/.codex}/AGENTS.md.
   The block is generic Codex guidance and does not depend on OMX or repo-local state.
@@ -55,10 +59,14 @@ DRY_RUN=0
 VERIFY_ONLY=0
 UPDATE_CHECK=0
 AUTO_UPDATE=0
-CODEX_GUIDANCE=none
+CODEX_GUIDANCE=default
+CODEX_GUIDANCE_EXPLICIT=0
 PRINT_CODEX_GUIDANCE=0
 SCOPE=repo
 TARGET_REPO="."
+PLUGIN_MARKETPLACE="king-sejong-local"
+PLUGIN_NAME="king-sejong"
+PLUGIN_VERSION="local"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -88,16 +96,17 @@ while [[ $# -gt 0 ]]; do
       ;;
     --codex-guidance)
       if [[ $# -lt 2 ]]; then
-        echo "--codex-guidance requires one of: none, print, user" >&2
+        echo "--codex-guidance requires one of: default, none, print, user" >&2
         exit 1
       fi
       case "$2" in
-        none|print|user)
+        default|none|print|user)
           CODEX_GUIDANCE=$2
+          CODEX_GUIDANCE_EXPLICIT=1
           ;;
         *)
           echo "unsupported codex guidance mode: $2" >&2
-          echo "expected one of: none, print, user" >&2
+          echo "expected one of: default, none, print, user" >&2
           exit 1
           ;;
       esac
@@ -105,11 +114,13 @@ while [[ $# -gt 0 ]]; do
       ;;
     --print-codex-guidance)
       CODEX_GUIDANCE=print
+      CODEX_GUIDANCE_EXPLICIT=1
       PRINT_CODEX_GUIDANCE=1
       shift
       ;;
     --install-codex-guidance)
       CODEX_GUIDANCE=user
+      CODEX_GUIDANCE_EXPLICIT=1
       shift
       ;;
     --scope)
@@ -164,7 +175,7 @@ if [[ "$UPDATE_CHECK" -eq 1 && "$VERIFY_ONLY" -eq 1 ]]; then
   exit 1
 fi
 
-if [[ "$VERIFY_ONLY" -eq 1 && "$CODEX_GUIDANCE" != "none" ]]; then
+if [[ "$VERIFY_ONLY" -eq 1 && "$CODEX_GUIDANCE_EXPLICIT" -eq 1 ]]; then
   echo "--codex-guidance cannot be combined with --verify" >&2
   exit 1
 fi
@@ -242,12 +253,15 @@ print_codex_guidance_block() {
 
 King Sejong is a Codex-native skill and protocol distribution. It does not replace Codex, shell tools, user permissions, or host-native subagents.
 
-When a user invokes Sejong or a court surface:
+Always treat King Sejong as available for broad, uncertain, strategic, or goal-bearing work, even when the user does not type `$sejong`.
+
+For work that needs research, analysis, debate, planning, execution, or verification:
 - Route broad or goal-bearing work through Sejong lead synthesis.
 - Use JangYeongsil for bounded evidence gathering.
 - Use Jiphyeonjeon for bounded multi-perspective debate; workers may persuade each other, but Sejong lead owns synthesis.
 - Use Uigwe to clarify ambiguous ideas and designs into success criteria, verification bars, and handoff leaves.
 - Use Seungjeongwon to decompose, execute, retry, and verify until the Uigwe pass criteria are met or a real blocker is recorded.
+- Iterate through research, analysis, and discussion when evidence is thin or options are unsettled; do not collapse those states into one answer.
 - Store Sejong runtime artifacts under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` unless the user explicitly asks to promote a tracked artifact.
 - Do not use `.omx` paths as Sejong state.
 
@@ -569,6 +583,39 @@ EOF
   mv "$tmp_file" "$config_file"
 }
 
+append_managed_plugin_block() {
+  local config_file=$1
+  local codex_home=$2
+  local tmp_file
+  local plugin_cache_root
+  local timestamp
+
+  plugin_cache_root="$codex_home/plugins/cache/$PLUGIN_MARKETPLACE"
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  tmp_file=$(mktemp)
+
+  awk '
+    /^# BEGIN King Sejong plugin$/ { skip = 1; next }
+    /^# END King Sejong plugin$/ { skip = 0; next }
+    !skip { print }
+  ' "$config_file" > "$tmp_file"
+
+  cat >> "$tmp_file" <<EOF
+
+# BEGIN King Sejong plugin
+[marketplaces.$PLUGIN_MARKETPLACE]
+last_updated = "$timestamp"
+source_type = "local"
+source = "$plugin_cache_root"
+
+[plugins."$PLUGIN_NAME@$PLUGIN_MARKETPLACE"]
+enabled = true
+# END King Sejong plugin
+EOF
+
+  mv "$tmp_file" "$config_file"
+}
+
 write_active_context_if_missing() {
   local codex_home=$1
   local context_file="$codex_home/sejong/state/active-context.json"
@@ -595,6 +642,7 @@ for item in [
     ".agents/skills/jiphyeonjeon/",
     ".agents/skills/uigwe/",
     ".agents/skills/seungjeongwon/",
+    "plugins/king-sejong/",
     "docs/sejong/",
     "scripts/install-sejong.sh",
 ]:
@@ -630,6 +678,7 @@ PY
     ".agents/skills/jiphyeonjeon/",
     ".agents/skills/uigwe/",
     ".agents/skills/seungjeongwon/",
+    "plugins/king-sejong/",
     "docs/sejong/",
     "scripts/install-sejong.sh"
   ],
@@ -661,6 +710,43 @@ configure_user_hooks() {
   ensure_hooks_feature_enabled "$config_file"
   append_managed_hooks_block "$config_file" "$hook_script"
   write_active_context_if_missing "$codex_home"
+}
+
+configure_user_plugin() {
+  local codex_home=$1
+  local config_file="$codex_home/config.toml"
+
+  write_user_plugin_marketplace_manifest "$codex_home"
+  append_managed_plugin_block "$config_file" "$codex_home"
+}
+
+write_user_plugin_marketplace_manifest() {
+  local codex_home=$1
+  local marketplace_file="$codex_home/plugins/cache/$PLUGIN_MARKETPLACE/.agents/plugins/marketplace.json"
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "would install: $marketplace_file"
+    return
+  fi
+
+  mkdir -p "$(dirname "$marketplace_file")"
+  cat > "$marketplace_file" <<EOF
+{
+  "name": "$PLUGIN_MARKETPLACE",
+  "interface": {
+    "displayName": "King Sejong Local Plugins"
+  },
+  "plugins": [
+    {
+      "name": "$PLUGIN_NAME",
+      "source": {
+        "source": "local",
+        "path": "./$PLUGIN_NAME/$PLUGIN_VERSION"
+      }
+    }
+  ]
+}
+EOF
 }
 
 verify_user_hooks_config() {
@@ -700,11 +786,43 @@ verify_user_hooks_config() {
   done
 }
 
+verify_user_plugin_adapter() {
+  local codex_home=$1
+  local config_file="$codex_home/config.toml"
+  local plugin_root="$codex_home/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION"
+  local marketplace_file="$codex_home/plugins/cache/$PLUGIN_MARKETPLACE/.agents/plugins/marketplace.json"
+
+  if [[ ! -f "$marketplace_file" ]]; then
+    echo "missing King Sejong cached marketplace manifest: $marketplace_file" >&2
+    return 1
+  fi
+  if [[ ! -f "$plugin_root/.codex-plugin/plugin.json" ]]; then
+    echo "missing King Sejong plugin manifest: $plugin_root/.codex-plugin/plugin.json" >&2
+    return 1
+  fi
+  if [[ ! -f "$plugin_root/hooks/hooks.json" ]]; then
+    echo "missing King Sejong plugin hooks: $plugin_root/hooks/hooks.json" >&2
+    return 1
+  fi
+  if [[ ! -f "$plugin_root/hooks/king-sejong-hook.py" ]]; then
+    echo "missing King Sejong plugin hook runner: $plugin_root/hooks/king-sejong-hook.py" >&2
+    return 1
+  fi
+  if ! grep -q "\\[marketplaces\\.$PLUGIN_MARKETPLACE\\]" "$config_file"; then
+    echo "King Sejong plugin marketplace block is missing from config.toml" >&2
+    return 1
+  fi
+  if ! grep -q "\\[plugins\\.\"$PLUGIN_NAME@$PLUGIN_MARKETPLACE\"\\]" "$config_file"; then
+    echo "King Sejong plugin enable block is missing from config.toml" >&2
+    return 1
+  fi
+}
+
 verify_user_codex_guidance() {
   local codex_home=$1
   local agents_file="$codex_home/AGENTS.md"
 
-  if [[ "$CODEX_GUIDANCE" != "user" ]]; then
+  if [[ "$CODEX_GUIDANCE" == "none" ]]; then
     return 0
   fi
   if [[ ! -f "$agents_file" ]]; then
@@ -876,7 +994,9 @@ verify_user_install() {
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/uigwe/agents" "$root/skills/uigwe/agents" "skills/uigwe/agents/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/seungjeongwon/agents" "$root/skills/seungjeongwon/agents" "skills/seungjeongwon/agents/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/docs/sejong" "$root/skills/sejong/docs" "skills/sejong/docs/" || drift=1
+  verify_tree_matches "$SOURCE_ROOT/plugins/king-sejong" "$root/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION" "plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION/" || drift=1
   verify_user_hooks_config "$root" || drift=1
+  verify_user_plugin_adapter "$root" || drift=1
   verify_user_codex_guidance "$root" || drift=1
 
   if [[ "$drift" -ne 0 ]]; then
@@ -1002,6 +1122,7 @@ EOF
 install_user_scope() {
   local codex_home=${CODEX_HOME:-$HOME/.codex}
   local skill_root="$codex_home/skills"
+  local managed_guidance_block=""
 
   codex_home=$(canonical_path "$codex_home")
   skill_root="$codex_home/skills"
@@ -1017,6 +1138,7 @@ install_user_scope() {
   copy_dir "$SOURCE_ROOT/.agents/skills/uigwe" "$skill_root/uigwe"
   copy_dir "$SOURCE_ROOT/.agents/skills/seungjeongwon" "$skill_root/seungjeongwon"
   copy_dir "$SOURCE_ROOT/docs/sejong" "$skill_root/sejong/docs"
+  copy_dir "$SOURCE_ROOT/plugins/king-sejong" "$codex_home/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION"
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
     echo "would rewrite repo-local doc paths for user-scope skill layout"
@@ -1030,8 +1152,12 @@ install_user_scope() {
   rewrite_skill_doc_paths "$skill_root/uigwe/SKILL.md" "../sejong/docs/"
   rewrite_skill_doc_paths "$skill_root/seungjeongwon/SKILL.md" "../sejong/docs/"
   configure_user_hooks "$codex_home"
-  if [[ "$CODEX_GUIDANCE" == "user" ]]; then
+  configure_user_plugin "$codex_home"
+  if [[ "$CODEX_GUIDANCE" != "none" ]]; then
     write_codex_guidance_block "$codex_home"
+    managed_guidance_block="
+Managed guidance:
+  $codex_home/AGENTS.md"
   fi
 
   verify_user_install "$codex_home"
@@ -1046,10 +1172,12 @@ Managed paths:
   skills/jiphyeonjeon/
   skills/uigwe/
   skills/seungjeongwon/
+  plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION/
 
 Managed hooks:
   $codex_home/config.toml
   $codex_home/sejong/state/active-context.json
+$managed_guidance_block
 
 Invoke from any Codex workspace with:
   \$sejong <broad request>

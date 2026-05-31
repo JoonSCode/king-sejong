@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import json
 import subprocess
 import tempfile
 import unittest
@@ -31,24 +32,112 @@ class InstallSejongTests(unittest.TestCase):
         result = run_installer(["--print-codex-guidance"])
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("King Sejong Codex Guidance", result.stdout)
+        self.assertIn("Always treat King Sejong as available", result.stdout)
         self.assertIn("Do not use `.omx` paths as Sejong state.", result.stdout)
         self.assertNotIn("oh-my-codex", result.stdout.lower())
 
-    def test_user_scope_codex_guidance_writes_managed_agents_block(self) -> None:
+    def test_user_scope_writes_managed_agents_guidance_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             codex_home = Path(tmp)
             result = run_installer(
-                ["--scope", "user", "--force", "--codex-guidance", "user"],
+                ["--scope", "user", "--force"],
                 codex_home=codex_home,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("AGENTS.md", result.stdout)
             agents_path = codex_home / "AGENTS.md"
             self.assertTrue(agents_path.exists())
             text = agents_path.read_text(encoding="utf-8")
             self.assertIn("BEGIN King Sejong Codex Guidance", text)
             self.assertIn("END King Sejong Codex Guidance", text)
+            self.assertIn("Always treat King Sejong as available", text)
             self.assertIn("Do not use `.omx` paths as Sejong state.", text)
             self.assertNotIn("This repository is both the source repository", text)
+
+    def test_user_scope_installs_codex_plugin_adapter(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            result = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+            plugin_root = (
+                codex_home
+                / "plugins"
+                / "cache"
+                / "king-sejong-local"
+                / "king-sejong"
+                / "local"
+            )
+            manifest_path = plugin_root / ".codex-plugin" / "plugin.json"
+            hooks_path = plugin_root / "hooks" / "hooks.json"
+            hook_runner_path = plugin_root / "hooks" / "king-sejong-hook.py"
+            marketplace_path = (
+                codex_home
+                / "plugins"
+                / "cache"
+                / "king-sejong-local"
+                / ".agents"
+                / "plugins"
+                / "marketplace.json"
+            )
+            self.assertTrue(manifest_path.exists())
+            self.assertTrue(hooks_path.exists())
+            self.assertTrue(hook_runner_path.exists())
+            self.assertTrue(marketplace_path.exists())
+
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(manifest["name"], "king-sejong")
+            self.assertEqual(manifest["skills"], "./skills/")
+            self.assertEqual(manifest["hooks"], "./hooks/hooks.json")
+
+            marketplace = json.loads(marketplace_path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                marketplace["plugins"],
+                [
+                    {
+                        "name": "king-sejong",
+                        "source": {"source": "local", "path": "./king-sejong/local"},
+                    }
+                ],
+            )
+
+            config = (codex_home / "config.toml").read_text(encoding="utf-8")
+            self.assertIn("[marketplaces.king-sejong-local]", config)
+            self.assertIn('source_type = "local"', config)
+            self.assertIn('[plugins."king-sejong@king-sejong-local"]', config)
+            self.assertIn("enabled = true", config)
+
+            hook_result = subprocess.run(
+                ["python3", str(hook_runner_path), "SessionStart"],
+                input='{"source":"startup"}',
+                text=True,
+                capture_output=True,
+                env={**os.environ, "CODEX_HOME": str(codex_home), "PLUGIN_ROOT": str(plugin_root)},
+                cwd=str(REPO_ROOT),
+            )
+            self.assertEqual(hook_result.returncode, 0, hook_result.stderr)
+            hook_payload = json.loads(hook_result.stdout)
+            self.assertEqual(
+                hook_payload["hookSpecificOutput"]["hookEventName"],
+                "SessionStart",
+            )
+            self.assertIn(
+                "King Sejong active context",
+                hook_payload["hookSpecificOutput"]["additionalContext"],
+            )
+
+    def test_user_scope_can_opt_out_of_codex_guidance(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            result = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse((codex_home / "AGENTS.md").exists())
 
     def test_invalid_codex_guidance_mode_fails(self) -> None:
         result = run_installer(["--codex-guidance", "sideways"])

@@ -1,0 +1,20 @@
+{
+  "name": "king-sejong-local",
+  "interface": {
+    "displayName": "King Sejong Local Plugins"
+  },
+  "plugins": [
+    {
+      "name": "king-sejong",
+      "source": {
+        "source": "local",
+        "path": "./plugins/king-sejong"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
