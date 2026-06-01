@@ -1,10 +1,10 @@
 # Uigwe Instruction Surface Scorecard
 
 - Task set: `uigwe-instruction-surface-task-set`
-- Generated at: `2026-05-31T05:21:50Z`
+- Generated at: `2026-06-01T06:15:18Z`
 - Status: `pass`
 - Average score: `1.0`
-- Pass/fail: `24/0`
+- Pass/fail: `25/0`
 
 ## Scenarios
 - `instruction-routing-modes`: `pass` (1.0)
@@ -13,6 +13,7 @@
 - `instruction-output-contract`: `pass` (1.0)
 - `instruction-recursive-decomposition`: `pass` (1.0)
 - `instruction-implicit-native-goal-handoff`: `pass` (1.0)
+- `instruction-completion-state-split`: `pass` (1.0)
 - `instruction-validation-benchmark`: `pass` (1.0)
 - `instruction-sejong-boundary`: `pass` (1.0)
 - `instruction-cross-stage-helper-calls`: `pass` (1.0)

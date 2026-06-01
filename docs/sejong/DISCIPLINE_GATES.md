@@ -91,6 +91,30 @@ same failure the gate was meant to prevent.
 - **Verification:** Seungjeongwon output references the Uigwe source of truth,
   completed or blocked handoff leaves, and verification evidence.
 
+### Seungjeongwon Execution Receipt
+
+- **Why:** Goal-bearing implementation can otherwise start from an approved or
+  implied plan and only backfill Seungjeongwon evidence after code already
+  changed.
+- **Prevents:** Implementation-by-backfill, stale active context continuing a
+  different repo's workflow, and "next" prompts executing product-code edits
+  before the executor surface owns the run.
+- **Owner:** Sejong sets the route gate when goal-bearing work needs execution;
+  Seungjeongwon owns the execution receipt and run artifact.
+- **Force:** `hard` when the active context explicitly contains
+  `seungjeongwon_receipt_required` or when `required_route_sequence` contains
+  `seungjeongwon`; `route` otherwise.
+- **Behavior:** While `seungjeongwon_receipt_required` is pending, write-like
+  execution is denied until the route has entered Seungjeongwon and the active
+  context references a valid `sejong.seungjeongwon-run/v0.1-draft` artifact or
+  an explicit `native_goal_unavailable` execution-feedback ref. Context creation
+  tools add the gate automatically for `--goal-bearing` starts and explicit
+  receipt updates. Do not infer this gate for every ordinary write when no
+  goal-bearing Sejong context exists.
+- **Verification:** Hook tests show write-like execution is denied before the
+  receipt, allowed after a valid receipt, and blocked at `Stop` while the gate
+  remains pending.
+
 ### Root Cause Before Fix
 
 - **Why:** A bug fix without root-cause evidence is usually a symptom patch.

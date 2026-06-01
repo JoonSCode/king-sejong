@@ -83,6 +83,9 @@ Seungjeongwon execution run. See [seungjeongwon-run.schema.json](seungjeongwon-r
 `SessionStart`
 
 - Load recent active context for the repository when available.
+- If the active pointer is missing or stale, select the newest valid matching
+  run context under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs`
+  when one exists.
 - Inject a compact King Sejong continuation summary.
 
 `UserPromptSubmit`
@@ -100,12 +103,24 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 - Inspect supported tool calls for protected King Sejong paths.
 - Deny material self-modification when the required route sequence is missing.
 - Deny write-like or execution-completion tool calls while `uigwe_promotion_required` is pending and the route has not entered `uigwe`.
+- Deny write-like execution while `seungjeongwon_receipt_required` is pending
+  until the route has entered Seungjeongwon and the active context references a
+  valid `sejong.seungjeongwon-run/v0.1-draft` artifact or an explicit
+  `native_goal_unavailable` execution-feedback ref.
+- Require the same receipt when `required_route_sequence` contains
+  `seungjeongwon`, even if the explicit pending gate string is missing.
+  In plain terms: required_route_sequence containing seungjeongwon implies the
+  Seungjeongwon receipt gate.
 - Add context instead of denying when protected paths are touched after route evidence exists.
 
 `PermissionRequest`
 
 - Deny escalated protected edits when route evidence is missing.
 - Deny escalated write-like or execution-completion requests while `uigwe_promotion_required` is pending before Uigwe entry.
+- Deny escalated write-like or execution-completion requests while
+  `seungjeongwon_receipt_required` is pending, or while
+  `required_route_sequence` contains `seungjeongwon`, before a valid
+  Seungjeongwon receipt exists.
 - Leave normal approval flow alone when no protected route is involved.
 
 `PostToolUse`
@@ -132,6 +147,9 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 
 - Continue the turn when pending gates or missing verification would make completion premature.
 - Continue the turn when `uigwe_promotion_required` remains pending, so decision-prep research cannot end as a final conclusion before Uigwe.
+- Continue the turn when `seungjeongwon_receipt_required` remains pending, so
+  goal-bearing implementation cannot end before a Seungjeongwon execution
+  receipt exists.
 - Continue the turn when any referenced ambiguity register still has `open` ambiguity items.
 - Continue the turn when any referenced Seungjeongwon run is active, broken, or invalid.
 
@@ -144,12 +162,14 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 `PostCompact`
 
 - Re-inject the active context summary after compaction.
+- Include active Seungjeongwon run ids and open todo counts when readable run
+  artifacts are referenced by the active context.
 
 ## Config
 
 User-scope King Sejong install enables these hooks in `${CODEX_HOME:-~/.codex}/config.toml` automatically. The installer owns a marked King Sejong hook block and sets `[features].hooks = true`. On macOS, installed hook path verification and active-context `repo_root` matching normalize path case so `/Users/Junsu` and `/Users/junsu` do not split the same workspace.
 
-Hooks are scoped by active context. If `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json` is missing, or its `repo_root` does not match the current workspace, the reference hook script returns no output.
+Hooks are scoped by active context and repository-scoped run contexts. The reference hook script first reads `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json`; if that pointer is missing or stale for the current workspace, it scans `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs/*/*/king-sejong-context.json` and selects the newest valid context whose `repo_root` contains the current `cwd`. If an active context exists but no matching repo context is available, continuation events such as `UserPromptSubmit`, `SessionStart`, and `PostCompact` surface a compact `repo_mismatch=true` warning instead of silently applying the stale context. Other events remain quiet on mismatch unless a matching repo-scoped context is provided.
 
 A target repo or user profile can also wire the reference scripts manually:
 

@@ -3,13 +3,13 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-05-31T05:21:50Z",
+    "generated_at": "2026-06-01T06:15:18Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
   "aggregate": {
-    "scenario_count": 24,
-    "pass_count": 24,
+    "scenario_count": 25,
+    "pass_count": 25,
     "partial_count": 0,
     "fail_count": 0,
     "average_score": 1.0,
@@ -116,6 +116,33 @@
           "id": "implicit_native_goal_handoff_present",
           "passed": true,
           "detail": "Goal-backed Seungjeongwon handoff is implicit for handoff-ready outcome work while preserving executor-owned todo recursion."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-completion-state-split",
+      "title": "Completion claims split local, canonical, and external gates",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "completion_state_split_present",
+          "passed": true,
+          "detail": "Seungjeongwon closeout separates local, canonical, external, and warning states before completion claims."
+        },
+        {
+          "id": "guardrail_ownership_boundaries",
+          "passed": true,
+          "detail": "Typed guardrail expectation ownership_boundaries is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_hook_enforcement",
+          "passed": true,
+          "detail": "Typed guardrail expectation hook_enforcement is represented in the instruction surface."
         }
       ],
       "blockers": [],
@@ -329,6 +356,11 @@
           "id": "guardrail_required_route_sequence",
           "passed": true,
           "detail": "Typed guardrail expectation required_route_sequence is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_hook_enforcement",
+          "passed": true,
+          "detail": "Typed guardrail expectation hook_enforcement is represented in the instruction surface."
         },
         {
           "id": "guardrail_worker_authority_forbidden_claims",

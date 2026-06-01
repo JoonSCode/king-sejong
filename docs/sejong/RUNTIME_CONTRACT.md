@@ -57,6 +57,23 @@ The active context checkpoint follows [king-sejong-context.schema.json](king-sej
 
 Hooks may block `Stop` or `PreCompact` when the active context is incomplete, a referenced ambiguity register is open or broken, or a referenced Seungjeongwon run is active or invalid.
 
+A stale active context from another repository must not be silently treated as
+authority for the current workspace. Continuation events should surface a
+repo-mismatch warning when a context exists but its `repo_root` does not cover
+the current `cwd`; goal-bearing write gates only apply after Sejong has an
+active context for the relevant repo and objective.
+
+When an active context's `required_route_sequence` includes `seungjeongwon`,
+write-like execution requires a valid Seungjeongwon receipt even if
+`pending_gates` omitted `seungjeongwon_receipt_required`. Context creation
+helpers add the explicit gate for goal-bearing starts, while the hook treats the
+required route as the stronger source of truth.
+
+When the active pointer is stale or missing, hooks may select the newest valid
+matching repository context from `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs`.
+This keeps compatibility with the single active pointer while allowing separate
+repositories to retain independent active route state.
+
 ## Long-Run Execution
 
 Long-running unattended work should use Uigwe plus Seungjeongwon:

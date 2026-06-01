@@ -76,6 +76,38 @@ class KingSejongE2ETests(unittest.TestCase):
 
             context["route_sequence"].append("seungjeongwon")
             context["pending_gates"] = []
+            run_path = runtime_dir / "seungjeongwon-run.json"
+            run_path.write_text(
+                json.dumps(
+                    {
+                        "format": "sejong.seungjeongwon-run/v0.1-draft",
+                        "run_id": "e2e-receipt",
+                        "repo_root": str(REPO_ROOT),
+                        "goal": "Complete protected King Sejong implementation.",
+                        "status": "active",
+                        "success_criteria": ["Route and receipt evidence exist before writes."],
+                        "verification_methods": ["Run hook tests."],
+                        "todos": [
+                            {
+                                "todo_id": "T1",
+                                "description": "Verify protected write route",
+                                "done_criteria": "Hook allows write only after route and receipt",
+                                "verification_method": "test_king_sejong_e2e.py",
+                                "status": "pending",
+                                "attempt_ids": [],
+                            }
+                        ],
+                        "attempt_ledger": [],
+                        "verification_evidence": [],
+                        "blockers": [],
+                        "uigwe_reentry_requests": [],
+                        "created_at": "2026-05-23T00:00:00Z",
+                        "updated_at": "2026-05-23T00:00:00Z",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            context["artifact_refs"] = [str(run_path)]
             context_path.write_text(json.dumps(context), encoding="utf-8")
             allowed = run_hook(
                 "PreToolUse",

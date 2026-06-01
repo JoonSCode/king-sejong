@@ -36,6 +36,18 @@ REQUIRED_CONTEXT_FIELDS = (
     "exit_conditions",
     "last_updated_at",
 )
+CONTEXT_LIST_FIELDS = (
+    "route_sequence",
+    "required_route_sequence",
+    "pending_gates",
+    "protected_paths",
+    "allowed_direct_change_types",
+    "evidence_refs",
+    "artifact_refs",
+    "team_run_refs",
+    "subagent_refs",
+    "exit_conditions",
+)
 
 EXIT_TERMS = (
     "exit sejong",
@@ -60,6 +72,7 @@ FORBIDDEN_WORKER_AUTHORITY_TERMS = (
 )
 AMBIGUITY_REGISTER_FORMAT = "sejong.ambiguity-register/v0.1-draft"
 UIGWE_PROMOTION_GATE = "uigwe_promotion_required"
+SEUNGJEONGWON_RECEIPT_GATE = "seungjeongwon_receipt_required"
 WRITE_LIKE_TOOL_NAMES = {
     "apply_patch",
     "edit",
@@ -94,11 +107,65 @@ def load_stdin_json() -> dict[str, Any]:
     return json.loads(raw)
 
 
-def load_context(path: str | None) -> dict[str, Any]:
+def load_context_file(path: Path) -> dict[str, Any]:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def iter_run_context_paths() -> list[Path]:
+    runs_root = sejong_root() / "runs"
+    if not runs_root.exists():
+        return []
+    return list(runs_root.glob("*/*/king-sejong-context.json"))
+
+
+def context_is_well_formed(context: dict[str, Any]) -> bool:
+    if not context:
+        return False
+    if context.get("format") and context.get("format") != "king-sejong.context/v0.1-draft":
+        return False
+    if missing_context_fields(context):
+        return False
+    for field in CONTEXT_LIST_FIELDS:
+        value = context.get(field)
+        if not isinstance(value, list):
+            return False
+        if any(not isinstance(item, str) or not item for item in value):
+            return False
+    return True
+
+
+def newest_matching_repo_context(payload: dict[str, Any]) -> dict[str, Any]:
+    candidates: list[tuple[float, dict[str, Any]]] = []
+    for context_path in iter_run_context_paths():
+        context = load_context_file(context_path)
+        if not context_is_well_formed(context):
+            continue
+        if not context_applies_to_cwd(context, payload):
+            continue
+        try:
+            mtime = context_path.stat().st_mtime
+        except OSError:
+            mtime = 0
+        candidates.append((mtime, context))
+    if not candidates:
+        return {}
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    return candidates[0][1]
+
+
+def load_context(path: str | None, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     context_path = resolve_context_path(path)
     if not context_path.exists():
+        if not path and payload:
+            return newest_matching_repo_context(payload)
         return {}
-    return json.loads(context_path.read_text(encoding="utf-8"))
+    active_context = load_context_file(context_path)
+    if path or not payload or context_applies_to_cwd(active_context, payload):
+        return active_context
+    return newest_matching_repo_context(payload) or active_context
 
 
 def sejong_root() -> Path:
@@ -144,6 +211,9 @@ def context_summary(context: dict[str, Any]) -> str:
     ambiguity_text = ambiguity_register_summary(context)
     if ambiguity_text:
         summary += " " + ambiguity_text
+    active_runs = active_seungjeongwon_run_summaries(context)
+    if active_runs:
+        summary += " active_seungjeongwon_runs=" + ";".join(active_runs) + "."
     if pending_uigwe_promotion_unsatisfied(context):
         summary += (
             " uigwe_promotion_required=true; research or council output is not final; "
@@ -159,6 +229,18 @@ def context_applies_to_cwd(context: dict[str, Any], payload: dict[str, Any]) -> 
     cwd = resolve_path(payload.get("cwd") or os.getcwd())
     root = resolve_path(repo_root)
     return path_contains_or_equals(cwd, root)
+
+
+def repo_mismatch_summary(context: dict[str, Any], payload: dict[str, Any]) -> str:
+    cwd = resolve_path(payload.get("cwd") or os.getcwd())
+    repo_root = resolve_path(context.get("repo_root", ""))
+    return (
+        "King Sejong active context repo_mismatch=true; "
+        f"active_context_id={context.get('active_context_id')}; "
+        f"active_repo_root={repo_root}; current_cwd={cwd}. "
+        "This context is not applied to the current workspace; refresh the active context "
+        "or start a repo-scoped Sejong context before treating follow-up prompts as the same workflow."
+    )
 
 
 def is_explicit_exit(prompt: str) -> bool:
@@ -189,6 +271,34 @@ def has_pending_uigwe_promotion(context: dict[str, Any]) -> bool:
 
 def pending_uigwe_promotion_unsatisfied(context: dict[str, Any]) -> bool:
     return has_pending_uigwe_promotion(context) and not route_entered(context, "uigwe")
+
+
+def has_pending_seungjeongwon_receipt(context: dict[str, Any]) -> bool:
+    return SEUNGJEONGWON_RECEIPT_GATE in (context.get("pending_gates") or [])
+
+
+def required_route_needs_seungjeongwon_receipt(context: dict[str, Any]) -> bool:
+    return "seungjeongwon" in (context.get("required_route_sequence") or [])
+
+
+def has_native_goal_unavailable_receipt(context: dict[str, Any]) -> bool:
+    refs = (context.get("artifact_refs") or []) + (context.get("evidence_refs") or [])
+    return any("native_goal_unavailable" in ref for ref in refs if isinstance(ref, str))
+
+
+def has_valid_seungjeongwon_receipt(context: dict[str, Any]) -> bool:
+    if context.get("current_surface") != "seungjeongwon" or not route_entered(context, "seungjeongwon"):
+        return False
+    runs, broken_refs, invalid_refs = load_seungjeongwon_runs(context)
+    if broken_refs or invalid_refs:
+        return False
+    return bool(runs) or has_native_goal_unavailable_receipt(context)
+
+
+def pending_seungjeongwon_receipt_unsatisfied(context: dict[str, Any]) -> bool:
+    return (
+        has_pending_seungjeongwon_receipt(context) or required_route_needs_seungjeongwon_receipt(context)
+    ) and not has_valid_seungjeongwon_receipt(context)
 
 
 def flatten_tool_input(value: Any) -> str:
@@ -377,22 +487,28 @@ def handle_session_context(event_name: str, context: dict[str, Any]) -> dict[str
 
 
 def handle_pre_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
-    if pending_uigwe_promotion_unsatisfied(context) and is_write_like_tool_call(payload):
-        return deny_pre_tool(
-            "King Sejong research-to-Uigwe gate is pending. "
-            "Research or council output must enter Uigwe before write-like execution, "
-            "unless the user explicitly converts the request to research-only."
-        )
     touched = touched_protected_paths(context, payload)
-    if not touched:
-        return {}
-    if not route_sequence_satisfied(context):
+    if touched and not route_sequence_satisfied(context):
         reason = (
             "King Sejong protected self-modification requires route evidence: "
             "Jiphyeonjeon -> Uigwe -> Seungjeongwon. "
             f"Touched protected paths: {', '.join(touched)}"
         )
         return deny_pre_tool(reason)
+    if pending_uigwe_promotion_unsatisfied(context) and is_write_like_tool_call(payload):
+        return deny_pre_tool(
+            "King Sejong research-to-Uigwe gate is pending. "
+            "Research or council output must enter Uigwe before write-like execution, "
+            "unless the user explicitly converts the request to research-only."
+        )
+    if pending_seungjeongwon_receipt_unsatisfied(context) and is_write_like_tool_call(payload):
+        return deny_pre_tool(
+            "King Sejong Seungjeongwon execution receipt is required before write-like execution. "
+            "Enter Seungjeongwon, publish the execution board, and attach a valid "
+            "sejong.seungjeongwon-run/v0.1-draft artifact before product-code edits."
+        )
+    if not touched:
+        return {}
     return hook_context(
         "PreToolUse",
         "Protected King Sejong path touched after required route evidence; keep verification evidence before completion.",
@@ -400,14 +516,18 @@ def handle_pre_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> dic
 
 
 def handle_permission_request(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
-    if pending_uigwe_promotion_unsatisfied(context) and is_write_like_tool_call(payload):
-        return deny_permission(
-            "King Sejong research-to-Uigwe gate is pending; enter Uigwe before write-like execution."
-        )
     touched = touched_protected_paths(context, payload)
     if touched and not route_sequence_satisfied(context):
         return deny_permission(
             "King Sejong protected self-modification requires Jiphyeonjeon -> Uigwe -> Seungjeongwon route evidence."
+        )
+    if pending_uigwe_promotion_unsatisfied(context) and is_write_like_tool_call(payload):
+        return deny_permission(
+            "King Sejong research-to-Uigwe gate is pending; enter Uigwe before write-like execution."
+        )
+    if pending_seungjeongwon_receipt_unsatisfied(context) and is_write_like_tool_call(payload):
+        return deny_permission(
+            "King Sejong Seungjeongwon execution receipt is required before write-like execution."
         )
     return {}
 
@@ -456,6 +576,14 @@ def handle_stop(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, A
             "reason": (
                 "Continue King Sejong execution: uigwe_promotion_required remains pending. "
                 "Research-for-decision must enter Uigwe or be explicitly converted to research-only."
+            ),
+        }
+    if pending_seungjeongwon_receipt_unsatisfied(context):
+        return {
+            "decision": "block",
+            "reason": (
+                "Continue King Sejong execution: seungjeongwon_receipt_required remains pending. "
+                "Goal-bearing execution needs a valid Seungjeongwon receipt before completion."
             ),
         }
     pending = context.get("pending_gates") or []
@@ -553,6 +681,10 @@ def handle_post_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> di
 
 def dispatch(event_name: str, payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
     if context and not context_applies_to_cwd(context, payload):
+        if event_name == "UserPromptSubmit" and is_explicit_exit(payload.get("prompt", "")):
+            return {}
+        if event_name in {"UserPromptSubmit", "SessionStart", "PostCompact"}:
+            return hook_context(event_name, repo_mismatch_summary(context, payload))
         return {}
     if event_name == "UserPromptSubmit":
         return handle_user_prompt_submit(payload, context)
@@ -578,7 +710,7 @@ def dispatch(event_name: str, payload: dict[str, Any], context: dict[str, Any]) 
 def main() -> int:
     args = parse_args()
     payload = load_stdin_json()
-    context = load_context(args.context)
+    context = load_context(args.context, payload)
     return emit(dispatch(args.event_name, payload, context))
 
 

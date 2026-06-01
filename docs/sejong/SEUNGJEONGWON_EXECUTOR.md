@@ -263,6 +263,30 @@ By default, Seungjeongwon stores execution feedback, verification notes, and evi
 
 Implementation edits requested by the user still happen in the target workspace. This storage rule applies to Sejong-generated research, planning, runtime, and evidence artifacts, not to the source files the user asked Seungjeongwon to change.
 
+## Completion State Split
+
+Before any completion, readiness, or deployability claim, Seungjeongwon must
+split the state being claimed.
+
+Required fields in the human-facing closeout:
+
+- local implementation state: what changed locally and whether that local scope
+  is implemented
+- canonical repo or branch state: current repo, branch or worktree, dirty state,
+  commit or integration status, and whether the canonical target contains the
+  work
+- verification evidence: fresh tests, builds, schema checks, runtime checks, or
+  explicit evidence gaps
+- external gate state: account, App Store, CloudKit, device, production data,
+  user research, or other gates that cannot be proven by local commands
+- warnings or residual risk: known warnings, noisy logs, unsupported
+  environments, stale evidence, or manual checks still needed
+
+For app distribution questions such as "is this deployable?": Local simulator tests and Release builds can prove local readiness only. They do not prove TestFlight upload, App Store Connect setup, CloudKit multi-account sharing, eligible-device AI behavior, or real-user quality unless those exact checks have fresh evidence.
+
+If the user asks for a single answer, answer directly but keep the split
+visible. Do not compress separate states into one "done" claim.
+
 ## Output Contract
 
 Seungjeongwon reports:

@@ -62,6 +62,7 @@ SCENARIO_IDS = (
     "instruction-output-contract",
     "instruction-recursive-decomposition",
     "instruction-implicit-native-goal-handoff",
+    "instruction-completion-state-split",
     "instruction-validation-benchmark",
     "instruction-sejong-boundary",
     "instruction-cross-stage-helper-calls",
@@ -89,6 +90,7 @@ REQUIRED_GUARDRAIL_SCENARIOS = {
     "instruction-ambiguity-register",
     "instruction-research-to-uigwe-promotion",
     "instruction-long-session-outcome-entry",
+    "instruction-completion-state-split",
     "instruction-sejong-self-modification",
     "instruction-artifact-storage",
     "instruction-repo-context-refresh",
@@ -315,6 +317,38 @@ def evaluate_implicit_native_goal_handoff() -> list[dict[str, Any]]:
             "implicit_native_goal_handoff_present",
             passed,
             "Goal-backed Seungjeongwon handoff is implicit for handoff-ready outcome work while preserving executor-owned todo recursion.",
+            missing=missing,
+        )
+    ]
+
+
+def evaluate_completion_state_split() -> list[dict[str, Any]]:
+    executor = load_text(SEUNGJEONGWON_EXECUTOR_PATH)
+    discipline = load_text(DISCIPLINE_GATES_PATH)
+    combined = "\n".join([executor, discipline])
+    required = [
+        "Completion State Split",
+        "local implementation state",
+        "canonical repo or branch state",
+        "verification evidence",
+        "external gate state",
+        "warnings or residual risk",
+        "deployability claim",
+        "Local simulator tests and Release builds can prove local readiness only",
+        "TestFlight upload",
+        "App Store Connect setup",
+        "CloudKit multi-account sharing",
+        "eligible-device AI behavior",
+        "real-user quality",
+        "Do not compress separate states into one \"done\" claim.",
+        "Verification Before Completion",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check(
+            "completion_state_split_present",
+            passed,
+            "Seungjeongwon closeout separates local, canonical, external, and warning states before completion claims.",
             missing=missing,
         )
     ]
@@ -578,6 +612,8 @@ def evaluate_king_sejong_hooks() -> list[dict[str, Any]]:
         "protected_paths",
         "required_route_sequence",
         "pending_gates",
+        "seungjeongwon_receipt_required",
+        "required_route_sequence` contains\n  `seungjeongwon",
         "Hooks are deterministic guardrails, not a complete enforcement boundary.",
     ]
     passed, missing = contains_all(combined, required)
@@ -902,6 +938,7 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-output-contract": evaluate_output_contract,
     "instruction-recursive-decomposition": evaluate_recursive_decomposition,
     "instruction-implicit-native-goal-handoff": evaluate_implicit_native_goal_handoff,
+    "instruction-completion-state-split": evaluate_completion_state_split,
     "instruction-validation-benchmark": evaluate_validation_benchmark,
     "instruction-sejong-boundary": evaluate_sejong_boundary,
     "instruction-cross-stage-helper-calls": evaluate_cross_stage_helper_calls,
@@ -974,6 +1011,8 @@ def expectation_text_for_scenario(scenario_id: str) -> str:
                 load_text(SEJONG_ROOT / "scripts" / "long_session_experiment_gate.py"),
             ]
         )
+    if scenario_id == "instruction-completion-state-split":
+        return "\n".join([load_text(SEUNGJEONGWON_EXECUTOR_PATH), load_text(DISCIPLINE_GATES_PATH)])
     if scenario_id == "instruction-bounded-parallelism":
         return "\n".join([load_text(TEAM_EXECUTOR_PATH), load_text(ROUTER_PATH), load_text(HOOKS_PATH)])
     if scenario_id == "instruction-ambiguity-register":

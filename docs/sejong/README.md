@@ -63,7 +63,8 @@ For normal use:
 14. Read [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md) when live clarification needs a durable readiness and open-ambiguity record.
 15. Read [OUTCOME_EVALUATION.md](OUTCOME_EVALUATION.md) when behavior changes must prove better resulting artifacts, not only correct routing.
 16. Read [WORKFLOW_RUN.md](WORKFLOW_RUN.md) when evaluating dynamic workflow, deep-research, ultracode-style, or many-agent backend ideas without giving them Sejong authority.
-17. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
+17. Read [APP_SCOPED_RUNTIME_STRATEGY.md](APP_SCOPED_RUNTIME_STRATEGY.md) when hardening repo-scoped active context, Seungjeongwon pre-edit receipts, or app-style outcome workflows.
+18. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
 
 ## Practical Usage
 
