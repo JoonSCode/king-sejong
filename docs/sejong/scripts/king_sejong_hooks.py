@@ -296,9 +296,7 @@ def has_valid_seungjeongwon_receipt(context: dict[str, Any]) -> bool:
 
 
 def pending_seungjeongwon_receipt_unsatisfied(context: dict[str, Any]) -> bool:
-    return (
-        has_pending_seungjeongwon_receipt(context) or required_route_needs_seungjeongwon_receipt(context)
-    ) and not has_valid_seungjeongwon_receipt(context)
+    return has_pending_seungjeongwon_receipt(context) and not has_valid_seungjeongwon_receipt(context)
 
 
 def flatten_tool_input(value: Any) -> str:

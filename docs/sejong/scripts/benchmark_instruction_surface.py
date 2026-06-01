@@ -613,7 +613,7 @@ def evaluate_king_sejong_hooks() -> list[dict[str, Any]]:
         "required_route_sequence",
         "pending_gates",
         "seungjeongwon_receipt_required",
-        "required_route_sequence` contains\n  `seungjeongwon",
+        "Do not infer a receipt gate from `required_route_sequence` alone",
         "Hooks are deterministic guardrails, not a complete enforcement boundary.",
     ]
     passed, missing = contains_all(combined, required)

@@ -124,6 +124,7 @@ Codex 집이 `~/.codex`가 아니면 먼저 `CODEX_HOME`을 정하시옵소서.
 
 사용자 범위에서는 함께 쓰는 Sejong 문서를 `skills/sejong/docs/` 아래 두고, 설치된 skill 파일들이 그 문서를 읽도록 길을 고쳐 두옵니다.
 또한 Codex plugin 어댑터를 `${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/` 아래 두고, `${CODEX_HOME:-~/.codex}/config.toml`의 King Sejong plugin 블록으로 켜 두옵니다.
+이 plugin hook이 사용자 범위의 기본 hook 길이옵니다. 사용자 범위 재설치는 예전의 직접 hook 블록을 기본으로 걷어 내며, `--legacy-direct-hooks`는 plugin hook을 쓸 수 없을 때만 명시하여 쓰는 물림 길이옵니다.
 
 각 범위의 길은 한 몸이니 흩지 마옵소서. Skill 문서는 짧게 두고, 자세한 법도와 문서는 함께 설치된 Sejong 문서에서 불러 보게 하였나이다. Plugin 어댑터는 hook metadata만 맡으므로 사람이 부르는 skill은 `$sejong` 하나로 두옵니다.
 

@@ -63,11 +63,11 @@ repo-mismatch warning when a context exists but its `repo_root` does not cover
 the current `cwd`; goal-bearing write gates only apply after Sejong has an
 active context for the relevant repo and objective.
 
-When an active context's `required_route_sequence` includes `seungjeongwon`,
-write-like execution requires a valid Seungjeongwon receipt even if
-`pending_gates` omitted `seungjeongwon_receipt_required`. Context creation
-helpers add the explicit gate for goal-bearing starts, while the hook treats the
-required route as the stronger source of truth.
+When an active context has `seungjeongwon_receipt_required` in
+`pending_gates`, write-like execution requires a valid Seungjeongwon receipt.
+`required_route_sequence` may still include `seungjeongwon` as a routing
+expectation, but the hooks do not infer a receipt gate from that sequence alone.
+Context creation helpers add the explicit gate for goal-bearing starts.
 
 When the active pointer is stale or missing, hooks may select the newest valid
 matching repository context from `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs`.

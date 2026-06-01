@@ -107,10 +107,9 @@ the repository-scoped run directory. Hooks read the active pointer by default.
   until the route has entered Seungjeongwon and the active context references a
   valid `sejong.seungjeongwon-run/v0.1-draft` artifact or an explicit
   `native_goal_unavailable` execution-feedback ref.
-- Require the same receipt when `required_route_sequence` contains
-  `seungjeongwon`, even if the explicit pending gate string is missing.
-  In plain terms: required_route_sequence containing seungjeongwon implies the
-  Seungjeongwon receipt gate.
+- Do not infer a receipt gate from `required_route_sequence` alone. Route
+  history records the intended path; `seungjeongwon_receipt_required` records an
+  explicit unfinished execution obligation.
 - Add context instead of denying when protected paths are touched after route evidence exists.
 
 `PermissionRequest`
@@ -118,9 +117,8 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 - Deny escalated protected edits when route evidence is missing.
 - Deny escalated write-like or execution-completion requests while `uigwe_promotion_required` is pending before Uigwe entry.
 - Deny escalated write-like or execution-completion requests while
-  `seungjeongwon_receipt_required` is pending, or while
-  `required_route_sequence` contains `seungjeongwon`, before a valid
-  Seungjeongwon receipt exists.
+  `seungjeongwon_receipt_required` is pending before a valid Seungjeongwon
+  receipt exists.
 - Leave normal approval flow alone when no protected route is involved.
 
 `PostToolUse`
@@ -167,7 +165,21 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 
 ## Config
 
-User-scope King Sejong install enables these hooks in `${CODEX_HOME:-~/.codex}/config.toml` automatically. The installer owns a marked King Sejong hook block and sets `[features].hooks = true`. On macOS, installed hook path verification and active-context `repo_root` matching normalize path case so `/Users/Junsu` and `/Users/junsu` do not split the same workspace.
+User-scope King Sejong install enables hooks through the local
+`king-sejong-local` Codex plugin by default. The plugin hook is a thin adapter
+that delegates to the canonical user-scope script under
+`${CODEX_HOME:-~/.codex}/skills/sejong/docs/scripts/king_sejong_hooks.py`.
+The installer owns a marked King Sejong plugin block and sets
+`[features].hooks = true`. On macOS, installed hook path verification and
+active-context `repo_root` matching normalize path case so `/Users/Junsu` and
+`/Users/junsu` do not split the same workspace.
+
+Older installs may still have a marked direct hook block in
+`${CODEX_HOME:-~/.codex}/config.toml`. A normal user-scope reinstall removes
+that direct block so plugin hooks are the single canonical hook source. The
+explicit `--legacy-direct-hooks` installer option keeps direct hooks as a
+fallback mode, but verification fails when direct hooks and plugin hooks are
+enabled together.
 
 Hooks are scoped by active context and repository-scoped run contexts. The reference hook script first reads `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json`; if that pointer is missing or stale for the current workspace, it scans `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs/*/*/king-sejong-context.json` and selects the newest valid context whose `repo_root` contains the current `cwd`. If an active context exists but no matching repo context is available, continuation events such as `UserPromptSubmit`, `SessionStart`, and `PostCompact` surface a compact `repo_mismatch=true` warning instead of silently applying the stale context. Other events remain quiet on mismatch unless a matching repo-scoped context is provided.
 
@@ -205,7 +217,9 @@ command = "python3 /path/to/docs/sejong/scripts/king_sejong_hooks.py Stop --cont
 timeout = 30
 ```
 
-The installer keeps this idempotent: rerunning user-scope install replaces only the managed King Sejong hook block.
+Manual direct hooks are legacy fallback wiring. The installer keeps normal
+plugin-based installs idempotent by replacing only the managed King Sejong
+plugin block and removing the old managed direct hook block.
 
 ## Limits
 

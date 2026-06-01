@@ -306,7 +306,7 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertEqual(specific["permissionDecision"], "deny")
         self.assertIn("Seungjeongwon execution receipt is required", specific["permissionDecisionReason"])
 
-    def test_pre_tool_use_blocks_write_when_required_route_needs_seungjeongwon_receipt(self) -> None:
+    def test_pre_tool_use_allows_write_when_required_route_only_mentions_seungjeongwon(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
             context["current_surface"] = "uigwe"
@@ -327,9 +327,7 @@ class KingSejongHookTests(unittest.TestCase):
                 },
                 context_path=context_path,
             )
-        specific = output["hookSpecificOutput"]
-        self.assertEqual(specific["permissionDecision"], "deny")
-        self.assertIn("Seungjeongwon execution receipt is required", specific["permissionDecisionReason"])
+        self.assertNotEqual(output.get("hookSpecificOutput", {}).get("permissionDecision"), "deny")
 
     def test_pre_tool_use_allows_write_after_valid_seungjeongwon_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -448,6 +446,51 @@ class KingSejongHookTests(unittest.TestCase):
             )
         self.assertEqual(output["decision"], "block")
         self.assertIn("uigwe_promotion_required remains pending", output["reason"])
+
+    def test_stop_allows_route_only_seungjeongwon_history_without_receipt_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["current_surface"] = "seungjeongwon"
+            context["route_sequence"] = ["sejong", "jiphyeonjeon", "uigwe", "seungjeongwon"]
+            context["required_route_sequence"] = ["jiphyeonjeon", "uigwe", "seungjeongwon"]
+            context["pending_gates"] = []
+            context["artifact_refs"] = []
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "Stop",
+                {
+                    "hook_event_name": "Stop",
+                    "stop_hook_active": False,
+                    "last_assistant_message": "Design comparison complete.",
+                },
+                context_path=context_path,
+            )
+        self.assertEqual(output, {})
+
+    def test_stop_blocks_when_seungjeongwon_receipt_gate_is_explicit(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["current_surface"] = "seungjeongwon"
+            context["route_sequence"] = ["sejong", "jiphyeonjeon", "uigwe", "seungjeongwon"]
+            context["required_route_sequence"] = ["jiphyeonjeon", "uigwe", "seungjeongwon"]
+            context["pending_gates"] = ["seungjeongwon_receipt_required"]
+            context["artifact_refs"] = []
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "Stop",
+                {
+                    "hook_event_name": "Stop",
+                    "stop_hook_active": False,
+                    "last_assistant_message": "Done.",
+                },
+                context_path=context_path,
+            )
+        self.assertEqual(output["decision"], "block")
+        self.assertIn("seungjeongwon_receipt_required", output["reason"])
 
     def test_stop_continues_when_ambiguity_register_has_open_items(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

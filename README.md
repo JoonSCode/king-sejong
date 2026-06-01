@@ -128,6 +128,7 @@ User scope copies these managed paths into `${CODEX_HOME:-~/.codex}/skills`:
 
 In user scope, shared Sejong docs are installed under `skills/sejong/docs/`, and the installed skill files are rewritten to load those docs from the user skill tree.
 User scope also copies the Codex plugin adapter to `${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/` and enables it through a marked King Sejong plugin block in `${CODEX_HOME:-~/.codex}/config.toml`.
+That plugin hook is the canonical user-scope hook source. Reinstalling user scope removes the older marked direct hook block by default; use `--legacy-direct-hooks` only as an explicit fallback and never together with the plugin hook.
 
 Keep each scope's managed paths together. The skills are intentionally small and load their routing, planning, schema, and handoff contracts from the installed Sejong docs. The plugin adapter is hook metadata only, so the user-facing skill remains `$sejong`.
 

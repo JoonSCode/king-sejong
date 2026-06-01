@@ -5,7 +5,7 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  scripts/install-sejong.sh [--scope repo|user] [--force] [--dry-run] [--codex-guidance default|none|print|user] [target-repo]
+  scripts/install-sejong.sh [--scope repo|user] [--force] [--dry-run] [--legacy-direct-hooks] [--codex-guidance default|none|print|user] [target-repo]
   scripts/install-sejong.sh --verify [--scope repo|user] [target-repo]
   scripts/install-sejong.sh --check-updates
   scripts/install-sejong.sh --auto-update [--scope repo|user] [target-repo]
@@ -19,6 +19,7 @@ Examples:
   scripts/install-sejong.sh --auto-update --scope user
   scripts/install-sejong.sh --scope user
   scripts/install-sejong.sh --scope user --codex-guidance none
+  scripts/install-sejong.sh --scope user --legacy-direct-hooks --force
   scripts/install-sejong.sh --scope user --verify
   scripts/install-sejong.sh --print-codex-guidance
   CODEX_HOME=/path/to/codex-home scripts/install-sejong.sh --scope user --force
@@ -38,7 +39,6 @@ Installs:
     ${CODEX_HOME:-~/.codex}/skills/uigwe/
     ${CODEX_HOME:-~/.codex}/skills/seungjeongwon/
     ${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/
-    ${CODEX_HOME:-~/.codex}/config.toml managed King Sejong hooks block
     ${CODEX_HOME:-~/.codex}/config.toml managed King Sejong plugin block
     ${CODEX_HOME:-~/.codex}/sejong/state/active-context.json
 
@@ -59,6 +59,7 @@ DRY_RUN=0
 VERIFY_ONLY=0
 UPDATE_CHECK=0
 AUTO_UPDATE=0
+LEGACY_DIRECT_HOOKS=0
 CODEX_GUIDANCE=default
 CODEX_GUIDANCE_EXPLICIT=0
 PRINT_CODEX_GUIDANCE=0
@@ -80,6 +81,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --dry-run)
       DRY_RUN=1
+      shift
+      ;;
+    --legacy-direct-hooks)
+      LEGACY_DIRECT_HOOKS=1
       shift
       ;;
     --verify|--check)
@@ -583,6 +588,51 @@ EOF
   mv "$tmp_file" "$config_file"
 }
 
+remove_managed_hooks_block() {
+  local config_file=$1
+  local tmp_file
+
+  [[ -f "$config_file" ]] || return 0
+  tmp_file=$(mktemp)
+
+  awk '
+    /^# BEGIN King Sejong hooks$/ { skip = 1; next }
+    /^# END King Sejong hooks$/ { skip = 0; next }
+    !skip { print }
+  ' "$config_file" > "$tmp_file"
+
+  mv "$tmp_file" "$config_file"
+}
+
+config_has_managed_hooks_block() {
+  local config_file=$1
+
+  [[ -f "$config_file" ]] || return 1
+  grep -q "# BEGIN King Sejong hooks" "$config_file" && grep -q "# END King Sejong hooks" "$config_file"
+}
+
+config_has_king_sejong_plugin_enabled() {
+  local config_file=$1
+
+  [[ -f "$config_file" ]] || return 1
+  awk -v header="[plugins.\"$PLUGIN_NAME@$PLUGIN_MARKETPLACE\"]" '
+    $0 == header {
+      in_plugin = 1
+      next
+    }
+    in_plugin && /^\[/ {
+      in_plugin = 0
+    }
+    in_plugin && /^[[:space:]]*enabled[[:space:]]*=[[:space:]]*true[[:space:]]*$/ {
+      found = 1
+      exit
+    }
+    END {
+      exit found ? 0 : 1
+    }
+  ' "$config_file"
+}
+
 append_managed_plugin_block() {
   local config_file=$1
   local codex_home=$2
@@ -708,7 +758,11 @@ configure_user_hooks() {
   local hook_script="$codex_home/skills/sejong/docs/scripts/king_sejong_hooks.py"
 
   ensure_hooks_feature_enabled "$config_file"
-  append_managed_hooks_block "$config_file" "$hook_script"
+  if [[ "$LEGACY_DIRECT_HOOKS" -eq 1 ]]; then
+    append_managed_hooks_block "$config_file" "$hook_script"
+  else
+    remove_managed_hooks_block "$config_file"
+  fi
   write_active_context_if_missing "$codex_home"
 }
 
@@ -763,13 +817,15 @@ verify_user_hooks_config() {
     echo "Codex hooks feature is not enabled in config.toml" >&2
     return 1
   fi
-  if ! grep -q "# BEGIN King Sejong hooks" "$config_file" || ! grep -q "# END King Sejong hooks" "$config_file"; then
-    echo "King Sejong managed hooks block is missing from config.toml" >&2
-    return 1
-  fi
-  if ! verify_hook_script_reference "$config_file" "$hook_script"; then
-    echo "King Sejong hook block does not reference installed hook script" >&2
-    return 1
+  if config_has_managed_hooks_block "$config_file"; then
+    if config_has_king_sejong_plugin_enabled "$config_file"; then
+      echo "duplicate King Sejong hook registration: remove the legacy direct hooks block or disable the King Sejong plugin hook" >&2
+      return 1
+    fi
+    if ! verify_hook_script_reference "$config_file" "$hook_script"; then
+      echo "King Sejong hook block does not reference installed hook script" >&2
+      return 1
+    fi
   fi
   if [[ ! -f "$context_file" ]]; then
     echo "missing King Sejong active context checkpoint: $context_file" >&2
@@ -996,7 +1052,9 @@ verify_user_install() {
   verify_tree_matches "$SOURCE_ROOT/docs/sejong" "$root/skills/sejong/docs" "skills/sejong/docs/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/plugins/king-sejong" "$root/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION" "plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION/" || drift=1
   verify_user_hooks_config "$root" || drift=1
-  verify_user_plugin_adapter "$root" || drift=1
+  if [[ "$LEGACY_DIRECT_HOOKS" -eq 0 ]]; then
+    verify_user_plugin_adapter "$root" || drift=1
+  fi
   verify_user_codex_guidance "$root" || drift=1
 
   if [[ "$drift" -ne 0 ]]; then
@@ -1152,7 +1210,9 @@ install_user_scope() {
   rewrite_skill_doc_paths "$skill_root/uigwe/SKILL.md" "../sejong/docs/"
   rewrite_skill_doc_paths "$skill_root/seungjeongwon/SKILL.md" "../sejong/docs/"
   configure_user_hooks "$codex_home"
-  configure_user_plugin "$codex_home"
+  if [[ "$LEGACY_DIRECT_HOOKS" -eq 0 ]]; then
+    configure_user_plugin "$codex_home"
+  fi
   if [[ "$CODEX_GUIDANCE" != "none" ]]; then
     write_codex_guidance_block "$codex_home"
     managed_guidance_block="

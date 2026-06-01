@@ -16,7 +16,7 @@ The stable shape is:
 - `Uigwe` is the formal planning protocol when a direction needs gates, packets, decomposition, or promotion-ready artifacts.
 - `Seungjeongwon` is the default execution and verification path for clear tasks.
 - `TeamExecutor` is an optional backend for `$team` wrappers that coordinate separate CLI workers in `tmux` panes through Sejong-owned state, mailbox, and lease files.
-- Hook guardrails are Codex-native lifecycle checks that inject active King Sejong context, guard protected self-modification paths, and keep subagent or `$team` output bounded. They must not be treated as a complete sandbox. User-scope install may manage the marked King Sejong hook block in `${CODEX_HOME:-~/.codex}/config.toml`.
+- Hook guardrails are Codex-native lifecycle checks that inject active King Sejong context, guard protected self-modification paths, and keep subagent or `$team` output bounded. They must not be treated as a complete sandbox. User-scope install uses the marked King Sejong plugin block in `${CODEX_HOME:-~/.codex}/config.toml` as the canonical hook source; the old marked direct hook block is legacy fallback only and must not be enabled alongside the plugin hook.
 
 Keep installed skills thin and keep durable behavior in `docs/sejong/`. Keep this file focused on source-repo maintenance direction for future development sessions, not product-facing explanation.
 

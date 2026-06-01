@@ -107,6 +107,8 @@ class InstallSejongTests(unittest.TestCase):
             )
 
             config = (codex_home / "config.toml").read_text(encoding="utf-8")
+            self.assertNotIn("# BEGIN King Sejong hooks", config)
+            self.assertNotIn("king_sejong_hooks.py", config)
             self.assertIn("[marketplaces.king-sejong-local]", config)
             self.assertIn('source_type = "local"', config)
             self.assertIn('[plugins."king-sejong@king-sejong-local"]', config)
@@ -130,6 +132,89 @@ class InstallSejongTests(unittest.TestCase):
                 "King Sejong active context",
                 hook_payload["hookSpecificOutput"]["additionalContext"],
             )
+
+    def test_user_scope_force_migrates_legacy_direct_hooks_to_plugin_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            config_path = codex_home / "config.toml"
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            config_path.write_text(
+                """
+[features]
+hooks = true
+
+# BEGIN King Sejong hooks
+[[hooks.Stop]]
+
+[[hooks.Stop.hooks]]
+type = "command"
+command = 'python3 "/old/king_sejong_hooks.py" Stop'
+# END King Sejong hooks
+""".lstrip(),
+                encoding="utf-8",
+            )
+
+            result = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+            config = config_path.read_text(encoding="utf-8")
+            self.assertNotIn("# BEGIN King Sejong hooks", config)
+            self.assertNotIn("/old/king_sejong_hooks.py", config)
+            self.assertIn('[plugins."king-sejong@king-sejong-local"]', config)
+
+    def test_user_scope_legacy_direct_hooks_are_explicit_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            result = run_installer(
+                ["--scope", "user", "--force", "--legacy-direct-hooks"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+            config = (codex_home / "config.toml").read_text(encoding="utf-8")
+            self.assertIn("# BEGIN King Sejong hooks", config)
+            self.assertIn("king_sejong_hooks.py", config)
+            self.assertNotIn('[plugins."king-sejong@king-sejong-local"]', config)
+
+            verify = run_installer(
+                ["--scope", "user", "--verify", "--legacy-direct-hooks"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(verify.returncode, 0, verify.stderr)
+
+    def test_user_scope_verify_fails_when_direct_and_plugin_hooks_are_both_active(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            result = run_installer(
+                ["--scope", "user", "--force"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+            config_path = codex_home / "config.toml"
+            with config_path.open("a", encoding="utf-8") as handle:
+                handle.write(
+                    """
+
+# BEGIN King Sejong hooks
+[[hooks.Stop]]
+
+[[hooks.Stop.hooks]]
+type = "command"
+command = 'python3 "/duplicate/king_sejong_hooks.py" Stop'
+# END King Sejong hooks
+"""
+                )
+
+            verify = run_installer(
+                ["--scope", "user", "--verify"],
+                codex_home=codex_home,
+            )
+            self.assertNotEqual(verify.returncode, 0)
+            self.assertIn("duplicate King Sejong hook registration", verify.stderr)
 
     def test_user_scope_can_opt_out_of_codex_guidance(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

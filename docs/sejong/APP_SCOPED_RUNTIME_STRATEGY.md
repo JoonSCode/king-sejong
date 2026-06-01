@@ -17,8 +17,8 @@ The first execution pass implements the low-overhead runtime hardening path:
   `seungjeongwon_receipt_required` pending gate for write-like actions,
   permission requests, and premature stop attempts. The residual manual-gate
   risk is closed by `sejong_context.py --goal-bearing`,
-  `--require-seungjeongwon-receipt`, and by treating `required_route_sequence`
-  containing `seungjeongwon` as an implicit receipt requirement.
+  `--require-seungjeongwon-receipt`, and by making the receipt requirement an
+  explicit pending gate rather than inferring it from `required_route_sequence`.
 - Phase 4 completion-state split: implemented in the Seungjeongwon closeout
   contract and guarded by an instruction-surface benchmark scenario.
 - Phase 5 compaction continuity: implemented by injecting active
@@ -258,22 +258,22 @@ Changes:
 seungjeongwon_receipt_required
 ```
 
-- When this gate is present, or when `required_route_sequence` contains
-  `seungjeongwon`, deny write-like product edits until:
+- When this gate is present, deny write-like product edits until:
   - `route_sequence` includes `seungjeongwon`
   - `current_surface` is `seungjeongwon`
   - `artifact_refs` includes a readable valid `sejong.seungjeongwon-run/v0.1-draft`
     artifact or an explicit `native_goal_unavailable` execution-feedback ref
     for small direct execution
 - Keep protected self-modification behavior unchanged.
-- Keep the gate context-driven; do not infer it from every write-like tool call.
+- Keep the gate context-driven; do not infer it from every write-like tool call
+  or from `required_route_sequence` alone.
 
 Verification:
 
 - PreToolUse test: write-like app edit is denied while
   `seungjeongwon_receipt_required` is pending.
-- PreToolUse test: write-like app edit is denied when a context requires
-  `seungjeongwon` but the explicit pending-gate string is missing.
+- PreToolUse test: route-only mention of `seungjeongwon` is allowed when the
+  explicit pending-gate string is missing.
 - PreToolUse test: read-only actions are allowed.
 - PreToolUse test: write-like edit is allowed after a valid Seungjeongwon run
   receipt exists.
@@ -362,8 +362,7 @@ Expected behavior:
 - The first prompt creates or requests an app-scoped Sejong context.
 - No product-code write occurs before Uigwe or an explicit direct-scope contract.
 - When the work becomes implementation, `seungjeongwon_receipt_required` is set
-  or `required_route_sequence` contains `seungjeongwon`, which implies the same
-  receipt requirement.
+  explicitly; `required_route_sequence` alone does not imply the receipt gate.
 - PreToolUse denies writes until the Seungjeongwon receipt exists.
 - "다음" is classified as same leaf, new child leaf, Uigwe re-entry, research-only,
   or external gate.
@@ -413,8 +412,9 @@ Success criteria:
 - Repo mismatch is visible instead of silent for continuation events.
 - A matching repo context can be selected without losing compatibility with the
   existing active pointer.
-- `seungjeongwon_receipt_required`, or `required_route_sequence` containing
-  `seungjeongwon`, blocks write-like execution until a valid receipt exists.
+- `seungjeongwon_receipt_required` blocks write-like execution until a valid
+  receipt exists; route-only `seungjeongwon` expectations do not block by
+  themselves.
 - Completion reports split local, canonical, and external gate states.
 - CoupleInvestmentApp replay passes.
 - Existing hook, context, installer, and JSON contract tests pass.

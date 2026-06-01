@@ -535,7 +535,7 @@
         "SubagentStop rejects gate approval or final synthesis claims",
         "TaskCreated, TaskCompleted, and TeammateIdle keep official team events inside Sejong authority bounds when the host supports them",
         "Stop continues when pending gates remain",
-        "required_route_sequence containing seungjeongwon requires a Seungjeongwon execution receipt even if the pending gate string is missing",
+        "Do not infer a receipt gate from required_route_sequence alone; seungjeongwon_receipt_required records an explicit unfinished execution obligation",
         "PreCompact and PostCompact preserve checkpoint context"
       ],
       "forbidden_behavior": [
@@ -564,7 +564,7 @@
         ],
         "hook_enforcement": [
           "seungjeongwon_receipt_required",
-          "required_route_sequence containing seungjeongwon"
+          "Do not infer a receipt gate from `required_route_sequence` alone"
         ],
         "worker_authority_forbidden_claims": [
           "Uigwe gate approval",

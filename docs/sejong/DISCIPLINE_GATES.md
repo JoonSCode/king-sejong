@@ -102,8 +102,8 @@ same failure the gate was meant to prevent.
 - **Owner:** Sejong sets the route gate when goal-bearing work needs execution;
   Seungjeongwon owns the execution receipt and run artifact.
 - **Force:** `hard` when the active context explicitly contains
-  `seungjeongwon_receipt_required` or when `required_route_sequence` contains
-  `seungjeongwon`; `route` otherwise.
+  `seungjeongwon_receipt_required`; route-only mentions of `seungjeongwon` do
+  not imply the receipt gate. Use `route` otherwise.
 - **Behavior:** While `seungjeongwon_receipt_required` is pending, write-like
   execution is denied until the route has entered Seungjeongwon and the active
   context references a valid `sejong.seungjeongwon-run/v0.1-draft` artifact or
