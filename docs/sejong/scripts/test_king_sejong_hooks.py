@@ -53,6 +53,27 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertIn("King Sejong active context", context)
         self.assertIn("current_surface=seungjeongwon", context)
 
+    def test_user_prompt_submit_injects_current_run_hud_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["repo_root"] = str(REPO_ROOT)
+            context["objective_id"] = "couple-investment-review-board"
+            context["objective_refs"] = ["artifacts/review-board-wedge.md"]
+            context["last_user_intent"] = "Preserve the couple review-board wedge."
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "UserPromptSubmit",
+                {"prompt": "다음", "hook_event_name": "UserPromptSubmit", "cwd": str(REPO_ROOT)},
+                context_path=context_path,
+            )
+        additional = output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn(f"repo_root={REPO_ROOT}", additional)
+        self.assertIn("objective_id=couple-investment-review-board", additional)
+        self.assertIn("objective_refs=artifacts/review-board-wedge.md", additional)
+        self.assertIn("last_user_intent=Preserve the couple review-board wedge.", additional)
+
     def test_user_prompt_submit_surfaces_repo_mismatch(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
@@ -234,6 +255,42 @@ class KingSejongHookTests(unittest.TestCase):
             },
         )
         self.assertNotEqual(output.get("hookSpecificOutput", {}).get("permissionDecision"), "deny")
+
+    def test_pre_tool_use_allows_protected_read_without_route_evidence(self) -> None:
+        output = run_hook(
+            "PreToolUse",
+            {
+                "hook_event_name": "PreToolUse",
+                "tool_name": "Bash",
+                "tool_input": {"command": "sed -n '1,20p' docs/sejong/HOOKS.md"},
+            },
+        )
+        self.assertNotEqual(output.get("hookSpecificOutput", {}).get("permissionDecision"), "deny")
+
+    def test_post_tool_use_allows_protected_read_without_verification_block(self) -> None:
+        output = run_hook(
+            "PostToolUse",
+            {
+                "hook_event_name": "PostToolUse",
+                "tool_name": "Bash",
+                "tool_input": {"command": "sed -n '1,20p' docs/sejong/HOOKS.md"},
+            },
+        )
+        self.assertEqual(output, {})
+
+    def test_post_tool_use_blocks_protected_write_until_verification_recorded(self) -> None:
+        output = run_hook(
+            "PostToolUse",
+            {
+                "hook_event_name": "PostToolUse",
+                "tool_name": "apply_patch",
+                "tool_input": {
+                    "command": "*** Begin Patch\n*** Update File: docs/sejong/HOOKS.md\n@@\n-old\n+new\n*** End Patch\n"
+                },
+            },
+        )
+        self.assertEqual(output["decision"], "block")
+        self.assertIn("Record verification evidence", output["reason"])
 
     def test_pre_tool_use_blocks_write_before_research_to_uigwe_promotion(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

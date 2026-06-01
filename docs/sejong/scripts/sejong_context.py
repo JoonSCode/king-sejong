@@ -52,6 +52,7 @@ LIST_FIELDS = (
     "pending_gates",
     "protected_paths",
     "allowed_direct_change_types",
+    "objective_refs",
     "evidence_refs",
     "artifact_refs",
     "team_run_refs",
@@ -173,6 +174,8 @@ def validate_context(context: dict[str, Any]) -> list[str]:
         failures.append("unexpected format")
     if context.get("current_surface") not in SURFACES:
         failures.append(f"invalid current_surface: {context.get('current_surface')}")
+    if "objective_id" in context and (not isinstance(context["objective_id"], str) or not context["objective_id"]):
+        failures.append("objective_id must be a non-empty string")
     for field in LIST_FIELDS:
         if field in context and not isinstance(context[field], list):
             failures.append(f"{field} must be a list")
@@ -208,6 +211,8 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--run-id")
     start.add_argument("--session-id")
     start.add_argument("--route-id")
+    start.add_argument("--objective-id")
+    start.add_argument("--objective-ref", action="append", dest="objective_refs")
     start.add_argument("--current-surface", default="sejong", choices=sorted(SURFACES))
     start.add_argument("--route", action="append", dest="route_sequence")
     start.add_argument("--required-route", action="append", dest="required_route_sequence")
@@ -236,6 +241,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     update.add_argument("--clear-pending-gate", action="append", dest="clear_pending_gates")
     update.add_argument("--add-protected-path", action="append", dest="add_protected_paths")
+    update.add_argument("--objective-id")
+    update.add_argument("--add-objective-ref", action="append", dest="add_objective_refs")
     update.add_argument("--add-evidence-ref", action="append", dest="add_evidence_refs")
     update.add_argument("--add-artifact-ref", action="append", dest="add_artifact_refs")
     update.add_argument("--add-team-run-ref", action="append", dest="add_team_run_refs")
@@ -277,6 +284,8 @@ def start_context(args: argparse.Namespace) -> int:
         "run_id": run_id,
         "session_id": args.session_id or f"session-{run_id}",
         "route_id": args.route_id or f"route-{run_id}",
+        **({"objective_id": args.objective_id} if args.objective_id else {}),
+        **({"objective_refs": args.objective_refs} if args.objective_refs else {}),
         "current_surface": args.current_surface,
         "route_sequence": route_sequence,
         "required_route_sequence": required_route_sequence,
@@ -335,6 +344,10 @@ def update_context(args: argparse.Namespace) -> int:
         context["pending_gates"] = [gate for gate in context.get("pending_gates", []) if gate not in clear]
     if args.add_protected_paths:
         context["protected_paths"] = unique_append(context.get("protected_paths", []), args.add_protected_paths)
+    if args.objective_id:
+        context["objective_id"] = args.objective_id
+    if args.add_objective_refs:
+        context["objective_refs"] = unique_append(context.get("objective_refs", []), args.add_objective_refs)
     if args.add_evidence_refs:
         context["evidence_refs"] = unique_append(context.get("evidence_refs", []), args.add_evidence_refs)
     if args.add_artifact_refs:

@@ -199,13 +199,18 @@ def hook_context(event_name: str, text: str) -> dict[str, Any]:
 
 
 def context_summary(context: dict[str, Any]) -> str:
+    repo_root = resolve_path(context.get("repo_root", ""))
     summary = (
         "King Sejong active context: "
         f"active_context_id={context.get('active_context_id')}; "
         f"route_id={context.get('route_id')}; "
+        f"repo_root={repo_root}; "
+        f"objective_id={context.get('objective_id') or 'none'}; "
         f"current_surface={context.get('current_surface')}; "
         f"route_sequence={','.join(context.get('route_sequence', []))}; "
-        f"pending_gates={','.join(context.get('pending_gates', [])) or 'none'}. "
+        f"pending_gates={','.join(context.get('pending_gates', [])) or 'none'}; "
+        f"objective_refs={','.join(context.get('objective_refs', [])) or 'none'}; "
+        f"last_user_intent={context.get('last_user_intent')}. "
         "Continue through Sejong lead routing until an explicit exit condition is met."
     )
     ambiguity_text = ambiguity_register_summary(context)
@@ -486,20 +491,21 @@ def handle_session_context(event_name: str, context: dict[str, Any]) -> dict[str
 
 def handle_pre_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
     touched = touched_protected_paths(context, payload)
-    if touched and not route_sequence_satisfied(context):
+    is_write_like = is_write_like_tool_call(payload)
+    if touched and is_write_like and not route_sequence_satisfied(context):
         reason = (
             "King Sejong protected self-modification requires route evidence: "
             "Jiphyeonjeon -> Uigwe -> Seungjeongwon. "
             f"Touched protected paths: {', '.join(touched)}"
         )
         return deny_pre_tool(reason)
-    if pending_uigwe_promotion_unsatisfied(context) and is_write_like_tool_call(payload):
+    if pending_uigwe_promotion_unsatisfied(context) and is_write_like:
         return deny_pre_tool(
             "King Sejong research-to-Uigwe gate is pending. "
             "Research or council output must enter Uigwe before write-like execution, "
             "unless the user explicitly converts the request to research-only."
         )
-    if pending_seungjeongwon_receipt_unsatisfied(context) and is_write_like_tool_call(payload):
+    if pending_seungjeongwon_receipt_unsatisfied(context) and is_write_like:
         return deny_pre_tool(
             "King Sejong Seungjeongwon execution receipt is required before write-like execution. "
             "Enter Seungjeongwon, publish the execution board, and attach a valid "
@@ -665,7 +671,7 @@ def handle_precompact(context: dict[str, Any]) -> dict[str, Any]:
 
 def handle_post_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
     touched = touched_protected_paths(context, payload)
-    if touched:
+    if touched and is_write_like_tool_call(payload):
         return {
             "decision": "block",
             "reason": "Record verification evidence for protected King Sejong path changes before continuing.",

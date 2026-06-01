@@ -64,6 +64,16 @@ Required state includes:
 - `subagent_refs`
 - `exit_conditions`
 
+Optional current-run HUD metadata includes:
+
+- `objective_id`
+- `objective_refs`
+
+Use these fields for product wedges, cross-repo objectives, migration notes, or
+design artifacts that should remain visible across follow-up prompts,
+compaction, and repository/worktree changes. They do not replace Uigwe packets
+or Seungjeongwon run artifacts.
+
 For research that is explicitly meant to feed a decision or later Uigwe plan,
 active context should include `uigwe_promotion_required` in `pending_gates`
 until Uigwe starts or the user explicitly converts the request to research-only.
@@ -91,7 +101,9 @@ Seungjeongwon execution run. See [seungjeongwon-run.schema.json](seungjeongwon-r
 `UserPromptSubmit`
 
 - Keep follow-up turns inside the active King Sejong workflow unless the user explicitly exits.
-- Add model-visible context with the active context id, route id, current surface, route sequence, and pending gates.
+- Add model-visible context with the active context id, route id, repo root,
+  objective id, current surface, route sequence, pending gates, objective refs,
+  and last user intent.
 - Inject a compact ambiguity register summary when a referenced register exists, including readiness, open ambiguity count, and next required user action.
 
 `sejong_context.py` writes the same checkpoint to both the active pointer under
@@ -101,7 +113,10 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 `PreToolUse`
 
 - Inspect supported tool calls for protected King Sejong paths.
-- Deny material self-modification when the required route sequence is missing.
+- Allow read-only protected-path inspection; protected reads are evidence
+  gathering, not self-modification.
+- Deny write-like material self-modification when the required route sequence is
+  missing.
 - Deny write-like or execution-completion tool calls while `uigwe_promotion_required` is pending and the route has not entered `uigwe`.
 - Deny write-like execution while `seungjeongwon_receipt_required` is pending
   until the route has entered Seungjeongwon and the active context references a
@@ -110,7 +125,8 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 - Do not infer a receipt gate from `required_route_sequence` alone. Route
   history records the intended path; `seungjeongwon_receipt_required` records an
   explicit unfinished execution obligation.
-- Add context instead of denying when protected paths are touched after route evidence exists.
+- Add context instead of denying when write-like protected paths are touched
+  after route evidence exists.
 
 `PermissionRequest`
 
@@ -123,7 +139,8 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 
 `PostToolUse`
 
-- Record or surface verification obligations after protected paths are touched.
+- Record or surface verification obligations after write-like protected paths
+  are touched.
 - This hook cannot undo side effects; it only guards the next model step.
 
 `SubagentStart`

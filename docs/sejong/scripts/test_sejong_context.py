@@ -116,6 +116,30 @@ class SejongContextTests(unittest.TestCase):
             self.assertEqual(context["required_route_sequence"], ["uigwe", "seungjeongwon"])
             self.assertEqual(context["pending_gates"], ["seungjeongwon_receipt_required"])
 
+    def test_start_records_objective_metadata_for_current_run_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            start = run_context(
+                [
+                    "start",
+                    "--repo-root",
+                    str(REPO_ROOT),
+                    "--run-id",
+                    "objective-context",
+                    "--objective-id",
+                    "couple-investment-review-board",
+                    "--objective-ref",
+                    "artifacts/review-board-wedge.md",
+                    "--last-user-intent",
+                    "preserve app wedge",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(start.returncode, 0, start.stderr)
+            context = json.loads((sejong_home / "state" / "active-context.json").read_text(encoding="utf-8"))
+            self.assertEqual(context["objective_id"], "couple-investment-review-board")
+            self.assertEqual(context["objective_refs"], ["artifacts/review-board-wedge.md"])
+
     def test_update_can_require_seungjeongwon_receipt_without_manual_gate_name(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)

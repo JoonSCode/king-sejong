@@ -25,6 +25,12 @@ The first execution pass implements the low-overhead runtime hardening path:
   Seungjeongwon run id and open todo count into context summaries.
 - Phase 6 replay: covered by a deterministic CoupleInvestmentApp replay hook
   test that keeps "다음" inside the gate and blocks writes before receipt.
+- Current-run HUD context: implemented by allowing active contexts to carry
+  optional `objective_id` and `objective_refs`, and by surfacing repo root,
+  objective id, objective refs, and last user intent in hook summaries.
+- Protected read/write split: implemented so read-only protected-path
+  inspection is allowed, while write-like protected self-modification and
+  verification obligations remain gated.
 
 Still deferred:
 
@@ -50,6 +56,7 @@ hard block. It adds the smallest runtime checks needed to prevent the observed
 failure:
 
 - no silent stale active context
+- no hidden product objective or repo-migration context in short follow-up turns
 - no product-code execution before an explicit Seungjeongwon receipt when a
   goal-bearing Sejong context requires one
 - no completion claim that collapses local, canonical, and external gate states

@@ -27,6 +27,14 @@
     "route_id": {
       "$ref": "#/$defs/NonEmptyString"
     },
+    "objective_id": {
+      "description": "Optional product, workflow, or outcome objective id that survives repo/worktree migration.",
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "objective_refs": {
+      "description": "Optional refs to objective, wedge, design, or migration artifacts that define the current run.",
+      "$ref": "#/$defs/StringList"
+    },
     "current_surface": {
       "$ref": "#/$defs/Surface"
     },
