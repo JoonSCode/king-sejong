@@ -6,6 +6,7 @@ import json
 import os
 import re
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -80,6 +81,24 @@ UIGWE_LIVE_STAGE_IDS = {
 }
 UIGWE_PROMOTION_GATE = "uigwe_promotion_required"
 SEUNGJEONGWON_RECEIPT_GATE = "seungjeongwon_receipt_required"
+PENDING_REPO_CONTEXT_FORMAT = "king-sejong.pending-repo-context/v0.1-draft"
+PENDING_REPO_CONTEXT_TTL_SECONDS = 60 * 60
+SEJONG_INVOCATION_TERMS = (
+    "$sejong",
+    "king sejong",
+    "jangyeongsil",
+    "jiphyeonjeon",
+    "uigwe",
+    "seungjeongwon",
+    "sillok",
+    "danjong",
+    "장영실",
+    "집현전",
+    "의궤",
+    "승정원",
+    "실록",
+    "단종",
+)
 WRITE_LIKE_TOOL_NAMES = {
     "apply_patch",
     "edit",
@@ -182,6 +201,10 @@ def sejong_root() -> Path:
     return codex_home / "sejong"
 
 
+def pending_repo_context_path() -> Path:
+    return sejong_root() / "state" / "pending-repo-context.json"
+
+
 def resolve_context_path(path: str | None) -> Path:
     if path:
         return Path(path).expanduser()
@@ -234,24 +257,128 @@ def context_summary(context: dict[str, Any]) -> str:
     return summary
 
 
-def context_applies_to_cwd(context: dict[str, Any], payload: dict[str, Any]) -> bool:
+def prompt_text(payload: dict[str, Any]) -> str:
+    for key in ("prompt", "user_prompt", "content", "input"):
+        value = payload.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return ""
+
+
+def prompt_invokes_sejong(prompt: str) -> bool:
+    lowered = prompt.lower()
+    return any(term in lowered for term in SEJONG_INVOCATION_TERMS)
+
+
+def explicit_work_root(payload: dict[str, Any]) -> str | None:
+    for key in ("target_work_root", "work_repo_root", "current_work_root"):
+        value = payload.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return None
+
+
+def work_root(payload: dict[str, Any]) -> Path:
+    explicit = explicit_work_root(payload)
+    if explicit:
+        return resolve_path(explicit)
+    return resolve_path(payload.get("cwd") or os.getcwd())
+
+
+def read_pending_repo_context_marker() -> dict[str, Any]:
+    path = pending_repo_context_path()
+    if not path.exists():
+        return {}
+    try:
+        marker = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    if marker.get("format") != PENDING_REPO_CONTEXT_FORMAT:
+        return {}
+    created_at = marker.get("created_at_epoch")
+    if not isinstance(created_at, (int, float)):
+        return {}
+    if time.time() - float(created_at) > PENDING_REPO_CONTEXT_TTL_SECONDS:
+        clear_pending_repo_context_marker()
+        return {}
+    return marker
+
+
+def write_pending_repo_context_marker(payload: dict[str, Any], context: dict[str, Any] | None, reason: str) -> None:
+    cwd = str(resolve_path(payload.get("cwd") or os.getcwd()))
+    target = str(work_root(payload))
+    marker = {
+        "format": PENDING_REPO_CONTEXT_FORMAT,
+        "cwd": cwd,
+        "target_work_root": target,
+        "prompt_excerpt": prompt_text(payload)[:240],
+        "reason": reason,
+        "active_context_id": (context or {}).get("active_context_id"),
+        "created_at_epoch": time.time(),
+    }
+    path = pending_repo_context_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(marker, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def clear_pending_repo_context_marker() -> None:
+    path = pending_repo_context_path()
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+
+
+def pending_repo_context_marker_applies(payload: dict[str, Any]) -> bool:
+    marker = read_pending_repo_context_marker()
+    if not marker:
+        return False
+    current_work_root = work_root(payload)
+    marker_work_root = marker.get("target_work_root") or marker.get("cwd")
+    if not isinstance(marker_work_root, str) or not marker_work_root:
+        return False
+    return path_contains_or_equals(current_work_root, marker_work_root)
+
+
+def context_applies_to_work_root(context: dict[str, Any], payload: dict[str, Any]) -> bool:
     repo_root = context.get("repo_root")
     if not repo_root:
         return True
-    cwd = resolve_path(payload.get("cwd") or os.getcwd())
+    target = work_root(payload)
     root = resolve_path(repo_root)
-    return path_contains_or_equals(cwd, root)
+    return path_contains_or_equals(target, root)
 
 
-def repo_mismatch_summary(context: dict[str, Any], payload: dict[str, Any]) -> str:
+def context_applies_to_cwd(context: dict[str, Any], payload: dict[str, Any]) -> bool:
+    return context_applies_to_work_root(context, payload)
+
+
+def matching_repo_context_exists(payload: dict[str, Any]) -> bool:
+    return bool(newest_matching_repo_context(payload))
+
+
+def stale_active_context_summary(context: dict[str, Any], payload: dict[str, Any]) -> str:
     cwd = resolve_path(payload.get("cwd") or os.getcwd())
     repo_root = resolve_path(context.get("repo_root", ""))
+    target = work_root(payload)
     return (
-        "King Sejong active context repo_mismatch=true; "
+        "King Sejong stale_active_context=true; "
         f"active_context_id={context.get('active_context_id')}; "
-        f"active_repo_root={repo_root}; current_cwd={cwd}. "
-        "This context is not applied to the current workspace; refresh the active context "
-        "or start a repo-scoped Sejong context before treating follow-up prompts as the same workflow."
+        f"active_context_repo={repo_root}; "
+        f"target_work_root={target}; current_cwd={cwd}. "
+        "The previous Sejong workflow context is not applied to this target work root. "
+        "Refresh or start a context for the target work root before treating follow-up prompts as the same workflow."
+    )
+
+
+def repo_context_required_summary(payload: dict[str, Any], reason: str) -> str:
+    cwd = resolve_path(payload.get("cwd") or os.getcwd())
+    target = work_root(payload)
+    return (
+        "King Sejong target_work_context_required=true; "
+        f"target_work_root={target}; current_cwd={cwd}; reason={reason}. "
+        "Start a King Sejong context for the target work root before write-like execution, "
+        "or explicitly exit Sejong for this workflow."
     )
 
 
@@ -550,7 +677,16 @@ def deny_permission(reason: str) -> dict[str, Any]:
 
 
 def handle_user_prompt_submit(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
-    prompt = payload.get("prompt", "")
+    prompt = prompt_text(payload)
+    if is_explicit_exit(prompt):
+        clear_pending_repo_context_marker()
+        return {}
+    if prompt_invokes_sejong(prompt) and not context:
+        write_pending_repo_context_marker(payload, context, "no_active_context_for_sejong_prompt")
+        return hook_context(
+            "UserPromptSubmit",
+            repo_context_required_summary(payload, "no_active_context_for_sejong_prompt"),
+        )
     if not context or is_explicit_exit(prompt):
         return {}
     return hook_context("UserPromptSubmit", context_summary(context))
@@ -563,6 +699,12 @@ def handle_session_context(event_name: str, context: dict[str, Any]) -> dict[str
 
 
 def handle_pre_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    if pending_repo_context_marker_applies(payload) and is_write_like_tool_call(payload) and not matching_repo_context_exists(payload):
+        return deny_pre_tool(
+            "King Sejong target work context is required before write-like execution. "
+            "A recent Sejong prompt was received for this target work root while no applicable active context existed. "
+            "Start or refresh a King Sejong context for the target work root, or explicitly exit Sejong."
+        )
     touched = touched_protected_paths(context, payload)
     is_write_like = is_write_like_tool_call(payload)
     if touched and is_write_like and not route_sequence_satisfied(context):
@@ -663,6 +805,14 @@ def handle_team_worker_event(event_name: str, payload: dict[str, Any], context: 
 def handle_stop(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
     if payload.get("stop_hook_active"):
         return {}
+    if pending_repo_context_marker_applies(payload) and not matching_repo_context_exists(payload):
+        return {
+            "decision": "block",
+            "reason": (
+                "Continue King Sejong execution: a Sejong prompt for this target work root requires "
+                "an active context before completion, or an explicit Sejong exit."
+            ),
+        }
     if pending_uigwe_promotion_unsatisfied(context):
         return {
             "decision": "block",
@@ -783,10 +933,21 @@ def handle_post_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> di
 
 def dispatch(event_name: str, payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
     if context and not context_applies_to_cwd(context, payload):
-        if event_name == "UserPromptSubmit" and is_explicit_exit(payload.get("prompt", "")):
+        if event_name == "UserPromptSubmit" and is_explicit_exit(prompt_text(payload)):
+            clear_pending_repo_context_marker()
             return {}
         if event_name in {"UserPromptSubmit", "SessionStart", "PostCompact"}:
-            return hook_context(event_name, repo_mismatch_summary(context, payload))
+            if (
+                event_name == "UserPromptSubmit"
+                and prompt_invokes_sejong(prompt_text(payload))
+                and explicit_work_root(payload)
+            ):
+                write_pending_repo_context_marker(payload, context, "stale_active_context_for_target_work_root")
+            return hook_context(event_name, stale_active_context_summary(context, payload))
+        if event_name == "PreToolUse":
+            return handle_pre_tool_use(payload, {})
+        if event_name == "Stop":
+            return handle_stop(payload, {})
         return {}
     if event_name == "UserPromptSubmit":
         return handle_user_prompt_submit(payload, context)

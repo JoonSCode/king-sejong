@@ -107,6 +107,12 @@ Seungjeongwon execution run. See [seungjeongwon-run.schema.json](seungjeongwon-r
   objective id, current surface, route sequence, pending gates, objective refs,
   and last user intent.
 - Inject a compact ambiguity register summary when a referenced register exists, including readiness, open ambiguity count, pending question obligation count, and next required user action.
+- When an explicit Sejong or court-surface prompt arrives while no active
+  context applies to the target work root, record a short-lived pending
+  target-work-context marker under the Sejong state root. The target work root is
+  an explicit hook payload field such as `target_work_root` when present; hooks
+  use `cwd` only as a fallback. This marker prevents the prompt from becoming
+  advisory-only before a matching context is started.
 
 `sejong_context.py` writes the same checkpoint to both the active pointer under
 `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json` and
@@ -117,6 +123,10 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 - Inspect supported tool calls for protected King Sejong paths.
 - Allow read-only protected-path inspection; protected reads are evidence
   gathering, not self-modification.
+- Deny write-like execution when a recent Sejong prompt for the target work root
+  recorded a pending target-work-context marker and no matching context exists
+  yet. This closes the stale-pointer gap without treating the shell `cwd` as the
+  durable product/workflow target when an explicit target exists.
 - Deny write-like material self-modification when the required route sequence is
   missing.
 - Deny write-like or execution-completion tool calls while `uigwe_promotion_required` is pending and the route has not entered `uigwe`.
@@ -171,6 +181,9 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 - Continue the turn when `seungjeongwon_receipt_required` remains pending, so
   goal-bearing implementation cannot end before a Seungjeongwon execution
   receipt exists.
+- Continue the turn when a pending target-work-context marker exists for the
+  target work root, so an explicit Sejong prompt cannot complete before a
+  matching context is started or the user explicitly exits Sejong.
 - Continue the turn when any referenced ambiguity register still has `open`
   ambiguity items or pending question obligations.
 - Continue the turn when any referenced Seungjeongwon run is active, broken, or invalid.
@@ -205,7 +218,7 @@ explicit `--legacy-direct-hooks` installer option keeps direct hooks as a
 fallback mode, but verification fails when direct hooks and plugin hooks are
 enabled together.
 
-Hooks are scoped by active context and repository-scoped run contexts. The reference hook script first reads `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json`; if that pointer is missing or stale for the current workspace, it scans `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs/*/*/king-sejong-context.json` and selects the newest valid context whose `repo_root` contains the current `cwd`. If an active context exists but no matching repo context is available, continuation events such as `UserPromptSubmit`, `SessionStart`, and `PostCompact` surface a compact `repo_mismatch=true` warning instead of silently applying the stale context. Other events remain quiet on mismatch unless a matching repo-scoped context is provided.
+Hooks are scoped by active context and repository-scoped run contexts. The reference hook script first reads `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json`; if that pointer is missing or stale for the target work root, it scans `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs/*/*/king-sejong-context.json` and selects the newest valid context whose `repo_root` contains the target work root. Hook payloads may provide `target_work_root`, `work_repo_root`, or `current_work_root`; otherwise hooks fall back to `cwd`. If an active context exists but no matching target-work context is available, continuation events such as `UserPromptSubmit`, `SessionStart`, and `PostCompact` surface a compact `stale_active_context=true` warning instead of silently applying the stale context. Other events remain quiet on mismatch unless a matching context is provided. After an explicit Sejong or court-surface prompt with an explicit target work root, write-like `PreToolUse` and `Stop` are blocked by the pending target-work-context marker until a matching context exists or the user explicitly exits Sejong. If the hook only has `cwd` while another active context exists, it warns but does not create the pending marker, because `cwd` can be only the shell/tool location rather than the user's intended work target.
 
 A target repo or user profile can also wire the reference scripts manually:
 

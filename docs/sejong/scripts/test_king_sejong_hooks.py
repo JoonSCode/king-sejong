@@ -74,7 +74,7 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertIn("objective_refs=artifacts/review-board-wedge.md", additional)
         self.assertIn("last_user_intent=Preserve the couple review-board wedge.", additional)
 
-    def test_user_prompt_submit_surfaces_repo_mismatch(self) -> None:
+    def test_user_prompt_submit_surfaces_stale_active_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
             context["repo_root"] = str(REPO_ROOT / "not-this-repo")
@@ -91,10 +91,11 @@ class KingSejongHookTests(unittest.TestCase):
                 context_path=context_path,
             )
         additional = output["hookSpecificOutput"]["additionalContext"]
-        self.assertIn("repo_mismatch=true", additional)
-        self.assertIn("refresh the active context", additional)
+        self.assertIn("stale_active_context=true", additional)
+        self.assertIn("target_work_root", additional)
+        self.assertIn("Refresh or start a context", additional)
 
-    def test_user_prompt_submit_repo_mismatch_respects_explicit_exit(self) -> None:
+    def test_user_prompt_submit_stale_active_context_respects_explicit_exit(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
             context["repo_root"] = str(REPO_ROOT / "not-this-repo")
@@ -145,7 +146,7 @@ class KingSejongHookTests(unittest.TestCase):
             )
         additional = output["hookSpecificOutput"]["additionalContext"]
         self.assertIn("active_context_id=ctx-matching", additional)
-        self.assertNotIn("repo_mismatch=true", additional)
+        self.assertNotIn("stale_active_context=true", additional)
 
     def test_hook_skips_invalid_matching_repo_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -185,6 +186,206 @@ class KingSejongHookTests(unittest.TestCase):
         additional = output["hookSpecificOutput"]["additionalContext"]
         self.assertIn("active_context_id=ctx-valid", additional)
         self.assertNotIn("active_context_id=ctx-invalid", additional)
+
+    def test_stale_sejong_prompt_with_explicit_target_records_pending_work_context_marker(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            active_context_path = sejong_home / "state" / "active-context.json"
+            active_context_path.parent.mkdir(parents=True)
+
+            stale_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            stale_context["active_context_id"] = "ctx-stale"
+            stale_context["repo_root"] = str(REPO_ROOT / "not-this-repo")
+            active_context_path.write_text(json.dumps(stale_context), encoding="utf-8")
+
+            output = run_hook_without_context(
+                "UserPromptSubmit",
+                {
+                    "prompt": "[$sejong] implement this",
+                    "hook_event_name": "UserPromptSubmit",
+                    "cwd": str(REPO_ROOT / "shell-cwd"),
+                    "target_work_root": str(REPO_ROOT),
+                },
+                sejong_home=sejong_home,
+            )
+
+            marker_path = sejong_home / "state" / "pending-repo-context.json"
+            marker = json.loads(marker_path.read_text(encoding="utf-8"))
+
+        additional = output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("stale_active_context=true", additional)
+        self.assertEqual(marker["format"], "king-sejong.pending-repo-context/v0.1-draft")
+        self.assertEqual(marker["target_work_root"], str(REPO_ROOT))
+        self.assertEqual(marker["reason"], "stale_active_context_for_target_work_root")
+
+    def test_stale_sejong_prompt_without_explicit_target_does_not_create_pending_marker(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            active_context_path = sejong_home / "state" / "active-context.json"
+            active_context_path.parent.mkdir(parents=True)
+
+            stale_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            stale_context["active_context_id"] = "ctx-stale"
+            stale_context["repo_root"] = str(REPO_ROOT / "not-this-repo")
+            active_context_path.write_text(json.dumps(stale_context), encoding="utf-8")
+
+            output = run_hook_without_context(
+                "UserPromptSubmit",
+                {
+                    "prompt": "[$sejong] discuss the current design",
+                    "hook_event_name": "UserPromptSubmit",
+                    "cwd": str(REPO_ROOT),
+                },
+                sejong_home=sejong_home,
+            )
+
+            marker_path = sejong_home / "state" / "pending-repo-context.json"
+
+        additional = output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("stale_active_context=true", additional)
+        self.assertFalse(marker_path.exists())
+
+    def test_pre_tool_use_blocks_write_after_explicit_target_stale_prompt_without_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            active_context_path = sejong_home / "state" / "active-context.json"
+            active_context_path.parent.mkdir(parents=True)
+
+            stale_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            stale_context["active_context_id"] = "ctx-stale"
+            stale_context["repo_root"] = str(REPO_ROOT / "not-this-repo")
+            active_context_path.write_text(json.dumps(stale_context), encoding="utf-8")
+
+            _ = run_hook_without_context(
+                "UserPromptSubmit",
+                {
+                    "prompt": "[$sejong] implement this",
+                    "hook_event_name": "UserPromptSubmit",
+                    "cwd": str(REPO_ROOT / "shell-cwd"),
+                    "target_work_root": str(REPO_ROOT),
+                },
+                sejong_home=sejong_home,
+            )
+            output = run_hook_without_context(
+                "PreToolUse",
+                {
+                    "hook_event_name": "PreToolUse",
+                    "cwd": str(REPO_ROOT / "shell-cwd"),
+                    "target_work_root": str(REPO_ROOT),
+                    "tool_name": "apply_patch",
+                    "tool_input": {
+                        "command": "*** Begin Patch\n*** Update File: README.md\n@@\n-old\n+new\n*** End Patch\n"
+                    },
+                },
+                sejong_home=sejong_home,
+            )
+
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("target work context is required", specific["permissionDecisionReason"])
+
+    def test_sejong_prompt_without_active_context_blocks_write_until_context_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+
+            prompt_output = run_hook_without_context(
+                "UserPromptSubmit",
+                {
+                    "prompt": "[$sejong] create this feature",
+                    "hook_event_name": "UserPromptSubmit",
+                    "cwd": str(REPO_ROOT),
+                },
+                sejong_home=sejong_home,
+            )
+            output = run_hook_without_context(
+                "PreToolUse",
+                {
+                    "hook_event_name": "PreToolUse",
+                    "cwd": str(REPO_ROOT),
+                    "tool_name": "apply_patch",
+                    "tool_input": {
+                        "command": "*** Begin Patch\n*** Update File: README.md\n@@\n-old\n+new\n*** End Patch\n"
+                    },
+                },
+                sejong_home=sejong_home,
+            )
+
+        additional = prompt_output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("target_work_context_required=true", additional)
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("target work context is required", specific["permissionDecisionReason"])
+
+    def test_pre_tool_use_allows_stale_context_write_without_sejong_prompt_marker(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            active_context_path = sejong_home / "state" / "active-context.json"
+            active_context_path.parent.mkdir(parents=True)
+
+            stale_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            stale_context["active_context_id"] = "ctx-stale"
+            stale_context["repo_root"] = str(REPO_ROOT / "not-this-repo")
+            active_context_path.write_text(json.dumps(stale_context), encoding="utf-8")
+
+            output = run_hook_without_context(
+                "PreToolUse",
+                {
+                    "hook_event_name": "PreToolUse",
+                    "cwd": str(REPO_ROOT),
+                    "tool_name": "apply_patch",
+                    "tool_input": {
+                        "command": "*** Begin Patch\n*** Update File: README.md\n@@\n-old\n+new\n*** End Patch\n"
+                    },
+                },
+                sejong_home=sejong_home,
+            )
+
+        self.assertEqual(output, {})
+
+    def test_pending_repo_context_marker_is_ignored_after_matching_context_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            active_context_path = sejong_home / "state" / "active-context.json"
+            active_context_path.parent.mkdir(parents=True)
+
+            stale_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            stale_context["active_context_id"] = "ctx-stale"
+            stale_context["repo_root"] = str(REPO_ROOT / "not-this-repo")
+            active_context_path.write_text(json.dumps(stale_context), encoding="utf-8")
+
+            _ = run_hook_without_context(
+                "UserPromptSubmit",
+                {
+                    "prompt": "[$sejong] implement this",
+                    "hook_event_name": "UserPromptSubmit",
+                    "cwd": str(REPO_ROOT / "shell-cwd"),
+                    "target_work_root": str(REPO_ROOT),
+                },
+                sejong_home=sejong_home,
+            )
+
+            matching_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            matching_context["active_context_id"] = "ctx-matching"
+            matching_context["repo_root"] = str(REPO_ROOT)
+            matching_path = sejong_home / "runs" / "matching-repo" / "run" / "king-sejong-context.json"
+            matching_path.parent.mkdir(parents=True)
+            matching_path.write_text(json.dumps(matching_context), encoding="utf-8")
+
+            output = run_hook_without_context(
+                "PreToolUse",
+                {
+                    "hook_event_name": "PreToolUse",
+                    "cwd": str(REPO_ROOT / "shell-cwd"),
+                    "target_work_root": str(REPO_ROOT),
+                    "tool_name": "apply_patch",
+                    "tool_input": {
+                        "command": "*** Begin Patch\n*** Update File: README.md\n@@\n-old\n+new\n*** End Patch\n"
+                    },
+                },
+                sejong_home=sejong_home,
+            )
+
+        self.assertNotEqual(output.get("hookSpecificOutput", {}).get("permissionDecision"), "deny")
 
     def test_user_prompt_submit_injects_ambiguity_register_summary(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
