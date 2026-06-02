@@ -43,6 +43,10 @@ Mandatory rules:
 - Do not mark an approval gate as `waived` in a live session unless the user explicitly says to skip approval.
 - Offline artifact generation and other non-interactive evaluation contexts must be labeled explicitly. Only those contexts may auto-fill assumptions and waive approval gates by default.
 - When an ambiguity register is active, do not advance the live stage until readiness is `100%` and there are no `open` ambiguity items, unless the user explicitly waives the remaining ambiguity.
+- Each live Uigwe stage must remain active until that stage reaches `100%` readiness or the user explicitly asks to skip or proceed despite the remaining ambiguity.
+- Intent Clarification must not advance to Design Exploration while intent readiness is below `100%` in a live clarification loop.
+- Design Exploration must not advance to Executor Handoff Contract while design readiness is below `100%` in a live clarification loop.
+- Treat `open`, `pending`, and `answered` ambiguity-register items as blocking question obligations until they are resolved or explicitly waived.
 
 These live-session rules override the general default to make reasonable assumptions and continue autonomously.
 
@@ -63,6 +67,9 @@ Stage meanings should be explained like this:
 - `3단계: 실행 계약화` = turn the chosen design into a bounded Seungjeongwon handoff contract, dependencies, verification bar, and re-entry triggers
 - Handoff-ready outcome-completion bundles implicitly hand off to goal-backed Seungjeongwon execution when host-native goal support is available; Uigwe prepares the broad objective and guardrails, while Seungjeongwon owns adaptive todo decomposition.
 - Plan-mode-style clarification is allowed as live UX, but approved Uigwe packets and the Seungjeongwon handoff contract remain the durable source of truth.
+- When host-native structured choice UI is available, Uigwe may map the same recommended options and free-response path into that UI.
+- The ambiguity register remains the durable source of truth; the host UI is only a presentation adapter.
+- The live-session orchestrator may write the ambiguity register and emit `structured_choice_requests`; hooks enforce the register, not the UI hint.
 
 Progress reporting rules:
 
@@ -70,6 +77,7 @@ Progress reporting rules:
 - Always pair the percentage with the main weak areas; do not present the number alone
 - Treat the percentage as an approximate readiness signal derived from the current gates, not as a precise measurement
 - If an ambiguity register is in use, show the current unclear items, recommended options, and a free-response path; readiness below `100%` means the stage is not complete.
+- For each unresolved stage question, present the recommended option first, include credible alternatives when useful, and keep a free-response path visible.
 
 Wording rules:
 

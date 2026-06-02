@@ -71,6 +71,13 @@ FORBIDDEN_WORKER_AUTHORITY_TERMS = (
     "consensus approves",
 )
 AMBIGUITY_REGISTER_FORMAT = "sejong.ambiguity-register/v0.1-draft"
+UNRESOLVED_AMBIGUITY_STATUSES = {"open", "pending", "answered"}
+PENDING_QUESTION_OBLIGATION_STATUSES = {"pending", "answered"}
+UIGWE_LIVE_STAGE_IDS = {
+    "intent_clarification",
+    "design_clarification",
+    "executor_handoff_contract",
+}
 UIGWE_PROMOTION_GATE = "uigwe_promotion_required"
 SEUNGJEONGWON_RECEIPT_GATE = "seungjeongwon_receipt_required"
 WRITE_LIKE_TOOL_NAMES = {
@@ -380,6 +387,65 @@ def open_ambiguity_count(register: dict[str, Any]) -> int:
     return blocking_count if isinstance(blocking_count, int) and blocking_count > 0 else 0
 
 
+def pending_question_obligation_count(register: dict[str, Any]) -> int:
+    ambiguities = register.get("ambiguities") or []
+    if not isinstance(ambiguities, list):
+        return 0
+    return sum(
+        1
+        for item in ambiguities
+        if isinstance(item, dict)
+        and item.get("status") in PENDING_QUESTION_OBLIGATION_STATUSES
+        and item.get("blocking", True) is not False
+    )
+
+
+def unresolved_ambiguity_count(register: dict[str, Any]) -> int:
+    ambiguities = register.get("ambiguities") or []
+    if isinstance(ambiguities, list):
+        return sum(
+            1
+            for item in ambiguities
+            if isinstance(item, dict)
+            and item.get("status") in UNRESOLVED_AMBIGUITY_STATUSES
+            and item.get("blocking", True) is not False
+        )
+    blocking_count = register.get("blocking_count")
+    return blocking_count if isinstance(blocking_count, int) and blocking_count > 0 else 0
+
+
+def register_readiness_percent(register: dict[str, Any]) -> int | None:
+    readiness = register.get("readiness_percent")
+    if isinstance(readiness, int):
+        return readiness
+    return None
+
+
+def uigwe_live_stage_incomplete_registers(context: dict[str, Any]) -> list[dict[str, Any]]:
+    registers, _ = load_ambiguity_registers(context)
+    incomplete: list[dict[str, Any]] = []
+    for register in registers:
+        if register.get("stage_id") not in UIGWE_LIVE_STAGE_IDS:
+            continue
+        readiness = register_readiness_percent(register)
+        if unresolved_ambiguity_count(register) > 0 or readiness is None or readiness < 100:
+            incomplete.append(register)
+    return incomplete
+
+
+def runtime_clarification_artifact_update(payload: dict[str, Any]) -> bool:
+    haystack = flatten_tool_input(payload.get("tool_input", "")).lower()
+    return any(
+        marker in haystack
+        for marker in (
+            "--write-register",
+            "ambiguity-register",
+            AMBIGUITY_REGISTER_FORMAT,
+            "king-sejong-context",
+        )
+    )
+
+
 def ambiguity_register_summary(context: dict[str, Any]) -> str:
     registers, broken_refs = load_ambiguity_registers(context)
     parts: list[str] = []
@@ -388,11 +454,13 @@ def ambiguity_register_summary(context: dict[str, Any]) -> str:
         register_id = metadata.get("id") or "unknown"
         readiness = register.get("readiness_percent", "unknown")
         open_count = open_ambiguity_count(register)
+        pending_count = pending_question_obligation_count(register)
         next_action = register.get("next_required_user_action") or "none"
         parts.append(
             "ambiguity_register="
             f"{register_id}; stage={register.get('stage_label') or register.get('stage_id')}; "
-            f"readiness={readiness}%; open_ambiguities={open_count}; next_action={next_action}."
+            f"readiness={readiness}%; open_ambiguities={open_count}; "
+            f"pending_question_obligations={pending_count}; next_action={next_action}."
         )
     if broken_refs:
         parts.append("broken_ambiguity_register_refs=" + ",".join(broken_refs) + ".")
@@ -402,6 +470,11 @@ def ambiguity_register_summary(context: dict[str, Any]) -> str:
 def open_ambiguity_total(context: dict[str, Any]) -> int:
     registers, _ = load_ambiguity_registers(context)
     return sum(open_ambiguity_count(register) for register in registers)
+
+
+def pending_question_obligation_total(context: dict[str, Any]) -> int:
+    registers, _ = load_ambiguity_registers(context)
+    return sum(pending_question_obligation_count(register) for register in registers)
 
 
 def broken_ambiguity_register_refs(context: dict[str, Any]) -> list[str]:
@@ -510,6 +583,22 @@ def handle_pre_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> dic
             "King Sejong Seungjeongwon execution receipt is required before write-like execution. "
             "Enter Seungjeongwon, publish the execution board, and attach a valid "
             "sejong.seungjeongwon-run/v0.1-draft artifact before product-code edits."
+        )
+    incomplete_uigwe_registers = uigwe_live_stage_incomplete_registers(context)
+    if (
+        context.get("current_surface") == "uigwe"
+        and incomplete_uigwe_registers
+        and is_write_like
+        and not runtime_clarification_artifact_update(payload)
+    ):
+        labels = [
+            str(register.get("stage_label") or register.get("stage_id"))
+            for register in incomplete_uigwe_registers
+        ]
+        return deny_pre_tool(
+            "King Sejong Uigwe live-stage obligation remains unresolved. "
+            "Resolve the active stage to 100% readiness or record an explicit user waiver "
+            "before write-like execution. Active stages: " + ", ".join(labels)
         )
     if not touched:
         return {}
@@ -629,6 +718,15 @@ def handle_stop(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, A
         return {
             "decision": "block",
             "reason": f"Continue King Sejong execution: open King Sejong ambiguity remains: {open_count}",
+        }
+    pending_questions = pending_question_obligation_total(context)
+    if pending_questions:
+        return {
+            "decision": "block",
+            "reason": (
+                "Continue King Sejong execution: pending King Sejong question obligations remain: "
+                f"{pending_questions}"
+            ),
         }
     return {}
 

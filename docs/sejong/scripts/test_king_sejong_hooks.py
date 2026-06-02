@@ -230,6 +230,49 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertIn("readiness=67%", additional)
         self.assertIn("open_ambiguities=1", additional)
 
+    def test_user_prompt_submit_injects_pending_question_obligations(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ambiguity_path = Path(tmp) / "ambiguity-register.json"
+            ambiguity_path.write_text(
+                json.dumps(
+                    {
+                        "format": "sejong.ambiguity-register/v0.1-draft",
+                        "metadata": {"id": "amb-pending", "active_context_id": "ctx-test"},
+                        "stage_id": "intent_clarification",
+                        "stage_label": "기획 명확화",
+                        "readiness_percent": 92,
+                        "blocking_count": 1,
+                        "ambiguities": [
+                            {
+                                "id": "amb-1",
+                                "question": "What is explicitly out of scope?",
+                                "why_it_matters": "It prevents planning from widening silently.",
+                                "options": [{"id": "a", "label": "Keep current scope", "recommended": True}],
+                                "free_response_allowed": True,
+                                "status": "pending",
+                                "blocking": True,
+                            }
+                        ],
+                        "next_required_user_action": "Answer the pending intent question.",
+                        "last_updated_at": "2026-06-02T00:00:00Z",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["artifact_refs"] = [str(ambiguity_path)]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "UserPromptSubmit",
+                {"prompt": "진행", "hook_event_name": "UserPromptSubmit"},
+                context_path=context_path,
+            )
+        additional = output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("pending_question_obligations=1", additional)
+        self.assertIn("Answer the pending intent question.", additional)
+
     def test_pre_tool_use_blocks_protected_edit_without_route_evidence(self) -> None:
         output = run_hook(
             "PreToolUse",
@@ -440,6 +483,90 @@ class KingSejongHookTests(unittest.TestCase):
             )
         self.assertNotEqual(output.get("hookSpecificOutput", {}).get("permissionDecision"), "deny")
 
+    def test_pre_tool_use_blocks_write_while_uigwe_live_stage_incomplete(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ambiguity_path = Path(tmp) / "ambiguity-register.json"
+            ambiguity_path.write_text(
+                json.dumps(
+                    {
+                        "format": "sejong.ambiguity-register/v0.1-draft",
+                        "metadata": {"id": "amb-intent", "active_context_id": "ctx-test"},
+                        "stage_id": "intent_clarification",
+                        "stage_label": "기획 명확화",
+                        "readiness_percent": 99,
+                        "blocking_count": 0,
+                        "ambiguities": [],
+                        "next_required_user_action": "Raise readiness to 100% or explicitly waive.",
+                        "last_updated_at": "2026-06-02T00:00:00Z",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["current_surface"] = "uigwe"
+            context["route_sequence"] = ["sejong", "uigwe"]
+            context["required_route_sequence"] = []
+            context["pending_gates"] = []
+            context["artifact_refs"] = [str(ambiguity_path)]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "PreToolUse",
+                {
+                    "hook_event_name": "PreToolUse",
+                    "tool_name": "apply_patch",
+                    "tool_input": {
+                        "command": "*** Begin Patch\n*** Update File: README.md\n@@\n-old\n+new\n*** End Patch\n"
+                    },
+                },
+                context_path=context_path,
+            )
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("Uigwe live-stage obligation", specific["permissionDecisionReason"])
+
+    def test_pre_tool_use_allows_uigwe_register_write_while_live_stage_incomplete(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ambiguity_path = Path(tmp) / "ambiguity-register.json"
+            ambiguity_path.write_text(
+                json.dumps(
+                    {
+                        "format": "sejong.ambiguity-register/v0.1-draft",
+                        "metadata": {"id": "amb-intent", "active_context_id": "ctx-test"},
+                        "stage_id": "intent_clarification",
+                        "stage_label": "기획 명확화",
+                        "readiness_percent": 99,
+                        "blocking_count": 0,
+                        "ambiguities": [],
+                        "next_required_user_action": "Raise readiness to 100% or explicitly waive.",
+                        "last_updated_at": "2026-06-02T00:00:00Z",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["current_surface"] = "uigwe"
+            context["route_sequence"] = ["sejong", "uigwe"]
+            context["required_route_sequence"] = []
+            context["pending_gates"] = []
+            context["artifact_refs"] = [str(ambiguity_path)]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "PreToolUse",
+                {
+                    "hook_event_name": "PreToolUse",
+                    "tool_name": "edit",
+                    "tool_input": {
+                        "command": "python3 docs/sejong/scripts/live_session_orchestrator.py state.json --json --write-register /tmp/amb-live.json"
+                    },
+                },
+                context_path=context_path,
+            )
+        self.assertNotEqual(output.get("hookSpecificOutput", {}).get("permissionDecision"), "deny")
+
     def test_subagent_stop_rejects_gate_claim(self) -> None:
         output = run_hook(
             "SubagentStop",
@@ -596,6 +723,55 @@ class KingSejongHookTests(unittest.TestCase):
             )
         self.assertEqual(output["decision"], "block")
         self.assertIn("open King Sejong ambiguity remains", output["reason"])
+
+    def test_stop_blocks_when_question_obligation_is_answered_but_unresolved(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ambiguity_path = Path(tmp) / "ambiguity-register.json"
+            ambiguity_path.write_text(
+                json.dumps(
+                    {
+                        "format": "sejong.ambiguity-register/v0.1-draft",
+                        "metadata": {"id": "amb-answered", "active_context_id": "ctx-test"},
+                        "stage_id": "design_clarification",
+                        "stage_label": "설계 명확화",
+                        "readiness_percent": 100,
+                        "blocking_count": 1,
+                        "ambiguities": [
+                            {
+                                "id": "amb-1",
+                                "question": "Which runtime adapter should own structured choices?",
+                                "why_it_matters": "The answer changes the implementation contract.",
+                                "options": [{"id": "a", "label": "Codex adapter", "recommended": True}],
+                                "free_response_allowed": True,
+                                "user_response": "Codex adapter",
+                                "status": "answered",
+                                "blocking": True,
+                            }
+                        ],
+                        "next_required_user_action": "Resolve or waive the answered design question.",
+                        "last_updated_at": "2026-06-02T00:00:00Z",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["required_route_sequence"] = []
+            context["pending_gates"] = []
+            context["artifact_refs"] = [str(ambiguity_path)]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "Stop",
+                {
+                    "hook_event_name": "Stop",
+                    "stop_hook_active": False,
+                    "last_assistant_message": "Done.",
+                },
+                context_path=context_path,
+            )
+        self.assertEqual(output["decision"], "block")
+        self.assertIn("pending King Sejong question obligations remain", output["reason"])
 
     def test_stop_blocks_active_seungjeongwon_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

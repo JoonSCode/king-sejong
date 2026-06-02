@@ -213,8 +213,9 @@ an ambiguity register through `artifact_refs`. The register follows
 [ambiguity-register.schema.json](ambiguity-register.schema.json) and stores the
 current user-facing stage, readiness percentage, unclear items, recommended
 options, free-response path, user answers, and next required user action. If any
-register item remains `open`, Sejong must not advance the stage or claim
-completion unless the user explicitly waives that ambiguity.
+register item remains blocking `open`, `pending`, or `answered`, Sejong must not
+advance the stage or claim completion unless the user explicitly resolves or
+waives that ambiguity.
 
 ## Sejong Self-Modification
 

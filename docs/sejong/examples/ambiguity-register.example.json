@@ -30,7 +30,7 @@
         }
       ],
       "free_response_allowed": true,
-      "status": "open",
+      "status": "pending",
       "blocking": true,
       "evidence_refs": [],
       "updated_at": "2026-05-24T00:00:00Z"

@@ -44,6 +44,7 @@ CONTEXT_SCHEMA_PATH = SEJONG_ROOT / "king-sejong-context.schema.json"
 CONTEXT_EXAMPLE_PATH = SEJONG_ROOT / "examples" / "king-sejong-context.example.json"
 WORKFLOW_RUN_SCHEMA_PATH = SEJONG_ROOT / "workflow-run.schema.json"
 HOOK_SCRIPT_PATH = SEJONG_ROOT / "scripts" / "king_sejong_hooks.py"
+LIVE_SESSION_ORCHESTRATOR_PATH = SEJONG_ROOT / "scripts" / "live_session_orchestrator.py"
 SILLOK_TRACE_SCRIPT_PATH = SEJONG_ROOT / "scripts" / "sillok_trace.py"
 WORKFLOW_RUN_SCRIPT_PATH = SEJONG_ROOT / "scripts" / "sejong_workflow_run.py"
 WORKFLOW_RUN_BENCHMARK_PATH = SEJONG_ROOT / "scripts" / "benchmark_workflow_run.py"
@@ -173,6 +174,9 @@ def evaluate_live_session() -> list[dict[str, Any]]:
         "Do not silently complete `deep-interview` or `brainstorming` from one ambiguous brief.",
         "Ask targeted clarification questions in small batches",
         "Do not mark an approval gate as `waived` in a live session unless the user explicitly says to skip approval.",
+        "Each live Uigwe stage must remain active until that stage reaches `100%` readiness or the user explicitly asks to skip or proceed despite the remaining ambiguity.",
+        "Intent Clarification must not advance to Design Exploration while intent readiness is below `100%` in a live clarification loop.",
+        "Design Exploration must not advance to Executor Handoff Contract while design readiness is below `100%` in a live clarification loop.",
     ]
     passed, missing = contains_all(skill, required)
     readme_passed = "In live chat usage, Uigwe is supposed to do that interactively." in readme
@@ -196,6 +200,8 @@ def evaluate_context_engineered_guardrail_planning() -> list[dict[str, Any]]:
         "agent-owned low-risk implementation details that may be chosen autonomously",
         "2-3 credible options when a choice materially changes scope, architecture, validation, cost, or risk",
         "recommended option with trade-offs, rejected alternatives, and a free-response path",
+        "When host-native structured choice UI is available, Uigwe may map the same recommended options and free-response path into that UI.",
+        "The ambiguity register remains the durable source of truth; the host UI is only a presentation adapter.",
         "Plan-mode-style clarification is a useful live interaction pattern",
         "It is not the durable source of truth.",
         "`PLANS.md`-style living plans may be useful for long-running implementation sessions",
@@ -649,17 +655,29 @@ def evaluate_ambiguity_register() -> list[dict[str, Any]]:
     register = load_text(AMBIGUITY_REGISTER_PATH)
     register_schema = load_text(AMBIGUITY_REGISTER_SCHEMA_PATH)
     hook_script = load_text(HOOK_SCRIPT_PATH)
-    combined = "\n".join([sejong_skill, uigwe_skill, router, protocol, hooks, register, register_schema, hook_script])
+    live_session_orchestrator = load_text(LIVE_SESSION_ORCHESTRATOR_PATH)
+    combined = "\n".join(
+        [sejong_skill, uigwe_skill, router, protocol, hooks, register, register_schema, hook_script, live_session_orchestrator]
+    )
     required = [
         "sejong.ambiguity-register/v0.1-draft",
         "artifact_refs",
         "readiness_percent",
         "blocking_count",
         "open",
+        "pending",
+        "answered",
         "resolved",
         "waived",
         "readiness is `100%`",
         "free-response",
+        "recommended options plus a free-response path",
+        "Codex structured choice UI",
+        "pending question obligation",
+        "PreToolUse` blocks write-like execution while the active Uigwe stage is below",
+        "--write-register",
+        "structured_choice_requests",
+        "codex_structured_choice",
         "Stop` blocks completion when any referenced register has open ambiguities",
         "PreCompact` blocks compaction when an ambiguity-register reference is broken",
         "UserPromptSubmit` injects a compact register summary",

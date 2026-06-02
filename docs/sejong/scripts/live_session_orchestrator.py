@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -34,12 +35,33 @@ DESIGN_QUESTION_MAP = {
     "risk_quality": "What risks need mitigation before decomposition?",
     "validation_plan_quality": "How should this design be validated before execution planning?",
 }
+STAGE_METADATA = {
+    "deep-interview": {
+        "stage_id": "intent_clarification",
+        "stage_label": "기획 명확화",
+        "score_key": "intent_readiness",
+        "header": "Intent",
+    },
+    "brainstorming": {
+        "stage_id": "design_clarification",
+        "stage_label": "설계 명확화",
+        "score_key": "design_readiness",
+        "header": "Design",
+    },
+    "decomposition": {
+        "stage_id": "executor_handoff_contract",
+        "stage_label": "실행 계약화",
+        "score_key": "handoff_readiness",
+        "header": "Handoff",
+    },
+}
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate Uigwe live-session readiness and next action.")
     parser.add_argument("input_path", help="Path to a JSON state file")
     parser.add_argument("--json", action="store_true", help="Print the result as JSON")
+    parser.add_argument("--write-register", help="Write the generated ambiguity register to this path")
     return parser.parse_args()
 
 
@@ -264,6 +286,129 @@ def ready_action(stage: str) -> dict[str, Any]:
     }
 
 
+def now_utc_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def stage_metadata(stage: str) -> dict[str, str]:
+    for metadata in STAGE_METADATA.values():
+        if stage == metadata["stage_id"]:
+            return metadata
+    return STAGE_METADATA.get(stage, STAGE_METADATA["decomposition"])
+
+
+def ambiguity_options() -> list[dict[str, Any]]:
+    return [
+        {
+            "id": "answer-now",
+            "label": "Answer now (Recommended)",
+            "description": "Provide the missing decision or detail before the next stage.",
+            "recommended": True,
+        },
+        {
+            "id": "waive-or-proceed",
+            "label": "Waive / proceed",
+            "description": "Explicitly skip this ambiguity and accept the risk.",
+            "recommended": False,
+        },
+    ]
+
+
+def action_questions(action: dict[str, Any]) -> list[str]:
+    questions = action.get("questions")
+    if isinstance(questions, list) and questions:
+        return [str(question) for question in questions if str(question).strip()]
+    if action.get("type") == "request_approval":
+        return [f"Approve {action.get('approval_target', 'the current stage summary')} for the next stage?"]
+    return []
+
+
+def readiness_percent_for_stage(result: dict[str, Any], stage: str) -> int:
+    metadata = stage_metadata(stage)
+    score_key = metadata["score_key"]
+    score_block = result.get("scores", {}).get(score_key)
+    if isinstance(score_block, dict) and isinstance(score_block.get("score"), (int, float)):
+        return max(0, min(100, int(round(float(score_block["score"]) * 100))))
+    if result.get("action", {}).get("type") == "request_approval":
+        return 100
+    return 0
+
+
+def build_ambiguity_register(result: dict[str, Any], state: dict[str, Any]) -> dict[str, Any] | None:
+    action = result.get("action") or {}
+    questions = action_questions(action)
+    if not questions:
+        return None
+
+    stage = str(action.get("stage") or "decomposition")
+    metadata = stage_metadata(stage)
+    now = str(state.get("last_updated_at") or now_utc_iso())
+    ambiguities = []
+    for index, question in enumerate(questions, start=1):
+        ambiguities.append(
+            {
+                "id": f"{metadata['stage_id']}-q{index}",
+                "question": question,
+                "why_it_matters": "This unresolved decision can change the Uigwe stage contract or downstream execution boundary.",
+                "options": ambiguity_options(),
+                "free_response_allowed": True,
+                "status": "pending",
+                "blocking": True,
+                "evidence_refs": [],
+                "updated_at": now,
+            }
+        )
+
+    return {
+        "format": "sejong.ambiguity-register/v0.1-draft",
+        "metadata": {
+            "id": str(state.get("ambiguity_register_id") or f"ambiguity-{metadata['stage_id']}"),
+            "active_context_id": str(state.get("active_context_id") or "unknown-active-context"),
+            "route_id": str(state.get("route_id") or "unknown-route"),
+            "created_at": str(state.get("created_at") or now),
+        },
+        "stage_id": metadata["stage_id"],
+        "stage_label": metadata["stage_label"],
+        "readiness_percent": readiness_percent_for_stage(result, stage),
+        "blocking_count": len(ambiguities),
+        "ambiguities": ambiguities,
+        "next_required_user_action": (
+            f"Answer the pending {metadata['stage_label']} question before the next stage, "
+            "or explicitly waive it."
+        ),
+        "last_updated_at": now,
+    }
+
+
+def build_structured_choice_requests(register: dict[str, Any] | None) -> list[dict[str, Any]]:
+    if not register:
+        return []
+    header = stage_metadata(str(register.get("stage_id", ""))).get("header", "Uigwe")
+    requests = []
+    for ambiguity in register.get("ambiguities", []):
+        if not isinstance(ambiguity, dict):
+            continue
+        requests.append(
+            {
+                "adapter": "codex_structured_choice",
+                "id": ambiguity.get("id"),
+                "header": header,
+                "question": ambiguity.get("question"),
+                "options": ambiguity.get("options", []),
+                "free_response_allowed": bool(ambiguity.get("free_response_allowed", True)),
+            }
+        )
+    return requests
+
+
+def attach_live_runtime_outputs(result: dict[str, Any], state: dict[str, Any]) -> dict[str, Any]:
+    register = build_ambiguity_register(result, state)
+    if register:
+        result["ambiguity_register"] = register
+        result["structured_choice_requests"] = build_structured_choice_requests(register)
+    return result
+
+
 def evaluate_live_session(state: dict[str, Any]) -> dict[str, Any]:
     policy_defaults = load_policy_defaults()
     live_session = bool(state.get("live_session", True))
@@ -333,22 +478,22 @@ def evaluate_live_session(state: dict[str, Any]) -> dict[str, Any]:
                 generate_intent_questions(intent, dedupe_preserving_order(intent_contract_gaps + intent_block["weak_dimensions"])),
                 intent_block,
             )
-            return result
+            return attach_live_runtime_outputs(result, state)
         if not approval_satisfied(intent, live_session=live_session):
             result["action"] = approval_action("deep-interview", "intent_summary")
-            return result
+            return attach_live_runtime_outputs(result, state)
         if design_block["score"] < design_block["threshold"] or design_contract_gaps:
             result["action"] = ask_action(
                 "brainstorming",
                 generate_design_questions(design, dedupe_preserving_order(design_contract_gaps + design_block["weak_dimensions"])),
                 design_block,
             )
-            return result
+            return attach_live_runtime_outputs(result, state)
         if not approval_satisfied(design, live_session=live_session):
             result["action"] = approval_action("brainstorming", "design_summary")
-            return result
+            return attach_live_runtime_outputs(result, state)
         result["action"] = ready_action("decomposition")
-        return result
+        return attach_live_runtime_outputs(result, state)
 
     if mode == "design-to-plan":
         if intent_block["score"] < intent_block["threshold"] or intent_contract_gaps:
@@ -358,22 +503,22 @@ def evaluate_live_session(state: dict[str, Any]) -> dict[str, Any]:
                 intent_block,
                 action_type="reenter_deep_interview",
             )
-            return result
+            return attach_live_runtime_outputs(result, state)
         if "approval_status" in intent and not approval_satisfied(intent, live_session=live_session):
             result["action"] = approval_action("deep-interview", "intent_summary")
-            return result
+            return attach_live_runtime_outputs(result, state)
         if design_block["score"] < design_block["threshold"] or design_contract_gaps:
             result["action"] = ask_action(
                 "brainstorming",
                 generate_design_questions(design, dedupe_preserving_order(design_contract_gaps + design_block["weak_dimensions"])),
                 design_block,
             )
-            return result
+            return attach_live_runtime_outputs(result, state)
         if not approval_satisfied(design, live_session=live_session):
             result["action"] = approval_action("brainstorming", "design_summary")
-            return result
+            return attach_live_runtime_outputs(result, state)
         result["action"] = ready_action("decomposition")
-        return result
+        return attach_live_runtime_outputs(result, state)
 
     if design_block["score"] < design_block["threshold"] or design_contract_gaps:
         result["action"] = ask_action(
@@ -382,18 +527,25 @@ def evaluate_live_session(state: dict[str, Any]) -> dict[str, Any]:
             design_block,
             action_type="reenter_brainstorming",
         )
-        return result
+        return attach_live_runtime_outputs(result, state)
     if not approval_satisfied(design, live_session=live_session):
         result["action"] = approval_action("brainstorming", "design_summary")
-        return result
+        return attach_live_runtime_outputs(result, state)
     result["action"] = ready_action("decomposition")
-    return result
+    return attach_live_runtime_outputs(result, state)
 
 
 def main() -> int:
     args = parse_args()
     state = load_json(Path(args.input_path))
     result = evaluate_live_session(state)
+    if args.write_register:
+        register = result.get("ambiguity_register")
+        if register:
+            register_path = Path(args.write_register).expanduser()
+            register_path.parent.mkdir(parents=True, exist_ok=True)
+            register_path.write_text(json.dumps(register, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            result["ambiguity_register_path"] = str(register_path)
     if args.json:
         print(json.dumps(result, indent=2))
     else:

@@ -54,6 +54,9 @@ Rules:
 - When a later stage discovers upstream ambiguity, Uigwe must re-enter the earlier stage and resume interaction with the user instead of silently filling the gap alone.
 - General assistant defaults favoring autonomous progress do not override this protocol contract.
 - When an ambiguity register is active, live stage clarification must reach `100%` readiness with no `open` ambiguity items before advancing, unless the user explicitly waives the remaining ambiguity.
+- Each live Uigwe stage must remain active until that stage reaches `100%` readiness or the user explicitly asks to skip or proceed despite the remaining ambiguity.
+- Intent Clarification must not advance to Design Exploration while intent readiness is below `100%` in a live clarification loop.
+- Design Exploration must not advance to Executor Handoff Contract while design readiness is below `100%` in a live clarification loop.
 
 ## Ambiguity Register During Live Sessions
 
@@ -65,10 +68,30 @@ The register stores the user-facing stage label, readiness percentage, unclear
 items, why each item matters, recommended options, free-response allowance,
 user responses, status, and next required user action.
 
-An ambiguity item with status `open` blocks stage completion. A `waived` item is
-valid only when the user explicitly asks to skip, waive, or proceed despite that
-ambiguity. Readiness percentages are progress signals; they do not permit
-advancing while any item remains open.
+An ambiguity item with status `open`, `pending`, or `answered` blocks stage
+completion while it is marked `blocking=true`. `pending` means the question is
+waiting for the user's answer. `answered` means the user responded but Uigwe has
+not accepted the item as resolved or waived yet. A `waived` item is valid only
+when the user explicitly asks to skip, waive, or proceed despite that ambiguity.
+Readiness percentages are progress signals; they do not permit advancing while
+any blocking question obligation remains.
+
+When host-native structured choice UI is available, Uigwe may map the same
+recommended options and free-response path into that UI. The ambiguity register
+remains the durable source of truth; the host UI is only a presentation adapter.
+If a host cannot render structured choices, Uigwe presents the same options in
+plain chat and waits for the user's option choice, free-form answer, or explicit
+waiver.
+
+Runtime hooks may enforce this live contract. During an active Uigwe stage, a
+referenced ambiguity register below `100%` readiness or with blocking
+`open`/`pending`/`answered` items blocks write-like execution before the stage is
+resolved or explicitly waived.
+
+The live-session orchestrator may generate this register directly from the
+current Uigwe readiness result. When it emits `structured_choice_requests`, those
+requests mirror the register's questions and options for host UI presentation;
+they do not replace the register, packet approvals, or hook-enforced gates.
 
 ## Context-Engineered Guardrail Planning
 

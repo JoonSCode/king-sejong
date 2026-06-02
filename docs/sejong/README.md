@@ -8,6 +8,9 @@ Use `sejong` when the request is broad and the agent should choose whether to re
 Uigwe is the formal planning protocol inside Sejong. Use it when the output should be a durable planning bundle with packets, rationale, and Seungjeongwon handoff leaves.
 In live chat usage, Uigwe is supposed to do that interactively.
 Progress should be presented as approximate readiness such as `기획 준비도 68%`, paired with the main weak areas.
+The current live stage should not advance until it reaches `100%` readiness or the user explicitly asks to skip or proceed despite the remaining ambiguity.
+When structured Codex choice UI is available, Uigwe can use it to show the same recommended options and free-form path that are recorded in the ambiguity register.
+`scripts/live_session_orchestrator.py --write-register` can persist those pending questions as the hook-enforced runtime artifact.
 During decomposition, Uigwe repeatedly selects candidate objectives, reviews them against the parent objective, reselects weak or invalid candidates, and recurses until each selected branch is ready as a Seungjeongwon handoff leaf. Seungjeongwon then owns todo listup, todo verification, subtodo decomposition to actionable leaves, execution, verification, evidence, and retry loops.
 
 ## Installed Layout

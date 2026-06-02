@@ -123,6 +123,10 @@ The normal context stack is:
 - hooks, permission policy, schemas, examples, and deterministic benchmarks as guardrails and regression checks
 
 Host features such as Plan mode or `PLANS.md`-style living plans can improve live clarification and long-running execution continuity, but they do not override the Uigwe contract, Seungjeongwon run state, or explicit user approval gates.
+Structured choice UI can present Uigwe's recommended options and free-response path when the host runtime exposes it, but the ambiguity register and approved packets remain the durable source of truth.
+When a referenced ambiguity register is active, hooks may treat blocking
+`open`, `pending`, and `answered` items as runtime question obligations and may
+deny write-like execution while the Uigwe live stage is below `100%` readiness.
 
 ## Result Quality
 

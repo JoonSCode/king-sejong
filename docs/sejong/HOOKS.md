@@ -82,7 +82,9 @@ workflow conclusion.
 
 When `artifact_refs` includes a readable artifact whose `format` is
 `sejong.ambiguity-register/v0.1-draft`, hooks treat it as the active ambiguity
-register. See [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md).
+register. Blocking `open`, `pending`, and `answered` items are live question
+obligations until resolved or explicitly waived. See
+[AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md).
 
 When `artifact_refs` includes a readable artifact whose `format` is
 `sejong.seungjeongwon-run/v0.1-draft`, hooks treat it as an active
@@ -104,7 +106,7 @@ Seungjeongwon execution run. See [seungjeongwon-run.schema.json](seungjeongwon-r
 - Add model-visible context with the active context id, route id, repo root,
   objective id, current surface, route sequence, pending gates, objective refs,
   and last user intent.
-- Inject a compact ambiguity register summary when a referenced register exists, including readiness, open ambiguity count, and next required user action.
+- Inject a compact ambiguity register summary when a referenced register exists, including readiness, open ambiguity count, pending question obligation count, and next required user action.
 
 `sejong_context.py` writes the same checkpoint to both the active pointer under
 `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json` and
@@ -122,6 +124,10 @@ the repository-scoped run directory. Hooks read the active pointer by default.
   until the route has entered Seungjeongwon and the active context references a
   valid `sejong.seungjeongwon-run/v0.1-draft` artifact or an explicit
   `native_goal_unavailable` execution-feedback ref.
+- Deny write-like execution while the current Uigwe live stage has a referenced
+  ambiguity register below `100%` readiness or with blocking `open`, `pending`,
+  or `answered` question obligations. Runtime clarification artifact updates
+  remain allowed so Uigwe can record the user's answer or waiver.
 - Do not infer a receipt gate from `required_route_sequence` alone. Route
   history records the intended path; `seungjeongwon_receipt_required` records an
   explicit unfinished execution obligation.
@@ -165,7 +171,8 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 - Continue the turn when `seungjeongwon_receipt_required` remains pending, so
   goal-bearing implementation cannot end before a Seungjeongwon execution
   receipt exists.
-- Continue the turn when any referenced ambiguity register still has `open` ambiguity items.
+- Continue the turn when any referenced ambiguity register still has `open`
+  ambiguity items or pending question obligations.
 - Continue the turn when any referenced Seungjeongwon run is active, broken, or invalid.
 
 `PreCompact`
