@@ -24,6 +24,7 @@ Repo scope:
 - `.agents/skills/jiphyeonjeon/`
 - `.agents/skills/uigwe/`
 - `.agents/skills/seungjeongwon/`
+- `.agents/skills/why-gate/`
 - `docs/sejong/`
 
 User scope under `${CODEX_HOME:-~/.codex}/skills`:
@@ -33,12 +34,15 @@ User scope under `${CODEX_HOME:-~/.codex}/skills`:
 - `jiphyeonjeon/`
 - `uigwe/`
 - `seungjeongwon/`
+- `why-gate/`
 
 In user scope, this docs tree is installed under `skills/sejong/docs/`, and the installed skill files are rewritten to load contracts from that user-scope docs copy.
 
 User-scope install also copies the Codex plugin adapter to `${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/`, manages the King Sejong hook and plugin blocks in `${CODEX_HOME:-~/.codex}/config.toml`, sets `[features].hooks = true`, and creates `${CODEX_HOME:-~/.codex}/sejong/state/active-context.json` if it does not already exist. The managed blocks are marked and idempotent, so rerunning the installer replaces only King Sejong's sections.
 
 The plugin adapter is a hook-metadata surface. It does not expose duplicate plugin-scoped skills and does not replace the installer-owned skills, docs, active context, or verification contracts.
+
+`why-gate` is distributed as an installer-owned user-scope skill, not as a plugin-scoped skill. It supports compact rationale checkpoints for code review, planning, product analysis, retrospectives, and agent self-audit while the Sejong router remains the authority for workflow routing.
 
 User-scope install writes a compact generic Codex guidance block to `${CODEX_HOME:-~/.codex}/AGENTS.md` by default so King Sejong stays available as an always-on research, analysis, debate, planning, execution, and verification discipline across workspaces. Use `--codex-guidance none` to opt out, or `--print-codex-guidance` to inspect the block without installing. This does not copy this source repository's `AGENTS.md`. The guidance is generic Codex wording and includes the rule: do not use `.omx` paths as Sejong state.
 
@@ -127,6 +131,14 @@ Use Seungjeongwon directly when the scope is approved and execution should start
 ```text
 $seungjeongwon execute this validated Uigwe bundle and verify the result
 $seungjeongwon finish these handoff leaves from docs/sejong/examples/brownfield-decompose-only
+```
+
+Use Why Gate directly when the work needs rationale pressure but not a full
+Sejong route change:
+
+```text
+$why-gate ask me why this abstraction is worth adding
+$why-gate review this diff for weak rationale, not just defects
 ```
 
 ## What Uigwe Produces

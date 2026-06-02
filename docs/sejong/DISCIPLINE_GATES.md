@@ -162,6 +162,30 @@ same failure the gate was meant to prevent.
   alternatives, or execution feedback show why the selected path remains valid
   and what evidence would make Jiphyeonjeon or Uigwe re-enter the decision.
 
+### Why Gate Rationale Prompts
+
+- **Why:** Humans and agents often know a decision is plausible but have not made
+  the rationale explicit enough to defend, review, or revise later.
+- **Prevents:** Long prose being required for every decision, generic "why"
+  interrogation, invisible trade-offs, unreviewable abstraction choices, and
+  agent self-audits that claim confidence without rejected alternatives.
+- **Owner:** Why Gate owns compact rationale prompts. Sejong owns route
+  selection. Jiphyeonjeon owns material option comparison. Uigwe owns durable
+  planning rationale. Seungjeongwon owns tactical execution rationale and
+  verification.
+- **Force:** `advisory` by default; `route` when a material unresolved rationale
+  should re-enter Jiphyeonjeon or Uigwe; `hard` only when a missing rationale
+  changes protected scope, success criteria, non-goals, or verification bars.
+- **Behavior:** Use the `$why-gate` skill when a code review, implementation
+  plan, product analysis, experience writeup, retrospective, worker output, or
+  agent self-audit needs choice-based rationale pressure. Ask only 1-3
+  high-value gates at a time. Prefer recommended options plus a free-response
+  path over open-ended essays. Capture the selected decision, reason, rejected
+  alternatives, accepted cost, verification path, and follow-up.
+- **Verification:** Review notes, self-audit output, Uigwe rationale, or
+  Seungjeongwon execution feedback includes the selected Why Gate answer and
+  the remaining weak or unknown rationale when the gate is not satisfied.
+
 ### Bounded Worker Authority
 
 - **Why:** Parallel workers improve coverage, but they do not own the decision.

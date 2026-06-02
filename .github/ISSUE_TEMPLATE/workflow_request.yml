@@ -1,0 +1,35 @@
+name: Workflow request
+description: Suggest a maintainer workflow, route discipline, or validation improvement.
+title: "[Workflow]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: maintainer_job
+    attributes:
+      label: Maintainer Job
+      description: What maintainer task should King Sejong support better?
+      placeholder: "Example: PR review, issue triage, release verification, hook safety review"
+    validations:
+      required: true
+  - type: textarea
+    id: current_gap
+    attributes:
+      label: Current Gap
+      description: What does the current workflow fail to do clearly or safely?
+    validations:
+      required: true
+  - type: textarea
+    id: desired_route
+    attributes:
+      label: Desired Route
+      description: Which court mode or validation path should be involved, if known?
+      placeholder: "Example: JangYeongsil -> Jiphyeonjeon -> Uigwe -> Seungjeongwon"
+    validations:
+      required: false
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification Bar
+      description: What evidence would prove the workflow is better?
+    validations:
+      required: false

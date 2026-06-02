@@ -75,6 +75,8 @@ class InstallSejongTests(unittest.TestCase):
             hooks_path = plugin_root / "hooks" / "hooks.json"
             hook_runner_path = plugin_root / "hooks" / "king-sejong-hook.py"
             plugin_skill_path = plugin_root / "skills" / "sejong" / "SKILL.md"
+            plugin_why_gate_skill_path = plugin_root / "skills" / "why-gate" / "SKILL.md"
+            why_gate_skill_path = codex_home / "skills" / "why-gate" / "SKILL.md"
             marketplace_path = (
                 codex_home
                 / "plugins"
@@ -88,12 +90,15 @@ class InstallSejongTests(unittest.TestCase):
             self.assertTrue(hooks_path.exists())
             self.assertTrue(hook_runner_path.exists())
             self.assertTrue(marketplace_path.exists())
+            self.assertTrue(why_gate_skill_path.exists())
+            self.assertIn("Why Gate", why_gate_skill_path.read_text(encoding="utf-8"))
 
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             self.assertEqual(manifest["name"], "king-sejong")
             self.assertEqual(manifest["hooks"], "./hooks/hooks.json")
             self.assertNotIn("skills", manifest)
             self.assertFalse(plugin_skill_path.exists())
+            self.assertFalse(plugin_why_gate_skill_path.exists())
 
             marketplace = json.loads(marketplace_path.read_text(encoding="utf-8"))
             self.assertEqual(

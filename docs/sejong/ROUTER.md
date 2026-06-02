@@ -223,7 +223,7 @@ Changes to Sejong itself need a higher routing bar than ordinary repository edit
 
 Material self-modification includes changes to:
 
-- `.agents/skills/sejong/`, `.agents/skills/uigwe/`, or `.agents/skills/seungjeongwon/`
+- `.agents/skills/sejong/`, `.agents/skills/uigwe/`, `.agents/skills/seungjeongwon/`, or `.agents/skills/why-gate/`
 - `docs/sejong/ROUTER.md`, `PROTOCOL.md`, `WRAPPER.md`, `SEUNGJEONGWON_EXECUTOR.md`, `ARTIFACT_STORAGE.md`, or other durable behavior contracts
 - `scripts/install-sejong.sh`
 - schemas, validation tasks, benchmark scripts, or scorecards that define Sejong/Uigwe behavior

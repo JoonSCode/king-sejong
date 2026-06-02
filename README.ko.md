@@ -8,6 +8,8 @@
 
 King Sejong은 **Codex**와 Codex와 같은 skill 환경에 들이는 기술 꾸러미이옵니다. 저장소 안에 들일 수도 있고, Codex 사용자 skill 길에 들여 여러 저장소에서 함께 쓸 수도 있사옵니다.
 
+이는 실제 저장소에서 Codex를 쓰는 maintainer를 위하여 만들었사옵니다. Pull request 검토, issue triage, release 준비, 설치 검증, 보안 guardrail, 문서 일관성 점검처럼 agent가 고치기 전에 증거를 모아야 하는 open-source 유지보수 일을 돕고자 함이옵니다.
+
 한 에이전트에게 `$sejong`이라는 넓은 정문을 내려, 조사하고, 의논하여 정하고, 의궤로 기획하고, 승정원으로 실행하며, 검증하고, 실록처럼 증거를 남기게 하려는 물건이옵니다.
 
 한 번 `$sejong`을 부른 뒤에는, 사용자가 세종을 그만 쓰라 하거나 다른 비-Sejong workflow로 옮기라 하기 전까지 이어지는 답변도 Sejong 맥락으로 보옵니다.
@@ -17,6 +19,18 @@ King Sejong은 **Codex**와 Codex와 같은 skill 환경에 들이는 기술 꾸
 이는 홀로 서는 CLI나 Python 패키지가 아니옵니다. 쓰고자 하는 저장소에 `.agents/skills`와 `docs/sejong` 문서를 함께 옮기거나, `${CODEX_HOME:-~/.codex}/skills`에 옮겨, Codex가 그 skill을 읽게 하는 방식이옵니다.
 
 기본으로 Sejong은 조사, 기획, 실행 중 기록, 증거 산출물을 대상 저장소 밖 `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` 아래 두옵니다. 사용자가 명시하여 저장소에 남기라 하지 않는 한, git에 잡히는 기획 파일을 만들지 않사옵니다.
+
+## Maintainer 일을 어찌 돕나이까
+
+King Sejong은 아직 이른 public project이오나, 보여주기용 agent loop가 아니라 되풀이되는 maintainer 일을 위하여 짜였사옵니다.
+
+- 고치기 전에 증거, rationale, verification 기대치를 두고 change를 검토하옵니다.
+- Issue를 조사, 결정, 기획, 실행, 보류 길로 가르옵니다.
+- 승인된 design을 Seungjeongwon 검증이 가능한 executable leaf로 풀어내옵니다.
+- Release 전에 install surface, hook, schema, example, instruction contract를 검증하옵니다.
+- Maintainer가 명하지 않는 한 runtime artifact를 대상 저장소 밖에 두옵니다.
+
+자세한 예시는 [OSS maintainer workflows](docs/sejong/OSS_MAINTAINER_WORKFLOWS.md)를 보시옵소서.
 
 ## 이름을 어찌 쓰리이까
 
@@ -110,8 +124,11 @@ Codex 집이 `~/.codex`가 아니면 먼저 `CODEX_HOME`을 정하시옵소서.
 저장소 범위에서 설치관이 옮기는 길은 이러하옵니다.
 
 - `.agents/skills/sejong/`
+- `.agents/skills/jangyeongsil/`
+- `.agents/skills/jiphyeonjeon/`
 - `.agents/skills/uigwe/`
 - `.agents/skills/seungjeongwon/`
+- `.agents/skills/why-gate/`
 - `docs/sejong/`
 
 사용자 범위에서는 `${CODEX_HOME:-~/.codex}/skills` 아래 이 길을 옮기옵니다.
@@ -121,6 +138,7 @@ Codex 집이 `~/.codex`가 아니면 먼저 `CODEX_HOME`을 정하시옵소서.
 - `jiphyeonjeon/`
 - `uigwe/`
 - `seungjeongwon/`
+- `why-gate/`
 
 사용자 범위에서는 함께 쓰는 Sejong 문서를 `skills/sejong/docs/` 아래 두고, 설치된 skill 파일들이 그 문서를 읽도록 길을 고쳐 두옵니다.
 또한 Codex plugin 어댑터를 `${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/` 아래 두고, `${CODEX_HOME:-~/.codex}/config.toml`의 King Sejong plugin 블록으로 켜 두옵니다.

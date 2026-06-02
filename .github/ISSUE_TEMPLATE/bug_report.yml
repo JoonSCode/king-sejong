@@ -1,0 +1,34 @@
+name: Bug report
+description: Report a King Sejong behavior, install, hook, or validation problem.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: surface
+    attributes:
+      label: Affected Surface
+      description: Name the skill, doc, installer, hook, schema, or script involved.
+      placeholder: "Example: scripts/install-sejong.sh, docs/sejong/scripts/king_sejong_hooks.py"
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Include commands, output snippets, or reproduction steps. Do not include secrets or private logs.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation Tried
+      description: List any install, test, or schema validation commands you already ran.
+    validations:
+      required: false

@@ -48,6 +48,7 @@ King Sejong is distributed through these managed paths:
 - `.agents/skills/jiphyeonjeon/`
 - `.agents/skills/uigwe/`
 - `.agents/skills/seungjeongwon/`
+- `.agents/skills/why-gate/`
 - `plugins/king-sejong/`
 - `.agents/plugins/marketplace.json`
 - `docs/sejong/`
@@ -66,6 +67,7 @@ Do not add root-level repository files such as `AGENTS.md` to the managed instal
 - Jiphyeonjeon discussion front door: `.agents/skills/jiphyeonjeon/SKILL.md`
 - Uigwe planning behavior: `.agents/skills/uigwe/SKILL.md` and `docs/sejong/PROTOCOL.md`
 - Execution behavior: `.agents/skills/seungjeongwon/SKILL.md` and `docs/sejong/SEUNGJEONGWON_EXECUTOR.md`
+- Rationale checkpoints: `.agents/skills/why-gate/SKILL.md` and `docs/sejong/DISCIPLINE_GATES.md`
 - TeamExecutor behavior: `docs/sejong/TEAM_EXECUTOR.md` and `docs/sejong/scripts/team_executor.py`
 - Live ambiguity clarification: `docs/sejong/AMBIGUITY_REGISTER.md` and `docs/sejong/ambiguity-register.schema.json`
 - Runtime artifact storage: `docs/sejong/ARTIFACT_STORAGE.md`
@@ -84,6 +86,7 @@ Do not add root-level repository files such as `AGENTS.md` to the managed instal
 - Do not treat missing repo-local prompt overlays as an install failure.
 - Do not reintroduce repo-local or tool-specific orchestration state as a Sejong dependency.
 - Keep the Codex plugin adapter thin. It may expose hook metadata and marketplace packaging, but installer-owned user-scope skills and `docs/sejong/` remain the durable contract. Do not expose duplicate plugin-scoped Sejong skills when canonical user-scope skills are installed.
+- Keep auxiliary King Sejong skills such as `why-gate` on the managed user-scope skill surface, not as plugin-scoped duplicate skills.
 - Preserve bounded parallelism: subagents and `$team` workers may return bounded briefs, mailbox messages, implementation slices, or verification evidence, but the lead Sejong agent owns synthesis, routing, gates, and final verification.
 - Prefer officially supported host team or teammate messaging when it exists and a bounded Jiphyeonjeon or JangYeongsil round needs peer challenge; otherwise use Sejong TeamExecutor mailbox state. Peer messages are worker evidence, not court-mode authority.
 - Keep TeamExecutor mailbox traffic on the versioned `send-message` / `receive-messages` envelope; raw mailbox appends are compatibility-only and must not become the primary worker contract.

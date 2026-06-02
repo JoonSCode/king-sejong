@@ -31,6 +31,7 @@ Installs:
     .agents/skills/jiphyeonjeon/
     .agents/skills/uigwe/
     .agents/skills/seungjeongwon/
+    .agents/skills/why-gate/
     docs/sejong/
   user scope:
     ${CODEX_HOME:-~/.codex}/skills/sejong/
@@ -38,6 +39,7 @@ Installs:
     ${CODEX_HOME:-~/.codex}/skills/jiphyeonjeon/
     ${CODEX_HOME:-~/.codex}/skills/uigwe/
     ${CODEX_HOME:-~/.codex}/skills/seungjeongwon/
+    ${CODEX_HOME:-~/.codex}/skills/why-gate/
     ${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/
     ${CODEX_HOME:-~/.codex}/config.toml managed King Sejong plugin block
     ${CODEX_HOME:-~/.codex}/sejong/state/active-context.json
@@ -692,6 +694,7 @@ for item in [
     ".agents/skills/jiphyeonjeon/",
     ".agents/skills/uigwe/",
     ".agents/skills/seungjeongwon/",
+    ".agents/skills/why-gate/",
     "plugins/king-sejong/",
     "docs/sejong/",
     "scripts/install-sejong.sh",
@@ -728,6 +731,7 @@ PY
     ".agents/skills/jiphyeonjeon/",
     ".agents/skills/uigwe/",
     ".agents/skills/seungjeongwon/",
+    ".agents/skills/why-gate/",
     "plugins/king-sejong/",
     "docs/sejong/",
     "scripts/install-sejong.sh"
@@ -905,6 +909,7 @@ verify_repo_install() {
     ".agents/skills/jiphyeonjeon/SKILL.md"
     ".agents/skills/uigwe/SKILL.md"
     ".agents/skills/seungjeongwon/SKILL.md"
+    ".agents/skills/why-gate/SKILL.md"
     "docs/sejong/README.md"
     "docs/sejong/RUNTIME_CONTRACT.md"
     "docs/sejong/ROLE_SEPARATION.md"
@@ -964,6 +969,7 @@ verify_repo_install() {
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/jiphyeonjeon" "$root/.agents/skills/jiphyeonjeon" ".agents/skills/jiphyeonjeon/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/uigwe" "$root/.agents/skills/uigwe" ".agents/skills/uigwe/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/seungjeongwon" "$root/.agents/skills/seungjeongwon" ".agents/skills/seungjeongwon/" || drift=1
+  verify_tree_matches "$SOURCE_ROOT/.agents/skills/why-gate" "$root/.agents/skills/why-gate" ".agents/skills/why-gate/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/docs/sejong" "$root/docs/sejong" "docs/sejong/" || drift=1
 
   if [[ "$drift" -ne 0 ]]; then
@@ -1023,6 +1029,7 @@ verify_user_install() {
     "skills/sejong/docs/scripts/validate_json_contracts.py"
     "skills/uigwe/SKILL.md"
     "skills/seungjeongwon/SKILL.md"
+    "skills/why-gate/SKILL.md"
   )
 
   for path in "${required_paths[@]}"; do
@@ -1049,6 +1056,7 @@ verify_user_install() {
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/jiphyeonjeon/agents" "$root/skills/jiphyeonjeon/agents" "skills/jiphyeonjeon/agents/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/uigwe/agents" "$root/skills/uigwe/agents" "skills/uigwe/agents/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/.agents/skills/seungjeongwon/agents" "$root/skills/seungjeongwon/agents" "skills/seungjeongwon/agents/" || drift=1
+  verify_tree_matches "$SOURCE_ROOT/.agents/skills/why-gate" "$root/skills/why-gate" "skills/why-gate/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/docs/sejong" "$root/skills/sejong/docs" "skills/sejong/docs/" || drift=1
   verify_tree_matches "$SOURCE_ROOT/plugins/king-sejong" "$root/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION" "plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION/" || drift=1
   verify_user_hooks_config "$root" || drift=1
@@ -1147,6 +1155,7 @@ install_repo_scope() {
   copy_dir "$SOURCE_ROOT/.agents/skills/jiphyeonjeon" "$target_root/.agents/skills/jiphyeonjeon"
   copy_dir "$SOURCE_ROOT/.agents/skills/uigwe" "$target_root/.agents/skills/uigwe"
   copy_dir "$SOURCE_ROOT/.agents/skills/seungjeongwon" "$target_root/.agents/skills/seungjeongwon"
+  copy_dir "$SOURCE_ROOT/.agents/skills/why-gate" "$target_root/.agents/skills/why-gate"
   copy_dir "$SOURCE_ROOT/docs/sejong" "$target_root/docs/sejong"
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
@@ -1166,6 +1175,7 @@ Managed paths:
   .agents/skills/jiphyeonjeon/
   .agents/skills/uigwe/
   .agents/skills/seungjeongwon/
+  .agents/skills/why-gate/
   docs/sejong/
 
 Invoke with:
@@ -1174,6 +1184,7 @@ Invoke with:
   \$jiphyeonjeon <decision request>
   \$uigwe <formal planning request>
   \$seungjeongwon <execution request>
+  \$why-gate <rationale checkpoint>
 EOF
 }
 
@@ -1195,6 +1206,7 @@ install_user_scope() {
   copy_dir "$SOURCE_ROOT/.agents/skills/jiphyeonjeon" "$skill_root/jiphyeonjeon"
   copy_dir "$SOURCE_ROOT/.agents/skills/uigwe" "$skill_root/uigwe"
   copy_dir "$SOURCE_ROOT/.agents/skills/seungjeongwon" "$skill_root/seungjeongwon"
+  copy_dir "$SOURCE_ROOT/.agents/skills/why-gate" "$skill_root/why-gate"
   copy_dir "$SOURCE_ROOT/docs/sejong" "$skill_root/sejong/docs"
   copy_dir "$SOURCE_ROOT/plugins/king-sejong" "$codex_home/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION"
 
@@ -1232,6 +1244,7 @@ Managed paths:
   skills/jiphyeonjeon/
   skills/uigwe/
   skills/seungjeongwon/
+  skills/why-gate/
   plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION/
 
 Managed hooks:
@@ -1245,6 +1258,7 @@ Invoke from any Codex workspace with:
   \$jiphyeonjeon <decision request>
   \$uigwe <formal planning request>
   \$seungjeongwon <execution request>
+  \$why-gate <rationale checkpoint>
 EOF
 }
 

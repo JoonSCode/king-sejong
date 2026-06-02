@@ -1,0 +1,4 @@
+interface:
+  display_name: "Why Gate"
+  short_description: "Force explicit rationale before decisions"
+  default_prompt: "Use $why-gate to challenge the rationale behind my current code or plan."

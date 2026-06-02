@@ -6,6 +6,8 @@
 
 King Sejong is an all-in-one skill bundle for **Codex** and Codex-style agent environments. It can be installed repo-locally or into a Codex user skill directory.
 
+It is designed for maintainers who use Codex on real repositories: pull request review, issue triage, release preparation, installer checks, security guardrails, documentation consistency, and other open-source maintenance workflows where an agent should gather evidence before it edits.
+
 It gives an agent one broad front door, `$sejong`, for moving from research to decision, planning, execution, verification, and evidence recording.
 
 After `$sejong` is invoked, follow-up turns stay in the active Sejong workflow until the user explicitly exits Sejong or switches to another non-Sejong workflow.
@@ -17,6 +19,18 @@ Uigwe decomposes plans by repeatedly selecting candidate work, reviewing whether
 This is not a standalone CLI or Python package. It is meant to be copied into a target repository or into `${CODEX_HOME:-~/.codex}/skills` so Codex can load the installed skill files.
 
 By default, Sejong keeps research, planning, runtime, and evidence artifacts outside the target repository under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`. It does not create git-tracked planning files unless the user explicitly asks to promote a shareable artifact into the repo.
+
+## Maintainer Workflows
+
+King Sejong is early, but it is built around repeatable maintainer work rather than a demo-only agent loop:
+
+- review a change with evidence, rationale, and verification expectations before editing
+- triage issues into research, decision, planning, execution, or rejected-option paths
+- turn approved designs into executable leaves with Seungjeongwon verification
+- validate install surfaces, hooks, schemas, examples, and instruction contracts before release
+- keep runtime artifacts outside the target repository unless a maintainer asks to promote a tracked record
+
+See [OSS maintainer workflows](docs/sejong/OSS_MAINTAINER_WORKFLOWS.md) for concrete examples.
 
 ## Naming
 
@@ -116,6 +130,7 @@ Repo scope copies these managed paths into the target repository:
 - `.agents/skills/jiphyeonjeon/`
 - `.agents/skills/uigwe/`
 - `.agents/skills/seungjeongwon/`
+- `.agents/skills/why-gate/`
 - `docs/sejong/`
 
 User scope copies these managed paths into `${CODEX_HOME:-~/.codex}/skills`:
@@ -125,6 +140,7 @@ User scope copies these managed paths into `${CODEX_HOME:-~/.codex}/skills`:
 - `jiphyeonjeon/`
 - `uigwe/`
 - `seungjeongwon/`
+- `why-gate/`
 
 In user scope, shared Sejong docs are installed under `skills/sejong/docs/`, and the installed skill files are rewritten to load those docs from the user skill tree.
 User scope also copies the Codex plugin adapter to `${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/` and enables it through a marked King Sejong plugin block in `${CODEX_HOME:-~/.codex}/config.toml`.
@@ -173,6 +189,7 @@ What is included:
 - recursive Uigwe decomposition that keeps selected leaves tied to the parent goal and verification criteria
 - `Seungjeongwon` native executor skill
 - Seungjeongwon execution contract
+- Why Gate rationale checkpoints for reviews, planning choices, retrospectives, and self-audits
 - repo-context `AGENTS.md` init/refresh contract with candidate diffs
 - schema, bundle, and instruction-surface validation helpers
 - install and verify script for managed repo-local and Codex user-scope paths
@@ -251,6 +268,7 @@ When changing King Sejong itself, material behavior changes should follow the fu
 - [Artifact storage](docs/sejong/ARTIFACT_STORAGE.md)
 - [Team executor](docs/sejong/TEAM_EXECUTOR.md)
 - [Workflow-run dynamic workflow evidence contract](docs/sejong/WORKFLOW_RUN.md)
+- [OSS maintainer workflows](docs/sejong/OSS_MAINTAINER_WORKFLOWS.md)
 - [Prompt overlays](docs/sejong/PROMPT_OVERLAYS.md)
 - [Uigwe protocol](docs/sejong/PROTOCOL.md)
 - [Uigwe wrapper](docs/sejong/WRAPPER.md)
