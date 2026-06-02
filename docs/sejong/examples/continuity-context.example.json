@@ -1,0 +1,54 @@
+{
+  "format": "king-sejong.context/v0.1-draft",
+  "active_context_id": "ctx-continuity-example",
+  "repo_id": "king-sejong-176324a6",
+  "repo_root": ".",
+  "run_id": "continuity-example-run",
+  "session_id": "example-session",
+  "route_id": "route-continuity-example",
+  "objective_id": "preserve-ai-working-context",
+  "current_surface": "seungjeongwon",
+  "task_class": "runtime-contract-design",
+  "projection_profile": "frontier",
+  "route_sequence": [
+    "sejong",
+    "jiphyeonjeon",
+    "uigwe",
+    "seungjeongwon"
+  ],
+  "required_route_sequence": [
+    "jiphyeonjeon",
+    "uigwe",
+    "seungjeongwon"
+  ],
+  "last_user_intent": "Preserve AI working context across King Sejong compaction without replaying raw history.",
+  "pending_gates": [],
+  "protected_paths": [
+    ".agents/skills/sejong/",
+    ".agents/skills/uigwe/",
+    ".agents/skills/seungjeongwon/",
+    "docs/sejong/CONTINUITY.md",
+    "docs/sejong/HOOKS.md",
+    "docs/sejong/ARTIFACT_STORAGE.md"
+  ],
+  "allowed_direct_change_types": [
+    "typo",
+    "broken_link",
+    "formatting_only",
+    "deterministic_scorecard_regeneration"
+  ],
+  "evidence_refs": [
+    "docs/sejong/scripts/test_continuity_replay_gate.py"
+  ],
+  "artifact_refs": [
+    "continuity-capsule.example.json"
+  ],
+  "team_run_refs": [],
+  "subagent_refs": [],
+  "exit_conditions": [
+    "user_explicitly_exits_sejong",
+    "user_switches_to_non_sejong_workflow",
+    "host_conversation_ends"
+  ],
+  "last_updated_at": "2026-06-02T00:00:00Z"
+}

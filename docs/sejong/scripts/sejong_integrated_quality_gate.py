@@ -502,6 +502,61 @@ def long_session_gate_check(sejong_root: Path, repo_root: Path, work_dir: Path) 
     )
 
 
+def continuity_replay_check(sejong_root: Path, repo_root: Path, work_dir: Path) -> dict[str, Any]:
+    gate = sejong_root / "scripts" / "continuity_replay_gate.py"
+    context = load_json(sejong_root / "examples" / "king-sejong-context.example.json")
+    capsule = load_json(sejong_root / "examples" / "continuity-capsule.example.json")
+    capsule_path = work_dir / "continuity-capsule.json"
+    context_path = work_dir / "continuity-context.json"
+    result_path = work_dir / "continuity-replay-gate.json"
+    capsule["repo_root"] = str(repo_root)
+    context["repo_root"] = str(repo_root)
+    context["task_class"] = "runtime-contract-design"
+    context["projection_profile"] = "frontier"
+    context["artifact_refs"] = [str(capsule_path)]
+    write_json(capsule_path, capsule)
+    write_json(context_path, context)
+    result = run_command(
+        [
+            sys.executable,
+            str(gate),
+            "judge",
+            "--context",
+            str(context_path),
+            "--repo-root",
+            str(repo_root),
+            "--require",
+            "continuity_capsule=capsule-continuity-example",
+            "--require",
+            "continuity_decision=Use a continuity capsule",
+            "--require",
+            "continuity_rejected=Use only markdown handoff",
+            "--forbid",
+            "Replay full trace history",
+            "--max-chars",
+            "2500",
+            "--write",
+            str(result_path),
+        ],
+        cwd=repo_root,
+    )
+    if result.returncode != 0:
+        return check_result(
+            "continuity_replay_preserves_working_set_projection",
+            False,
+            result.stderr or result.stdout,
+            [str(result_path), str(context_path), str(capsule_path)],
+        )
+    payload = json.loads(result.stdout)
+    passed = payload.get("passed") and payload.get("projection_chars", 999999) <= 2500
+    return check_result(
+        "continuity_replay_preserves_working_set_projection",
+        bool(passed),
+        f"projection_chars={payload.get('projection_chars')} checks={len(payload.get('checks') or [])}",
+        [str(result_path), str(context_path), str(capsule_path)],
+    )
+
+
 def run_gate(args: argparse.Namespace) -> int:
     sejong_root = Path(args.sejong_root).expanduser().resolve()
     repo_root = sejong_root.parents[1]
@@ -517,6 +572,7 @@ def run_gate(args: argparse.Namespace) -> int:
     checks.append(feedback_contract_check(sejong_root))
     checks.append(product_evidence_check(sejong_root, repo_root))
     checks.append(long_session_gate_check(sejong_root, repo_root, work_dir))
+    checks.append(continuity_replay_check(sejong_root, repo_root, work_dir))
 
     passed = all(check["passed"] for check in checks)
     payload = {

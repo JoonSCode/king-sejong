@@ -97,6 +97,11 @@ they do not replace the register, packet approvals, or hook-enforced gates.
 
 Uigwe should guide the model with compact, decision-relevant context and durable artifacts rather than a massive prompt.
 
+For long-running Sejong workflows, compact context may come from a continuity
+capsule projection. The capsule is an AI working-set index over durable
+artifacts, not a replacement for approved Uigwe packets, ambiguity registers, or
+the Seungjeongwon handoff contract.
+
 For material planning or design decisions, Uigwe must make the decision boundary visible before downstream execution:
 
 - source context the model should rely on

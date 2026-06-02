@@ -35,6 +35,14 @@
       "description": "Optional refs to objective, wedge, design, or migration artifacts that define the current run.",
       "$ref": "#/$defs/StringList"
     },
+    "task_class": {
+      "description": "Optional long-session task class used for class-specific continuation and promotion checks.",
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "projection_profile": {
+      "description": "Optional default continuity projection profile for hook-injected model context.",
+      "$ref": "#/$defs/ProjectionProfile"
+    },
     "current_surface": {
       "$ref": "#/$defs/Surface"
     },
@@ -121,6 +129,15 @@
         "sillok",
         "danjong",
         "sejong-direct"
+      ]
+    },
+    "ProjectionProfile": {
+      "type": "string",
+      "enum": [
+        "micro",
+        "standard",
+        "frontier",
+        "retrieval"
       ]
     }
   }

@@ -8,6 +8,11 @@ The summary projection gives Uigwe a lighter human-facing review surface.
 
 It is derived from the canonical bundle artifacts instead of being authored separately.
 
+This document is for Uigwe planning-bundle summaries. It is not the AI runtime
+continuity surface. Compaction-safe AI working context belongs in a continuity
+capsule that follows [continuity-capsule.schema.json](continuity-capsule.schema.json)
+and is referenced from active context `artifact_refs`.
+
 That means Uigwe can keep:
 
 - packets

@@ -38,6 +38,7 @@ Active King Sejong context checkpoints should be stored inside the same run dire
 ```text
 king-sejong-context.json
 ambiguity-register.json
+continuity-capsule.json
 seungjeongwon-run.json
 workflow-run.json
 route-decisions.jsonl
@@ -51,6 +52,13 @@ The context checkpoint should follow `docs/sejong/king-sejong-context.schema.jso
 Ambiguity registers should follow `docs/sejong/ambiguity-register.schema.json`.
 The active context should reference them through `artifact_refs` rather than
 duplicating the full clarification state.
+
+Continuity capsules should follow `docs/sejong/continuity-capsule.schema.json`.
+They are compact AI working-set indexes for compaction and session resumption.
+The active context should reference them through `artifact_refs`. Store refs to
+Sillok traces, Uigwe packets, ambiguity registers, Seungjeongwon run artifacts,
+and route decisions instead of copying raw logs or private evidence into the
+capsule.
 
 Seungjeongwon active run artifacts should follow
 `docs/sejong/seungjeongwon-run.schema.json`. The active context should reference
@@ -86,6 +94,7 @@ External nontracked artifacts include:
 
 - active King Sejong context checkpoints
 - ambiguity registers for live clarification
+- continuity capsules for AI working-set projection across compaction
 - route decision logs
 - raw JangYeongsil research notes
 - Jiphyeonjeon council briefs

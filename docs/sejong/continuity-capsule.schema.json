@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/continuity-capsule.schema.json",
+  "title": "King Sejong Continuity Capsule Schema Draft",
+  "description": "Compact AI working-set index for resuming King Sejong workflows across compaction without replaying raw history.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "sejong.continuity-capsule/v0.1-draft"
+    },
+    "capsule_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "active_context_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "repo_root": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "run_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "objective": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "task_class": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "current_surface": {
+      "$ref": "#/$defs/Surface"
+    },
+    "route_sequence": {
+      "$ref": "#/$defs/StringList"
+    },
+    "pending_gates": {
+      "$ref": "#/$defs/StringList"
+    },
+    "projection_profile": {
+      "$ref": "#/$defs/ProjectionProfile"
+    },
+    "source_artifact_refs": {
+      "description": "Canonical runtime artifacts the capsule indexes. Store refs, not raw logs.",
+      "$ref": "#/$defs/StringList"
+    },
+    "evidence_refs": {
+      "$ref": "#/$defs/StringList"
+    },
+    "selected_decisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Decision"
+      }
+    },
+    "rejected_options": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RejectedOption"
+      }
+    },
+    "active_blockers": {
+      "$ref": "#/$defs/StringList"
+    },
+    "verification_state": {
+      "$ref": "#/$defs/VerificationState"
+    },
+    "next_action": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "do_not_do": {
+      "$ref": "#/$defs/StringList"
+    },
+    "stale_triggers": {
+      "$ref": "#/$defs/StringList"
+    },
+    "risk_flags": {
+      "$ref": "#/$defs/StringList"
+    },
+    "last_updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "format",
+    "capsule_id",
+    "active_context_id",
+    "repo_root",
+    "run_id",
+    "objective",
+    "task_class",
+    "current_surface",
+    "route_sequence",
+    "pending_gates",
+    "projection_profile",
+    "source_artifact_refs",
+    "evidence_refs",
+    "selected_decisions",
+    "rejected_options",
+    "active_blockers",
+    "verification_state",
+    "next_action",
+    "do_not_do",
+    "stale_triggers",
+    "risk_flags",
+    "last_updated_at"
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      }
+    },
+    "Surface": {
+      "type": "string",
+      "enum": [
+        "sejong",
+        "jangyeongsil",
+        "jiphyeonjeon",
+        "uigwe",
+        "seungjeongwon",
+        "sillok",
+        "danjong",
+        "sejong-direct"
+      ]
+    },
+    "ProjectionProfile": {
+      "type": "string",
+      "enum": [
+        "micro",
+        "standard",
+        "frontier",
+        "retrieval"
+      ]
+    },
+    "Decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "summary": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "why": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "refs": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "id",
+        "summary",
+        "why",
+        "refs"
+      ]
+    },
+    "RejectedOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "summary": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "reason": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "refs": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "id",
+        "summary",
+        "reason",
+        "refs"
+      ]
+    },
+    "VerificationState": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "unverified",
+            "in_progress",
+            "passed",
+            "failed",
+            "blocked"
+          ]
+        },
+        "last_verified_claim": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "refs": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "status",
+        "last_verified_claim",
+        "refs"
+      ]
+    }
+  }
+}

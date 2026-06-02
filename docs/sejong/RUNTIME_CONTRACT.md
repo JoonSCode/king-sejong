@@ -50,12 +50,13 @@ The active context checkpoint follows [king-sejong-context.schema.json](king-sej
 - pending gates
 - protected paths
 - ambiguity-register refs
+- continuity-capsule refs
 - Seungjeongwon run refs
 - TeamExecutor refs
 - evidence refs
 - exit conditions
 
-Hooks may block `Stop` or `PreCompact` when the active context is incomplete, a referenced ambiguity register is open or broken, or a referenced Seungjeongwon run is active or invalid.
+Hooks may block `Stop` or `PreCompact` when the active context is incomplete, a referenced ambiguity register is open or broken, a referenced continuity capsule is broken or invalid, or a referenced Seungjeongwon run is active or invalid.
 
 A stale active context from another repository must not be silently treated as
 authority for the current workspace. Continuation events should surface a
@@ -88,9 +89,27 @@ Uigwe clarifies the idea and design
 
 The active Seungjeongwon run artifact follows [seungjeongwon-run.schema.json](seungjeongwon-run.schema.json). Use `docs/sejong/scripts/seungjeongwon_run.py` to create and check that artifact.
 
-For explicit Long-Session Outcome Entry requests, active context must be checked against the new objective before execution resumes. A stale active context from another task does not satisfy a new long-session goal. Refresh the route, surface, pending gates, artifact refs, and `task_class` when the user asks for `장기실행`, `긴 세션`, `끝까지`, `long-session`, or an equivalent persistent outcome loop. Small direct commands still bypass this path.
+For explicit Long-Session Outcome Entry requests, active context must be checked against the new objective before execution resumes. A stale active context from another task does not satisfy a new long-session goal. Refresh the route, surface, pending gates, artifact refs, `task_class`, and `projection_profile` when the user asks for `장기실행`, `긴 세션`, `끝까지`, `long-session`, or an equivalent persistent outcome loop. Small direct commands still bypass this path.
 
-Task class is part of long-session evidence because promotion is class-specific. Record whether the request is `strategy-research-synthesis`, `code-review-defect-analysis`, `small-artifact`, `simple-direct`, or another explicitly named class. For `code-review-defect-analysis`, the context must include a defect-first critic requirement before Uigwe handoff: identify concrete failure modes, distinguish confirmed defects from test gaps, keep fixes proportional, and avoid hiding actionable defects behind broad process advice.
+Task class is part of long-session evidence because promotion is class-specific. Record whether the request is `strategy-research-synthesis`, `code-review-defect-analysis`, `small-artifact`, `simple-direct`, or another explicitly named class. The active context may carry `task_class` for routing and hooks; a referenced continuity capsule carries the richer AI working-set index for compaction recovery. For `code-review-defect-analysis`, the context must include a defect-first critic requirement before Uigwe handoff: identify concrete failure modes, distinguish confirmed defects from test gaps, keep fixes proportional, and avoid hiding actionable defects behind broad process advice.
+
+## Continuity Capsule
+
+When a workflow needs AI-only continuation across compaction or a cleared session,
+write a `sejong.continuity-capsule/v0.1-draft` artifact and reference it from
+active context `artifact_refs`.
+
+The capsule is a compact index over durable artifacts, not raw memory. It records
+the objective, task class, current surface, pending gates, selected decisions,
+rejected options, active blockers, verification state, next action, stale-state
+triggers, and refs to source artifacts. See
+[CONTINUITY.md](CONTINUITY.md) and
+[continuity-capsule.schema.json](continuity-capsule.schema.json).
+
+Hooks inject a projection derived from the capsule. Use `micro`, `standard`,
+`frontier`, or `retrieval` projection profiles to keep model-visible context
+proportional to the task and model capacity. Do not use raw Sillok replay as the
+default projection; keep raw traces for retrieval, audit, and disputed evidence.
 
 When Seungjeongwon uses or evaluates a workflow-like backend, create a separate
 [workflow-run.schema.json](workflow-run.schema.json) artifact and check it with

@@ -104,9 +104,12 @@ Seungjeongwon execution run. See [seungjeongwon-run.schema.json](seungjeongwon-r
 
 - Keep follow-up turns inside the active King Sejong workflow unless the user explicitly exits.
 - Add model-visible context with the active context id, route id, repo root,
-  objective id, current surface, route sequence, pending gates, objective refs,
-  and last user intent.
+  objective id, task class, projection profile, current surface, route sequence,
+  pending gates, objective refs, and last user intent.
 - Inject a compact ambiguity register summary when a referenced register exists, including readiness, open ambiguity count, pending question obligation count, and next required user action.
+- Inject a compact continuity capsule projection when a referenced capsule
+  exists. The projection is model-visible working-set context, not the full
+  capsule and not a gate approval.
 
 `sejong_context.py` writes the same checkpoint to both the active pointer under
 `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json` and
@@ -174,18 +177,22 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 - Continue the turn when any referenced ambiguity register still has `open`
   ambiguity items or pending question obligations.
 - Continue the turn when any referenced Seungjeongwon run is active, broken, or invalid.
+- Continue the turn when any referenced continuity capsule is broken or invalid.
 
 `PreCompact`
 
 - Check that the active context checkpoint has the required fields before compaction.
 - Block compaction when an ambiguity-register reference is broken.
 - Block compaction when a Seungjeongwon run reference is broken or invalid.
+- Block compaction when a continuity capsule reference is broken or invalid.
 
 `PostCompact`
 
 - Re-inject the active context summary after compaction.
 - Include active Seungjeongwon run ids and open todo counts when readable run
   artifacts are referenced by the active context.
+- Include continuity capsule projections when readable capsules are referenced
+  by the active context.
 
 ## Config
 

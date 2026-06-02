@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Any
 
 from sejong_paths import path_contains_or_equals, resolve_path
+from continuity_capsule import FORMAT as CONTINUITY_CAPSULE_FORMAT
+from continuity_capsule import capsule_failures, capsule_projection
 from seungjeongwon_run import RUN_FORMAT as SEUNGJEONGWON_RUN_FORMAT
 from seungjeongwon_run import open_todos as seungjeongwon_open_todos
 from seungjeongwon_run import run_failures as seungjeongwon_run_failures
@@ -213,6 +215,8 @@ def context_summary(context: dict[str, Any]) -> str:
         f"route_id={context.get('route_id')}; "
         f"repo_root={repo_root}; "
         f"objective_id={context.get('objective_id') or 'none'}; "
+        f"task_class={context.get('task_class') or 'none'}; "
+        f"projection_profile={context.get('projection_profile') or 'default'}; "
         f"current_surface={context.get('current_surface')}; "
         f"route_sequence={','.join(context.get('route_sequence', []))}; "
         f"pending_gates={','.join(context.get('pending_gates', [])) or 'none'}; "
@@ -220,6 +224,9 @@ def context_summary(context: dict[str, Any]) -> str:
         f"last_user_intent={context.get('last_user_intent')}. "
         "Continue through Sejong lead routing until an explicit exit condition is met."
     )
+    continuity_text = continuity_capsule_summary(context)
+    if continuity_text:
+        summary += " " + continuity_text
     ambiguity_text = ambiguity_register_summary(context)
     if ambiguity_text:
         summary += " " + ambiguity_text
@@ -359,6 +366,11 @@ def looks_like_seungjeongwon_run_ref(ref: str) -> bool:
     return "seungjeongwon-run" in lowered and lowered.endswith(".json")
 
 
+def looks_like_continuity_capsule_ref(ref: str) -> bool:
+    lowered = ref.lower()
+    return "continuity-capsule" in lowered and lowered.endswith(".json")
+
+
 def load_ambiguity_registers(context: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
     registers: list[dict[str, Any]] = []
     broken_refs: list[str] = []
@@ -465,6 +477,56 @@ def ambiguity_register_summary(context: dict[str, Any]) -> str:
     if broken_refs:
         parts.append("broken_ambiguity_register_refs=" + ",".join(broken_refs) + ".")
     return " ".join(parts)
+
+
+def load_continuity_capsules(context: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str], list[str]]:
+    capsules: list[dict[str, Any]] = []
+    broken_refs: list[str] = []
+    invalid_refs: list[str] = []
+    for ref in context.get("artifact_refs") or []:
+        path = resolve_artifact_ref(ref, context)
+        if not path.exists():
+            if looks_like_continuity_capsule_ref(ref):
+                broken_refs.append(str(path))
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            if looks_like_continuity_capsule_ref(ref):
+                broken_refs.append(str(path))
+            continue
+        if data.get("format") != CONTINUITY_CAPSULE_FORMAT:
+            continue
+        failures = capsule_failures(data)
+        if failures:
+            invalid_refs.append(f"{path}: {'; '.join(failures)}")
+        capsules.append(data)
+    return capsules, broken_refs, invalid_refs
+
+
+def continuity_capsule_summary(context: dict[str, Any]) -> str:
+    capsules, broken_refs, invalid_refs = load_continuity_capsules(context)
+    parts: list[str] = []
+    preferred_profile = context.get("projection_profile")
+    for capsule in capsules:
+        if capsule_failures(capsule):
+            continue
+        parts.append(capsule_projection(capsule, preferred_profile))
+    if broken_refs:
+        parts.append("broken_continuity_capsule_refs=" + ",".join(broken_refs) + ".")
+    if invalid_refs:
+        parts.append("invalid_continuity_capsule_refs=" + ",".join(invalid_refs) + ".")
+    return " ".join(parts)
+
+
+def broken_continuity_capsule_refs(context: dict[str, Any]) -> list[str]:
+    _, broken_refs, _ = load_continuity_capsules(context)
+    return broken_refs
+
+
+def invalid_continuity_capsule_refs(context: dict[str, Any]) -> list[str]:
+    _, _, invalid_refs = load_continuity_capsules(context)
+    return invalid_refs
 
 
 def open_ambiguity_total(context: dict[str, Any]) -> int:
@@ -706,6 +768,20 @@ def handle_stop(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, A
             "reason": "Continue King Sejong execution: invalid Seungjeongwon run refs: "
             + ", ".join(invalid_run_refs),
         }
+    broken_capsule_refs = broken_continuity_capsule_refs(context)
+    if broken_capsule_refs:
+        return {
+            "decision": "block",
+            "reason": "Continue King Sejong execution: broken continuity capsule refs: "
+            + ", ".join(broken_capsule_refs),
+        }
+    invalid_capsule_refs = invalid_continuity_capsule_refs(context)
+    if invalid_capsule_refs:
+        return {
+            "decision": "block",
+            "reason": "Continue King Sejong execution: invalid continuity capsule refs: "
+            + ", ".join(invalid_capsule_refs),
+        }
     active_runs = active_seungjeongwon_run_summaries(context)
     if active_runs:
         return {
@@ -763,6 +839,20 @@ def handle_precompact(context: dict[str, Any]) -> dict[str, Any]:
             "continue": False,
             "stopReason": "invalid Seungjeongwon run refs: " + ", ".join(invalid_run_refs),
             "systemMessage": "King Sejong Seungjeongwon run artifacts must validate before compaction.",
+        }
+    broken_capsule_refs = broken_continuity_capsule_refs(context)
+    if broken_capsule_refs:
+        return {
+            "continue": False,
+            "stopReason": "broken continuity capsule refs: " + ", ".join(broken_capsule_refs),
+            "systemMessage": "King Sejong continuity capsule references must be readable before compaction.",
+        }
+    invalid_capsule_refs = invalid_continuity_capsule_refs(context)
+    if invalid_capsule_refs:
+        return {
+            "continue": False,
+            "stopReason": "invalid continuity capsule refs: " + ", ".join(invalid_capsule_refs),
+            "systemMessage": "King Sejong continuity capsule artifacts must validate before compaction.",
         }
     return hook_context("PreCompact", context_summary(context))
 

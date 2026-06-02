@@ -1,0 +1,83 @@
+{
+  "active_blockers": [],
+  "active_context_id": "ctx-continuity-example",
+  "capsule_id": "capsule-continuity-example",
+  "current_surface": "seungjeongwon",
+  "do_not_do": [
+    "inject raw trace logs into every prompt",
+    "treat the capsule as Uigwe gate approval",
+    "claim completion without fresh verification"
+  ],
+  "evidence_refs": [
+    "docs/sejong/SILLOK_TRACE.md",
+    "docs/sejong/scripts/test_king_sejong_hooks.py"
+  ],
+  "format": "sejong.continuity-capsule/v0.1-draft",
+  "last_updated_at": "2026-06-02T00:00:00Z",
+  "next_action": "Run continuity replay gate before claiming long-session continuity behavior is preserved.",
+  "objective": "Preserve AI working context across King Sejong compaction without replaying raw history.",
+  "pending_gates": [],
+  "projection_profile": "standard",
+  "rejected_options": [
+    {
+      "id": "handoff-only",
+      "reason": "Human-readable handoff notes can stale and cannot be hook-validated as AI working state.",
+      "refs": [
+        "docs/sejong/ROUTER.md"
+      ],
+      "summary": "Use only markdown handoff files after session clear."
+    },
+    {
+      "id": "raw-replay-default",
+      "reason": "Raw replay floods context and can expose private or untrusted evidence.",
+      "refs": [
+        "docs/sejong/SILLOK_TRACE.md",
+        "docs/sejong/SECURITY.md"
+      ],
+      "summary": "Replay full trace history into the model after compaction."
+    }
+  ],
+  "repo_root": "/Users/junsu/develop/king-sejong",
+  "risk_flags": [
+    "stale_summary",
+    "over_injection"
+  ],
+  "route_sequence": [
+    "sejong",
+    "jiphyeonjeon",
+    "uigwe",
+    "seungjeongwon"
+  ],
+  "run_id": "continuity-example-run",
+  "selected_decisions": [
+    {
+      "id": "capsule-as-index",
+      "refs": [
+        "docs/sejong/ARTIFACT_STORAGE.md",
+        "docs/sejong/HOOKS.md"
+      ],
+      "summary": "Use a continuity capsule as a compact index over runtime artifacts.",
+      "why": "It gives hooks a bounded AI working-set projection without making the capsule a new authority layer."
+    }
+  ],
+  "source_artifact_refs": [
+    "king-sejong-context.json",
+    "sillok-record.jsonl",
+    "seungjeongwon-run.json",
+    "ambiguity-register.json"
+  ],
+  "stale_triggers": [
+    "repo_root mismatch",
+    "objective or task_class changes",
+    "source artifact reference is missing",
+    "write-like action needs fresh verification"
+  ],
+  "task_class": "runtime-contract-design",
+  "verification_state": {
+    "last_verified_claim": "Capsule contract, hook projection, helper updates, and replay gate are covered by source-repo fixtures.",
+    "refs": [
+      "docs/sejong/scripts/validate_json_contracts.py"
+    ],
+    "status": "passed"
+  }
+}

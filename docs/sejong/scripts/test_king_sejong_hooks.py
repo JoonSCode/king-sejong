@@ -273,6 +273,67 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertIn("pending_question_obligations=1", additional)
         self.assertIn("Answer the pending intent question.", additional)
 
+    def test_user_prompt_submit_injects_continuity_capsule_projection(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            capsule_path = Path(tmp) / "continuity-capsule.json"
+            capsule_path.write_text(
+                json.dumps(
+                    {
+                        "format": "sejong.continuity-capsule/v0.1-draft",
+                        "capsule_id": "capsule-test",
+                        "active_context_id": "ctx-test",
+                        "repo_root": str(REPO_ROOT),
+                        "run_id": "run-test",
+                        "objective": "Keep AI working context compact.",
+                        "task_class": "runtime-contract-design",
+                        "current_surface": "uigwe",
+                        "route_sequence": ["sejong", "uigwe"],
+                        "pending_gates": ["seungjeongwon_receipt_required"],
+                        "projection_profile": "standard",
+                        "source_artifact_refs": ["king-sejong-context.json"],
+                        "evidence_refs": ["sillok-record.jsonl"],
+                        "selected_decisions": [
+                            {
+                                "id": "capsule-index",
+                                "summary": "Use capsule as compact artifact index.",
+                                "why": "It preserves working state without raw replay.",
+                                "refs": ["docs/sejong/HOOKS.md"],
+                            }
+                        ],
+                        "rejected_options": [],
+                        "active_blockers": ["hook wiring pending"],
+                        "verification_state": {
+                            "status": "in_progress",
+                            "last_verified_claim": "Projection test is pending.",
+                            "refs": ["docs/sejong/scripts/test_king_sejong_hooks.py"],
+                        },
+                        "next_action": "Wire hook projection.",
+                        "do_not_do": ["replay raw logs"],
+                        "stale_triggers": ["repo mismatch"],
+                        "risk_flags": ["stale_summary"],
+                        "last_updated_at": "2026-06-02T00:00:00Z",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["repo_root"] = str(REPO_ROOT)
+            context["projection_profile"] = "standard"
+            context["artifact_refs"] = [str(capsule_path)]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "UserPromptSubmit",
+                {"prompt": "다음", "hook_event_name": "UserPromptSubmit", "cwd": str(REPO_ROOT)},
+                context_path=context_path,
+            )
+        additional = output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("continuity_capsule=capsule-test", additional)
+        self.assertIn("task_class=runtime-contract-design", additional)
+        self.assertIn("next_action=Wire hook projection.", additional)
+        self.assertIn("continuity_decision=Use capsule as compact artifact index.", additional)
+
     def test_pre_tool_use_blocks_protected_edit_without_route_evidence(self) -> None:
         output = run_hook(
             "PreToolUse",
@@ -876,6 +937,46 @@ class KingSejongHookTests(unittest.TestCase):
             )
         self.assertFalse(output["continue"])
         self.assertIn("broken ambiguity register refs", output["stopReason"])
+
+    def test_precompact_blocks_broken_continuity_capsule_ref(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["artifact_refs"] = [str(Path(tmp) / "continuity-capsule.json")]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "PreCompact",
+                {"hook_event_name": "PreCompact", "trigger": "auto"},
+                context_path=context_path,
+            )
+        self.assertFalse(output["continue"])
+        self.assertIn("broken continuity capsule refs", output["stopReason"])
+
+    def test_precompact_blocks_invalid_continuity_capsule_ref(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            capsule_path = Path(tmp) / "continuity-capsule.json"
+            capsule_path.write_text(
+                json.dumps(
+                    {
+                        "format": "sejong.continuity-capsule/v0.1-draft",
+                        "capsule_id": "capsule-invalid",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["artifact_refs"] = [str(capsule_path)]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "PreCompact",
+                {"hook_event_name": "PreCompact", "trigger": "auto"},
+                context_path=context_path,
+            )
+        self.assertFalse(output["continue"])
+        self.assertIn("invalid continuity capsule refs", output["stopReason"])
 
     def test_precompact_blocks_incomplete_checkpoint(self) -> None:
         with tempfile.NamedTemporaryFile("w", suffix=".json") as handle:

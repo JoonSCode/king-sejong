@@ -30,6 +30,7 @@ ROUTER_PATH = SEJONG_ROOT / "ROUTER.md"
 REPO_CONTEXT_PATH = SEJONG_ROOT / "REPO_CONTEXT.md"
 PROTOCOL_PATH = SEJONG_ROOT / "PROTOCOL.md"
 RUNTIME_CONTRACT_PATH = SEJONG_ROOT / "RUNTIME_CONTRACT.md"
+CONTINUITY_PATH = SEJONG_ROOT / "CONTINUITY.md"
 SEUNGJEONGWON_EXECUTOR_PATH = SEJONG_ROOT / "SEUNGJEONGWON_EXECUTOR.md"
 VALIDATION_PATH = SEJONG_ROOT / "VALIDATION.md"
 ARTIFACT_STORAGE_PATH = SEJONG_ROOT / "ARTIFACT_STORAGE.md"
@@ -41,9 +42,11 @@ AMBIGUITY_REGISTER_SCHEMA_PATH = SEJONG_ROOT / "ambiguity-register.schema.json"
 SECURITY_PATH = SEJONG_ROOT / "SECURITY.md"
 SILLOK_TRACE_PATH = SEJONG_ROOT / "SILLOK_TRACE.md"
 CONTEXT_SCHEMA_PATH = SEJONG_ROOT / "king-sejong-context.schema.json"
+CONTINUITY_SCHEMA_PATH = SEJONG_ROOT / "continuity-capsule.schema.json"
 CONTEXT_EXAMPLE_PATH = SEJONG_ROOT / "examples" / "king-sejong-context.example.json"
 WORKFLOW_RUN_SCHEMA_PATH = SEJONG_ROOT / "workflow-run.schema.json"
 HOOK_SCRIPT_PATH = SEJONG_ROOT / "scripts" / "king_sejong_hooks.py"
+CONTINUITY_SCRIPT_PATH = SEJONG_ROOT / "scripts" / "continuity_capsule.py"
 LIVE_SESSION_ORCHESTRATOR_PATH = SEJONG_ROOT / "scripts" / "live_session_orchestrator.py"
 SILLOK_TRACE_SCRIPT_PATH = SEJONG_ROOT / "scripts" / "sillok_trace.py"
 WORKFLOW_RUN_SCRIPT_PATH = SEJONG_ROOT / "scripts" / "sejong_workflow_run.py"
@@ -602,8 +605,11 @@ def evaluate_bounded_parallelism() -> list[dict[str, Any]]:
 def evaluate_king_sejong_hooks() -> list[dict[str, Any]]:
     hooks = load_text(HOOKS_PATH)
     context_schema = load_text(CONTEXT_SCHEMA_PATH)
+    continuity = load_text(CONTINUITY_PATH)
+    continuity_schema = load_text(CONTINUITY_SCHEMA_PATH)
     hook_script = load_text(HOOK_SCRIPT_PATH)
-    combined = "\n".join([hooks, context_schema, hook_script])
+    continuity_script = load_text(CONTINUITY_SCRIPT_PATH)
+    combined = "\n".join([hooks, context_schema, continuity, continuity_schema, hook_script, continuity_script])
     required = [
         "UserPromptSubmit",
         "PreToolUse",
@@ -619,6 +625,12 @@ def evaluate_king_sejong_hooks() -> list[dict[str, Any]]:
         "required_route_sequence",
         "pending_gates",
         "seungjeongwon_receipt_required",
+        "task_class",
+        "projection_profile",
+        "sejong.continuity-capsule/v0.1-draft",
+        "continuity capsule projection",
+        "PreCompact` blocks compaction when a continuity capsule reference is broken or invalid",
+        "continuity_capsule.py",
         "Do not infer a receipt gate from `required_route_sequence` alone",
         "Hooks are deterministic guardrails, not a complete enforcement boundary.",
     ]
@@ -716,10 +728,14 @@ def evaluate_artifact_storage() -> list[dict[str, Any]]:
     storage = load_text(ARTIFACT_STORAGE_PATH)
     router = load_text(ROUTER_PATH)
     readme = load_text(README_PATH)
-    combined = "\n".join([storage, router, readme])
+    continuity = load_text(CONTINUITY_PATH)
+    combined = "\n".join([storage, router, readme, continuity])
     required = [
         "external nontracked",
         "`${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`",
+        "continuity-capsule.json",
+        "continuity-capsule.schema.json",
+        "store refs to Sillok traces",
         "tracked repository files are created only when the user explicitly asks",
         "Normal installation must not prompt for artifact tracking behavior.",
         "When artifacts are generated, report the external run directory and whether any tracked repository files were created.",

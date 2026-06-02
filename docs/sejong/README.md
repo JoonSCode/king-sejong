@@ -99,6 +99,8 @@ For substantial workflows, this active state can be mirrored into an external Ki
 
 When live clarification must be preserved across a long run, reference an ambiguity register from the active context `artifact_refs`. The register records the current stage, readiness percentage, unclear items, recommended options, free-response path, user responses, and next required user action. If any item remains `open`, Sejong must not advance or claim completion unless the user explicitly waives it.
 
+When AI-only working context must survive compaction or session clearing, reference a continuity capsule from active context `artifact_refs`. The capsule follows [continuity-capsule.schema.json](continuity-capsule.schema.json) and projects only compact, task-class-aware working-set context into hooks; raw Sillok traces and execution ledgers remain retrieval refs, not prompt replay.
+
 When long-run execution must survive compaction or unattended continuation, reference a Seungjeongwon run artifact from active context `artifact_refs`. The run follows [seungjeongwon-run.schema.json](seungjeongwon-run.schema.json) and records active todos, attempts, verification evidence, blockers, and Uigwe re-entry requests. `Stop` should not conclude while that run is active or invalid.
 
 Use Sejong repo-context init/refresh when a target repository needs an initial `AGENTS.md` or an existing instruction file should absorb durable lessons from recent work. That workflow is candidate-diff first: inspect the repo, deduplicate lessons, reject transient or unsafe material, and apply tracked instruction edits only after explicit user approval or an explicit apply instruction. See [REPO_CONTEXT.md](REPO_CONTEXT.md).
@@ -164,6 +166,8 @@ Useful commands:
 
 ```bash
 python3 docs/sejong/scripts/validate_json_contracts.py
+python3 docs/sejong/scripts/continuity_capsule.py check --path docs/sejong/examples/continuity-capsule.example.json
+python3 docs/sejong/scripts/continuity_replay_gate.py judge --context docs/sejong/examples/continuity-context.example.json --require "continuity_capsule=capsule-continuity-example" --require "continuity_rejected=Use only markdown handoff" --forbid "Replay full trace history" --max-chars 2500
 python3 docs/sejong/scripts/validate_bundle.py docs/sejong/examples/greenfield-full-flow
 python3 docs/sejong/scripts/sejong_workflow_run.py check --path docs/sejong/examples/workflow-run.example.json
 python3 docs/sejong/scripts/benchmark_workflow_run.py
@@ -179,6 +183,8 @@ python3 docs/sejong/scripts/outcome_quality_evaluator.py compare --task docs/sej
 python3 docs/sejong/scripts/product_evidence_gate.py check-plan --plan docs/sejong/examples/outcome-evaluation/tagback-growth/field-validation-plan.json
 python3 docs/sejong/scripts/seungjeongwon_run.py check --path <seungjeongwon-run.json>
 python3 docs/sejong/scripts/test_king_sejong_hooks.py
+python3 docs/sejong/scripts/test_continuity_capsule.py
+python3 docs/sejong/scripts/test_continuity_replay_gate.py
 python3 docs/sejong/scripts/test_sejong_integrated_quality_gate.py
 python3 docs/sejong/scripts/test_product_evidence_gate.py
 python3 docs/sejong/scripts/test_sejong_context.py

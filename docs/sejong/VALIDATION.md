@@ -101,7 +101,7 @@ Run this when changing `.agents/skills`, router docs, README guidance, live-sess
 python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets
 ```
 
-This benchmark is deterministic. It checks whether the installed skill surface still exposes the required routing, live-session, output, validation, bounded-parallelism, active-context, hook, protected-route, and repo-context init/refresh contracts.
+This benchmark is deterministic. It checks whether the installed skill surface still exposes the required routing, live-session, output, validation, bounded-parallelism, active-context, continuity-capsule, hook, protected-route, and repo-context init/refresh contracts.
 
 ### Phase 2B: King Sejong Guardrail TDD
 
@@ -110,6 +110,8 @@ Run these when changing active context checkpoints, hooks, TeamExecutor authorit
 ```bash
 python3 docs/sejong/scripts/test_king_sejong_hooks.py
 python3 docs/sejong/scripts/test_sejong_context.py
+python3 docs/sejong/scripts/test_continuity_capsule.py
+python3 docs/sejong/scripts/test_continuity_replay_gate.py
 python3 docs/sejong/scripts/test_team_executor.py
 python3 docs/sejong/scripts/test_sillok_trace.py
 SEJONG_HOME="$(mktemp -d)" python3 docs/sejong/scripts/test_king_sejong_e2e.py

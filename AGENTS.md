@@ -71,6 +71,7 @@ Do not add root-level repository files such as `AGENTS.md` to the managed instal
 - TeamExecutor behavior: `docs/sejong/TEAM_EXECUTOR.md` and `docs/sejong/scripts/team_executor.py`
 - Live ambiguity clarification: `docs/sejong/AMBIGUITY_REGISTER.md` and `docs/sejong/ambiguity-register.schema.json`
 - Runtime artifact storage: `docs/sejong/ARTIFACT_STORAGE.md`
+- AI continuity capsule and projection: `docs/sejong/CONTINUITY.md`
 - Hook guardrails: `docs/sejong/HOOKS.md` and `docs/sejong/scripts/king_sejong_hooks.py`
 - Active context checkpoints: `docs/sejong/king-sejong-context.schema.json`
 - Sillok trace and security guardrails: `docs/sejong/SILLOK_TRACE.md`, `docs/sejong/SECURITY.md`, and `docs/sejong/scripts/sillok_trace.py`

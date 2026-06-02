@@ -24,6 +24,7 @@ SURFACES = {
     "danjong",
     "sejong-direct",
 }
+PROJECTION_PROFILES = {"micro", "standard", "frontier", "retrieval"}
 REQUIRED_FIELDS = (
     "format",
     "active_context_id",
@@ -176,6 +177,10 @@ def validate_context(context: dict[str, Any]) -> list[str]:
         failures.append(f"invalid current_surface: {context.get('current_surface')}")
     if "objective_id" in context and (not isinstance(context["objective_id"], str) or not context["objective_id"]):
         failures.append("objective_id must be a non-empty string")
+    if "task_class" in context and (not isinstance(context["task_class"], str) or not context["task_class"]):
+        failures.append("task_class must be a non-empty string")
+    if "projection_profile" in context and context["projection_profile"] not in PROJECTION_PROFILES:
+        failures.append(f"invalid projection_profile: {context['projection_profile']}")
     for field in LIST_FIELDS:
         if field in context and not isinstance(context[field], list):
             failures.append(f"{field} must be a list")
@@ -213,6 +218,8 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--route-id")
     start.add_argument("--objective-id")
     start.add_argument("--objective-ref", action="append", dest="objective_refs")
+    start.add_argument("--task-class")
+    start.add_argument("--projection-profile", choices=sorted(PROJECTION_PROFILES))
     start.add_argument("--current-surface", default="sejong", choices=sorted(SURFACES))
     start.add_argument("--route", action="append", dest="route_sequence")
     start.add_argument("--required-route", action="append", dest="required_route_sequence")
@@ -243,6 +250,8 @@ def build_parser() -> argparse.ArgumentParser:
     update.add_argument("--add-protected-path", action="append", dest="add_protected_paths")
     update.add_argument("--objective-id")
     update.add_argument("--add-objective-ref", action="append", dest="add_objective_refs")
+    update.add_argument("--task-class")
+    update.add_argument("--projection-profile", choices=sorted(PROJECTION_PROFILES))
     update.add_argument("--add-evidence-ref", action="append", dest="add_evidence_refs")
     update.add_argument("--add-artifact-ref", action="append", dest="add_artifact_refs")
     update.add_argument("--add-team-run-ref", action="append", dest="add_team_run_refs")
@@ -286,6 +295,8 @@ def start_context(args: argparse.Namespace) -> int:
         "route_id": args.route_id or f"route-{run_id}",
         **({"objective_id": args.objective_id} if args.objective_id else {}),
         **({"objective_refs": args.objective_refs} if args.objective_refs else {}),
+        **({"task_class": args.task_class} if args.task_class else {}),
+        **({"projection_profile": args.projection_profile} if args.projection_profile else {}),
         "current_surface": args.current_surface,
         "route_sequence": route_sequence,
         "required_route_sequence": required_route_sequence,
@@ -348,6 +359,10 @@ def update_context(args: argparse.Namespace) -> int:
         context["objective_id"] = args.objective_id
     if args.add_objective_refs:
         context["objective_refs"] = unique_append(context.get("objective_refs", []), args.add_objective_refs)
+    if args.task_class:
+        context["task_class"] = args.task_class
+    if args.projection_profile:
+        context["projection_profile"] = args.projection_profile
     if args.add_evidence_refs:
         context["evidence_refs"] = unique_append(context.get("evidence_refs", []), args.add_evidence_refs)
     if args.add_artifact_refs:
