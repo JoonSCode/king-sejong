@@ -3,8 +3,12 @@
   "brief_path": "brief.md",
   "created_at": "2026-05-23T00:00:00Z",
   "forbidden_worker_claims": [
-    "gate approval",
-    "final decision by majority"
+    "Uigwe gate approval",
+    "final synthesis",
+    "final verification",
+    "majority-vote decisions",
+    "consensus as approval",
+    "scope widening"
   ],
   "format": "sejong.team/v0.1-draft",
   "lead_authority": {
@@ -36,6 +40,16 @@
       "allowed_outputs": [
         "bounded risk note"
       ],
+      "forbidden_worker_claims": [
+        "Uigwe gate approval",
+        "final synthesis",
+        "final verification",
+        "majority-vote decisions",
+        "consensus as approval",
+        "scope widening"
+      ],
+      "prompt_path": "workers/critic/prompt.md",
+      "return_format": "Return a bounded risk note with summary, evidence_refs, confidence, residual_risk, and blocker_or_next_step.",
       "role": "critic",
       "scope": "bounded risk review",
       "status": "registered",

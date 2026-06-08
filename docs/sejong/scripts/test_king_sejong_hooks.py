@@ -655,6 +655,27 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertEqual(output["decision"], "block")
         self.assertIn("bounded", output["reason"])
 
+    def test_subagent_start_injects_bounded_worker_contract(self) -> None:
+        output = run_hook(
+            "SubagentStart",
+            {
+                "hook_event_name": "SubagentStart",
+                "agent_type": "critic",
+                "worker_role": "critic",
+                "worker_scope": "bounded risk review",
+            },
+        )
+        context = output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("King Sejong active context", context)
+        self.assertIn("Bounded worker contract", context)
+        self.assertIn("worker_role=critic", context)
+        self.assertIn("worker_scope=bounded risk review", context)
+        self.assertIn("source_of_truth_refs=", context)
+        self.assertIn("allowed_outputs=", context)
+        self.assertIn("forbidden_claims=", context)
+        self.assertIn("return_format=", context)
+        self.assertIn("stop_condition=", context)
+
     def test_teammate_idle_rejects_peer_gate_claim(self) -> None:
         output = run_hook(
             "TeammateIdle",
@@ -666,6 +687,34 @@ class KingSejongHookTests(unittest.TestCase):
         )
         self.assertEqual(output["decision"], "block")
         self.assertIn("worker authority", output["reason"])
+
+    def test_task_completed_rejects_peer_gate_claim(self) -> None:
+        output = run_hook(
+            "TaskCompleted",
+            {
+                "hook_event_name": "TaskCompleted",
+                "teammate_name": "critic",
+                "last_assistant_message": "The Uigwe gate is approved by majority vote.",
+            },
+        )
+        self.assertEqual(output["decision"], "block")
+        self.assertIn("worker authority", output["reason"])
+
+    def test_task_created_injects_bounded_worker_contract(self) -> None:
+        output = run_hook(
+            "TaskCreated",
+            {
+                "hook_event_name": "TaskCreated",
+                "teammate_name": "critic",
+                "worker_role": "critic",
+                "worker_scope": "bounded risk review",
+            },
+        )
+        context = output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("Bounded worker contract", context)
+        self.assertIn("worker_role=critic", context)
+        self.assertIn("worker_scope=bounded risk review", context)
+        self.assertIn("forbidden_claims=", context)
 
     def test_stop_continues_when_verification_gate_is_pending(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -918,7 +918,7 @@
       "expected_behavior": [
         "uses one shared council brief and fixed options",
         "assigns each worker a role, scope, allowed output, verification expectation, and stop condition",
-        "injects the active court mode into worker context",
+        "generates a runtime worker prompt with current surface, role, scope, source refs, allowed outputs, forbidden claims, return format, and stop condition",
         "uses versioned send-message and receive-messages mailbox envelopes for bounded peer messages",
         "caps the challenge round",
         "lead synthesis names recommendation and rejected options"
@@ -936,7 +936,10 @@
           "current_surface",
           "phase_label",
           "route_sequence",
-          "source_of_truth_refs"
+          "source_of_truth_refs",
+          "prompt_path",
+          "return_format",
+          "forbidden_worker_claims"
         ],
         "worker_authority_forbidden_claims": [
           "Uigwe gate approval",

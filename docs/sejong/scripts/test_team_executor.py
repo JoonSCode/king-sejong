@@ -361,6 +361,100 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             self.assertIn("SEJONG_CURRENT_SURFACE=uigwe", result.stdout)
             self.assertIn("SEJONG_WORKER_ROLE=readiness-checker", result.stdout)
 
+    def test_worker_state_records_complete_prompt_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "prompt-state",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--source-of-truth-ref",
+                    "brief.md",
+                    "--source-of-truth-ref",
+                    "docs/sejong/TEAM_EXECUTOR.md",
+                    "--worker",
+                    "critic:critic:bounded risk review",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "prompt-state"
+            state = json.loads((run_dir / "workers" / "critic" / "state.json").read_text(encoding="utf-8"))
+            self.assertEqual(state["current_surface"], "jiphyeonjeon")
+            self.assertEqual(state["role"], "critic")
+            self.assertEqual(state["scope"], "bounded risk review")
+            self.assertEqual(state["source_of_truth_refs"], ["brief.md", "docs/sejong/TEAM_EXECUTOR.md"])
+            self.assertIn("prompt_path", state)
+            self.assertIn("return_format", state)
+            self.assertIn("forbidden_worker_claims", state)
+            self.assertIn("verification_expectation", state)
+            prompt = (run_dir / state["prompt_path"]).read_text(encoding="utf-8")
+            self.assertIn("You are a bounded Jiphyeonjeon worker", prompt)
+            self.assertIn("Role: critic", prompt)
+            self.assertIn("Source of truth refs:", prompt)
+            self.assertIn("Forbidden claims:", prompt)
+
+    def test_check_fails_when_worker_prompt_contract_is_incomplete(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "missing-prompt-contract",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--worker",
+                    "critic:critic:bounded risk review",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "missing-prompt-contract"
+            team_path = run_dir / "team.json"
+            team = json.loads(team_path.read_text(encoding="utf-8"))
+            del team["workers"][0]["return_format"]
+            team_path.write_text(json.dumps(team, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+            result = run_team_command(["check", str(run_dir)], sejong_home=sejong_home)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("worker missing return_format", result.stderr)
+
+    def test_launch_injects_complete_worker_prompt_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "launch-prompt",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--worker",
+                    "critic:critic:bounded risk review",
+                    "--command",
+                    "critic=codex exec -",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "launch-prompt"
+
+            result = run_team_command(["launch", str(run_dir), "--dry-run"], sejong_home=sejong_home)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("SEJONG_CURRENT_SURFACE=jiphyeonjeon", result.stdout)
+            self.assertIn("SEJONG_WORKER_ROLE=critic", result.stdout)
+            self.assertIn("SEJONG_WORKER_SCOPE='bounded risk review'", result.stdout)
+            self.assertIn("SEJONG_WORKER_ALLOWED_OUTPUTS=", result.stdout)
+            self.assertIn("SEJONG_WORKER_VERIFICATION_EXPECTATION=", result.stdout)
+            self.assertIn("SEJONG_FORBIDDEN_WORKER_CLAIMS=", result.stdout)
+            self.assertIn("SEJONG_WORKER_RETURN_FORMAT=", result.stdout)
+            self.assertIn("< ", result.stdout)
+            self.assertIn("workers/critic/prompt.md", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

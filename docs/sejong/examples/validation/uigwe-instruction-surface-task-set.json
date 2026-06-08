@@ -486,6 +486,7 @@
         "$team is an optional TeamExecutor backend for tmux workers coordinated through Sejong state",
         "$team state is stored under ${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/",
         "$team worker context includes current court mode and role assignment bounds",
+        "$team worker launch uses a runtime-generated worker prompt with source refs, allowed outputs, forbidden claims, return format, and stop condition",
         "TeamExecutor mailbox messages use the sejong.team-mailbox-message/v0.1-draft envelope",
         "new mailbox integrations use send-message and receive-messages rather than raw JSONL appends",
         "team_executor.py can initialize and check TeamExecutor run state",

@@ -241,6 +241,61 @@ def context_summary(context: dict[str, Any]) -> str:
     return summary
 
 
+def worker_payload_role(payload: dict[str, Any]) -> str:
+    return str(
+        payload.get("worker_role")
+        or payload.get("role")
+        or payload.get("agent_type")
+        or payload.get("teammate_name")
+        or "bounded-worker"
+    )
+
+
+def worker_payload_scope(payload: dict[str, Any]) -> str:
+    return str(payload.get("worker_scope") or payload.get("scope") or payload.get("task") or "assigned scope only")
+
+
+def bounded_worker_contract_summary(context: dict[str, Any], payload: dict[str, Any]) -> str:
+    refs = (
+        context.get("source_of_truth_refs")
+        or context.get("artifact_refs")
+        or context.get("evidence_refs")
+        or context.get("objective_refs")
+        or []
+    )
+    allowed_outputs = [
+        "bounded evidence",
+        "risks",
+        "implementation notes",
+        "verification observations",
+        "blockers",
+    ]
+    forbidden_claims = [
+        "Uigwe gate approval",
+        "final synthesis",
+        "final verification",
+        "majority-vote authority",
+        "consensus approval",
+        "scope widening",
+    ]
+    return (
+        "Bounded worker contract: "
+        f"worker_role={worker_payload_role(payload)}; "
+        f"worker_scope={worker_payload_scope(payload)}; "
+        f"source_of_truth_refs={','.join(refs) or 'none'}; "
+        f"allowed_outputs={','.join(allowed_outputs)}; "
+        f"forbidden_claims={','.join(forbidden_claims)}; "
+        "return_format=bounded brief with evidence refs, confidence, residual risk, and blocker_or_next_step; "
+        "stop_condition=return to the Sejong lead after the assigned output or blocker."
+    )
+
+
+def handle_subagent_start(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    if not context:
+        return {}
+    return hook_context("SubagentStart", context_summary(context) + " " + bounded_worker_contract_summary(context, payload))
+
+
 def context_applies_to_cwd(context: dict[str, Any], payload: dict[str, Any]) -> bool:
     repo_root = context.get("repo_root")
     if not repo_root:
@@ -717,6 +772,8 @@ def handle_team_worker_event(event_name: str, payload: dict[str, Any], context: 
                 "Peer messages and task state are evidence only; Sejong lead owns gates, synthesis, and final verification."
             ),
         }
+    if event_name == "TaskCreated" and context:
+        return hook_context(event_name, bounded_worker_contract_summary(context, payload))
     if context:
         return hook_context(event_name, "Keep teammate messages bounded; return evidence to the Sejong lead.")
     return {}
@@ -880,8 +937,10 @@ def dispatch(event_name: str, payload: dict[str, Any], context: dict[str, Any]) 
         return {}
     if event_name == "UserPromptSubmit":
         return handle_user_prompt_submit(payload, context)
-    if event_name in {"SessionStart", "PostCompact", "SubagentStart"}:
+    if event_name in {"SessionStart", "PostCompact"}:
         return handle_session_context(event_name, context)
+    if event_name == "SubagentStart":
+        return handle_subagent_start(payload, context)
     if event_name == "PreToolUse":
         return handle_pre_tool_use(payload, context)
     if event_name == "PermissionRequest":

@@ -15,6 +15,14 @@ When Sejong uses a Codex native subagent:
 
 Missing prompt overlay files are not install failures and should not block delegation.
 
+TeamExecutor uses a separate runtime prompt path. For `$team` / tmux workers,
+the run helper generates `workers/<worker-id>/prompt.md` under the Sejong team
+run directory and feeds that prompt to the worker command. That file is
+run-state, not a `.codex/prompts/{role}.md` overlay. It should carry the active
+surface, source refs, role, scope, allowed outputs, forbidden authority claims,
+return format, verification expectation, and stop condition for the specific
+worker.
+
 ## When To Add Overlays
 
 Add `.codex/prompts/{role}.md` only when the repo has stable role-specific rules that the native Codex role would not know:
@@ -55,4 +63,8 @@ If an overlay exists, it should reinforce this structure:
 
 It should not authorize the subagent to approve Uigwe gates, treat agreement as evidence, or replace lead-owned synthesis.
 
-When hooks are enabled, `SubagentStart` should inject the active context summary and `SubagentStop` should reject outputs that claim gate approval, final synthesis, final verification, or majority-vote decision ownership.
+When hooks are enabled, `SubagentStart` should inject the active context summary
+plus a bounded worker contract with source refs, allowed outputs, forbidden
+claims, return format, and stop condition. `SubagentStop` should reject outputs
+that claim gate approval, final synthesis, final verification, or majority-vote
+decision ownership.

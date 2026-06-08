@@ -154,13 +154,18 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 
 `SubagentStart`
 
-- Inject the bounded worker contract, source-of-truth refs, and forbidden authority claims.
+- Inject the active context summary plus a bounded worker contract with worker
+  role, worker scope, source-of-truth refs, allowed outputs, forbidden authority
+  claims, return format, and stop condition.
 
 `TaskCreated`, `TaskCompleted`, `TeammateIdle` when the host runtime supports team or teammate hooks
 
 - Keep official team-task and teammate events inside the same Sejong authority model.
 - Reject teammate output or task completion that claims Uigwe gate approval, final synthesis, final verification, consensus approval, or majority-vote authority.
-- Add active context for bounded peer messages, shared task state, and lead-owned synthesis.
+- Add active context for bounded peer messages, shared task state, and
+  lead-owned synthesis. `TaskCreated` should inject the same bounded worker
+  contract shape used by `SubagentStart` when role and scope metadata are
+  available.
 
 `SubagentStop`
 

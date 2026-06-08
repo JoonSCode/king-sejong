@@ -167,7 +167,16 @@
         "allowed_outputs": {
           "$ref": "#/$defs/StringList"
         },
+        "forbidden_worker_claims": {
+          "$ref": "#/$defs/StringList"
+        },
         "verification_expectation": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "return_format": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "prompt_path": {
           "$ref": "#/$defs/NonEmptyString"
         },
         "stop_condition": {
@@ -186,7 +195,10 @@
         "scope",
         "allowed_message_kinds",
         "allowed_outputs",
+        "forbidden_worker_claims",
         "verification_expectation",
+        "return_format",
+        "prompt_path",
         "stop_condition",
         "status"
       ]
@@ -412,6 +424,15 @@
         "phase_label": {
           "$ref": "#/$defs/NonEmptyString"
         },
+        "route_sequence": {
+          "$ref": "#/$defs/StringList"
+        },
+        "pending_gates": {
+          "$ref": "#/$defs/StringList"
+        },
+        "source_of_truth_refs": {
+          "$ref": "#/$defs/StringList"
+        },
         "worker_id": {
           "$ref": "#/$defs/NonEmptyString"
         },
@@ -424,7 +445,22 @@
         "allowed_outputs": {
           "$ref": "#/$defs/StringList"
         },
+        "allowed_message_kinds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MessageKind"
+          }
+        },
+        "forbidden_worker_claims": {
+          "$ref": "#/$defs/StringList"
+        },
         "verification_expectation": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "return_format": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "prompt_path": {
           "$ref": "#/$defs/NonEmptyString"
         },
         "stop_condition": {
@@ -443,11 +479,18 @@
         "run_id",
         "current_surface",
         "phase_label",
+        "route_sequence",
+        "pending_gates",
+        "source_of_truth_refs",
         "worker_id",
         "role",
         "scope",
+        "allowed_message_kinds",
         "allowed_outputs",
+        "forbidden_worker_claims",
         "verification_expectation",
+        "return_format",
+        "prompt_path",
         "stop_condition",
         "status",
         "updated_at"

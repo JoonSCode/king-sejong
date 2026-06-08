@@ -308,10 +308,24 @@ Workers may implement, critique, or verify disjoint leaves. The lead or Seungjeo
 
 ## Worker Context Injection
 
-When launching tmux workers, the helper injects the active court-mode context into each worker environment:
+When registering a worker, the helper writes a runtime-generated worker prompt
+at `workers/<worker-id>/prompt.md`. This prompt is part of the TeamExecutor run
+state, not a repo-local `.codex/prompts` overlay and not a required install
+surface.
+
+The prompt must include the active `current_surface`, route sequence, source of
+truth refs, worker role, assigned scope, allowed outputs, verification
+expectation, return format, forbidden authority claims, and stop condition.
+For tmux launches, `launch` also exposes the prompt path as
+`SEJONG_WORKER_PROMPT` and redirects it into the worker command's stdin. Wrapper
+commands should therefore use a worker command that can read initial
+instructions from stdin, such as `codex exec -`.
+
+When launching tmux workers, the helper also injects the active court-mode context into each worker environment:
 
 - `SEJONG_TEAM_RUN`
 - `SEJONG_TEAM_WORKER`
+- `SEJONG_WORKER_PROMPT`
 - `SEJONG_CURRENT_SURFACE`
 - `SEJONG_PHASE_LABEL`
 - `SEJONG_ROUTE_SEQUENCE`
@@ -320,9 +334,16 @@ When launching tmux workers, the helper injects the active court-mode context in
 - `SEJONG_WORKER_ROLE`
 - `SEJONG_WORKER_SCOPE`
 - `SEJONG_WORKER_ALLOWED_OUTPUTS`
+- `SEJONG_WORKER_VERIFICATION_EXPECTATION`
+- `SEJONG_FORBIDDEN_WORKER_CLAIMS`
+- `SEJONG_WORKER_RETURN_FORMAT`
 - `SEJONG_WORKER_STOP_CONDITION`
 
-Workers should treat that context as bounds, not as permission to widen scope. If the active mode is unclear, the lead should block or rewrite the role assignment before launching workers.
+Workers should treat that prompt and environment context as bounds, not as
+permission to widen scope. The prompt carries refs to the shared brief rather
+than turning raw brief text into trusted instruction. If the active mode is
+unclear, the lead should block or rewrite the role assignment before launching
+workers.
 
 ## Pipes
 
