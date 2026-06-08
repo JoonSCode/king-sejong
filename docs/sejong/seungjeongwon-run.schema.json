@@ -33,6 +33,9 @@
     "verification_methods": {
       "$ref": "#/$defs/StringList"
     },
+    "guardrail_thresholds": {
+      "$ref": "#/$defs/GuardrailThresholds"
+    },
     "todos": {
       "type": "array",
       "items": {
@@ -47,6 +50,9 @@
     },
     "verification_evidence": {
       "$ref": "#/$defs/StringList"
+    },
+    "guardrail_scores": {
+      "$ref": "#/$defs/GuardrailScores"
     },
     "blockers": {
       "$ref": "#/$defs/StringList"
@@ -71,9 +77,11 @@
     "status",
     "success_criteria",
     "verification_methods",
+    "guardrail_thresholds",
     "todos",
     "attempt_ledger",
     "verification_evidence",
+    "guardrail_scores",
     "blockers",
     "uigwe_reentry_requests",
     "created_at",
@@ -89,6 +97,45 @@
       "items": {
         "$ref": "#/$defs/NonEmptyString"
       }
+    },
+    "ScoreValue": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "GuardrailScores": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/ScoreValue"
+      }
+    },
+    "GuardrailThresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "leaf_guardrail_minimum": {
+          "$ref": "#/$defs/ScoreValue"
+        },
+        "leaf_guardrail_aggregate": {
+          "$ref": "#/$defs/ScoreValue"
+        },
+        "run_guardrail_aggregate": {
+          "$ref": "#/$defs/ScoreValue"
+        },
+        "selected_leaf_coverage": {
+          "$ref": "#/$defs/ScoreValue"
+        },
+        "success_criteria_coverage": {
+          "$ref": "#/$defs/ScoreValue"
+        }
+      },
+      "required": [
+        "leaf_guardrail_minimum",
+        "leaf_guardrail_aggregate",
+        "run_guardrail_aggregate",
+        "selected_leaf_coverage",
+        "success_criteria_coverage"
+      ]
     },
     "TodoStatus": {
       "type": "string",
@@ -117,6 +164,9 @@
         "verification_method": {
           "$ref": "#/$defs/NonEmptyString"
         },
+        "guardrail_scores": {
+          "$ref": "#/$defs/GuardrailScores"
+        },
         "status": {
           "$ref": "#/$defs/TodoStatus"
         },
@@ -129,6 +179,7 @@
         "description",
         "done_criteria",
         "verification_method",
+        "guardrail_scores",
         "status",
         "attempt_ids"
       ]

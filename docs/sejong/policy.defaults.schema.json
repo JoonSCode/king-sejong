@@ -104,6 +104,9 @@
         },
         "actionable_readiness": {
           "$ref": "#/$defs/DerivedMetric"
+        },
+        "execution_guardrail_score": {
+          "$ref": "#/$defs/DerivedMetric"
         }
       },
       "required": [
@@ -111,7 +114,8 @@
         "intent_readiness",
         "design_readiness",
         "handoff_readiness",
-        "actionable_readiness"
+        "actionable_readiness",
+        "execution_guardrail_score"
       ]
     },
     "CandidateScoreWeights": {
@@ -254,6 +258,38 @@
         "decision_boundary_contradictions_force_deep_interview"
       ]
     },
+    "CompletionThresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "leaf_guardrail_minimum": {
+          "$ref": "#/$defs/Weight"
+        },
+        "leaf_guardrail_aggregate": {
+          "$ref": "#/$defs/Weight"
+        },
+        "run_guardrail_aggregate": {
+          "$ref": "#/$defs/Weight"
+        },
+        "selected_leaf_coverage": {
+          "$ref": "#/$defs/Weight"
+        },
+        "success_criteria_coverage": {
+          "$ref": "#/$defs/Weight"
+        },
+        "hard_guardrails_required": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "leaf_guardrail_minimum",
+        "leaf_guardrail_aggregate",
+        "run_guardrail_aggregate",
+        "selected_leaf_coverage",
+        "success_criteria_coverage",
+        "hard_guardrails_required"
+      ]
+    },
     "ProfilePolicy": {
       "type": "object",
       "additionalProperties": false,
@@ -269,13 +305,17 @@
         },
         "reentry_thresholds": {
           "$ref": "#/$defs/ReentryThresholds"
+        },
+        "completion_thresholds": {
+          "$ref": "#/$defs/CompletionThresholds"
         }
       },
       "required": [
         "candidate_score_weights",
         "readiness_thresholds",
         "frontier_policy",
-        "reentry_thresholds"
+        "reentry_thresholds",
+        "completion_thresholds"
       ]
     }
   }

@@ -54,6 +54,17 @@
         "fresh_verification_clarity": 0.16,
         "failure_path_clarity": 0.08
       }
+    },
+    "execution_guardrail_score": {
+      "dimensions": {
+        "done_criteria_satisfaction": 0.24,
+        "verification_evidence_quality": 0.20,
+        "scope_containment": 0.14,
+        "dependency_integrity": 0.12,
+        "regression_safety": 0.12,
+        "reentry_signal_resolution": 0.10,
+        "artifact_traceability": 0.08
+      }
     }
   },
   "profiles": {
@@ -96,6 +107,14 @@
         "max_brainstorming_reentries_before_deep_interview": 2,
         "non_goal_contradictions_force_deep_interview": true,
         "decision_boundary_contradictions_force_deep_interview": true
+      },
+      "completion_thresholds": {
+        "leaf_guardrail_minimum": 0.98,
+        "leaf_guardrail_aggregate": 0.98,
+        "run_guardrail_aggregate": 0.98,
+        "selected_leaf_coverage": 1.0,
+        "success_criteria_coverage": 1.0,
+        "hard_guardrails_required": true
       }
     },
     "brownfield": {
@@ -137,6 +156,14 @@
         "max_brainstorming_reentries_before_deep_interview": 2,
         "non_goal_contradictions_force_deep_interview": true,
         "decision_boundary_contradictions_force_deep_interview": true
+      },
+      "completion_thresholds": {
+        "leaf_guardrail_minimum": 0.98,
+        "leaf_guardrail_aggregate": 0.98,
+        "run_guardrail_aggregate": 0.98,
+        "selected_leaf_coverage": 1.0,
+        "success_criteria_coverage": 1.0,
+        "hard_guardrails_required": true
       }
     }
   }

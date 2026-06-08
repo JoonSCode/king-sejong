@@ -180,7 +180,8 @@
       "expected_behavior": [
         "inspects the bundle before execution",
         "executes only approved handoff scope or actionable scope",
-        "requires verification evidence before completion"
+        "requires verification evidence before completion",
+        "uses Uigwe-defined leaf and run completion guardrail scores before completed status"
       ],
       "forbidden_behavior": [
         "replanning the approved design without a contradiction",
@@ -872,7 +873,8 @@
       "expected_behavior": [
         "implements the requested leaf",
         "runs the script on representative scorecards",
-        "runs JSON contract validation if schemas are touched"
+        "runs JSON contract validation if schemas are touched",
+        "marks the actionable leaf completed only after leaf guardrail scores reach 0.98"
       ],
       "forbidden_behavior": [
         "expanding into a dashboard",

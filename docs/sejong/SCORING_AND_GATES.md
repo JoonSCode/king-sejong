@@ -52,6 +52,12 @@ These are weighted completeness-and-clarity scores computed by the orchestrator 
 
 `handoff_readiness` belongs to Uigwe and decides whether a node can be handed to Seungjeongwon. `actionable_readiness` belongs to Seungjeongwon and decides whether executor-side todo decomposition may enter the execution attempt loop.
 
+Completion uses a separate score family. `execution_guardrail_score` belongs to
+the Uigwe-to-Seungjeongwon execution contract and decides whether a completed
+leaf or completed run can be claimed. It is intentionally stricter than
+`actionable_readiness`: actionable readiness means "safe to try"; guardrail
+completion means "proved enough to close."
+
 ### 3. Re-entry Thresholds
 
 Used to decide whether to:
@@ -162,6 +168,33 @@ Default weights:
 - `fresh_verification_clarity`: `0.16`
 - `failure_path_clarity`: `0.08`
 
+### Execution Guardrail Score
+
+Suggested Seungjeongwon completion dimensions, set by Uigwe before handoff:
+
+- `done_criteria_satisfaction`
+- `verification_evidence_quality`
+- `scope_containment`
+- `dependency_integrity`
+- `regression_safety`
+- `reentry_signal_resolution`
+- `artifact_traceability`
+
+Default weights:
+
+- `done_criteria_satisfaction`: `0.24`
+- `verification_evidence_quality`: `0.20`
+- `scope_containment`: `0.14`
+- `dependency_integrity`: `0.12`
+- `regression_safety`: `0.12`
+- `reentry_signal_resolution`: `0.10`
+- `artifact_traceability`: `0.08`
+
+These dimensions are scored from `0.0` to `1.0` from the execution evidence.
+They do not replace hard binary constraints such as "Uigwe contract preserved",
+"no open blocker", or "no unresolved re-entry request." Binary hard constraints
+must be true; they are not averaged into a `0.98` score.
+
 ## Default Profiles
 
 ### Greenfield
@@ -186,6 +219,11 @@ Use when:
 - `design_readiness` required for `decomposition`: `0.70`
 - `handoff_readiness` required for Seungjeongwon handoff: `0.78`
 - `actionable_readiness` required for execution attempt: `0.82`
+- `leaf_guardrail_minimum` required for every completion guardrail: `0.98`
+- `leaf_guardrail_aggregate` required to close an actionable leaf: `0.98`
+- `run_guardrail_aggregate` required to close the run: `0.98`
+- `selected_leaf_coverage` required to close the run: `1.00`
+- `success_criteria_coverage` required to close the run: `1.00`
 
 #### Frontier Defaults
 
@@ -233,6 +271,11 @@ Use when:
 - `design_readiness` required for `decomposition`: `0.76`
 - `handoff_readiness` required for Seungjeongwon handoff: `0.84`
 - `actionable_readiness` required for execution attempt: `0.88`
+- `leaf_guardrail_minimum` required for every completion guardrail: `0.98`
+- `leaf_guardrail_aggregate` required to close an actionable leaf: `0.98`
+- `run_guardrail_aggregate` required to close the run: `0.98`
+- `selected_leaf_coverage` required to close the run: `1.00`
+- `success_criteria_coverage` required to close the run: `1.00`
 
 #### Frontier Defaults
 
@@ -286,6 +329,27 @@ Likewise, a Seungjeongwon todo may not be marked `actionable_leaf` if:
 - dependency prerequisites are neither satisfied nor explicitly blocked
 - verification cannot produce fresh proof
 - failure would not produce a next hypothesis or escalation target
+
+A Seungjeongwon actionable leaf may not be marked `completed` if:
+
+- any Uigwe-defined leaf completion guardrail scores below `0.98`
+- the leaf aggregate execution guardrail score is below `0.98`
+- the Uigwe goal, non-goals, success criteria, verification bar, or
+  must-preserve behavior changed without Uigwe re-entry
+- verification evidence is stale, missing, or disconnected from the leaf's
+  `done_criteria`
+- dependency or regression checks are unresolved
+- the recommended re-entry target is anything other than `none`
+
+A Seungjeongwon run may not be marked `completed` if:
+
+- any selected actionable leaf is still open, blocked, invalidated, or below its
+  leaf completion guardrail threshold
+- run aggregate execution guardrail score is below `0.98`
+- selected leaf coverage is below `1.00`
+- success criteria coverage is below `1.00`
+- any blocker, unresolved re-entry request, or external gate is hidden behind a
+  generic done claim
 
 ## Re-entry Precedence
 

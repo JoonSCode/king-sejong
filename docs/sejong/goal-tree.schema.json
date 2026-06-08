@@ -61,6 +61,11 @@
         "$ref": "#/$defs/NonEmptyString"
       }
     },
+    "Threshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
     "Profile": {
       "type": "string",
       "enum": [
@@ -226,6 +231,34 @@
         "description"
       ]
     },
+    "CompletionGuardrail": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "description": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "threshold": {
+          "$ref": "#/$defs/Threshold"
+        },
+        "verification": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "hard": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "threshold",
+        "verification",
+        "hard"
+      ]
+    },
     "ConsumerHints": {
       "type": "object",
       "additionalProperties": false,
@@ -308,6 +341,13 @@
         "reentry_triggers": {
           "$ref": "#/$defs/StringList"
         },
+        "completion_guardrails": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/CompletionGuardrail"
+          }
+        },
         "risk_level": {
           "type": "string",
           "enum": [
@@ -354,6 +394,7 @@
               "file_scope",
               "verification",
               "reentry_triggers",
+              "completion_guardrails",
               "risk_level"
             ]
           }

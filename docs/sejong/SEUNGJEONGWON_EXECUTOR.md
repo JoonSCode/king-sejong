@@ -39,6 +39,14 @@ Uigwe owns the approved goal, non-goals, success criteria, verification bar, mus
 
 Uigwe handoff leaves are not final implementation todos. They are bounded objectives that are safe to start from. Seungjeongwon owns the executor-side loop that turns each handoff leaf into actionable leaves before execution begins.
 
+Uigwe also owns the numeric completion guardrails that decide when
+Seungjeongwon may close an actionable leaf or the overall run. The default
+completion threshold is `0.98` for every leaf guardrail, `0.98` for the leaf
+aggregate, and `0.98` for the run aggregate. Selected leaf coverage and success
+criteria coverage default to `1.00`. Seungjeongwon must keep decomposing,
+retrying, blocking, or escalating until those scores pass; it must not lower the
+thresholds or silently average away a failed hard guardrail.
+
 ## Execution Default
 
 The native default is:
@@ -211,6 +219,16 @@ hypothesis
 
 The loop continues until the actionable leaf is completed, blocked, invalidated, or escalated. A failed verification result is not itself a reason to change the success criteria; it is evidence for the next hypothesis unless it proves that Uigwe re-entry is required.
 
+An actionable leaf is `completed` only when:
+
+- every Uigwe-defined numeric completion guardrail for that leaf is at least
+  `0.98` unless the Uigwe bundle explicitly sets a higher or lower threshold
+- the leaf aggregate guardrail score is at least `0.98`
+- the leaf's `done_criteria` are satisfied by fresh verification evidence
+- scope, dependency, regression, and re-entry guardrails are resolved
+- the recommended Uigwe re-entry target is `none`
+- hard binary guardrails are true rather than averaged into the score
+
 Each attempt should record:
 
 - `attempt_id`
@@ -301,6 +319,7 @@ Seungjeongwon reports:
 - `verification_perspectives` when validation-heavy work decomposes verification into perspectives
 - `paired_result_comparison` when baseline and candidate outputs are compared against the same acceptance criteria
 - execution attempt ledger summary
+- leaf-level and run-level execution guardrail scores
 - verification evidence
 - recommended Uigwe re-entry target:
   - `none`
@@ -328,3 +347,9 @@ Acceptable evidence includes:
 - manual runtime check with clear observed result
 - git status and commit evidence when closeout is requested
 - explicit blocker evidence when completion is not possible
+
+When a `sejong.seungjeongwon-run/v0.1-draft` artifact is used, completed todos
+must carry guardrail scores and at least one attempt. Completed runs must have no
+open todos, fresh verification evidence, and run-level guardrail scores. The
+reference helper rejects completed todos or runs whose guardrail scores fall
+below the configured thresholds.

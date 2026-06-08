@@ -179,6 +179,8 @@ At minimum, the verifier should confirm:
 
 - the actionable leaf's `done_criteria`
 - the planned verification checks
+- the Uigwe-defined numeric completion guardrails for the leaf, defaulting to
+  `0.98` per guardrail and `0.98` for the leaf aggregate
 - obvious mismatch between claimed completion and actual evidence
 
 Verification evidence may include:
@@ -300,6 +302,7 @@ but those transitions should normally be applied by the planner after review, no
 - leaf dispatched
 - work implemented
 - verification evidence collected
+- every leaf completion guardrail meets its threshold
 - feedback emitted with `completed`
 
 ### Local Block

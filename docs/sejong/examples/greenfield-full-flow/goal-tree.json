@@ -197,6 +197,57 @@
         "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
         "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
         "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ],
+      "completion_guardrails": [
+        {
+          "id": "done_criteria_satisfaction",
+          "description": "Leaf done criteria are satisfied by execution evidence.",
+          "threshold": 0.98,
+          "verification": "Map every done criterion to passing verification evidence.",
+          "hard": false
+        },
+        {
+          "id": "verification_evidence_quality",
+          "description": "Fresh verification evidence proves the leaf result.",
+          "threshold": 0.98,
+          "verification": "Use tests, schema checks, runtime checks, review evidence, or explicit blocker evidence tied to the leaf.",
+          "hard": false
+        },
+        {
+          "id": "scope_containment",
+          "description": "Execution stayed inside the approved file or responsibility scope.",
+          "threshold": 0.98,
+          "verification": "Inspect changed files or artifacts against the handoff leaf scope.",
+          "hard": false
+        },
+        {
+          "id": "dependency_integrity",
+          "description": "Dependency prerequisites are satisfied or explicitly blocked.",
+          "threshold": 0.98,
+          "verification": "Check dependency status before completion.",
+          "hard": false
+        },
+        {
+          "id": "regression_safety",
+          "description": "No known regression or must-preserve behavior violation remains.",
+          "threshold": 0.98,
+          "verification": "Run the relevant regression check or document the explicit evidence gap.",
+          "hard": false
+        },
+        {
+          "id": "reentry_signal_resolution",
+          "description": "No unresolved Uigwe re-entry signal remains for this leaf.",
+          "threshold": 0.98,
+          "verification": "Confirm recommended re-entry target is none before completion.",
+          "hard": false
+        },
+        {
+          "id": "artifact_traceability",
+          "description": "Evidence and artifacts are traceable to this leaf.",
+          "threshold": 0.98,
+          "verification": "Reference the attempt ledger, feedback, files, or command output used for completion.",
+          "hard": false
+        }
       ]
     },
     {
@@ -263,6 +314,57 @@
         "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
         "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
         "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ],
+      "completion_guardrails": [
+        {
+          "id": "done_criteria_satisfaction",
+          "description": "Leaf done criteria are satisfied by execution evidence.",
+          "threshold": 0.98,
+          "verification": "Map every done criterion to passing verification evidence.",
+          "hard": false
+        },
+        {
+          "id": "verification_evidence_quality",
+          "description": "Fresh verification evidence proves the leaf result.",
+          "threshold": 0.98,
+          "verification": "Use tests, schema checks, runtime checks, review evidence, or explicit blocker evidence tied to the leaf.",
+          "hard": false
+        },
+        {
+          "id": "scope_containment",
+          "description": "Execution stayed inside the approved file or responsibility scope.",
+          "threshold": 0.98,
+          "verification": "Inspect changed files or artifacts against the handoff leaf scope.",
+          "hard": false
+        },
+        {
+          "id": "dependency_integrity",
+          "description": "Dependency prerequisites are satisfied or explicitly blocked.",
+          "threshold": 0.98,
+          "verification": "Check dependency status before completion.",
+          "hard": false
+        },
+        {
+          "id": "regression_safety",
+          "description": "No known regression or must-preserve behavior violation remains.",
+          "threshold": 0.98,
+          "verification": "Run the relevant regression check or document the explicit evidence gap.",
+          "hard": false
+        },
+        {
+          "id": "reentry_signal_resolution",
+          "description": "No unresolved Uigwe re-entry signal remains for this leaf.",
+          "threshold": 0.98,
+          "verification": "Confirm recommended re-entry target is none before completion.",
+          "hard": false
+        },
+        {
+          "id": "artifact_traceability",
+          "description": "Evidence and artifacts are traceable to this leaf.",
+          "threshold": 0.98,
+          "verification": "Reference the attempt ledger, feedback, files, or command output used for completion.",
+          "hard": false
+        }
       ]
     },
     {
@@ -333,6 +435,57 @@
         "If executor-side todo decomposition cannot produce actionable leaves without changing scope, recommend Uigwe local_reexploration.",
         "If execution invalidates the selected design approach, recommend Uigwe brainstorming.",
         "If success criteria, non-goals, or must-preserve behavior are contradicted, recommend deep_interview or human_review."
+      ],
+      "completion_guardrails": [
+        {
+          "id": "done_criteria_satisfaction",
+          "description": "Leaf done criteria are satisfied by execution evidence.",
+          "threshold": 0.98,
+          "verification": "Map every done criterion to passing verification evidence.",
+          "hard": false
+        },
+        {
+          "id": "verification_evidence_quality",
+          "description": "Fresh verification evidence proves the leaf result.",
+          "threshold": 0.98,
+          "verification": "Use tests, schema checks, runtime checks, review evidence, or explicit blocker evidence tied to the leaf.",
+          "hard": false
+        },
+        {
+          "id": "scope_containment",
+          "description": "Execution stayed inside the approved file or responsibility scope.",
+          "threshold": 0.98,
+          "verification": "Inspect changed files or artifacts against the handoff leaf scope.",
+          "hard": false
+        },
+        {
+          "id": "dependency_integrity",
+          "description": "Dependency prerequisites are satisfied or explicitly blocked.",
+          "threshold": 0.98,
+          "verification": "Check dependency status before completion.",
+          "hard": false
+        },
+        {
+          "id": "regression_safety",
+          "description": "No known regression or must-preserve behavior violation remains.",
+          "threshold": 0.98,
+          "verification": "Run the relevant regression check or document the explicit evidence gap.",
+          "hard": false
+        },
+        {
+          "id": "reentry_signal_resolution",
+          "description": "No unresolved Uigwe re-entry signal remains for this leaf.",
+          "threshold": 0.98,
+          "verification": "Confirm recommended re-entry target is none before completion.",
+          "hard": false
+        },
+        {
+          "id": "artifact_traceability",
+          "description": "Evidence and artifacts are traceable to this leaf.",
+          "threshold": 0.98,
+          "verification": "Reference the attempt ledger, feedback, files, or command output used for completion.",
+          "hard": false
+        }
       ]
     }
   ],

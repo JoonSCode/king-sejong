@@ -212,6 +212,18 @@ Before handoff to Seungjeongwon, Uigwe must define the execution guardrails the 
 - `acceptable_tradeoffs`
 - `reentry_triggers`
 - handoff leaves with done criteria, scope boundaries, dependencies, verification expectations, and re-entry triggers
+- leaf-level completion guardrails with numeric thresholds
+- overall run completion guardrails with numeric thresholds
+
+By default, Uigwe sets Seungjeongwon completion guardrails at `0.98` for each
+leaf guardrail, `0.98` for each leaf aggregate, and `0.98` for the overall run
+aggregate. selected leaf coverage and success criteria coverage default to `1.00`.
+These values are completion gates, not readiness hints. Seungjeongwon
+must continue local decomposition, retry execution hypotheses, record blockers,
+or recommend Uigwe re-entry until each selected leaf and the overall run satisfy
+the guardrails. Hard binary constraints such as preserving the Uigwe contract,
+having no unresolved blocker, and having no unresolved re-entry request must be
+true and are not averaged into the numeric score.
 
 This is intentionally similar to test-first development: the success bar and verification method are set before implementation begins. Seungjeongwon may adapt tactics during decomposition and execution, but it must not change the approved goal, non-goals, success criteria, must-preserve behavior, or verification bar without Uigwe re-entry or human review.
 

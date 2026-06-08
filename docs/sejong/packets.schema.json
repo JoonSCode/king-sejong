@@ -73,6 +73,11 @@
       "minimum": 0,
       "maximum": 1
     },
+    "Threshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
     "DecisionBoundary": {
       "type": "object",
       "additionalProperties": false,
@@ -191,6 +196,34 @@
         "description"
       ]
     },
+    "CompletionGuardrail": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "description": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "threshold": {
+          "$ref": "#/$defs/Threshold"
+        },
+        "verification": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "hard": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "threshold",
+        "verification",
+        "hard"
+      ]
+    },
     "ConsumerHints": {
       "type": "object",
       "additionalProperties": false,
@@ -246,6 +279,13 @@
         "reentry_triggers": {
           "$ref": "#/$defs/StringList"
         },
+        "completion_guardrails": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/CompletionGuardrail"
+          }
+        },
         "risk_level": {
           "type": "string",
           "enum": [
@@ -268,6 +308,7 @@
         "dependencies",
         "verification",
         "reentry_triggers",
+        "completion_guardrails",
         "risk_level"
       ]
     },
@@ -513,6 +554,13 @@
         },
         "ready_for_handoff": {
           "type": "boolean"
+        },
+        "overall_completion_guardrails": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/CompletionGuardrail"
+          }
         }
       },
       "required": [
@@ -527,7 +575,8 @@
         "handoff_leaves",
         "dependency_edges",
         "risk_summary",
-        "ready_for_handoff"
+        "ready_for_handoff",
+        "overall_completion_guardrails"
       ]
     }
   }

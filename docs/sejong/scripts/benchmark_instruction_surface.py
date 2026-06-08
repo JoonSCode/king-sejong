@@ -213,6 +213,10 @@ def evaluate_context_engineered_guardrail_planning() -> list[dict[str, Any]]:
         "hooks, permission policy, schemas, examples, and deterministic benchmarks as guardrails and regression checks",
         "For material design choices, show credible options, trade-offs, a recommended default, and a free-response path",
         "Clarification should not be a bare question list.",
+        "leaf-level completion guardrails with numeric thresholds",
+        "overall run completion guardrails with numeric thresholds",
+        "0.98",
+        "selected leaf coverage and success criteria coverage default to `1.00`",
     ]
     passed, missing = contains_all(combined, required)
     return [

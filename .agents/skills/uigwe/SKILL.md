@@ -216,6 +216,7 @@ Helper calls do not approve Uigwe gates, finalize `spec.md`, finalize `rationale
 - Allow shared dependencies when the structure is naturally a DAG
 - Mark a node `handoff_leaf` only when objective, done criteria, scope boundary, dependencies, verification expectation, and re-entry triggers are all explicit
 - Before handing off to Seungjeongwon, define goal, non-goals, success criteria, verification plan, must-preserve behaviors, acceptable tradeoffs, re-entry triggers, and handoff leaves
+- Before handing off to Seungjeongwon, define leaf-level and overall completion guardrails. Defaults are `0.98` for each leaf guardrail, `0.98` for each leaf aggregate, `0.98` for the run aggregate, and `1.00` for selected leaf coverage plus success criteria coverage unless the task explicitly justifies a different threshold.
 - Use Uigwe workers only for plan validation such as readiness, risk, scope, dependency, and verification checks; do not use worker consensus to approve gates or reopen the selected direction
 
 Uigwe does not produce the final implementation todo list. Seungjeongwon owns todo listup, todo verification, subtodo decomposition, actionable-leaf readiness, execution attempts, verification, evidence capture, and retry ledger.

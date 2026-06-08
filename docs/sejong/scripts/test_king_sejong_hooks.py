@@ -46,6 +46,47 @@ def run_hook_without_context(event_name: str, payload: dict, *, sejong_home: Pat
     return json.loads(output) if output else {}
 
 
+def seungjeongwon_run_fixture(*, status: str = "active", todo_status: str = "pending") -> dict:
+    return {
+        "format": "sejong.seungjeongwon-run/v0.1-draft",
+        "run_id": f"{status}-run",
+        "repo_root": ".",
+        "goal": "Complete implementation.",
+        "status": status,
+        "success_criteria": ["All todos verified."],
+        "verification_methods": ["Run tests."],
+        "guardrail_thresholds": {
+            "leaf_guardrail_minimum": 0.98,
+            "leaf_guardrail_aggregate": 0.98,
+            "run_guardrail_aggregate": 0.98,
+            "selected_leaf_coverage": 1.0,
+            "success_criteria_coverage": 1.0,
+        },
+        "todos": [
+            {
+                "todo_id": "T1",
+                "description": "Run tests",
+                "done_criteria": "Tests pass",
+                "verification_method": "python3 -m unittest",
+                "guardrail_scores": {},
+                "status": todo_status,
+                "attempt_ids": [],
+            }
+        ]
+        if status != "completed"
+        else [],
+        "attempt_ledger": [],
+        "verification_evidence": ["tests passed"] if status == "completed" else [],
+        "guardrail_scores": {"selected_leaf_coverage": 1.0, "success_criteria_coverage": 1.0, "overall": 1.0}
+        if status == "completed"
+        else {},
+        "blockers": [],
+        "uigwe_reentry_requests": [],
+        "created_at": "2026-05-26T00:00:00Z",
+        "updated_at": "2026-05-26T00:00:00Z",
+    }
+
+
 class KingSejongHookTests(unittest.TestCase):
     def test_user_prompt_submit_injects_active_context(self) -> None:
         output = run_hook("UserPromptSubmit", {"prompt": "진행", "hook_event_name": "UserPromptSubmit"})
@@ -494,33 +535,7 @@ class KingSejongHookTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             run_path = Path(tmp) / "seungjeongwon-run.json"
             run_path.write_text(
-                json.dumps(
-                    {
-                        "format": "sejong.seungjeongwon-run/v0.1-draft",
-                        "run_id": "receipt-run",
-                        "repo_root": ".",
-                        "goal": "Complete implementation.",
-                        "status": "active",
-                        "success_criteria": ["All todos verified."],
-                        "verification_methods": ["Run tests."],
-                        "todos": [
-                            {
-                                "todo_id": "T1",
-                                "description": "Run tests",
-                                "done_criteria": "Tests pass",
-                                "verification_method": "python3 -m unittest",
-                                "status": "pending",
-                                "attempt_ids": [],
-                            }
-                        ],
-                        "attempt_ledger": [],
-                        "verification_evidence": [],
-                        "blockers": [],
-                        "uigwe_reentry_requests": [],
-                        "created_at": "2026-05-26T00:00:00Z",
-                        "updated_at": "2026-05-26T00:00:00Z",
-                    }
-                ),
+                json.dumps(seungjeongwon_run_fixture(status="active", todo_status="pending")),
                 encoding="utf-8",
             )
             context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
@@ -838,33 +853,7 @@ class KingSejongHookTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             run_path = Path(tmp) / "seungjeongwon-run.json"
             run_path.write_text(
-                json.dumps(
-                    {
-                        "format": "sejong.seungjeongwon-run/v0.1-draft",
-                        "run_id": "active-run",
-                        "repo_root": ".",
-                        "goal": "Complete implementation.",
-                        "status": "active",
-                        "success_criteria": ["All todos verified."],
-                        "verification_methods": ["Run tests."],
-                        "todos": [
-                            {
-                                "todo_id": "T1",
-                                "description": "Run tests",
-                                "done_criteria": "Tests pass",
-                                "verification_method": "python3 -m unittest",
-                                "status": "in_progress",
-                                "attempt_ids": [],
-                            }
-                        ],
-                        "attempt_ledger": [],
-                        "verification_evidence": [],
-                        "blockers": [],
-                        "uigwe_reentry_requests": [],
-                        "created_at": "2026-05-26T00:00:00Z",
-                        "updated_at": "2026-05-26T00:00:00Z",
-                    }
-                ),
+                json.dumps(seungjeongwon_run_fixture(status="active", todo_status="in_progress")),
                 encoding="utf-8",
             )
             context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
@@ -889,25 +878,11 @@ class KingSejongHookTests(unittest.TestCase):
     def test_precompact_blocks_invalid_seungjeongwon_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             run_path = Path(tmp) / "seungjeongwon-run.json"
+            invalid_run = seungjeongwon_run_fixture(status="completed")
+            invalid_run["run_id"] = "invalid-run"
+            invalid_run["verification_evidence"] = []
             run_path.write_text(
-                json.dumps(
-                    {
-                        "format": "sejong.seungjeongwon-run/v0.1-draft",
-                        "run_id": "invalid-run",
-                        "repo_root": ".",
-                        "goal": "Complete implementation.",
-                        "status": "completed",
-                        "success_criteria": ["All todos verified."],
-                        "verification_methods": ["Run tests."],
-                        "todos": [],
-                        "attempt_ledger": [],
-                        "verification_evidence": [],
-                        "blockers": [],
-                        "uigwe_reentry_requests": [],
-                        "created_at": "2026-05-26T00:00:00Z",
-                        "updated_at": "2026-05-26T00:00:00Z",
-                    }
-                ),
+                json.dumps(invalid_run),
                 encoding="utf-8",
             )
             context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
@@ -994,33 +969,7 @@ class KingSejongHookTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             run_path = Path(tmp) / "seungjeongwon-run.json"
             run_path.write_text(
-                json.dumps(
-                    {
-                        "format": "sejong.seungjeongwon-run/v0.1-draft",
-                        "run_id": "active-run",
-                        "repo_root": ".",
-                        "goal": "Complete implementation.",
-                        "status": "active",
-                        "success_criteria": ["All todos verified."],
-                        "verification_methods": ["Run tests."],
-                        "todos": [
-                            {
-                                "todo_id": "T1",
-                                "description": "Run tests",
-                                "done_criteria": "Tests pass",
-                                "verification_method": "python3 -m unittest",
-                                "status": "in_progress",
-                                "attempt_ids": [],
-                            }
-                        ],
-                        "attempt_ledger": [],
-                        "verification_evidence": [],
-                        "blockers": [],
-                        "uigwe_reentry_requests": [],
-                        "created_at": "2026-05-26T00:00:00Z",
-                        "updated_at": "2026-05-26T00:00:00Z",
-                    }
-                ),
+                json.dumps(seungjeongwon_run_fixture(status="active", todo_status="in_progress")),
                 encoding="utf-8",
             )
             context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))

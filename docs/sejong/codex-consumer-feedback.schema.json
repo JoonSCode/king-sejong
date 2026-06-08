@@ -259,6 +259,14 @@
         "description"
       ]
     },
+    "GuardrailScores": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      }
+    },
     "LeafUpdate": {
       "type": "object",
       "additionalProperties": false,
@@ -286,6 +294,9 @@
           "items": {
             "$ref": "#/$defs/EvidenceItem"
           }
+        },
+        "guardrail_scores": {
+          "$ref": "#/$defs/GuardrailScores"
         },
         "notes": {
           "type": "string"

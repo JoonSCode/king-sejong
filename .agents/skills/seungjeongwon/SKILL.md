@@ -29,13 +29,14 @@ Read only what is needed:
 4. For a handoff-ready Uigwe bundle whose original request asks for outcome completion, attach execution to a host-native goal when available; the user does not need to type `/goal` separately.
 5. Keep native goal payloads broad: approved objective, completion criteria, verification evidence, blocker policy, and Uigwe re-entry triggers. Do not move the executor todo tree into the goal.
 6. For Uigwe handoff leaves, run todo listup, todo verification, and subtodo decomposition until actionable leaves exist.
-7. For validation, comparison, review, readiness, or proof goals, decompose the verification objective into task-specific perspectives, verify those perspectives are sufficient, split weak perspectives, and then execute the verification.
-8. When Codex todo tooling is available, publish actionable leaves as the visible execution board before implementation; append explicit redefinition todos and replacement todos when the execution shape changes instead of silently overwriting the board. When producing machine-readable execution feedback, mirror those visible board changes in `visible_todo_events`.
-9. Execute dependency-ready actionable work in the current Codex session when possible.
-10. Use parallel workers only when file scopes are independent and verification remains clear. `$team` workers require Sejong-owned state, mailbox evidence, and file leases.
-11. Preserve the approved goal, non-goals, success criteria, must-preserve behavior, and verification bar. Adjust tactics when implementation hypotheses are wrong, but return to Uigwe or human review when those guardrails are unstable.
-12. Verify before claiming completion.
-13. Return execution feedback:
+7. Complete each actionable leaf only when the Uigwe-defined numeric completion guardrails pass. The default is `0.98` for every leaf guardrail, `0.98` for the leaf aggregate, and `0.98` for the run aggregate; selected leaf coverage and success criteria coverage default to `1.00`.
+8. For validation, comparison, review, readiness, or proof goals, decompose the verification objective into task-specific perspectives, verify those perspectives are sufficient, split weak perspectives, and then execute the verification.
+9. When Codex todo tooling is available, publish actionable leaves as the visible execution board before implementation; append explicit redefinition todos and replacement todos when the execution shape changes instead of silently overwriting the board. When producing machine-readable execution feedback, mirror those visible board changes in `visible_todo_events`.
+10. Execute dependency-ready actionable work in the current Codex session when possible.
+11. Use parallel workers only when file scopes are independent and verification remains clear. `$team` workers require Sejong-owned state, mailbox evidence, and file leases.
+12. Preserve the approved goal, non-goals, success criteria, must-preserve behavior, and verification bar. Adjust tactics when implementation hypotheses are wrong, but return to Uigwe or human review when those guardrails are unstable.
+13. Verify before claiming completion.
+14. Return execution feedback:
    - completed, blocked, invalidated, or failed scope
    - files changed or artifacts produced
    - native goal id or `native_goal_unavailable` when relevant
@@ -45,6 +46,7 @@ Read only what is needed:
    - visible todo board updates and any redefinition/replacement events
    - `visible_todo_events` when execution feedback is machine-readable
    - attempt ledger summary
+   - leaf-level and run-level guardrail scores
    - verification evidence
    - recommended Uigwe re-entry target when needed
    - git evidence when commits are requested or produced

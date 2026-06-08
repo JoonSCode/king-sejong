@@ -296,7 +296,7 @@ def validate_bundle(bundle_dir: Path, strict: bool = False) -> ValidationReport:
         for node in task_nodes.values():
             missing_fields = [
                 field_name
-                for field_name in ("done_criteria", "file_scope", "verification", "reentry_triggers", "risk_level")
+                for field_name in ("done_criteria", "file_scope", "verification", "reentry_triggers", "completion_guardrails", "risk_level")
                 if not node.get(field_name)
             ]
             if missing_fields:

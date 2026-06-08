@@ -52,6 +52,8 @@ Examples:
 - `missed_research_rate`: how often did Sejong decide or execute before gathering required evidence?
 - `decision_quality`: did Jiphyeonjeon compare serious options, reject weaker ones, and name a defensible next surface?
 - `execution_success_rate`: did Seungjeongwon complete actionable leaves with reproducible verification evidence?
+- `leaf_guardrail_pass_rate`: did every completed actionable leaf meet its Uigwe-defined numeric completion guardrails?
+- `run_guardrail_pass_rate`: did completed Seungjeongwon runs meet their overall numeric guardrail threshold?
 - `guardrail_violation_count`: did workers, hooks, or direct edits violate lead-owned gates, final synthesis, or protected paths?
 - `continuity_preservation_rate`: did follow-up turns, pending gates, and compacted context keep the active Sejong workflow intact?
 - `artifact_hygiene_rate`: did runtime artifacts stay under the Sejong artifact root unless explicitly promoted?
@@ -521,6 +523,8 @@ Do not promote a planning-method change unless the frozen benchmark and shadow r
 - `bundle_validation_pass_rate >= 0.90`
 - `handoff_leaf_rate >= 0.85`
 - `actionable_leaf_rate >= 0.80`
+- `leaf_guardrail_pass_rate >= 0.98`
+- `run_guardrail_pass_rate >= 0.98`
 - `handoff_ready_rate >= 0.80`
 - `plan_acceptance_rate >= 0.70`
 - `approval_gate_violation_count == 0`

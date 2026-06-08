@@ -162,6 +162,8 @@
         "handoff-ready Uigwe bundles cannot be satisfied with Sejong direct edits",
         "research-only, advice-only, plan-only, open-ambiguity, non-handoff-ready, and Sejong-direct work do not create native goals",
         "native goal payloads stay broad and carry objective, completion criteria, verification evidence, blocker policy, and Uigwe re-entry triggers",
+        "Uigwe defines leaf-level and overall numeric completion guardrails before Seungjeongwon handoff",
+        "Seungjeongwon closes leaves and runs only after guardrail scores reach 0.98 by default",
         "Seungjeongwon keeps todo verification, subtodo decomposition, visible board updates, redefinition events, attempt ledgers, and verification loops",
         "validation compares current non-goal-backed execution against implicit native goal handoff",
         "validation judges baseline and candidate final results against the same acceptance criteria instead of checking only route intent or goal activation",
