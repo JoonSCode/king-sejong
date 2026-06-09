@@ -17,13 +17,15 @@ HOOK_SCRIPT = SEJONG_ROOT / "scripts" / "king_sejong_hooks.py"
 CONTEXT_PATH = SEJONG_ROOT / "examples" / "king-sejong-context.example.json"
 
 
-def run_hook(event_name: str, payload: dict, context_path: Path = CONTEXT_PATH) -> dict:
+def run_hook(event_name: str, payload: dict, context_path: Path = CONTEXT_PATH, *, sejong_home: Path | None = None) -> dict:
+    env = os.environ if sejong_home is None else {**os.environ, "SEJONG_HOME": str(sejong_home)}
     result = subprocess.run(
         [sys.executable, str(HOOK_SCRIPT), event_name, "--context", str(context_path)],
         input=json.dumps(payload),
         text=True,
         capture_output=True,
         cwd=str(REPO_ROOT),
+        env=env,
     )
     if result.returncode != 0:
         raise AssertionError(f"hook failed: {result.stderr or result.stdout}")
@@ -655,6 +657,72 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertEqual(output["decision"], "block")
         self.assertIn("bounded", output["reason"])
 
+    def test_subagent_stop_requires_parseable_bounded_worker_brief(self) -> None:
+        output = run_hook(
+            "SubagentStop",
+            {
+                "hook_event_name": "SubagentStop",
+                "agent_type": "worker",
+                "last_assistant_message": "I found the relevant evidence in the requested files.",
+            },
+        )
+        self.assertEqual(output["decision"], "block")
+        self.assertIn("bounded worker brief", output["reason"])
+
+    def test_subagent_stop_rejects_invalid_bounded_worker_brief_json(self) -> None:
+        output = run_hook(
+            "SubagentStop",
+            {
+                "hook_event_name": "SubagentStop",
+                "agent_type": "worker",
+                "last_assistant_message": json.dumps(
+                    {
+                        "format": "sejong.bounded-worker-brief/v0.2-draft",
+                        "objective": "Review the route.",
+                        "role": "critic",
+                    }
+                ),
+            },
+        )
+        self.assertEqual(output["decision"], "block")
+        self.assertIn("Invalid subagent bounded worker brief", output["reason"])
+
+    def test_subagent_stop_accepts_valid_bounded_worker_brief_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["evidence_refs"] = ["brief.md"]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "SubagentStop",
+                {
+                    "hook_event_name": "SubagentStop",
+                    "agent_type": "worker",
+                    "last_assistant_message": json.dumps(
+                        {
+                            "format": "sejong.bounded-worker-brief/v0.2-draft",
+                            "objective": "Review the route.",
+                            "role": "critic",
+                            "source_of_truth_refs": ["brief.md"],
+                            "allowed_outputs": ["bounded evidence", "risks"],
+                            "forbidden_claims": [
+                                "Uigwe gate approval",
+                                "final synthesis",
+                                "final verification",
+                                "majority vote",
+                                "consensus approval",
+                            ],
+                            "write_scope": ["none"],
+                            "stop_condition": "Return evidence to the Sejong lead.",
+                            "evidence_refs": ["brief.md"],
+                        }
+                    ),
+                },
+                context_path=context_path,
+            )
+        self.assertIn("SubagentStop", output["hookSpecificOutput"]["hookEventName"])
+
     def test_subagent_start_injects_bounded_worker_contract(self) -> None:
         output = run_hook(
             "SubagentStart",
@@ -952,6 +1020,46 @@ class KingSejongHookTests(unittest.TestCase):
             )
         self.assertFalse(output["continue"])
         self.assertIn("invalid Seungjeongwon run refs", output["stopReason"])
+
+    def test_precompact_creates_seungjeongwon_checkpoint_for_valid_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            run_path = tmp_path / "seungjeongwon-run.json"
+            run_data = seungjeongwon_run_fixture(status="active", todo_status="in_progress")
+            run_data["repo_root"] = str(REPO_ROOT)
+            run_path.write_text(json.dumps(run_data), encoding="utf-8")
+
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["repo_id"] = "repo-test"
+            context["run_id"] = "context-run"
+            context["active_context_id"] = "ctx-checkpoint-test"
+            context["objective_id"] = "checkpoint-risk-closeout"
+            context["repo_root"] = str(REPO_ROOT)
+            context["artifact_refs"] = [str(run_path)]
+            context_path = tmp_path / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+            sejong_home = tmp_path / "sejong-home"
+
+            output = run_hook(
+                "PreCompact",
+                {"hook_event_name": "PreCompact", "trigger": "auto", "cwd": str(REPO_ROOT)},
+                context_path=context_path,
+                sejong_home=sejong_home,
+            )
+
+            checkpoint_path = (
+                sejong_home
+                / "runs"
+                / "repo-test"
+                / "context-run"
+                / "active-run.seungjeongwon-checkpoint.json"
+            )
+            checkpoint = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+        self.assertIn("seungjeongwon_checkpoints_created", output["hookSpecificOutput"]["additionalContext"])
+        self.assertEqual(checkpoint["format"], "sejong.seungjeongwon-checkpoint/v0.1-draft")
+        self.assertEqual(checkpoint["context_id"], "ctx-checkpoint-test")
+        self.assertEqual(checkpoint["objective_id"], "checkpoint-risk-closeout")
+        self.assertEqual(checkpoint["source_run_path"], str(run_path.resolve()))
 
     def test_precompact_blocks_broken_ambiguity_register_ref(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

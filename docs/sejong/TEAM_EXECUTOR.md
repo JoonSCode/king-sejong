@@ -123,6 +123,9 @@ registered worker and its worker state file. The hard gate requires objective,
 role, source-of-truth refs, allowed outputs, forbidden claims, write scope, stop
 condition, and evidence refs before the worker output can be treated as
 reviewable evidence.
+For host-native subagents, `SubagentStop` applies the same contract to the final
+JSON `sejong.bounded-worker-brief/v0.2-draft` response before the lead may use
+the output as evidence.
 
 Workers must not claim:
 

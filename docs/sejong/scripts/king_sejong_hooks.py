@@ -10,8 +10,10 @@ from pathlib import Path
 from typing import Any
 
 from sejong_paths import path_contains_or_equals, resolve_path
+from bounded_worker_brief import validate_bounded_worker_brief
 from continuity_capsule import FORMAT as CONTINUITY_CAPSULE_FORMAT
 from continuity_capsule import capsule_failures, capsule_projection
+from seungjeongwon_run import checkpoint_failures, checkpoint_payload
 from seungjeongwon_run import RUN_FORMAT as SEUNGJEONGWON_RUN_FORMAT
 from seungjeongwon_run import open_todos as seungjeongwon_open_todos
 from seungjeongwon_run import run_failures as seungjeongwon_run_failures
@@ -623,8 +625,8 @@ def broken_ambiguity_register_refs(context: dict[str, Any]) -> list[str]:
     return broken_refs
 
 
-def load_seungjeongwon_runs(context: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str], list[str]]:
-    runs: list[dict[str, Any]] = []
+def load_seungjeongwon_run_entries(context: dict[str, Any]) -> tuple[list[tuple[Path, dict[str, Any]]], list[str], list[str]]:
+    entries: list[tuple[Path, dict[str, Any]]] = []
     broken_refs: list[str] = []
     invalid_refs: list[str] = []
     for ref in context.get("artifact_refs") or []:
@@ -644,8 +646,44 @@ def load_seungjeongwon_runs(context: dict[str, Any]) -> tuple[list[dict[str, Any
         failures = seungjeongwon_run_failures(data)
         if failures:
             invalid_refs.append(f"{path}: {'; '.join(failures)}")
-        runs.append(data)
-    return runs, broken_refs, invalid_refs
+        entries.append((path, data))
+    return entries, broken_refs, invalid_refs
+
+
+def load_seungjeongwon_runs(context: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str], list[str]]:
+    entries, broken_refs, invalid_refs = load_seungjeongwon_run_entries(context)
+    return [data for _, data in entries], broken_refs, invalid_refs
+
+
+def checkpoint_path_for_run(context: dict[str, Any], run_path: Path, run_data: dict[str, Any]) -> Path:
+    repo_id = context.get("repo_id") or "unknown-repo"
+    context_run_id = context.get("run_id") or "unknown-run"
+    run_id = run_data.get("run_id") or run_path.stem
+    return sejong_root() / "runs" / str(repo_id) / str(context_run_id) / f"{run_id}.seungjeongwon-checkpoint.json"
+
+
+def write_precompact_seungjeongwon_checkpoints(context: dict[str, Any]) -> tuple[list[str], list[str]]:
+    entries, broken_refs, invalid_refs = load_seungjeongwon_run_entries(context)
+    failures = list(broken_refs) + list(invalid_refs)
+    if failures:
+        return [], failures
+    written: list[str] = []
+    for run_path, run_data in entries:
+        output_path = checkpoint_path_for_run(context, run_path, run_data)
+        args = argparse.Namespace(
+            checkpoint_id=f"checkpoint-{run_data.get('run_id')}-{context.get('active_context_id')}",
+            context_id=context.get("active_context_id"),
+            objective_id=context.get("objective_id"),
+        )
+        payload = checkpoint_payload(run_data, run_path, args)
+        checkpoint_errors = checkpoint_failures(payload)
+        if checkpoint_errors:
+            failures.append(f"{output_path}: {'; '.join(checkpoint_errors)}")
+            continue
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        written.append(str(output_path))
+    return written, failures
 
 
 def active_seungjeongwon_run_summaries(context: dict[str, Any]) -> list[str]:
@@ -771,8 +809,73 @@ def message_claims_forbidden_authority(message: str) -> bool:
     return any(term in lowered for term in FORBIDDEN_WORKER_AUTHORITY_TERMS)
 
 
+def fenced_json_blocks(message: str) -> list[str]:
+    return re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", message, flags=re.IGNORECASE | re.DOTALL)
+
+
+def parse_json_object(raw: str) -> dict[str, Any] | None:
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def bounded_worker_brief_from_message(message: str) -> tuple[dict[str, Any] | None, str | None]:
+    stripped = message.strip()
+    if not stripped:
+        return None, "missing bounded worker brief JSON"
+    candidates = fenced_json_blocks(stripped)
+    if not candidates:
+        candidates.append(stripped)
+    first = stripped.find("{")
+    last = stripped.rfind("}")
+    if first >= 0 and last > first:
+        candidates.append(stripped[first : last + 1])
+    for candidate in candidates:
+        data = parse_json_object(candidate.strip())
+        if data is not None:
+            return data, None
+    return None, "missing parseable bounded worker brief JSON"
+
+
+def subagent_expected_source_refs(context: dict[str, Any]) -> list[str]:
+    refs = context.get("source_of_truth_refs") or []
+    return [str(ref) for ref in refs if isinstance(ref, str) and ref]
+
+
 def handle_subagent_stop(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
     message = payload.get("last_assistant_message") or ""
+    if context:
+        brief, parse_failure = bounded_worker_brief_from_message(message)
+        if parse_failure:
+            if message_claims_forbidden_authority(message):
+                return {
+                    "decision": "block",
+                    "reason": (
+                        "Subagent output must stay bounded. Return evidence, risks, or implementation notes only; "
+                        "Sejong lead owns gates, synthesis, and final verification."
+                    ),
+                }
+            return {
+                "decision": "block",
+                "reason": (
+                    "Subagent output must return a JSON bounded worker brief with objective, role, "
+                    "source refs, allowed outputs, forbidden claims, write scope, stop condition, "
+                    f"and evidence refs: {parse_failure}."
+                ),
+            }
+        failures = validate_bounded_worker_brief(
+            brief or {},
+            expected_source_of_truth_refs=subagent_expected_source_refs(context),
+            label="subagent final bounded worker brief",
+        )
+        if failures:
+            return {
+                "decision": "block",
+                "reason": "Invalid subagent bounded worker brief: " + "; ".join(failures),
+            }
+        return hook_context("SubagentStop", "Return bounded evidence to the Sejong lead; do not approve gates.")
     if message_claims_forbidden_authority(message):
         return {
             "decision": "block",
@@ -781,8 +884,6 @@ def handle_subagent_stop(payload: dict[str, Any], context: dict[str, Any]) -> di
                 "Sejong lead owns gates, synthesis, and final verification."
             ),
         }
-    if context:
-        return hook_context("SubagentStop", "Return bounded evidence to the Sejong lead; do not approve gates.")
     return {}
 
 
@@ -921,6 +1022,13 @@ def handle_precompact(context: dict[str, Any]) -> dict[str, Any]:
             "stopReason": "invalid Seungjeongwon run refs: " + ", ".join(invalid_run_refs),
             "systemMessage": "King Sejong Seungjeongwon run artifacts must validate before compaction.",
         }
+    checkpoint_refs, checkpoint_failures = write_precompact_seungjeongwon_checkpoints(context)
+    if checkpoint_failures:
+        return {
+            "continue": False,
+            "stopReason": "failed Seungjeongwon checkpoint creation: " + ", ".join(checkpoint_failures),
+            "systemMessage": "King Sejong Seungjeongwon run checkpoints must be writable before compaction.",
+        }
     broken_capsule_refs = broken_continuity_capsule_refs(context)
     if broken_capsule_refs:
         return {
@@ -935,7 +1043,12 @@ def handle_precompact(context: dict[str, Any]) -> dict[str, Any]:
             "stopReason": "invalid continuity capsule refs: " + ", ".join(invalid_capsule_refs),
             "systemMessage": "King Sejong continuity capsule artifacts must validate before compaction.",
         }
-    return hook_context("PreCompact", context_summary(context))
+    output = hook_context("PreCompact", context_summary(context))
+    if checkpoint_refs:
+        output["hookSpecificOutput"]["additionalContext"] += (
+            " seungjeongwon_checkpoints_created=" + ",".join(checkpoint_refs) + "."
+        )
+    return output
 
 
 def handle_post_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:

@@ -169,8 +169,12 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 
 `SubagentStop`
 
-- Reject worker outputs that claim Uigwe gate approval, final synthesis, or majority-vote authority.
-- Require bounded evidence, risks, implementation notes, or verification observations back to the Sejong lead.
+- Require a parseable JSON `sejong.bounded-worker-brief/v0.2-draft` final
+  response and validate objective, role, source-of-truth refs, allowed outputs,
+  forbidden claims, write scope, stop condition, and evidence refs before the
+  worker output can be treated as evidence.
+- Reject worker outputs that claim Uigwe gate approval, final synthesis, final
+  verification, or majority-vote authority.
 
 `Stop`
 
@@ -183,6 +187,15 @@ the repository-scoped run directory. Hooks read the active pointer by default.
   ambiguity items or pending question obligations.
 - Continue the turn when any referenced Seungjeongwon run is active, broken, or invalid.
 - Continue the turn when any referenced continuity capsule is broken or invalid.
+
+`PreCompact`
+
+- Block compaction when a referenced ambiguity register, Seungjeongwon run, or
+  continuity capsule is broken or invalid.
+- For each valid referenced `sejong.seungjeongwon-run/v0.1-draft` artifact,
+  write a derived `sejong.seungjeongwon-checkpoint/v0.1-draft` artifact under
+  `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` and inject the checkpoint
+  refs into the compacted context.
 
 `PreCompact`
 

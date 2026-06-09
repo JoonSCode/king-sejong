@@ -72,6 +72,10 @@ becoming a new court surface or approval authority. Resume and replay must use
 `resume`, `stale-check`, or `replay` against the checkpoint; replay is rejected
 when the checkpoint no longer matches the active run, expected repo root,
 objective id, or context id.
+When hooks are enabled, `PreCompact` creates the same checkpoint automatically
+for every valid referenced Seungjeongwon run and stores it under
+`${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` so compaction has fresh replay
+evidence without writing runtime state into the target repository.
 
 When Seungjeongwon evaluates or uses a workflow-like backend such as migrated
 dynamic workflow concepts, `/deep-research`-style research fan-out,

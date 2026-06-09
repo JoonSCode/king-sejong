@@ -65,6 +65,9 @@ It should not authorize the subagent to approve Uigwe gates, treat agreement as 
 
 When hooks are enabled, `SubagentStart` should inject the active context summary
 plus a bounded worker contract with source refs, allowed outputs, forbidden
-claims, return format, and stop condition. `SubagentStop` should reject outputs
-that claim gate approval, final synthesis, final verification, or majority-vote
-decision ownership.
+claims, return format, and stop condition. `SubagentStop` should require a
+parseable JSON `sejong.bounded-worker-brief/v0.2-draft` response and validate
+objective, role, source refs, allowed outputs, forbidden claims, write scope,
+stop condition, and evidence refs before the output can be treated as worker
+evidence. It should also reject outputs that claim gate approval, final
+synthesis, final verification, or majority-vote decision ownership.

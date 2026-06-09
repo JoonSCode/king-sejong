@@ -132,7 +132,11 @@ Expected green behavior:
 - `UserPromptSubmit` injects active context
 - `sejong_context.py` can start, update, diagnose, and close the active context pointer without writing runtime state into the target repository
 - `PreToolUse` and `PermissionRequest` guard protected paths
-- `SubagentStop` rejects gate and final-authority claims
+- `SubagentStop` rejects gate and final-authority claims and requires a valid
+  JSON bounded worker brief before host-native subagent output is used as
+  evidence
+- `PreCompact` writes derived Seungjeongwon checkpoint artifacts for valid
+  referenced run artifacts
 - `Stop` continues when verification gates remain
 - TeamExecutor invalid authority fixtures fail for the expected reason
 - Sillok trace events reject private-data, untrusted-content, external-action combinations without a human approval ref
