@@ -12,6 +12,9 @@ from sejong_paths import resolve_path
 
 
 RUN_FORMAT = "sejong.seungjeongwon-run/v0.1-draft"
+CHECKPOINT_FORMAT = "sejong.seungjeongwon-checkpoint/v0.1-draft"
+RESUME_FORMAT = "sejong.seungjeongwon-resume/v0.1-draft"
+REPLAY_FORMAT = "sejong.seungjeongwon-replay/v0.1-draft"
 STATUSES = {"active", "completed", "blocked", "invalidated", "failed"}
 OPEN_TODO_STATUSES = {"pending", "in_progress"}
 CLOSED_TODO_STATUSES = {"completed", "blocked", "invalidated", "replaced"}
@@ -215,6 +218,166 @@ def emit_failures(failures: list[str]) -> int:
     return 1 if failures else 0
 
 
+def resolve_optional_path(value: str | None) -> str | None:
+    if value is None:
+        return None
+    return str(resolve_path(value))
+
+
+def checkpoint_payload(data: dict[str, Any], run_path: Path, args: argparse.Namespace) -> dict[str, Any]:
+    timestamp = now_utc()
+    return {
+        "format": CHECKPOINT_FORMAT,
+        "checkpoint_id": args.checkpoint_id or f"checkpoint-{data['run_id']}-{timestamp}",
+        "run_id": data["run_id"],
+        "repo_root": data["repo_root"],
+        "source_run_path": str(resolve_path(run_path)),
+        "source_run_updated_at": data["updated_at"],
+        "context_id": args.context_id,
+        "objective_id": args.objective_id,
+        "approved_goal": data["goal"],
+        "status": data["status"],
+        "success_criteria": data["success_criteria"],
+        "verification_methods": data["verification_methods"],
+        "guardrail_thresholds": data["guardrail_thresholds"],
+        "active_todos": open_todos(data),
+        "todo_statuses": [
+            {
+                "todo_id": todo.get("todo_id"),
+                "status": todo.get("status"),
+                "attempt_ids": todo.get("attempt_ids") or [],
+            }
+            for todo in data.get("todos") or []
+        ],
+        "attempt_ledger": data["attempt_ledger"],
+        "verification_evidence": data["verification_evidence"],
+        "guardrail_scores": data["guardrail_scores"],
+        "blockers": data["blockers"],
+        "uigwe_reentry_requests": data["uigwe_reentry_requests"],
+        "created_at": timestamp,
+    }
+
+
+def checkpoint_failures(data: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    required = [
+        "format",
+        "checkpoint_id",
+        "run_id",
+        "repo_root",
+        "source_run_path",
+        "source_run_updated_at",
+        "context_id",
+        "objective_id",
+        "approved_goal",
+        "status",
+        "success_criteria",
+        "verification_methods",
+        "guardrail_thresholds",
+        "active_todos",
+        "todo_statuses",
+        "attempt_ledger",
+        "verification_evidence",
+        "guardrail_scores",
+        "blockers",
+        "uigwe_reentry_requests",
+        "created_at",
+    ]
+    for field in required:
+        if field not in data:
+            failures.append(f"checkpoint missing {field}")
+    if data.get("format") != CHECKPOINT_FORMAT:
+        failures.append(f"unexpected checkpoint format: {data.get('format')}")
+    for field in (
+        "success_criteria",
+        "verification_methods",
+        "active_todos",
+        "todo_statuses",
+        "attempt_ledger",
+        "verification_evidence",
+        "blockers",
+        "uigwe_reentry_requests",
+    ):
+        if field in data and not isinstance(data.get(field), list):
+            failures.append(f"checkpoint {field} must be a list")
+    if "guardrail_thresholds" in data and not isinstance(data.get("guardrail_thresholds"), dict):
+        failures.append("checkpoint guardrail_thresholds must be an object")
+    if "guardrail_scores" in data and not isinstance(data.get("guardrail_scores"), dict):
+        failures.append("checkpoint guardrail_scores must be an object")
+    for field in ("checkpoint_id", "run_id", "repo_root", "source_run_path", "source_run_updated_at", "approved_goal", "status", "created_at"):
+        if field in data and not data.get(field):
+            failures.append(f"checkpoint {field} must be non-empty")
+    return failures
+
+
+def resume_payload(checkpoint: dict[str, Any], *, format_name: str) -> dict[str, Any]:
+    return {
+        "format": format_name,
+        "checkpoint_id": checkpoint["checkpoint_id"],
+        "run_id": checkpoint["run_id"],
+        "repo_root": checkpoint["repo_root"],
+        "context_id": checkpoint.get("context_id"),
+        "objective_id": checkpoint.get("objective_id"),
+        "approved_goal": checkpoint["approved_goal"],
+        "status": checkpoint["status"],
+        "success_criteria": checkpoint["success_criteria"],
+        "verification_methods": checkpoint["verification_methods"],
+        "guardrail_thresholds": checkpoint["guardrail_thresholds"],
+        "active_todos": checkpoint["active_todos"],
+        "attempt_ledger": checkpoint["attempt_ledger"],
+        "verification_evidence": checkpoint["verification_evidence"],
+        "blockers": checkpoint["blockers"],
+        "uigwe_reentry_requests": checkpoint["uigwe_reentry_requests"],
+        "source_run_updated_at": checkpoint["source_run_updated_at"],
+        "stale_context_rejected": False,
+        "replayed_at": now_utc(),
+    }
+
+
+def write_or_print_json(output_path: str | None, data: dict[str, Any]) -> None:
+    if output_path:
+        write_json(Path(output_path), data)
+        print(f"written: {output_path}")
+        return
+    print(json.dumps(data, indent=2, sort_keys=True))
+
+
+def replay_stale_failures(
+    checkpoint: dict[str, Any],
+    run_data: dict[str, Any],
+    *,
+    expected_repo_root: str | None,
+    expected_context_id: str | None,
+    expected_objective_id: str | None,
+) -> list[str]:
+    failures = checkpoint_failures(checkpoint)
+    failures.extend(run_failures(run_data))
+    if failures:
+        return failures
+    if checkpoint["run_id"] != run_data["run_id"]:
+        failures.append(f"stale checkpoint run_id mismatch: {checkpoint['run_id']} != {run_data['run_id']}")
+    if checkpoint["repo_root"] != run_data["repo_root"]:
+        failures.append(f"stale checkpoint repo_root mismatch: {checkpoint['repo_root']} != {run_data['repo_root']}")
+    if expected_repo_root and checkpoint["repo_root"] != expected_repo_root:
+        failures.append(f"stale checkpoint expected repo_root mismatch: {checkpoint['repo_root']} != {expected_repo_root}")
+    if expected_context_id and checkpoint.get("context_id") != expected_context_id:
+        failures.append(f"stale checkpoint context_id mismatch: {checkpoint.get('context_id')} != {expected_context_id}")
+    if expected_objective_id and checkpoint.get("objective_id") != expected_objective_id:
+        failures.append(f"stale checkpoint objective_id mismatch: {checkpoint.get('objective_id')} != {expected_objective_id}")
+    if checkpoint["source_run_updated_at"] != run_data["updated_at"]:
+        failures.append(
+            f"stale checkpoint source_run_updated_at mismatch: {checkpoint['source_run_updated_at']} != {run_data['updated_at']}"
+        )
+    if checkpoint["approved_goal"] != run_data["goal"]:
+        failures.append("stale checkpoint approved_goal mismatch")
+    if checkpoint["active_todos"] != open_todos(run_data):
+        failures.append("stale checkpoint active_todos mismatch")
+    for field in ("attempt_ledger", "verification_evidence", "guardrail_scores", "blockers", "uigwe_reentry_requests"):
+        if checkpoint.get(field) != run_data.get(field):
+            failures.append(f"stale checkpoint {field} mismatch")
+    return failures
+
+
 def start(args: argparse.Namespace) -> int:
     path = Path(args.path)
     if path.exists() and not args.force:
@@ -334,6 +497,68 @@ def complete(args: argparse.Namespace) -> int:
     return 0
 
 
+def checkpoint(args: argparse.Namespace) -> int:
+    path = Path(args.path)
+    data = load_json(path)
+    failures = run_failures(data)
+    if failures:
+        return emit_failures(failures)
+    payload = checkpoint_payload(data, path, args)
+    failures = checkpoint_failures(payload)
+    if failures:
+        return emit_failures(failures)
+    write_or_print_json(args.output, payload)
+    return 0
+
+
+def resume(args: argparse.Namespace) -> int:
+    checkpoint_data = load_json(Path(args.checkpoint))
+    failures = checkpoint_failures(checkpoint_data)
+    expected_repo_root = resolve_optional_path(args.expect_repo_root)
+    if expected_repo_root and checkpoint_data.get("repo_root") != expected_repo_root:
+        failures.append(f"stale checkpoint expected repo_root mismatch: {checkpoint_data.get('repo_root')} != {expected_repo_root}")
+    if args.expect_context_id and checkpoint_data.get("context_id") != args.expect_context_id:
+        failures.append(f"stale checkpoint context_id mismatch: {checkpoint_data.get('context_id')} != {args.expect_context_id}")
+    if args.expect_objective_id and checkpoint_data.get("objective_id") != args.expect_objective_id:
+        failures.append(f"stale checkpoint objective_id mismatch: {checkpoint_data.get('objective_id')} != {args.expect_objective_id}")
+    if failures:
+        return emit_failures(failures)
+    write_or_print_json(args.output, resume_payload(checkpoint_data, format_name=RESUME_FORMAT))
+    return 0
+
+
+def stale_check(args: argparse.Namespace) -> int:
+    checkpoint_data = load_json(Path(args.checkpoint))
+    run_data = load_json(Path(args.path))
+    failures = replay_stale_failures(
+        checkpoint_data,
+        run_data,
+        expected_repo_root=resolve_optional_path(args.expect_repo_root),
+        expected_context_id=args.expect_context_id,
+        expected_objective_id=args.expect_objective_id,
+    )
+    if failures:
+        return emit_failures(failures)
+    print(f"checkpoint fresh: {Path(args.checkpoint)}")
+    return 0
+
+
+def replay(args: argparse.Namespace) -> int:
+    checkpoint_data = load_json(Path(args.checkpoint))
+    run_data = load_json(Path(args.path))
+    failures = replay_stale_failures(
+        checkpoint_data,
+        run_data,
+        expected_repo_root=resolve_optional_path(args.expect_repo_root),
+        expected_context_id=args.expect_context_id,
+        expected_objective_id=args.expect_objective_id,
+    )
+    if failures:
+        return emit_failures(failures)
+    write_or_print_json(args.output, resume_payload(checkpoint_data, format_name=REPLAY_FORMAT))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Manage a Seungjeongwon active execution run artifact.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -382,6 +607,39 @@ def build_parser() -> argparse.ArgumentParser:
     complete_parser.add_argument("--verification-evidence", required=True)
     complete_parser.add_argument("--guardrail-score", action="append", type=parse_guardrail_score, required=True)
     complete_parser.set_defaults(func=complete)
+
+    checkpoint_parser = subparsers.add_parser("checkpoint", help="Write a compact replay checkpoint from a run artifact.")
+    checkpoint_parser.add_argument("--path", required=True)
+    checkpoint_parser.add_argument("--output")
+    checkpoint_parser.add_argument("--checkpoint-id")
+    checkpoint_parser.add_argument("--context-id")
+    checkpoint_parser.add_argument("--objective-id")
+    checkpoint_parser.set_defaults(func=checkpoint)
+
+    resume_parser = subparsers.add_parser("resume", help="Materialize resume context from a checkpoint.")
+    resume_parser.add_argument("--checkpoint", required=True)
+    resume_parser.add_argument("--output")
+    resume_parser.add_argument("--expect-repo-root")
+    resume_parser.add_argument("--expect-context-id")
+    resume_parser.add_argument("--expect-objective-id")
+    resume_parser.set_defaults(func=resume)
+
+    stale_parser = subparsers.add_parser("stale-check", help="Reject a checkpoint that no longer matches the active run.")
+    stale_parser.add_argument("--checkpoint", required=True)
+    stale_parser.add_argument("--path", required=True)
+    stale_parser.add_argument("--expect-repo-root")
+    stale_parser.add_argument("--expect-context-id")
+    stale_parser.add_argument("--expect-objective-id")
+    stale_parser.set_defaults(func=stale_check)
+
+    replay_parser = subparsers.add_parser("replay", help="Replay a fresh checkpoint into compact resume context.")
+    replay_parser.add_argument("--checkpoint", required=True)
+    replay_parser.add_argument("--path", required=True)
+    replay_parser.add_argument("--output")
+    replay_parser.add_argument("--expect-repo-root")
+    replay_parser.add_argument("--expect-context-id")
+    replay_parser.add_argument("--expect-objective-id")
+    replay_parser.set_defaults(func=replay)
     return parser
 
 

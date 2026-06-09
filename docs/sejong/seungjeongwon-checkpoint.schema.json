@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/seungjeongwon-checkpoint.schema.json",
+  "title": "Seungjeongwon Durable Checkpoint Schema Draft",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "sejong.seungjeongwon-checkpoint/v0.1-draft"
+    },
+    "checkpoint_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "run_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "repo_root": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "source_run_path": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "source_run_updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "context_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "objective_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "approved_goal": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "blocked",
+        "invalidated",
+        "failed"
+      ]
+    },
+    "success_criteria": {
+      "$ref": "#/$defs/StringList"
+    },
+    "verification_methods": {
+      "$ref": "#/$defs/StringList"
+    },
+    "guardrail_thresholds": {
+      "$ref": "https://kinno.dev/schemas/sejong/seungjeongwon-run.schema.json#/$defs/GuardrailThresholds"
+    },
+    "active_todos": {
+      "type": "array",
+      "items": {
+        "$ref": "https://kinno.dev/schemas/sejong/seungjeongwon-run.schema.json#/$defs/Todo"
+      }
+    },
+    "todo_statuses": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TodoStatusCheckpoint"
+      }
+    },
+    "attempt_ledger": {
+      "type": "array",
+      "items": {
+        "$ref": "https://kinno.dev/schemas/sejong/seungjeongwon-run.schema.json#/$defs/Attempt"
+      }
+    },
+    "verification_evidence": {
+      "$ref": "#/$defs/StringList"
+    },
+    "guardrail_scores": {
+      "$ref": "https://kinno.dev/schemas/sejong/seungjeongwon-run.schema.json#/$defs/GuardrailScores"
+    },
+    "blockers": {
+      "$ref": "#/$defs/StringList"
+    },
+    "uigwe_reentry_requests": {
+      "$ref": "#/$defs/StringList"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "format",
+    "checkpoint_id",
+    "run_id",
+    "repo_root",
+    "source_run_path",
+    "source_run_updated_at",
+    "context_id",
+    "objective_id",
+    "approved_goal",
+    "status",
+    "success_criteria",
+    "verification_methods",
+    "guardrail_thresholds",
+    "active_todos",
+    "todo_statuses",
+    "attempt_ledger",
+    "verification_evidence",
+    "guardrail_scores",
+    "blockers",
+    "uigwe_reentry_requests",
+    "created_at"
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      }
+    },
+    "TodoStatusCheckpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "todo_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "status": {
+          "$ref": "https://kinno.dev/schemas/sejong/seungjeongwon-run.schema.json#/$defs/TodoStatus"
+        },
+        "attempt_ids": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "todo_id",
+        "status",
+        "attempt_ids"
+      ]
+    }
+  }
+}

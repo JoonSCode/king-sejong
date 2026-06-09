@@ -299,6 +299,200 @@ class SeungjeongwonRunTests(unittest.TestCase):
         self.assertNotEqual(complete.returncode, 0)
         self.assertIn("selected leaf coverage below threshold", complete.stderr)
 
+    def test_checkpoint_replay_preserves_resume_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "durable-run.json"
+            checkpoint_path = Path(tmp) / "durable-checkpoint.json"
+            replay_path = Path(tmp) / "durable-replay.json"
+            start = run_command(
+                [
+                    "start",
+                    "--path",
+                    str(run_path),
+                    "--run-id",
+                    "run-durable",
+                    "--repo-root",
+                    ".",
+                    "--goal",
+                    "Preserve Seungjeongwon execution state across compaction.",
+                    "--success-criterion",
+                    "Resume has the approved goal and active todo state.",
+                    "--verification-method",
+                    "Replay checkpoint and compare fields.",
+                    "--todo",
+                    "T1|Implement checkpoint|Checkpoint writes active state|unit test",
+                    "--todo",
+                    "T2|Replay checkpoint|Replay restores compact state|unit test",
+                ]
+            )
+            self.assertEqual(start.returncode, 0, start.stderr)
+            attempt = run_command(
+                [
+                    "record-attempt",
+                    "--path",
+                    str(run_path),
+                    "--todo-id",
+                    "T1",
+                    "--hypothesis",
+                    "A derived checkpoint preserves resume-critical state.",
+                    "--action",
+                    "Created checkpoint command.",
+                    "--verification",
+                    "Focused replay test.",
+                    "--result",
+                    "pass",
+                    "--finding",
+                    "Attempt ledger survives checkpoint.",
+                    "--next-decision",
+                    "replay",
+                    "--evidence-ref",
+                    "test_seungjeongwon_run.py::checkpoint_replay",
+                ]
+            )
+            self.assertEqual(attempt.returncode, 0, attempt.stderr)
+
+            data = json.loads(run_path.read_text(encoding="utf-8"))
+            data["verification_evidence"] = ["targeted replay test prepared"]
+            data["blockers"] = ["external review pending"]
+            data["updated_at"] = "2026-06-09T00:00:00Z"
+            run_path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+            checkpoint = run_command(
+                [
+                    "checkpoint",
+                    "--path",
+                    str(run_path),
+                    "--output",
+                    str(checkpoint_path),
+                    "--context-id",
+                    "ctx-durable",
+                    "--objective-id",
+                    "obj-durable",
+                ]
+            )
+            self.assertEqual(checkpoint.returncode, 0, checkpoint.stderr)
+            checkpoint_data = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+            self.assertEqual(checkpoint_data["approved_goal"], data["goal"])
+            self.assertEqual([todo["todo_id"] for todo in checkpoint_data["active_todos"]], ["T1", "T2"])
+            self.assertEqual(checkpoint_data["attempt_ledger"], data["attempt_ledger"])
+            self.assertEqual(checkpoint_data["verification_evidence"], ["targeted replay test prepared"])
+            self.assertEqual(checkpoint_data["blockers"], ["external review pending"])
+
+            fresh = run_command(
+                [
+                    "stale-check",
+                    "--checkpoint",
+                    str(checkpoint_path),
+                    "--path",
+                    str(run_path),
+                    "--expect-repo-root",
+                    ".",
+                    "--expect-context-id",
+                    "ctx-durable",
+                    "--expect-objective-id",
+                    "obj-durable",
+                ]
+            )
+            self.assertEqual(fresh.returncode, 0, fresh.stderr)
+
+            replay = run_command(
+                [
+                    "replay",
+                    "--checkpoint",
+                    str(checkpoint_path),
+                    "--path",
+                    str(run_path),
+                    "--output",
+                    str(replay_path),
+                    "--expect-repo-root",
+                    ".",
+                    "--expect-objective-id",
+                    "obj-durable",
+                ]
+            )
+            self.assertEqual(replay.returncode, 0, replay.stderr)
+            replay_data = json.loads(replay_path.read_text(encoding="utf-8"))
+            self.assertEqual(replay_data["format"], "sejong.seungjeongwon-replay/v0.1-draft")
+            self.assertEqual(replay_data["approved_goal"], data["goal"])
+            self.assertEqual(replay_data["active_todos"], checkpoint_data["active_todos"])
+            self.assertEqual(replay_data["attempt_ledger"], data["attempt_ledger"])
+            self.assertEqual(replay_data["verification_evidence"], data["verification_evidence"])
+            self.assertEqual(replay_data["blockers"], data["blockers"])
+            self.assertFalse(replay_data["stale_context_rejected"])
+
+    def test_replay_rejects_stale_checkpoint_after_run_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "stale-run.json"
+            checkpoint_path = Path(tmp) / "stale-checkpoint.json"
+            start = run_command(
+                [
+                    "start",
+                    "--path",
+                    str(run_path),
+                    "--run-id",
+                    "run-stale",
+                    "--repo-root",
+                    ".",
+                    "--goal",
+                    "Reject stale Seungjeongwon resume context.",
+                    "--success-criterion",
+                    "Replay fails when the active run no longer matches.",
+                    "--verification-method",
+                    "Mutate the run after checkpoint creation.",
+                    "--todo",
+                    "T1|Create checkpoint|Checkpoint exists|unit test",
+                ]
+            )
+            self.assertEqual(start.returncode, 0, start.stderr)
+            checkpoint = run_command(
+                [
+                    "checkpoint",
+                    "--path",
+                    str(run_path),
+                    "--output",
+                    str(checkpoint_path),
+                    "--context-id",
+                    "ctx-stale",
+                    "--objective-id",
+                    "obj-stale",
+                ]
+            )
+            self.assertEqual(checkpoint.returncode, 0, checkpoint.stderr)
+
+            data = json.loads(run_path.read_text(encoding="utf-8"))
+            data["goal"] = "A different active goal must not reuse the stale checkpoint."
+            data["updated_at"] = "2026-06-09T01:00:00Z"
+            run_path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+            replay = run_command(
+                [
+                    "replay",
+                    "--checkpoint",
+                    str(checkpoint_path),
+                    "--path",
+                    str(run_path),
+                    "--expect-context-id",
+                    "ctx-stale",
+                    "--expect-objective-id",
+                    "obj-stale",
+                ]
+            )
+            self.assertNotEqual(replay.returncode, 0)
+            self.assertIn("stale checkpoint source_run_updated_at mismatch", replay.stderr)
+            self.assertIn("stale checkpoint approved_goal mismatch", replay.stderr)
+
+            wrong_objective = run_command(
+                [
+                    "resume",
+                    "--checkpoint",
+                    str(checkpoint_path),
+                    "--expect-objective-id",
+                    "obj-other",
+                ]
+            )
+            self.assertNotEqual(wrong_objective.returncode, 0)
+            self.assertIn("stale checkpoint objective_id mismatch", wrong_objective.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

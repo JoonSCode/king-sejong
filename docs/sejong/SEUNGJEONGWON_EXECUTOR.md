@@ -63,6 +63,16 @@ Do not activate a native goal for research-only, advice-only, plan-only, open-am
 
 For long-running or compaction-sensitive work, Seungjeongwon should also maintain a `sejong.seungjeongwon-run/v0.1-draft` artifact. The artifact records the approved goal, success criteria, verification methods, active todos, attempt ledger, verification evidence, blockers, and Uigwe re-entry requests. Hooks can block `Stop` and `PreCompact` when this artifact is active or invalid.
 
+Before compaction or handoff, create a derived durable checkpoint from that run
+artifact with `docs/sejong/scripts/seungjeongwon_run.py checkpoint`. The
+checkpoint follows [seungjeongwon-checkpoint.schema.json](seungjeongwon-checkpoint.schema.json)
+and preserves the approved goal, active todos, attempt ledger, verification
+evidence, blockers, guardrail state, and Uigwe re-entry requests without
+becoming a new court surface or approval authority. Resume and replay must use
+`resume`, `stale-check`, or `replay` against the checkpoint; replay is rejected
+when the checkpoint no longer matches the active run, expected repo root,
+objective id, or context id.
+
 When Seungjeongwon evaluates or uses a workflow-like backend such as migrated
 dynamic workflow concepts, `/deep-research`-style research fan-out,
 ultracode-style orchestration, Codex native subagents, host-native team
