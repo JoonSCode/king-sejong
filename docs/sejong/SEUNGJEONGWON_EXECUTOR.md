@@ -198,6 +198,25 @@ verification goal
 
 For paired comparisons, such as baseline execution versus implicit native goal handoff, Seungjeongwon must compare the resulting work products against the same acceptance criteria. Do not promote a candidate only because the route, goal activation, or visible board behavior worked. Promote it only when the final result is better enough to justify the overhead, or keep it shadowed when evidence is inconclusive.
 
+For harness, orchestrator, architecture, refactoring, revision, or addition
+requests that ask Seungjeongwon to try many improvement hypotheses, first use
+the orchestrator hypothesis matrix as the measurement contract:
+
+```bash
+python3 docs/sejong/scripts/benchmark_orchestrator_hypothesis_matrix.py --require-targets
+```
+
+The matrix must evaluate at least ten hypotheses per improvement area, use the
+same weighted dimensions for every candidate, record reviewable evidence and
+verification refs, and apply `tie_breaker_dimensions` when primary scores are
+equal. A tied result is not adoption evidence until the measurement is refined
+enough to select a unique passing hypothesis or record a blocker.
+Candidate scores must come from executable trial cases and candidate capability
+profiles rather than handwritten preference scores.
+The adopted candidate must also align with an operational corpus of existing
+King Sejong validation, workflow-run, outcome-evaluation, and integrated-quality
+evidence refs before Seungjeongwon treats it as a stronger improvement.
+
 For workflow-like backends, record the same paired comparison in a
 `workflow-run.json` artifact and validate it with:
 

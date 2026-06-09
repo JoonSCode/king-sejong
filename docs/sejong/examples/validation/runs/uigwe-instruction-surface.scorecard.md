@@ -1,10 +1,10 @@
 # Uigwe Instruction Surface Scorecard
 
 - Task set: `uigwe-instruction-surface-task-set`
-- Generated at: `2026-06-08T06:02:36Z`
+- Generated at: `2026-06-09T01:42:46Z`
 - Status: `pass`
 - Average score: `1.0`
-- Pass/fail: `25/0`
+- Pass/fail: `26/0`
 
 ## Scenarios
 - `instruction-routing-modes`: `pass` (1.0)
@@ -31,4 +31,5 @@
 - `instruction-sillok-security-trace`: `pass` (1.0)
 - `instruction-decision-justification`: `pass` (1.0)
 - `instruction-dynamic-workflow-adoption`: `pass` (1.0)
+- `instruction-orchestrator-hypothesis-matrix`: `pass` (1.0)
 - `instruction-compression-budget`: `pass` (1.0)

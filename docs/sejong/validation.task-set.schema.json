@@ -225,6 +225,15 @@
         },
         "defect_first_review": {
           "$ref": "#/$defs/StringList"
+        },
+        "hypothesis_matrix_contract": {
+          "$ref": "#/$defs/StringList"
+        },
+        "hypothesis_tie_breakers": {
+          "$ref": "#/$defs/StringList"
+        },
+        "hypothesis_adopted_tactics": {
+          "$ref": "#/$defs/StringList"
         }
       }
     },

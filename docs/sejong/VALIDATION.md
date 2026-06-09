@@ -341,6 +341,74 @@ Passing this phase still does not claim real product or engineering success by
 itself. It proves that the remaining risks are measurable and that promotion
 claims have concrete workflow-run evidence to inspect.
 
+### Phase 2D.4: Orchestrator Hypothesis Matrix
+
+Run this when the task asks Sejong to research harness or orchestrator patterns,
+judge whether King Sejong needs architecture, refactoring, revision, addition,
+or measurement changes, and try many improvement hypotheses before adopting one:
+
+```bash
+python3 docs/sejong/scripts/benchmark_orchestrator_hypothesis_matrix.py --require-targets
+python3 docs/sejong/scripts/benchmark_orchestrator_hypothesis_matrix.py --json --require-targets
+python3 docs/sejong/scripts/test_orchestrator_hypothesis_matrix.py
+```
+
+This benchmark is the measurement gate for ten-plus hypothesis requests. It
+does not replace `workflow-run`; it selects which improvement tactic is worth
+turning into a workflow-run, documentation change, or Seungjeongwon execution
+attempt. Each improvement area must define at least ten hypotheses, score them
+against the same dimensions, record reviewable evidence and verification refs,
+and identify one adopted hypothesis or a real blocker.
+
+Candidate scores are measured from executable trial cases, not handwritten
+preference scores. Each candidate has a capability profile, and each trial case
+declares the required or forbidden capabilities for one metric dimension. The
+final score is derived from trial pass rates by dimension, then weighted through
+the shared `DIMENSION_WEIGHTS`.
+
+The matrix also checks an operational corpus built from existing King Sejong
+evidence artifacts: validation task sets and scorecards, promoted workflow-run
+corpus artifacts, workflow comparison and stability gates, outcome-evaluation
+examples, and the integrated quality gate. The selected candidate for each
+improvement area must match the corpus expectation, have the required
+capabilities, and reference evidence files that exist in the repository.
+
+`minimum hypothesis count is a hard target`: if an improvement area has fewer
+than ten hypotheses, the matrix fails before adoption scoring matters.
+
+The measured dimensions are:
+
+- `outcome_quality`
+- `guardrail_integrity`
+- `observability_diagnosability`
+- `reliability_reproducibility`
+- `efficiency_cost`
+- `parallelism_fit`
+- `human_developer_experience`
+
+Promotion requires a passing weighted score, all dimension hard minimums, all
+King Sejong authority and artifact-storage hard gates, and zero unresolved ties
+after `tie_breaker_dimensions`. If two hypotheses are tied on the primary score,
+the benchmark must apply finer-grained tie-breakers before adoption. If a tie
+still remains, the correct result is not promotion; add a more discriminating
+measurement dimension or evidence fixture, then rerun the matrix.
+
+The initial matrix evaluates these King Sejong improvement areas:
+
+- `hypothesis_selection_gate`: how Sejong should satisfy "try ten hypotheses"
+  requests without relying on conversational memory.
+- `orchestrator_backend_policy`: when bounded workers, host-native team support,
+  TeamExecutor, Codex mocks, or single-agent execution are justified.
+- `architecture_refactor_policy`: whether to change core court-mode architecture
+  or keep the improvement as a thin validation layer.
+
+The current adopted tactics are intentionally conservative: add a ranked hypothesis matrix with deterministic tie-breakers, keep bounded subagents below Sejong lead synthesis, and add a thin validation layer rather than a new court mode or runtime.
+
+Use the hypothesis matrix before claiming that a harness or orchestrator insight
+requires a King Sejong architecture change. Use `workflow-run` after the selected
+hypothesis proposes a workflow-backed behavior that needs shadow, promotion, or
+remaining-risk evidence.
+
 ### Phase 2E: Integrated Quality Gate
 
 Run this when a change must prove it composes with the latest Sejong SOT rather than only passing in isolation:

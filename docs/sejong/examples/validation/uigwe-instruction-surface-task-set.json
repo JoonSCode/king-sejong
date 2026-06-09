@@ -937,6 +937,73 @@
       }
     },
     {
+      "id": "instruction-orchestrator-hypothesis-matrix",
+      "title": "Harness and orchestrator improvements use a ten-plus hypothesis matrix",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that Sejong can evaluate harness, orchestrator, architecture, refactoring, revision, and addition hypotheses through a measurable ten-plus-candidate matrix before adopting a tactic.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        "docs/sejong/VALIDATION.md",
+        "docs/sejong/WORKFLOW_RUN.md",
+        "docs/sejong/SEUNGJEONGWON_EXECUTOR.md",
+        "docs/sejong/scripts/benchmark_orchestrator_hypothesis_matrix.py",
+        "docs/sejong/scripts/test_orchestrator_hypothesis_matrix.py"
+      ],
+      "expected_behavior": [
+        "Orchestrator Hypothesis Matrix is documented as the measurement gate for ten-plus hypothesis requests",
+        "Each improvement area must define at least ten hypotheses",
+        "the benchmark scores every candidate against the same weighted dimensions",
+        "candidate scores are measured from executable trial cases and candidate capability profiles",
+        "the benchmark output records trial_results and declared_metrics for each candidate",
+        "the benchmark output records operational_corpus results against existing King Sejong evidence artifacts",
+        "the benchmark records reviewable evidence refs, implementation refs, and verification refs",
+        "primary-score ties are refined through tie_breaker_dimensions",
+        "zero unresolved ties are required before adoption",
+        "the initial areas cover hypothesis_selection_gate, orchestrator_backend_policy, and architecture_refactor_policy",
+        "the adopted tactics are ranked hypothesis matrix with deterministic tie-breakers, lead-owned bounded subagents, and a thin validation layer",
+        "the matrix runs before workflow-run when a workflow-backed behavior still needs selection",
+        "the matrix preserves King Sejong authority boundaries and does not create a new court mode"
+      ],
+      "forbidden_behavior": [
+        "promoting a harness or orchestrator change after testing fewer than ten hypotheses for the improvement area",
+        "letting worker agreement or majority vote adopt a hypothesis",
+        "using a tied primary score as adoption evidence without finer measurement",
+        "creating a separate HypothesisLab court mode",
+        "replacing workflow-run promotion evidence with the hypothesis matrix"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py and benchmark_orchestrator_hypothesis_matrix.py."
+      ],
+      "guardrail_expectations": {
+        "hypothesis_matrix_contract": [
+          "Orchestrator Hypothesis Matrix",
+          "benchmark_orchestrator_hypothesis_matrix.py --require-targets",
+          "Each improvement area must define at least ten hypotheses",
+          "MIN_HYPOTHESES_PER_AREA = 10",
+          "Candidate scores are measured from executable trial cases",
+          "TRIAL_CASES",
+          "CANDIDATE_CAPABILITIES",
+          "trial_results",
+          "OPERATIONAL_CORPUS",
+          "operational_corpus",
+          "declared_metrics"
+        ],
+        "hypothesis_tie_breakers": [
+          "tie_breaker_dimensions",
+          "zero unresolved ties",
+          "TIE_BREAKER_DIMENSIONS"
+        ],
+        "hypothesis_adopted_tactics": [
+          "hypothesis_selection_gate",
+          "orchestrator_backend_policy",
+          "architecture_refactor_policy",
+          "lead-owned-bounded-subagents",
+          "thin-validation-layer"
+        ]
+      }
+    },
+    {
       "id": "instruction-compression-budget",
       "title": "Skill files stay small enough to load",
       "profile": "instruction",

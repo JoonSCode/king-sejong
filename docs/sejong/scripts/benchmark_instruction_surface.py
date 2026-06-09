@@ -54,6 +54,8 @@ WORKFLOW_RUN_BENCHMARK_PATH = SEJONG_ROOT / "scripts" / "benchmark_workflow_run.
 WORKFLOW_RUN_COMPARISON_BENCHMARK_PATH = SEJONG_ROOT / "scripts" / "benchmark_workflow_run_comparison.py"
 WORKFLOW_RUN_STABILITY_BENCHMARK_PATH = SEJONG_ROOT / "scripts" / "benchmark_workflow_run_stability.py"
 WORKFLOW_RUN_RISK_AUDIT_PATH = SEJONG_ROOT / "scripts" / "audit_workflow_run_risks.py"
+ORCHESTRATOR_HYPOTHESIS_MATRIX_PATH = SEJONG_ROOT / "scripts" / "benchmark_orchestrator_hypothesis_matrix.py"
+ORCHESTRATOR_HYPOTHESIS_MATRIX_TEST_PATH = SEJONG_ROOT / "scripts" / "test_orchestrator_hypothesis_matrix.py"
 
 UIGWE_SKILL_LINE_BUDGET = 320
 SEJONG_SKILL_LINE_BUDGET = 90
@@ -84,6 +86,7 @@ SCENARIO_IDS = (
     "instruction-sillok-security-trace",
     "instruction-decision-justification",
     "instruction-dynamic-workflow-adoption",
+    "instruction-orchestrator-hypothesis-matrix",
     "instruction-compression-budget",
 )
 
@@ -101,6 +104,7 @@ REQUIRED_GUARDRAIL_SCENARIOS = {
     "instruction-sillok-security-trace",
     "instruction-decision-justification",
     "instruction-dynamic-workflow-adoption",
+    "instruction-orchestrator-hypothesis-matrix",
 }
 
 
@@ -951,6 +955,55 @@ def evaluate_dynamic_workflow_adoption() -> list[dict[str, Any]]:
     ]
 
 
+def evaluate_orchestrator_hypothesis_matrix() -> list[dict[str, Any]]:
+    validation = load_text(VALIDATION_PATH)
+    executor = load_text(SEUNGJEONGWON_EXECUTOR_PATH)
+    workflow_run = load_text(SEJONG_ROOT / "WORKFLOW_RUN.md")
+    matrix = load_text(ORCHESTRATOR_HYPOTHESIS_MATRIX_PATH)
+    matrix_test = load_text(ORCHESTRATOR_HYPOTHESIS_MATRIX_TEST_PATH)
+    combined = "\n".join([validation, executor, workflow_run, matrix, matrix_test])
+    required = [
+        "Orchestrator Hypothesis Matrix",
+        "benchmark_orchestrator_hypothesis_matrix.py --require-targets",
+        "test_orchestrator_hypothesis_matrix.py",
+        "ten-plus hypothesis requests",
+        "Each improvement area must define at least ten hypotheses",
+        "tie_breaker_dimensions",
+        "zero unresolved ties",
+        "hypothesis_selection_gate",
+        "orchestrator_backend_policy",
+        "architecture_refactor_policy",
+        "ranked hypothesis matrix with deterministic tie-breakers",
+        "thin validation layer rather than a new court mode",
+        "MIN_HYPOTHESES_PER_AREA = 10",
+        "DIMENSION_WEIGHTS",
+        "DIMENSION_MINIMUMS",
+        "REQUIRED_AREA_IDS",
+        "TIE_BREAKER_DIMENSIONS",
+        "TRIAL_CASES",
+        "OPERATIONAL_CORPUS",
+        "CANDIDATE_CAPABILITIES",
+        "trial_results",
+        "operational_corpus",
+        "Operational corpus",
+        "declared_metrics",
+        "Candidate scores are measured from executable trial cases",
+        "does_not_create_new_court_mode",
+        "lead-owned-bounded-subagents",
+        "thin-validation-layer",
+        "minimum hypothesis count is a hard target",
+    ]
+    passed, missing = contains_all(combined, required)
+    return [
+        check(
+            "orchestrator_hypothesis_matrix_present",
+            passed,
+            "Harness and orchestrator improvement work must evaluate ten-plus hypotheses per area with deterministic tie-breakers before adoption.",
+            missing=missing,
+        )
+    ]
+
+
 def evaluate_compression() -> list[dict[str, Any]]:
     uigwe_lines = line_count(UIGWE_SKILL_PATH)
     sejong_lines = line_count(SEJONG_SKILL_PATH)
@@ -1011,6 +1064,7 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-sillok-security-trace": evaluate_sillok_security_trace,
     "instruction-decision-justification": evaluate_decision_justification,
     "instruction-dynamic-workflow-adoption": evaluate_dynamic_workflow_adoption,
+    "instruction-orchestrator-hypothesis-matrix": evaluate_orchestrator_hypothesis_matrix,
     "instruction-compression-budget": evaluate_compression,
 }
 
@@ -1053,6 +1107,16 @@ def expectation_text_for_scenario(scenario_id: str) -> str:
                 load_text(WORKFLOW_RUN_SCRIPT_PATH),
                 load_text(WORKFLOW_RUN_BENCHMARK_PATH),
                 load_text(WORKFLOW_RUN_COMPARISON_BENCHMARK_PATH),
+            ]
+        )
+    if scenario_id == "instruction-orchestrator-hypothesis-matrix":
+        return "\n".join(
+            [
+                load_text(VALIDATION_PATH),
+                load_text(SEUNGJEONGWON_EXECUTOR_PATH),
+                load_text(SEJONG_ROOT / "WORKFLOW_RUN.md"),
+                load_text(ORCHESTRATOR_HYPOTHESIS_MATRIX_PATH),
+                load_text(ORCHESTRATOR_HYPOTHESIS_MATRIX_TEST_PATH),
             ]
         )
     if scenario_id == "instruction-long-session-outcome-entry":

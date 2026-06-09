@@ -60,6 +60,19 @@ Use:
 python3 docs/sejong/scripts/sejong_workflow_run.py check --path <workflow-run.json>
 ```
 
+When a task asks Sejong to try many harness, orchestrator, refactoring, or
+architecture hypotheses before adopting one, run the orchestrator hypothesis
+matrix before creating or promoting a workflow-run:
+
+```bash
+python3 docs/sejong/scripts/benchmark_orchestrator_hypothesis_matrix.py --require-targets
+```
+
+The hypothesis matrix is the ten-plus-candidate selection gate. `workflow-run`
+remains the evidence contract for a selected workflow-backed behavior after the
+candidate has a concrete baseline, candidate result, backend provenance,
+quality comparison, and promotion recommendation.
+
 ## Promotion Rules
 
 Promotion requires more than "many agents ran".

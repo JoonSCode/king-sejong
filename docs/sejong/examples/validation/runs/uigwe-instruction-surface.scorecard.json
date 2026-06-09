@@ -3,13 +3,13 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-06-08T06:02:36Z",
+    "generated_at": "2026-06-09T01:42:46Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
   "aggregate": {
-    "scenario_count": 25,
-    "pass_count": 25,
+    "scenario_count": 26,
+    "pass_count": 26,
     "partial_count": 0,
     "fail_count": 0,
     "average_score": 1.0,
@@ -592,6 +592,38 @@
           "id": "guardrail_artifact_retention_policy",
           "passed": true,
           "detail": "Typed guardrail expectation artifact_retention_policy is represented in the instruction surface."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-orchestrator-hypothesis-matrix",
+      "title": "Harness and orchestrator improvements use a ten-plus hypothesis matrix",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "orchestrator_hypothesis_matrix_present",
+          "passed": true,
+          "detail": "Harness and orchestrator improvement work must evaluate ten-plus hypotheses per area with deterministic tie-breakers before adoption."
+        },
+        {
+          "id": "guardrail_hypothesis_matrix_contract",
+          "passed": true,
+          "detail": "Typed guardrail expectation hypothesis_matrix_contract is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_hypothesis_tie_breakers",
+          "passed": true,
+          "detail": "Typed guardrail expectation hypothesis_tie_breakers is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_hypothesis_adopted_tactics",
+          "passed": true,
+          "detail": "Typed guardrail expectation hypothesis_adopted_tactics is represented in the instruction surface."
         }
       ],
       "blockers": [],
