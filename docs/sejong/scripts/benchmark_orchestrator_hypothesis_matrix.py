@@ -321,6 +321,8 @@ def candidate(
     threshold: str,
     method: str,
     refs: list[str] | None = None,
+    implementation_refs: list[str] | None = None,
+    verification_refs: list[str] | None = None,
     hard_gates: dict[str, bool] | None = None,
 ) -> Candidate:
     gates = {gate: True for gate in HARD_GATES}
@@ -339,8 +341,10 @@ def candidate(
         measurement=measurement(metric, threshold, method),
         metrics=scores,
         evidence_refs=default_refs,
-        implementation_refs=["docs/sejong/scripts/benchmark_orchestrator_hypothesis_matrix.py"],
-        verification_refs=[
+        implementation_refs=implementation_refs
+        or ["docs/sejong/scripts/benchmark_orchestrator_hypothesis_matrix.py"],
+        verification_refs=verification_refs
+        or [
             "docs/sejong/scripts/test_orchestrator_hypothesis_matrix.py",
             "docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets",
         ],
@@ -474,11 +478,20 @@ def built_in_candidates() -> list[Candidate]:
             "orchestrator_backend_policy",
             "lead-owned-bounded-subagents",
             "Use bounded subagents or workers only when scopes are independent and Sejong lead retains synthesis.",
-            "Keep worker outputs as evidence and score backend value against overhead and guardrail preservation.",
+            "Use task_class_delegation_gate.py to choose direct execution, bounded subagents, TeamExecutor, research fan-out, or no-write dry run from task class, risk, evidence breadth, coupling, overhead ROI, and guardrails.",
             scores(0.92, 1.00, 0.94, 0.92, 0.82, 0.96, 0.88),
             metric="quality delta per orchestration overhead",
             threshold="delta >= 0.10 with zero authority violations",
             method="Compare baseline direct work to bounded-worker candidate under workflow-run metrics.",
+            implementation_refs=[
+                "docs/sejong/scripts/task_class_delegation_gate.py",
+                "docs/sejong/scripts/benchmark_orchestrator_hypothesis_matrix.py",
+            ],
+            verification_refs=[
+                "docs/sejong/scripts/test_task_class_delegation_gate.py",
+                "docs/sejong/scripts/test_orchestrator_hypothesis_matrix.py",
+                "docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets",
+            ],
         ),
         candidate(
             "orchestrator_backend_policy",

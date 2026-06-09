@@ -44,6 +44,11 @@ class OrchestratorHypothesisMatrixTests(unittest.TestCase):
             self.assertIsNotNone(area["selected"])
             self.assertTrue(area["selected"]["trial_results"])
             self.assertEqual(area["selected"]["score"], 1.0)
+            if area["area_id"] == "orchestrator_backend_policy":
+                self.assertIn(
+                    "docs/sejong/scripts/task_class_delegation_gate.py",
+                    area["selected"]["implementation_refs"],
+                )
 
     def test_operational_corpus_refs_exist_and_align_to_selected_candidates(self) -> None:
         report = matrix.evaluate(

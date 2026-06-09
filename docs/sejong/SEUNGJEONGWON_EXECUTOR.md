@@ -224,6 +224,21 @@ For workflow-like backends, record the same paired comparison in a
 python3 docs/sejong/scripts/sejong_workflow_run.py check --path <workflow-run.json>
 ```
 
+Before selecting a workflow backend for an execution leaf, Seungjeongwon may run
+the task-class delegation gate:
+
+```bash
+python3 docs/sejong/scripts/task_class_delegation_gate.py --task-class implementation
+```
+
+The gate is deterministic and may select `direct_execution`,
+`bounded_subagents`, `team_executor`, `research_fanout`, or
+`no_write_dry_run`. Its hard gates preserve Uigwe authority, keep worker output
+as evidence only, require reviewable evidence, keep runtime artifacts under
+Sejong home or promoted refs, and reject new court-mode creation. A dry-run
+selection is blocker evidence, not permission to weaken the Uigwe or
+Seungjeongwon verification bar.
+
 ## Execution Attempt Loop
 
 After actionable leaves exist, Seungjeongwon runs:
