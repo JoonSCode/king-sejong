@@ -1,0 +1,47 @@
+{
+  "allowed_message_kinds": [
+    "claim",
+    "evidence_ref",
+    "risk",
+    "status",
+    "verification"
+  ],
+  "allowed_outputs": [
+    "bounded risk note"
+  ],
+  "current_surface": "jiphyeonjeon",
+  "evidence_refs": [
+    "brief.md"
+  ],
+  "forbidden_worker_claims": [
+    "Uigwe gate approval",
+    "final synthesis",
+    "final verification",
+    "majority-vote decisions",
+    "consensus as approval",
+    "scope widening"
+  ],
+  "format": "sejong.team-worker/v0.1-draft",
+  "objective": "Produce bounded critic evidence for bounded risk review.",
+  "pending_gates": [],
+  "phase_label": "decision",
+  "prompt_path": "workers/critic/prompt.md",
+  "return_format": "Return a bounded risk note with summary, evidence_refs, confidence, residual_risk, and blocker_or_next_step.",
+  "role": "critic",
+  "route_sequence": [
+    "jiphyeonjeon"
+  ],
+  "run_id": "valid-context",
+  "scope": "bounded risk review",
+  "source_of_truth_refs": [
+    "brief.md"
+  ],
+  "status": "registered",
+  "stop_condition": "Return mailbox evidence to Sejong lead.",
+  "updated_at": "2026-05-23T00:00:00Z",
+  "verification_expectation": "Cite brief.md or report a blocker.",
+  "worker_id": "critic",
+  "write_scope": [
+    "none"
+  ]
+}

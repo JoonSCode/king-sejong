@@ -40,6 +40,9 @@
       "allowed_outputs": [
         "bounded risk note"
       ],
+      "evidence_refs": [
+        "brief.md"
+      ],
       "forbidden_worker_claims": [
         "Uigwe gate approval",
         "final synthesis",
@@ -48,13 +51,20 @@
         "consensus as approval",
         "scope widening"
       ],
+      "objective": "Produce bounded critic evidence for bounded risk review.",
       "prompt_path": "workers/critic/prompt.md",
       "return_format": "Return a bounded risk note with summary, evidence_refs, confidence, residual_risk, and blocker_or_next_step.",
       "role": "critic",
       "scope": "bounded risk review",
+      "source_of_truth_refs": [
+        "brief.md"
+      ],
       "status": "registered",
       "stop_condition": "Return mailbox evidence to Sejong lead.",
       "verification_expectation": "Cite brief.md or report a blocker.",
+      "write_scope": [
+        "none"
+      ],
       "worker_id": "critic"
     }
   ]

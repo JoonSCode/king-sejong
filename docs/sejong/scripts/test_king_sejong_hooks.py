@@ -668,11 +668,14 @@ class KingSejongHookTests(unittest.TestCase):
         context = output["hookSpecificOutput"]["additionalContext"]
         self.assertIn("King Sejong active context", context)
         self.assertIn("Bounded worker contract", context)
+        self.assertIn("objective=", context)
         self.assertIn("worker_role=critic", context)
         self.assertIn("worker_scope=bounded risk review", context)
         self.assertIn("source_of_truth_refs=", context)
         self.assertIn("allowed_outputs=", context)
         self.assertIn("forbidden_claims=", context)
+        self.assertIn("write_scope=", context)
+        self.assertIn("evidence_refs=", context)
         self.assertIn("return_format=", context)
         self.assertIn("stop_condition=", context)
 
@@ -712,8 +715,11 @@ class KingSejongHookTests(unittest.TestCase):
         )
         context = output["hookSpecificOutput"]["additionalContext"]
         self.assertIn("Bounded worker contract", context)
+        self.assertIn("objective=", context)
         self.assertIn("worker_role=critic", context)
         self.assertIn("worker_scope=bounded risk review", context)
+        self.assertIn("write_scope=", context)
+        self.assertIn("evidence_refs=", context)
         self.assertIn("forbidden_claims=", context)
 
     def test_stop_continues_when_verification_gate_is_pending(self) -> None:

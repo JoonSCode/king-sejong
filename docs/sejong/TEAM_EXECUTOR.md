@@ -104,16 +104,25 @@ Codex-native execution, represented by a mock, or left unpromoted.
 Each worker must have:
 
 - `worker_id`
+- objective
 - role
 - assigned scope
+- source-of-truth refs inherited from the team brief or explicitly narrowed
 - allowed message kinds
 - allowed outputs
+- write scope, using `none` for read-only workers
+- evidence refs that the worker brief can cite before output begins
 - linked research question, when the worker is a scholar-scoped helper lane
 - allowed file scope, if it can write
 - verification expectation
 - stop condition
 
 Workers may read the shared brief and append mailbox messages. They must not silently widen their scope.
+`team_executor.py check` validates the bounded worker brief contract for every
+registered worker and its worker state file. The hard gate requires objective,
+role, source-of-truth refs, allowed outputs, forbidden claims, write scope, stop
+condition, and evidence refs before the worker output can be treated as
+reviewable evidence.
 
 Workers must not claim:
 
@@ -136,6 +145,8 @@ python3 docs/sejong/scripts/team_executor.py init \
   --source-of-truth-ref brief.md \
   --brief-file brief.md \
   --worker-allowed-output advocate="option A claim and evidence" \
+  --worker-write-scope advocate="none" \
+  --worker-evidence-ref advocate="brief.md" \
   --worker-verification advocate="cite evidence or blocker" \
   --worker-stop advocate="stop after first-round brief" \
   --worker advocate:advocate:"option A review" \

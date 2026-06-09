@@ -152,6 +152,9 @@
         "worker_id": {
           "$ref": "#/$defs/NonEmptyString"
         },
+        "objective": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
         "role": {
           "$ref": "#/$defs/NonEmptyString"
         },
@@ -168,6 +171,15 @@
           "$ref": "#/$defs/StringList"
         },
         "forbidden_worker_claims": {
+          "$ref": "#/$defs/StringList"
+        },
+        "source_of_truth_refs": {
+          "$ref": "#/$defs/StringList"
+        },
+        "write_scope": {
+          "$ref": "#/$defs/StringList"
+        },
+        "evidence_refs": {
           "$ref": "#/$defs/StringList"
         },
         "verification_expectation": {
@@ -191,11 +203,15 @@
       },
       "required": [
         "worker_id",
+        "objective",
         "role",
         "scope",
         "allowed_message_kinds",
         "allowed_outputs",
         "forbidden_worker_claims",
+        "source_of_truth_refs",
+        "write_scope",
+        "evidence_refs",
         "verification_expectation",
         "return_format",
         "prompt_path",
@@ -436,6 +452,9 @@
         "worker_id": {
           "$ref": "#/$defs/NonEmptyString"
         },
+        "objective": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
         "role": {
           "$ref": "#/$defs/NonEmptyString"
         },
@@ -452,6 +471,12 @@
           }
         },
         "forbidden_worker_claims": {
+          "$ref": "#/$defs/StringList"
+        },
+        "write_scope": {
+          "$ref": "#/$defs/StringList"
+        },
+        "evidence_refs": {
           "$ref": "#/$defs/StringList"
         },
         "verification_expectation": {
@@ -483,11 +508,14 @@
         "pending_gates",
         "source_of_truth_refs",
         "worker_id",
+        "objective",
         "role",
         "scope",
         "allowed_message_kinds",
         "allowed_outputs",
         "forbidden_worker_claims",
+        "write_scope",
+        "evidence_refs",
         "verification_expectation",
         "return_format",
         "prompt_path",

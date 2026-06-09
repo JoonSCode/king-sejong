@@ -384,17 +384,23 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             run_dir = sejong_home / "state" / "team" / "prompt-state"
             state = json.loads((run_dir / "workers" / "critic" / "state.json").read_text(encoding="utf-8"))
             self.assertEqual(state["current_surface"], "jiphyeonjeon")
+            self.assertIn("objective", state)
             self.assertEqual(state["role"], "critic")
             self.assertEqual(state["scope"], "bounded risk review")
             self.assertEqual(state["source_of_truth_refs"], ["brief.md", "docs/sejong/TEAM_EXECUTOR.md"])
+            self.assertIn("write_scope", state)
+            self.assertIn("evidence_refs", state)
             self.assertIn("prompt_path", state)
             self.assertIn("return_format", state)
             self.assertIn("forbidden_worker_claims", state)
             self.assertIn("verification_expectation", state)
             prompt = (run_dir / state["prompt_path"]).read_text(encoding="utf-8")
             self.assertIn("You are a bounded Jiphyeonjeon worker", prompt)
+            self.assertIn("Objective:", prompt)
             self.assertIn("Role: critic", prompt)
             self.assertIn("Source of truth refs:", prompt)
+            self.assertIn("Write scope:", prompt)
+            self.assertIn("Evidence refs:", prompt)
             self.assertIn("Forbidden claims:", prompt)
 
     def test_check_fails_when_worker_prompt_contract_is_incomplete(self) -> None:
@@ -416,12 +422,13 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             run_dir = sejong_home / "state" / "team" / "missing-prompt-contract"
             team_path = run_dir / "team.json"
             team = json.loads(team_path.read_text(encoding="utf-8"))
-            del team["workers"][0]["return_format"]
+            del team["workers"][0]["write_scope"]
             team_path.write_text(json.dumps(team, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
             result = run_team_command(["check", str(run_dir)], sejong_home=sejong_home)
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("worker missing return_format", result.stderr)
+            self.assertIn("worker missing write_scope", result.stderr)
+            self.assertIn("worker brief critic write_scope must be a non-empty list", result.stderr)
 
     def test_launch_injects_complete_worker_prompt_contract(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -447,8 +454,11 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("SEJONG_CURRENT_SURFACE=jiphyeonjeon", result.stdout)
             self.assertIn("SEJONG_WORKER_ROLE=critic", result.stdout)
+            self.assertIn("SEJONG_WORKER_OBJECTIVE=", result.stdout)
             self.assertIn("SEJONG_WORKER_SCOPE='bounded risk review'", result.stdout)
             self.assertIn("SEJONG_WORKER_ALLOWED_OUTPUTS=", result.stdout)
+            self.assertIn("SEJONG_WORKER_WRITE_SCOPE=", result.stdout)
+            self.assertIn("SEJONG_WORKER_EVIDENCE_REFS=", result.stdout)
             self.assertIn("SEJONG_WORKER_VERIFICATION_EXPECTATION=", result.stdout)
             self.assertIn("SEJONG_FORBIDDEN_WORKER_CLAIMS=", result.stdout)
             self.assertIn("SEJONG_WORKER_RETURN_FORMAT=", result.stdout)

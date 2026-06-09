@@ -255,6 +255,25 @@ def worker_payload_scope(payload: dict[str, Any]) -> str:
     return str(payload.get("worker_scope") or payload.get("scope") or payload.get("task") or "assigned scope only")
 
 
+def worker_payload_objective(context: dict[str, Any], payload: dict[str, Any]) -> str:
+    return str(
+        payload.get("worker_objective")
+        or payload.get("objective")
+        or payload.get("task")
+        or context.get("objective_id")
+        or "return bounded evidence to the Sejong lead"
+    )
+
+
+def worker_payload_write_scope(payload: dict[str, Any]) -> list[str]:
+    value = payload.get("write_scope") or payload.get("allowed_file_scope") or payload.get("worker_write_scope")
+    if isinstance(value, list):
+        return [str(item) for item in value if str(item)]
+    if value:
+        return [str(value)]
+    return ["none"]
+
+
 def bounded_worker_contract_summary(context: dict[str, Any], payload: dict[str, Any]) -> str:
     refs = (
         context.get("source_of_truth_refs")
@@ -263,6 +282,8 @@ def bounded_worker_contract_summary(context: dict[str, Any], payload: dict[str, 
         or context.get("objective_refs")
         or []
     )
+    if not refs:
+        refs = ["active-context"]
     allowed_outputs = [
         "bounded evidence",
         "risks",
@@ -280,11 +301,14 @@ def bounded_worker_contract_summary(context: dict[str, Any], payload: dict[str, 
     ]
     return (
         "Bounded worker contract: "
+        f"objective={worker_payload_objective(context, payload)}; "
         f"worker_role={worker_payload_role(payload)}; "
         f"worker_scope={worker_payload_scope(payload)}; "
         f"source_of_truth_refs={','.join(refs) or 'none'}; "
         f"allowed_outputs={','.join(allowed_outputs)}; "
         f"forbidden_claims={','.join(forbidden_claims)}; "
+        f"write_scope={','.join(worker_payload_write_scope(payload))}; "
+        f"evidence_refs={','.join(refs)}; "
         "return_format=bounded brief with evidence refs, confidence, residual risk, and blocker_or_next_step; "
         "stop_condition=return to the Sejong lead after the assigned output or blocker."
     )

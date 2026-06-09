@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from bounded_worker_brief import brief_from_team_worker, validate_bounded_worker_brief
 from sejong_paths import resolve_path
 
 
@@ -297,6 +298,10 @@ def default_allowed_outputs(worker: dict[str, str]) -> list[str]:
     return [f"bounded {worker['role']} output for {worker['scope']}"]
 
 
+def default_objective(worker: dict[str, str]) -> str:
+    return f"Produce bounded {worker['role']} evidence for {worker['scope']}."
+
+
 def default_verification_expectation(worker: dict[str, str]) -> str:
     return f"Return evidence or a blocker for {worker['scope']}."
 
@@ -331,6 +336,8 @@ def render_worker_prompt(team: dict[str, Any], worker: dict[str, Any]) -> str:
     allowed_kinds = ", ".join(worker.get("allowed_message_kinds") or [])
     allowed_outputs = "; ".join(worker.get("allowed_outputs") or [])
     source_refs = ", ".join(team.get("source_of_truth_refs") or [])
+    write_scope = "; ".join(worker.get("write_scope") or [])
+    evidence_refs = ", ".join(worker.get("evidence_refs") or [])
     pending_gates = ", ".join(team.get("pending_gates") or []) or "none"
     forbidden = "; ".join(worker.get("forbidden_worker_claims") or [])
     return "\n".join(
@@ -343,11 +350,14 @@ def render_worker_prompt(team: dict[str, Any], worker: dict[str, Any]) -> str:
             f"Route sequence: {', '.join(team.get('route_sequence') or [])}",
             f"Pending gates: {pending_gates}",
             f"Worker id: {worker.get('worker_id')}",
+            f"Objective: {worker.get('objective')}",
             f"Role: {worker.get('role')}",
             f"Scope: {worker.get('scope')}",
             f"Source of truth refs: {source_refs}",
             f"Allowed mailbox kinds: {allowed_kinds}",
             f"Allowed outputs: {allowed_outputs}",
+            f"Write scope: {write_scope}",
+            f"Evidence refs: {evidence_refs}",
             f"Verification expectation: {worker.get('verification_expectation')}",
             f"Return format: {worker.get('return_format')}",
             f"Forbidden claims: {forbidden}",
@@ -371,7 +381,10 @@ def add_worker_record(
     worker: dict[str, str],
     command: str | None = None,
     *,
+    objective: str | None = None,
     allowed_outputs: list[str] | None = None,
+    write_scope: list[str] | None = None,
+    evidence_refs: list[str] | None = None,
     verification_expectation: str | None = None,
     stop_condition: str | None = None,
 ) -> None:
@@ -384,11 +397,15 @@ def add_worker_record(
 
     record: dict[str, Any] = {
         "worker_id": worker["worker_id"],
+        "objective": objective or default_objective(worker),
         "role": worker["role"],
         "scope": worker["scope"],
         "allowed_message_kinds": sorted(MESSAGE_KINDS),
         "allowed_outputs": allowed_outputs or default_allowed_outputs(worker),
         "forbidden_worker_claims": list(DEFAULT_FORBIDDEN_WORKER_CLAIMS),
+        "source_of_truth_refs": team.get("source_of_truth_refs") or [],
+        "write_scope": write_scope or ["none"],
+        "evidence_refs": evidence_refs or team.get("source_of_truth_refs") or ["brief.md"],
         "verification_expectation": verification_expectation or default_verification_expectation(worker),
         "return_format": default_return_format(worker),
         "prompt_path": f"workers/{worker['worker_id']}/prompt.md",
@@ -415,11 +432,14 @@ def add_worker_record(
             "pending_gates": team.get("pending_gates") or [],
             "source_of_truth_refs": team.get("source_of_truth_refs") or [],
             "worker_id": worker["worker_id"],
+            "objective": record["objective"],
             "role": worker["role"],
             "scope": worker["scope"],
             "allowed_message_kinds": record["allowed_message_kinds"],
             "allowed_outputs": record["allowed_outputs"],
             "forbidden_worker_claims": record["forbidden_worker_claims"],
+            "write_scope": record["write_scope"],
+            "evidence_refs": record["evidence_refs"],
             "verification_expectation": record["verification_expectation"],
             "return_format": record["return_format"],
             "prompt_path": record["prompt_path"],
@@ -486,11 +506,22 @@ def init_run(args: argparse.Namespace) -> int:
     mailbox_path(run_dir).write_text("", encoding="utf-8")
 
     commands = dict(args.command or [])
+    objectives = single_assignments(args.worker_objective)
     allowed_outputs = grouped_assignments(args.worker_allowed_output)
+    write_scopes = grouped_assignments(args.worker_write_scope)
+    evidence_refs = grouped_assignments(args.worker_evidence_ref)
     verification_expectations = single_assignments(args.worker_verification)
     stop_conditions = single_assignments(args.worker_stop)
     declared_worker_ids = {worker["worker_id"] for worker in args.worker or []}
-    assigned_worker_ids = set(commands) | set(allowed_outputs) | set(verification_expectations) | set(stop_conditions)
+    assigned_worker_ids = (
+        set(commands)
+        | set(objectives)
+        | set(allowed_outputs)
+        | set(write_scopes)
+        | set(evidence_refs)
+        | set(verification_expectations)
+        | set(stop_conditions)
+    )
     unknown_worker_ids = sorted(assigned_worker_ids - declared_worker_ids)
     if unknown_worker_ids:
         raise SystemExit(f"worker assignments reference unknown workers: {unknown_worker_ids}")
@@ -500,7 +531,10 @@ def init_run(args: argparse.Namespace) -> int:
             run_dir,
             worker,
             commands.get(worker_id),
+            objective=objectives.get(worker_id),
             allowed_outputs=allowed_outputs.get(worker_id),
+            write_scope=write_scopes.get(worker_id),
+            evidence_refs=evidence_refs.get(worker_id),
             verification_expectation=verification_expectations.get(worker_id),
             stop_condition=stop_conditions.get(worker_id),
         )
@@ -515,7 +549,10 @@ def add_worker(args: argparse.Namespace) -> int:
         run_dir,
         args.worker,
         args.command,
+        objective=args.objective,
         allowed_outputs=args.allowed_output,
+        write_scope=args.write_scope,
+        evidence_refs=args.evidence_ref,
         verification_expectation=args.verification,
         stop_condition=args.stop,
     )
@@ -931,11 +968,15 @@ def check_run(args: argparse.Namespace) -> int:
     for worker in team.get("workers", []):
         for field in (
             "worker_id",
+            "objective",
             "role",
             "scope",
             "allowed_message_kinds",
             "allowed_outputs",
             "forbidden_worker_claims",
+            "source_of_truth_refs",
+            "write_scope",
+            "evidence_refs",
             "verification_expectation",
             "return_format",
             "prompt_path",
@@ -944,8 +985,28 @@ def check_run(args: argparse.Namespace) -> int:
         ):
             if not worker.get(field):
                 failures.append(f"worker missing {field}: {worker.get('worker_id')}")
+        brief = brief_from_team_worker(team, worker)
+        failures.extend(
+            validate_bounded_worker_brief(
+                brief,
+                expected_source_of_truth_refs=team.get("source_of_truth_refs") or [],
+                label=f"worker brief {worker.get('worker_id')}",
+            )
+        )
         if worker.get("prompt_path") and not (run_dir / str(worker["prompt_path"])).exists():
             failures.append(f"worker prompt missing: {worker.get('worker_id')}: {worker.get('prompt_path')}")
+        state_path = worker_state_path(run_dir, str(worker.get("worker_id") or ""))
+        if not state_path.exists():
+            failures.append(f"worker state missing: {worker.get('worker_id')}: {state_path.relative_to(run_dir)}")
+        else:
+            worker_state = load_json(state_path)
+            failures.extend(
+                validate_bounded_worker_brief(
+                    brief_from_team_worker(team, worker_state),
+                    expected_source_of_truth_refs=team.get("source_of_truth_refs") or [],
+                    label=f"worker state brief {worker.get('worker_id')}",
+                )
+            )
         invalid_kinds = sorted(set(worker.get("allowed_message_kinds") or []) - MESSAGE_KINDS)
         if invalid_kinds:
             failures.append(f"worker has unsupported allowed_message_kinds: {worker.get('worker_id')}: {invalid_kinds}")
@@ -1069,8 +1130,11 @@ def launch(args: argparse.Namespace) -> int:
             "SEJONG_SOURCE_OF_TRUTH_REFS": json.dumps(team.get("source_of_truth_refs") or []),
             "SEJONG_PENDING_GATES": json.dumps(team.get("pending_gates") or []),
             "SEJONG_WORKER_ROLE": str(worker.get("role") or ""),
+            "SEJONG_WORKER_OBJECTIVE": str(worker.get("objective") or ""),
             "SEJONG_WORKER_SCOPE": str(worker.get("scope") or ""),
             "SEJONG_WORKER_ALLOWED_OUTPUTS": json.dumps(worker.get("allowed_outputs") or []),
+            "SEJONG_WORKER_WRITE_SCOPE": json.dumps(worker.get("write_scope") or []),
+            "SEJONG_WORKER_EVIDENCE_REFS": json.dumps(worker.get("evidence_refs") or []),
             "SEJONG_WORKER_VERIFICATION_EXPECTATION": str(worker.get("verification_expectation") or ""),
             "SEJONG_FORBIDDEN_WORKER_CLAIMS": json.dumps(worker.get("forbidden_worker_claims") or []),
             "SEJONG_WORKER_RETURN_FORMAT": str(worker.get("return_format") or ""),
@@ -1116,7 +1180,10 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--source-of-truth-ref", action="append")
     init.add_argument("--worker", action="append", type=parse_worker)
     init.add_argument("--command", action="append", type=parse_assignment)
+    init.add_argument("--worker-objective", action="append", type=parse_assignment)
     init.add_argument("--worker-allowed-output", action="append", type=parse_assignment)
+    init.add_argument("--worker-write-scope", action="append", type=parse_assignment)
+    init.add_argument("--worker-evidence-ref", action="append", type=parse_assignment)
     init.add_argument("--worker-verification", action="append", type=parse_assignment)
     init.add_argument("--worker-stop", action="append", type=parse_assignment)
     init.add_argument("--force", action="store_true")
@@ -1126,7 +1193,10 @@ def build_parser() -> argparse.ArgumentParser:
     worker.add_argument("run_dir")
     worker.add_argument("worker", type=parse_worker)
     worker.add_argument("--command")
+    worker.add_argument("--objective")
     worker.add_argument("--allowed-output", action="append")
+    worker.add_argument("--write-scope", action="append")
+    worker.add_argument("--evidence-ref", action="append")
     worker.add_argument("--verification")
     worker.add_argument("--stop")
     worker.set_defaults(func=add_worker)
