@@ -160,7 +160,10 @@ By default, Sejong stores runtime, research, discussion, ambiguity registers, ev
 
 ## Validation Helpers
 
-This public package includes schema checks, bundle validation, frozen benchmark scaffolds, and an instruction-surface guardrail runner. It intentionally does not ship private benchmark runs or score histories.
+This public package includes schema checks, bundle validation, frozen benchmark
+scaffolds, a local eval contract, and an instruction-surface guardrail runner.
+It intentionally does not ship private benchmark runs or score histories. See
+[EVALS.md](EVALS.md) for the local deterministic eval pack.
 
 Useful commands:
 

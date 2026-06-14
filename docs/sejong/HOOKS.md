@@ -122,6 +122,9 @@ the repository-scoped run directory. Hooks read the active pointer by default.
   gathering, not self-modification.
 - Deny write-like material self-modification when the required route sequence is
   missing.
+- Treat common interpreter write snippets as write-like when they target a
+  protected path, including Python `open(..., "w")` or `Path.write_text`, Node
+  filesystem writes, Ruby `File.write`, and Perl open/sysopen write modes.
 - Deny write-like or execution-completion tool calls while `uigwe_promotion_required` is pending and the route has not entered `uigwe`.
 - Deny write-like execution while `seungjeongwon_receipt_required` is pending
   until the route has entered Seungjeongwon and the active context references a

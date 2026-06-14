@@ -65,6 +65,21 @@ Seungjeongwon active run artifacts should follow
 them through `artifact_refs` so hooks can block premature stop or compaction
 while execution remains active or invalid.
 
+Seungjeongwon run and checkpoint artifacts must include provenance:
+
+- `created_by`: Sejong surface or worker id that created the artifact
+- `source_repo`: repository root the artifact describes
+- `source_commit`: git commit for that repository, or the explicit value
+  `unknown` when the host cannot capture it
+- `skill_version`: King Sejong skill or plugin version, or `unknown` when the
+  version cannot be identified
+- `host`: host runtime, such as `codex`
+- `model`: model identifier, or `unknown` when the host does not expose it
+- `generated_at`: artifact creation timestamp
+- `input_refs`: source bundle, run, context, or evidence refs used as inputs
+- `verification_refs`: checks, commands, or evidence refs that support the
+  artifact state
+
 Codex-migrated or mocked workflow-like backend runs should follow
 `docs/sejong/workflow-run.schema.json`. Use
 `docs/sejong/scripts/sejong_workflow_run.py` to record mapped court surfaces,

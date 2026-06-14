@@ -641,6 +641,8 @@ or numeric scores in `[0, 1]`.
 This validation pack includes:
 
 - this plan
+- [EVALS.md](EVALS.md), the local deterministic eval contract for Sejong
+  workflow and security-boundary checks
 - task-set and scorecard schemas
 - a seed frozen planning task set
 - a seed Sejong surface task set
@@ -650,6 +652,7 @@ This validation pack includes:
 - a deterministic Sejong surface benchmark runner
 - a scorecard comparison helper with token and cost deltas
 - a Sillok trace-event schema for evidence, verification, handoff, and security-review records
+- local guardrail fixtures for interpreter protected-path writes, worker final-authority claims, and tool-output-as-evidence boundaries
 - King Sejong hook, TeamExecutor, and end-to-end guardrail tests
 - Seungjeongwon active run schema and lifecycle helper
 - a deterministic outcome-quality evaluator and TagBack growth paired-comparison fixture

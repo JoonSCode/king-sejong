@@ -63,6 +63,12 @@ Do not activate a native goal for research-only, advice-only, plan-only, open-am
 
 For long-running or compaction-sensitive work, Seungjeongwon should also maintain a `sejong.seungjeongwon-run/v0.1-draft` artifact. The artifact records the approved goal, success criteria, verification methods, active todos, attempt ledger, verification evidence, blockers, and Uigwe re-entry requests. Hooks can block `Stop` and `PreCompact` when this artifact is active or invalid.
 
+The run artifact must also carry provenance: `created_by`, `source_repo`,
+`source_commit`, `skill_version`, `host`, `model`, `generated_at`,
+`input_refs`, and `verification_refs`. The helper captures git `HEAD` when it
+can; otherwise `source_commit` is the explicit value `unknown`. Host, model, and
+skill-version fields are traceability metadata, not authority or approval.
+
 Before compaction or handoff, create a derived durable checkpoint from that run
 artifact with `docs/sejong/scripts/seungjeongwon_run.py checkpoint`. The
 checkpoint follows [seungjeongwon-checkpoint.schema.json](seungjeongwon-checkpoint.schema.json)
@@ -72,6 +78,8 @@ becoming a new court surface or approval authority. Resume and replay must use
 `resume`, `stale-check`, or `replay` against the checkpoint; replay is rejected
 when the checkpoint no longer matches the active run, expected repo root,
 objective id, or context id.
+The checkpoint carries derived provenance with the source run path in
+`input_refs` and the run verification evidence in `verification_refs`.
 When hooks are enabled, `PreCompact` creates the same checkpoint automatically
 for every valid referenced Seungjeongwon run and stores it under
 `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` so compaction has fresh replay

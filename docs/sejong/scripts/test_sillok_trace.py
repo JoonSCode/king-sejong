@@ -82,6 +82,69 @@ class SillokTraceTests(unittest.TestCase):
             self.assertNotEqual(append.returncode, 0)
             self.assertIn("lethal trifecta", append.stderr)
 
+    def test_credential_bearing_untrusted_read_is_traceable_without_external_action(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            trace = Path(tmp) / "sillok-record.jsonl"
+            append = run_sillok(
+                [
+                    "append",
+                    "--trace",
+                    str(trace),
+                    "--run-id",
+                    "run-test",
+                    "--active-context-id",
+                    "ctx-test",
+                    "--surface",
+                    "sillok",
+                    "--event-kind",
+                    "security_review",
+                    "--summary",
+                    "Connected tool output recorded as untrusted credential-bearing read evidence.",
+                    "--risk-flag",
+                    "credential_access",
+                    "--risk-flag",
+                    "network_access",
+                    "--risk-flag",
+                    "untrusted_content",
+                    "--ref",
+                    "docs/sejong/SECURITY.md#workflow-rules",
+                ]
+            )
+            self.assertEqual(append.returncode, 0, append.stderr)
+            check = run_sillok(["check", str(trace)])
+            self.assertEqual(check.returncode, 0, check.stderr)
+
+    def test_credential_bearing_lethal_trifecta_still_requires_human_approval(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            trace = Path(tmp) / "sillok-record.jsonl"
+            append = run_sillok(
+                [
+                    "append",
+                    "--trace",
+                    str(trace),
+                    "--run-id",
+                    "run-test",
+                    "--active-context-id",
+                    "ctx-test",
+                    "--surface",
+                    "seungjeongwon",
+                    "--event-kind",
+                    "tool_call",
+                    "--summary",
+                    "Credential-bearing tool would combine private data, untrusted content, and external action.",
+                    "--risk-flag",
+                    "private_data",
+                    "--risk-flag",
+                    "credential_access",
+                    "--risk-flag",
+                    "untrusted_content",
+                    "--risk-flag",
+                    "external_action",
+                ]
+            )
+            self.assertNotEqual(append.returncode, 0)
+            self.assertIn("lethal trifecta", append.stderr)
+
     def test_lethal_trifecta_with_human_approval_passes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             trace = Path(tmp) / "sillok-record.jsonl"

@@ -24,6 +24,9 @@
       "type": "string",
       "format": "date-time"
     },
+    "provenance": {
+      "$ref": "https://kinno.dev/schemas/sejong/seungjeongwon-run.schema.json#/$defs/Provenance"
+    },
     "context_id": {
       "type": [
         "string",
@@ -100,6 +103,7 @@
     "repo_root",
     "source_run_path",
     "source_run_updated_at",
+    "provenance",
     "context_id",
     "objective_id",
     "approved_goal",

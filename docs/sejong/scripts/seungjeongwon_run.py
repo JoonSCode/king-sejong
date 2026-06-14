@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,6 +23,17 @@ CLOSED_TODO_STATUSES = {"completed", "blocked", "invalidated", "replaced"}
 TODO_STATUSES = OPEN_TODO_STATUSES | CLOSED_TODO_STATUSES
 DEFAULT_GUARDRAIL_THRESHOLD = 0.98
 DEFAULT_COVERAGE_THRESHOLD = 1.0
+PROVENANCE_REQUIRED_FIELDS = (
+    "created_by",
+    "source_repo",
+    "source_commit",
+    "skill_version",
+    "host",
+    "model",
+    "generated_at",
+    "input_refs",
+    "verification_refs",
+)
 
 
 def now_utc() -> str:
@@ -71,6 +84,60 @@ def score_map(items: list[tuple[str, float]] | None) -> dict[str, float]:
     return result
 
 
+def unique_strings(values: list[str]) -> list[str]:
+    result: list[str] = []
+    for value in values:
+        if value and value not in result:
+            result.append(value)
+    return result
+
+
+def provenance_payload(
+    *,
+    created_by: str,
+    source_repo: str,
+    source_commit: str,
+    skill_version: str,
+    host: str,
+    model: str,
+    generated_at: str,
+    input_refs: list[str],
+    verification_refs: list[str],
+) -> dict[str, Any]:
+    return {
+        "created_by": created_by,
+        "source_repo": source_repo,
+        "source_commit": source_commit,
+        "skill_version": skill_version,
+        "host": host,
+        "model": model,
+        "generated_at": generated_at,
+        "input_refs": input_refs,
+        "verification_refs": verification_refs,
+    }
+
+
+def provenance_failures(data: dict[str, Any], *, field_name: str = "provenance") -> list[str]:
+    failures: list[str] = []
+    provenance = data.get(field_name)
+    if not isinstance(provenance, dict):
+        return [f"{field_name} must be an object"]
+    for field in PROVENANCE_REQUIRED_FIELDS:
+        if field not in provenance:
+            failures.append(f"{field_name} missing {field}")
+    for field in ("created_by", "source_repo", "source_commit", "skill_version", "host", "model", "generated_at"):
+        if field in provenance and (not isinstance(provenance[field], str) or not provenance[field]):
+            failures.append(f"{field_name}.{field} must be a non-empty string")
+    for field in ("input_refs", "verification_refs"):
+        if field in provenance and not isinstance(provenance[field], list):
+            failures.append(f"{field_name}.{field} must be a list")
+        elif field in provenance:
+            invalid = [item for item in provenance[field] if not isinstance(item, str) or not item]
+            if invalid:
+                failures.append(f"{field_name}.{field} must contain only non-empty strings")
+    return failures
+
+
 def open_todos(data: dict[str, Any]) -> list[dict[str, Any]]:
     return [todo for todo in data.get("todos") or [] if todo.get("status") in OPEN_TODO_STATUSES]
 
@@ -88,6 +155,7 @@ def run_failures(data: dict[str, Any]) -> list[str]:
         "format",
         "run_id",
         "repo_root",
+        "provenance",
         "goal",
         "status",
         "success_criteria",
@@ -109,6 +177,7 @@ def run_failures(data: dict[str, Any]) -> list[str]:
         failures.append(f"unexpected format: {data.get('format')}")
     if data.get("status") not in STATUSES:
         failures.append(f"unsupported run status: {data.get('status')}")
+    failures.extend(provenance_failures(data))
     for field in ("success_criteria", "verification_methods", "todos", "attempt_ledger", "verification_evidence", "blockers", "uigwe_reentry_requests"):
         if field in data and not isinstance(data.get(field), list):
             failures.append(f"{field} must be a list")
@@ -224,8 +293,24 @@ def resolve_optional_path(value: str | None) -> str | None:
     return str(resolve_path(value))
 
 
+def git_head(repo_root: Path) -> str:
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
+            text=True,
+            capture_output=True,
+            timeout=3,
+        )
+    except Exception:
+        return "unknown"
+    if result.returncode != 0:
+        return "unknown"
+    return result.stdout.strip() or "unknown"
+
+
 def checkpoint_payload(data: dict[str, Any], run_path: Path, args: argparse.Namespace) -> dict[str, Any]:
     timestamp = now_utc()
+    run_provenance = data.get("provenance") or {}
     return {
         "format": CHECKPOINT_FORMAT,
         "checkpoint_id": args.checkpoint_id or f"checkpoint-{data['run_id']}-{timestamp}",
@@ -233,6 +318,19 @@ def checkpoint_payload(data: dict[str, Any], run_path: Path, args: argparse.Name
         "repo_root": data["repo_root"],
         "source_run_path": str(resolve_path(run_path)),
         "source_run_updated_at": data["updated_at"],
+        "provenance": provenance_payload(
+            created_by="seungjeongwon",
+            source_repo=run_provenance.get("source_repo") or data["repo_root"],
+            source_commit=run_provenance.get("source_commit") or "unknown",
+            skill_version=run_provenance.get("skill_version") or "unknown",
+            host=run_provenance.get("host") or "codex",
+            model=run_provenance.get("model") or "unknown",
+            generated_at=timestamp,
+            input_refs=unique_strings([str(resolve_path(run_path)), *(run_provenance.get("input_refs") or [])]),
+            verification_refs=unique_strings(
+                [*(data.get("verification_evidence") or []), *(run_provenance.get("verification_refs") or [])]
+            ),
+        ),
         "context_id": args.context_id,
         "objective_id": args.objective_id,
         "approved_goal": data["goal"],
@@ -267,6 +365,7 @@ def checkpoint_failures(data: dict[str, Any]) -> list[str]:
         "repo_root",
         "source_run_path",
         "source_run_updated_at",
+        "provenance",
         "context_id",
         "objective_id",
         "approved_goal",
@@ -288,6 +387,7 @@ def checkpoint_failures(data: dict[str, Any]) -> list[str]:
             failures.append(f"checkpoint missing {field}")
     if data.get("format") != CHECKPOINT_FORMAT:
         failures.append(f"unexpected checkpoint format: {data.get('format')}")
+    failures.extend(provenance_failures(data))
     for field in (
         "success_criteria",
         "verification_methods",
@@ -316,6 +416,7 @@ def resume_payload(checkpoint: dict[str, Any], *, format_name: str) -> dict[str,
         "checkpoint_id": checkpoint["checkpoint_id"],
         "run_id": checkpoint["run_id"],
         "repo_root": checkpoint["repo_root"],
+        "provenance": checkpoint["provenance"],
         "context_id": checkpoint.get("context_id"),
         "objective_id": checkpoint.get("objective_id"),
         "approved_goal": checkpoint["approved_goal"],
@@ -384,10 +485,23 @@ def start(args: argparse.Namespace) -> int:
         print(f"run already exists: {path}", file=sys.stderr)
         return 1
     timestamp = now_utc()
+    repo_root = str(resolve_path(args.repo_root))
+    source_commit = args.source_commit or os.environ.get("SEJONG_SOURCE_COMMIT") or git_head(Path(repo_root))
     data = {
         "format": RUN_FORMAT,
         "run_id": args.run_id,
-        "repo_root": str(resolve_path(args.repo_root)),
+        "repo_root": repo_root,
+        "provenance": provenance_payload(
+            created_by="seungjeongwon",
+            source_repo=repo_root,
+            source_commit=source_commit,
+            skill_version=args.skill_version or os.environ.get("SEJONG_SKILL_VERSION") or "0.1.0",
+            host=args.host,
+            model=args.model or os.environ.get("SEJONG_MODEL") or "unknown",
+            generated_at=timestamp,
+            input_refs=args.input_ref or [],
+            verification_refs=[],
+        ),
         "goal": args.goal,
         "status": "active",
         "success_criteria": args.success_criterion,
@@ -486,6 +600,10 @@ def complete(args: argparse.Namespace) -> int:
         print("open todos remain; cannot complete run", file=sys.stderr)
         return 1
     data.setdefault("verification_evidence", []).append(args.verification_evidence)
+    if isinstance(data.get("provenance"), dict):
+        data["provenance"]["verification_refs"] = unique_strings(
+            [*(data["provenance"].get("verification_refs") or []), args.verification_evidence]
+        )
     data["guardrail_scores"] = score_map(args.guardrail_score)
     data["status"] = "completed"
     data["updated_at"] = now_utc()
@@ -568,6 +686,11 @@ def build_parser() -> argparse.ArgumentParser:
     start_parser.add_argument("--run-id", required=True)
     start_parser.add_argument("--repo-root", default=".")
     start_parser.add_argument("--goal", required=True)
+    start_parser.add_argument("--source-commit")
+    start_parser.add_argument("--skill-version")
+    start_parser.add_argument("--host", default=os.environ.get("SEJONG_HOST", "codex"))
+    start_parser.add_argument("--model")
+    start_parser.add_argument("--input-ref", action="append")
     start_parser.add_argument("--success-criterion", action="append", required=True)
     start_parser.add_argument("--verification-method", action="append", required=True)
     start_parser.add_argument("--leaf-guardrail-minimum", type=float, default=DEFAULT_GUARDRAIL_THRESHOLD)

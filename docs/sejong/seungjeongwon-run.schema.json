@@ -14,6 +14,9 @@
     "repo_root": {
       "$ref": "#/$defs/NonEmptyString"
     },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
     "goal": {
       "$ref": "#/$defs/NonEmptyString"
     },
@@ -73,6 +76,7 @@
     "format",
     "run_id",
     "repo_root",
+    "provenance",
     "goal",
     "status",
     "success_criteria",
@@ -97,6 +101,51 @@
       "items": {
         "$ref": "#/$defs/NonEmptyString"
       }
+    },
+    "Provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "created_by": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "source_repo": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "source_commit": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "skill_version": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "host": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "model": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "input_refs": {
+          "$ref": "#/$defs/StringList"
+        },
+        "verification_refs": {
+          "$ref": "#/$defs/StringList"
+        }
+      },
+      "required": [
+        "created_by",
+        "source_repo",
+        "source_commit",
+        "skill_version",
+        "host",
+        "model",
+        "generated_at",
+        "input_refs",
+        "verification_refs"
+      ]
     },
     "ScoreValue": {
       "type": "number",

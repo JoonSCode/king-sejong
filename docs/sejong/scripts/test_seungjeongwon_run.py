@@ -128,6 +128,9 @@ class SeungjeongwonRunTests(unittest.TestCase):
             self.assertEqual(data["format"], "sejong.seungjeongwon-run/v0.1-draft")
             self.assertEqual(data["status"], "completed")
             self.assertEqual(data["todos"][0]["status"], "completed")
+            self.assertEqual(data["provenance"]["created_by"], "seungjeongwon")
+            self.assertEqual(data["provenance"]["host"], "codex")
+            self.assertIn("score_delta=0.28", data["provenance"]["verification_refs"])
 
     def test_check_rejects_completed_run_without_verification_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -138,6 +141,17 @@ class SeungjeongwonRunTests(unittest.TestCase):
                         "format": "sejong.seungjeongwon-run/v0.1-draft",
                         "run_id": "bad",
                         "repo_root": ".",
+                        "provenance": {
+                            "created_by": "seungjeongwon",
+                            "source_repo": ".",
+                            "source_commit": "unknown",
+                            "skill_version": "0.1.0",
+                            "host": "codex",
+                            "model": "unknown",
+                            "generated_at": "2026-05-26T00:00:00Z",
+                            "input_refs": [],
+                            "verification_refs": [],
+                        },
                         "goal": "Goal",
                         "status": "completed",
                         "success_criteria": ["Done"],
@@ -162,8 +176,35 @@ class SeungjeongwonRunTests(unittest.TestCase):
                 encoding="utf-8",
             )
             result = run_command(["check", "--path", str(run_path)])
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("completed run requires verification evidence", result.stderr)
+
+    def test_check_rejects_missing_provenance(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "missing-provenance-run.json"
+            start = run_command(
+                [
+                    "start",
+                    "--path",
+                    str(run_path),
+                    "--run-id",
+                    "run-missing-provenance",
+                    "--goal",
+                    "Create a valid run first.",
+                    "--success-criterion",
+                    "Run exists.",
+                    "--verification-method",
+                    "Check run.",
+                ]
+            )
+            self.assertEqual(start.returncode, 0, start.stderr)
+            data = json.loads(run_path.read_text(encoding="utf-8"))
+            del data["provenance"]
+            run_path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+            result = run_command(["check", "--path", str(run_path)])
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("completed run requires verification evidence", result.stderr)
+        self.assertIn("missing provenance", result.stderr)
 
     def test_check_rejects_completed_todo_below_guardrail_threshold(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -373,6 +414,9 @@ class SeungjeongwonRunTests(unittest.TestCase):
             self.assertEqual(checkpoint.returncode, 0, checkpoint.stderr)
             checkpoint_data = json.loads(checkpoint_path.read_text(encoding="utf-8"))
             self.assertEqual(checkpoint_data["approved_goal"], data["goal"])
+            self.assertEqual(checkpoint_data["provenance"]["created_by"], "seungjeongwon")
+            self.assertIn(str(run_path.resolve()), checkpoint_data["provenance"]["input_refs"])
+            self.assertIn("targeted replay test prepared", checkpoint_data["provenance"]["verification_refs"])
             self.assertEqual([todo["todo_id"] for todo in checkpoint_data["active_todos"]], ["T1", "T2"])
             self.assertEqual(checkpoint_data["attempt_ledger"], data["attempt_ledger"])
             self.assertEqual(checkpoint_data["verification_evidence"], ["targeted replay test prepared"])

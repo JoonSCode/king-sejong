@@ -53,6 +53,17 @@ def seungjeongwon_run_fixture(*, status: str = "active", todo_status: str = "pen
         "format": "sejong.seungjeongwon-run/v0.1-draft",
         "run_id": f"{status}-run",
         "repo_root": ".",
+        "provenance": {
+            "created_by": "seungjeongwon",
+            "source_repo": ".",
+            "source_commit": "unknown",
+            "skill_version": "0.1.0",
+            "host": "codex",
+            "model": "unknown",
+            "generated_at": "2026-05-26T00:00:00Z",
+            "input_refs": [],
+            "verification_refs": ["tests passed"] if status == "completed" else [],
+        },
         "goal": "Complete implementation.",
         "status": status,
         "success_criteria": ["All todos verified."],
@@ -414,6 +425,44 @@ class KingSejongHookTests(unittest.TestCase):
         )
         self.assertNotEqual(output.get("hookSpecificOutput", {}).get("permissionDecision"), "deny")
 
+    def test_pre_tool_use_allows_protected_python_read_without_route_evidence(self) -> None:
+        output = run_hook(
+            "PreToolUse",
+            {
+                "hook_event_name": "PreToolUse",
+                "tool_name": "Bash",
+                "tool_input": {
+                    "command": "python3 -c \"print(open('docs/sejong/HOOKS.md').read()[:1])\""
+                },
+            },
+        )
+        self.assertNotEqual(output.get("hookSpecificOutput", {}).get("permissionDecision"), "deny")
+
+    def test_pre_tool_use_blocks_interpreter_protected_writes_without_route_evidence(self) -> None:
+        commands = {
+            "python_open_write": "python3 -c \"open('docs/sejong/HOOKS.md', 'w').write('x')\"",
+            "python_pathlib_write_text": (
+                "python3 -c \"from pathlib import Path; "
+                "Path('docs/sejong/HOOKS.md').write_text('x')\""
+            ),
+            "node_write_file_sync": "node -e \"require('fs').writeFileSync('docs/sejong/HOOKS.md', 'x')\"",
+            "ruby_file_write": "ruby -e \"File.write('docs/sejong/HOOKS.md', 'x')\"",
+            "perl_open_write": "perl -e 'open my $fh, \">\", \"docs/sejong/HOOKS.md\"; print $fh \"x\"'",
+        }
+        for name, command in commands.items():
+            with self.subTest(name=name):
+                output = run_hook(
+                    "PreToolUse",
+                    {
+                        "hook_event_name": "PreToolUse",
+                        "tool_name": "Bash",
+                        "tool_input": {"command": command},
+                    },
+                )
+                specific = output["hookSpecificOutput"]
+                self.assertEqual(specific["permissionDecision"], "deny")
+                self.assertIn("protected self-modification", specific["permissionDecisionReason"])
+
     def test_post_tool_use_allows_protected_read_without_verification_block(self) -> None:
         output = run_hook(
             "PostToolUse",
@@ -771,6 +820,26 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertEqual(output["decision"], "block")
         self.assertIn("worker authority", output["reason"])
 
+    def test_task_completed_rejects_peer_final_verification_claim_variants(self) -> None:
+        messages = [
+            "Final verification complete; all checks passed.",
+            "I completed final verification for the run.",
+            "Consensus approval is complete, so the gate is done.",
+            "This is the final completion proof.",
+        ]
+        for message in messages:
+            with self.subTest(message=message):
+                output = run_hook(
+                    "TaskCompleted",
+                    {
+                        "hook_event_name": "TaskCompleted",
+                        "teammate_name": "critic",
+                        "last_assistant_message": message,
+                    },
+                )
+                self.assertEqual(output["decision"], "block")
+                self.assertIn("worker authority", output["reason"])
+
     def test_task_created_injects_bounded_worker_contract(self) -> None:
         output = run_hook(
             "TaskCreated",
@@ -1060,6 +1129,8 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertEqual(checkpoint["context_id"], "ctx-checkpoint-test")
         self.assertEqual(checkpoint["objective_id"], "checkpoint-risk-closeout")
         self.assertEqual(checkpoint["source_run_path"], str(run_path.resolve()))
+        self.assertEqual(checkpoint["provenance"]["created_by"], "seungjeongwon")
+        self.assertIn(str(run_path.resolve()), checkpoint["provenance"]["input_refs"])
 
     def test_precompact_blocks_broken_ambiguity_register_ref(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

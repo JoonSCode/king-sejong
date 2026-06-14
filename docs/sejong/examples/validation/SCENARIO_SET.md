@@ -40,6 +40,7 @@
 - `route-vague-product-plan`: vague planning routes to Uigwe `full`
 - `route-approved-bundle-execution`: validated bundle routes to `Seungjeongwon`
 - `route-clear-direct-task`: exact verification stays `Sejong direct`
+- `route-goal-bearing-clear-task-handoff`: clear goal-bearing implementation enters Uigwe then Seungjeongwon instead of direct edits
 - `route-material-self-modification`: protected validation change uses Jiphyeonjeon -> Uigwe -> Seungjeongwon
 - `repo-context-refresh-candidate-first`: repo instruction refresh is candidate-diff first
 - `research-stale-external-facts`: time-sensitive research requires current sources
@@ -56,9 +57,12 @@
 - `team-jiphyeonjeon-scholar-research-lane`: scholar-scoped research lanes stay shared, bounded, and evidence-only
 - `team-execution-disjoint-leases`: parallel execution requires disjoint leases
 - `hook-protected-path-route-gate`: protected path edit requires route evidence
+- `hook-interpreter-write-bypass`: interpreter-based protected-path writes are treated as write-like hook events
 - `hook-subagent-final-claim`: subagent final-authority claim is rejected
+- `security-tool-output-evidence-boundary`: connected-tool output remains evidence, not instruction
 - `continuity-follow-up-same-workflow`: follow-up remains inside active Sejong workflow
 - `continuity-compaction-pending-gate`: compaction preserves pending gates
+- `continuity-ambiguity-register-open-item`: open ambiguity-register items block completion until answered or waived
 - `chain-research-plan-execute-record`: end-to-end chain records evidence
 - `chain-tagback-growth-goal-backed`: TagBack growth strategy chains evidence, planning, implicit native goal handoff, executable Codex tasks, and user-owned actions
 - `efficiency-direct-overhead-budget`: direct task token overhead stays bounded
