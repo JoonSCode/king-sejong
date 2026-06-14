@@ -123,6 +123,9 @@ DEFAULT_FORBIDDEN_WORKER_CLAIMS = (
 )
 
 GLOB_CHARS = "*?["
+ISOLATION_BACKENDS = {"none", "worktree", "container_shadow"}
+ISOLATION_DIRTY_STATUSES = {"unknown", "clean", "dirty", "missing", "not_applicable"}
+ISOLATION_CLEANUP_STATUSES = {"not_required", "planned", "active", "removed", "preserved_dirty", "failed", "shadow_only"}
 
 
 def now_utc() -> str:
@@ -271,6 +274,19 @@ def worker_state_path(run_dir: Path, worker_id: str) -> Path:
     return run_dir / "workers" / worker_id / "state.json"
 
 
+def workspaces_root(run_dir: Path, isolation_root: str | None = None) -> Path:
+    if not isolation_root:
+        return run_dir / "workspaces"
+    root = Path(isolation_root).expanduser()
+    if root.is_absolute():
+        return root.resolve()
+    return (run_dir / root).resolve()
+
+
+def worker_workspace_path(run_dir: Path, worker_id: str, isolation_root: str | None = None) -> Path:
+    return workspaces_root(run_dir, isolation_root) / worker_id
+
+
 def mailbox_path(run_dir: Path) -> Path:
     return run_dir / "mailbox.jsonl"
 
@@ -292,6 +308,185 @@ def worker_by_id(team: dict[str, Any], worker_id: str) -> dict[str, Any] | None:
         if worker.get("worker_id") == worker_id:
             return worker
     return None
+
+
+def load_worker_state(run_dir: Path, worker_id: str) -> dict[str, Any]:
+    return load_json(worker_state_path(run_dir, worker_id))
+
+
+def save_worker_state(run_dir: Path, worker_id: str, state: dict[str, Any]) -> None:
+    state["updated_at"] = now_utc()
+    write_json(worker_state_path(run_dir, worker_id), state)
+
+
+def worker_is_write_capable(worker: dict[str, Any]) -> bool:
+    scopes = [normalize_scope(str(scope)) for scope in worker.get("write_scope") or []]
+    return any(scope and scope != "none" for scope in scopes)
+
+
+def active_lease_refs(run_dir: Path, worker_id: str) -> list[str]:
+    leases = load_json(leases_path(run_dir))
+    return [
+        str(lease.get("lease_id"))
+        for lease in leases.get("leases", [])
+        if lease.get("worker_id") == worker_id and lease.get("status") == "active" and lease.get("lease_id")
+    ]
+
+
+def run_git(repo_root: Path, args: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["git", "-C", str(repo_root), *args], text=True, capture_output=True)
+
+
+def resolve_git_ref(repo_root: Path, base_ref: str | None = None) -> str:
+    ref = base_ref or "HEAD"
+    result = run_git(repo_root, ["rev-parse", ref])
+    if result.returncode != 0:
+        message = result.stderr.strip() or result.stdout.strip() or f"unknown git ref: {ref}"
+        raise SystemExit(f"failed to resolve worker worktree base ref {ref}: {message}")
+    return result.stdout.strip()
+
+
+def workspace_dirty_status(workspace: Path) -> str:
+    if not workspace.exists():
+        return "missing"
+    result = run_git(workspace, ["status", "--porcelain"])
+    if result.returncode != 0:
+        return "unknown"
+    return "dirty" if result.stdout.strip() else "clean"
+
+
+def isolation_payload(
+    *,
+    backend: str,
+    workspace_path: Path | None,
+    base_ref: str | None,
+    lease_refs: list[str] | None,
+    dirty_status: str,
+    cleanup_status: str,
+) -> dict[str, Any]:
+    payload = {
+        "backend": backend,
+        "workspace_path": str(workspace_path) if workspace_path else "",
+        "base_ref": base_ref or "",
+        "lease_refs": lease_refs or [],
+        "dirty_status": dirty_status,
+        "cleanup_status": cleanup_status,
+    }
+    return payload
+
+
+def update_worker_isolation(run_dir: Path, worker_id: str, isolation: dict[str, Any]) -> None:
+    team = load_team(run_dir)
+    worker = worker_by_id(team, worker_id)
+    if worker is None:
+        raise SystemExit(f"unknown worker: {worker_id}")
+    worker["isolation"] = isolation
+    save_team(run_dir, team)
+
+    state = load_worker_state(run_dir, worker_id)
+    state["isolation"] = isolation
+    save_worker_state(run_dir, worker_id, state)
+
+
+def current_worker_isolation(run_dir: Path, worker_id: str) -> dict[str, Any] | None:
+    state_path = worker_state_path(run_dir, worker_id)
+    if not state_path.exists():
+        return None
+    state = load_json(state_path)
+    isolation = state.get("isolation")
+    return isolation if isinstance(isolation, dict) else None
+
+
+def ensure_worker_worktree(
+    run_dir: Path,
+    worker: dict[str, Any],
+    *,
+    base_ref: str | None = None,
+    isolation_root: str | None = None,
+) -> dict[str, Any]:
+    worker_id = str(worker["worker_id"])
+    existing = current_worker_isolation(run_dir, worker_id)
+    if existing and existing.get("backend") == "worktree" and existing.get("cleanup_status") == "active":
+        workspace = Path(str(existing.get("workspace_path") or ""))
+        dirty_status = workspace_dirty_status(workspace)
+        if dirty_status != "missing":
+            existing["dirty_status"] = dirty_status
+            existing["lease_refs"] = active_lease_refs(run_dir, worker_id)
+            update_worker_isolation(run_dir, worker_id, existing)
+            return existing
+
+    team = load_team(run_dir)
+    repo_root = Path(str(team["repo_root"])).expanduser().resolve()
+    try:
+        resolved_base_ref = resolve_git_ref(repo_root, base_ref)
+    except SystemExit as exc:
+        raise SystemExit(f"failed to create worker worktree for {worker_id}: {exc}") from exc
+    workspace = worker_workspace_path(run_dir, worker_id, isolation_root)
+    workspace.parent.mkdir(parents=True, exist_ok=True)
+
+    if not workspace.exists():
+        result = run_git(repo_root, ["worktree", "add", "--detach", str(workspace), resolved_base_ref])
+        if result.returncode != 0:
+            message = result.stderr.strip() or result.stdout.strip() or "git worktree add failed"
+            raise SystemExit(f"failed to create worker worktree for {worker_id}: {message}")
+    elif run_git(workspace, ["rev-parse", "--is-inside-work-tree"]).returncode != 0:
+        raise SystemExit(f"failed to create worker worktree for {worker_id}: workspace path exists and is not a git worktree: {workspace}")
+
+    isolation = isolation_payload(
+        backend="worktree",
+        workspace_path=workspace.resolve(),
+        base_ref=resolved_base_ref,
+        lease_refs=active_lease_refs(run_dir, worker_id),
+        dirty_status=workspace_dirty_status(workspace),
+        cleanup_status="active",
+    )
+    update_worker_isolation(run_dir, worker_id, isolation)
+    return isolation
+
+
+def planned_worker_isolation(run_dir: Path, worker: dict[str, Any], *, base_ref: str | None = None, isolation_root: str | None = None) -> dict[str, Any]:
+    team = load_team(run_dir)
+    repo_root = Path(str(team["repo_root"])).expanduser().resolve()
+    resolved_base_ref = base_ref or "HEAD"
+    if repo_root.exists():
+        resolved = run_git(repo_root, ["rev-parse", resolved_base_ref])
+        if resolved.returncode == 0:
+            resolved_base_ref = resolved.stdout.strip()
+    return isolation_payload(
+        backend="worktree",
+        workspace_path=worker_workspace_path(run_dir, str(worker["worker_id"]), isolation_root).resolve(),
+        base_ref=resolved_base_ref,
+        lease_refs=active_lease_refs(run_dir, str(worker["worker_id"])),
+        dirty_status="unknown",
+        cleanup_status="planned",
+    )
+
+
+def launch_isolation_metadata(
+    run_dir: Path,
+    worker: dict[str, Any],
+    *,
+    base_ref: str | None,
+    isolation_root: str | None,
+    isolate_write_workers: bool,
+    dry_run: bool,
+) -> dict[str, Any]:
+    worker_id = str(worker["worker_id"])
+    existing = current_worker_isolation(run_dir, worker_id)
+    if existing and existing.get("backend") == "worktree" and existing.get("cleanup_status") == "active":
+        return existing
+    if isolate_write_workers and worker_is_write_capable(worker):
+        if dry_run:
+            return planned_worker_isolation(run_dir, worker, base_ref=base_ref, isolation_root=isolation_root)
+        return ensure_worker_worktree(run_dir, worker, base_ref=base_ref, isolation_root=isolation_root)
+    return isolation_payload(
+        backend="none",
+        workspace_path=None,
+        base_ref=None,
+        lease_refs=[],
+        dirty_status="not_applicable",
+        cleanup_status="not_required",
+    )
 
 
 def default_allowed_outputs(worker: dict[str, str]) -> list[str]:
@@ -340,6 +535,9 @@ def render_worker_prompt(team: dict[str, Any], worker: dict[str, Any]) -> str:
     evidence_refs = ", ".join(worker.get("evidence_refs") or [])
     pending_gates = ", ".join(team.get("pending_gates") or []) or "none"
     forbidden = "; ".join(worker.get("forbidden_worker_claims") or [])
+    isolation = worker.get("isolation") or {}
+    isolation_backend = str(isolation.get("backend") or "none")
+    isolation_workspace = str(isolation.get("workspace_path") or "")
     return "\n".join(
         [
             f"You are a bounded {surface_name} worker inside a Sejong-led workflow.",
@@ -357,6 +555,8 @@ def render_worker_prompt(team: dict[str, Any], worker: dict[str, Any]) -> str:
             f"Allowed mailbox kinds: {allowed_kinds}",
             f"Allowed outputs: {allowed_outputs}",
             f"Write scope: {write_scope}",
+            f"Isolation backend: {isolation_backend}",
+            f"Isolation workspace: {isolation_workspace}",
             f"Evidence refs: {evidence_refs}",
             f"Verification expectation: {worker.get('verification_expectation')}",
             f"Return format: {worker.get('return_format')}",
@@ -928,6 +1128,37 @@ def source_ref_exists(run_dir: Path, ref: str) -> bool:
     return (run_dir / candidate).exists()
 
 
+def isolation_failures(run_dir: Path, worker_id: str, isolation: Any, *, label: str) -> list[str]:
+    failures: list[str] = []
+    if not isinstance(isolation, dict):
+        return [f"{label} isolation must be an object: {worker_id}"]
+    backend = isolation.get("backend")
+    dirty_status = isolation.get("dirty_status")
+    cleanup_status = isolation.get("cleanup_status")
+    if backend not in ISOLATION_BACKENDS:
+        failures.append(f"{label} isolation has unsupported backend: {worker_id}: {backend}")
+    if dirty_status not in ISOLATION_DIRTY_STATUSES:
+        failures.append(f"{label} isolation has unsupported dirty_status: {worker_id}: {dirty_status}")
+    if cleanup_status not in ISOLATION_CLEANUP_STATUSES:
+        failures.append(f"{label} isolation has unsupported cleanup_status: {worker_id}: {cleanup_status}")
+    if not isinstance(isolation.get("lease_refs"), list):
+        failures.append(f"{label} isolation lease_refs must be a list: {worker_id}")
+    if backend == "worktree":
+        workspace = isolation.get("workspace_path")
+        base_ref = isolation.get("base_ref")
+        if not workspace:
+            failures.append(f"{label} isolation workspace_path required for worktree: {worker_id}")
+        if not base_ref:
+            failures.append(f"{label} isolation base_ref required for worktree: {worker_id}")
+        if cleanup_status == "active" and workspace and not Path(str(workspace)).exists():
+            failures.append(f"{label} isolation active workspace missing: {worker_id}: {workspace}")
+    if backend == "none" and cleanup_status != "not_required":
+        failures.append(f"{label} isolation none backend must use not_required cleanup: {worker_id}")
+    if backend == "container_shadow" and cleanup_status != "shadow_only":
+        failures.append(f"{label} isolation container shadow must use shadow_only cleanup: {worker_id}")
+    return failures
+
+
 def check_run(args: argparse.Namespace) -> int:
     run_dir = require_run_dir(Path(args.run_dir))
     required = ["brief.md", "team.json", "rounds.json", "mailbox.jsonl", "leases.json"]
@@ -996,6 +1227,7 @@ def check_run(args: argparse.Namespace) -> int:
         if worker.get("prompt_path") and not (run_dir / str(worker["prompt_path"])).exists():
             failures.append(f"worker prompt missing: {worker.get('worker_id')}: {worker.get('prompt_path')}")
         state_path = worker_state_path(run_dir, str(worker.get("worker_id") or ""))
+        worker_state: dict[str, Any] | None = None
         if not state_path.exists():
             failures.append(f"worker state missing: {worker.get('worker_id')}: {state_path.relative_to(run_dir)}")
         else:
@@ -1010,6 +1242,12 @@ def check_run(args: argparse.Namespace) -> int:
         invalid_kinds = sorted(set(worker.get("allowed_message_kinds") or []) - MESSAGE_KINDS)
         if invalid_kinds:
             failures.append(f"worker has unsupported allowed_message_kinds: {worker.get('worker_id')}: {invalid_kinds}")
+        if "isolation" in worker:
+            failures.extend(isolation_failures(run_dir, str(worker.get("worker_id") or ""), worker.get("isolation"), label="worker"))
+        if worker_state is not None and "isolation" in worker_state:
+            failures.extend(
+                isolation_failures(run_dir, str(worker.get("worker_id") or ""), worker_state.get("isolation"), label="worker state")
+            )
 
     round_items = load_json(rounds_path(run_dir)).get("rounds", [])
     round_ids = {str(item.get("round_id") or "") for item in round_items}
@@ -1099,6 +1337,77 @@ def receive_messages(args: argparse.Namespace) -> int:
     return 0
 
 
+def selected_workers(team: dict[str, Any], worker_ids_filter: list[str] | None) -> list[dict[str, Any]]:
+    if not worker_ids_filter:
+        return list(team.get("workers", []))
+    known = worker_ids(team)
+    unknown = sorted(set(worker_ids_filter) - known)
+    if unknown:
+        raise SystemExit(f"unknown workers: {unknown}")
+    return [worker for worker in team.get("workers", []) if worker.get("worker_id") in worker_ids_filter]
+
+
+def prepare_workspaces(args: argparse.Namespace) -> int:
+    run_dir = require_run_dir(Path(args.run_dir))
+    team = load_team(run_dir)
+    prepared: list[str] = []
+    skipped: list[str] = []
+    for worker in selected_workers(team, args.worker_id):
+        worker_id = str(worker["worker_id"])
+        if not worker_is_write_capable(worker):
+            skipped.append(worker_id)
+            continue
+        isolation = ensure_worker_worktree(run_dir, worker, base_ref=args.base_ref, isolation_root=args.isolation_root)
+        prepared.append(f"{worker_id}:{isolation['workspace_path']}")
+    print(json.dumps({"prepared": prepared, "skipped": skipped}, indent=2, sort_keys=True))
+    return 0
+
+
+def cleanup_workspaces(args: argparse.Namespace) -> int:
+    run_dir = require_run_dir(Path(args.run_dir))
+    team = load_team(run_dir)
+    cleaned: list[str] = []
+    preserved: list[str] = []
+    skipped: list[str] = []
+    for worker in selected_workers(team, args.worker_id):
+        worker_id = str(worker["worker_id"])
+        isolation = current_worker_isolation(run_dir, worker_id)
+        if not isolation or isolation.get("backend") != "worktree":
+            skipped.append(worker_id)
+            continue
+        workspace = Path(str(isolation.get("workspace_path") or ""))
+        dirty_status = workspace_dirty_status(workspace)
+        isolation["dirty_status"] = dirty_status
+        if dirty_status == "dirty":
+            isolation["cleanup_status"] = "preserved_dirty"
+            update_worker_isolation(run_dir, worker_id, isolation)
+            preserved.append(f"{worker_id}:{workspace}")
+            continue
+        if dirty_status == "missing":
+            isolation["cleanup_status"] = "removed"
+            update_worker_isolation(run_dir, worker_id, isolation)
+            cleaned.append(f"{worker_id}:{workspace}")
+            continue
+        if dirty_status != "clean":
+            isolation["cleanup_status"] = "failed"
+            update_worker_isolation(run_dir, worker_id, isolation)
+            raise SystemExit(f"cannot determine dirty state for worker worktree: {worker_id}: {workspace}")
+
+        repo_root = Path(str(team["repo_root"])).expanduser().resolve()
+        result = run_git(repo_root, ["worktree", "remove", str(workspace)])
+        if result.returncode != 0:
+            isolation["cleanup_status"] = "failed"
+            update_worker_isolation(run_dir, worker_id, isolation)
+            message = result.stderr.strip() or result.stdout.strip() or "git worktree remove failed"
+            raise SystemExit(f"failed to remove worker worktree for {worker_id}: {message}")
+        isolation["cleanup_status"] = "removed"
+        isolation["dirty_status"] = "clean"
+        update_worker_isolation(run_dir, worker_id, isolation)
+        cleaned.append(f"{worker_id}:{workspace}")
+    print(json.dumps({"cleaned": cleaned, "preserved_dirty": preserved, "skipped": skipped}, indent=2, sort_keys=True))
+    return 0
+
+
 def launch(args: argparse.Namespace) -> int:
     run_dir = require_run_dir(Path(args.run_dir))
     team = load_team(run_dir)
@@ -1115,11 +1424,20 @@ def launch(args: argparse.Namespace) -> int:
         raise SystemExit("at least one --worker-command worker_id=command is required")
 
     session = args.session or f"sejong-{team['run_id']}"
-    cwd = str(resolve_path(args.cwd or team["repo_root"]))
+    default_cwd = str(resolve_path(args.cwd or team["repo_root"]))
     tmux_commands: list[list[str]] = []
     for index, (worker_id, command) in enumerate(commands.items()):
         worker = worker_by_id(team, worker_id) or {}
         prompt_file = run_dir / str(worker.get("prompt_path") or "")
+        isolation = launch_isolation_metadata(
+            run_dir,
+            worker,
+            base_ref=args.base_ref,
+            isolation_root=args.isolation_root,
+            isolate_write_workers=args.isolate_write_workers,
+            dry_run=args.dry_run,
+        )
+        worker_cwd = str(isolation.get("workspace_path") or default_cwd) if isolation.get("backend") == "worktree" else default_cwd
         env_values = {
             "SEJONG_TEAM_RUN": str(run_dir),
             "SEJONG_TEAM_WORKER": worker_id,
@@ -1139,6 +1457,11 @@ def launch(args: argparse.Namespace) -> int:
             "SEJONG_FORBIDDEN_WORKER_CLAIMS": json.dumps(worker.get("forbidden_worker_claims") or []),
             "SEJONG_WORKER_RETURN_FORMAT": str(worker.get("return_format") or ""),
             "SEJONG_WORKER_STOP_CONDITION": str(worker.get("stop_condition") or ""),
+            "SEJONG_WORKER_ISOLATION_BACKEND": str(isolation.get("backend") or "none"),
+            "SEJONG_WORKER_WORKSPACE": str(isolation.get("workspace_path") or ""),
+            "SEJONG_WORKER_ISOLATION_STATUS": str(isolation.get("cleanup_status") or ""),
+            "SEJONG_WORKER_ISOLATION_BASE_REF": str(isolation.get("base_ref") or ""),
+            "SEJONG_WORKER_ISOLATION_LEASE_REFS": json.dumps(isolation.get("lease_refs") or []),
         }
         worker_env = " ".join(f"{key}={shlex.quote(value)}" for key, value in env_values.items())
         if worker.get("prompt_path"):
@@ -1146,9 +1469,9 @@ def launch(args: argparse.Namespace) -> int:
         else:
             shell_command = f"{worker_env} {command}"
         if index == 0:
-            tmux_commands.append(["tmux", "new-session", "-d", "-s", session, "-c", cwd, shell_command])
+            tmux_commands.append(["tmux", "new-session", "-d", "-s", session, "-c", worker_cwd, shell_command])
         else:
-            tmux_commands.append(["tmux", "split-window", "-t", session, "-c", cwd, shell_command])
+            tmux_commands.append(["tmux", "split-window", "-t", session, "-c", worker_cwd, shell_command])
     tmux_commands.append(["tmux", "select-layout", "-t", session, "tiled"])
 
     if args.dry_run:
@@ -1273,6 +1596,18 @@ def build_parser() -> argparse.ArgumentParser:
     release.add_argument("lease_id")
     release.set_defaults(func=release_lease)
 
+    prepare = subparsers.add_parser("prepare-workspaces", help="Create per-worker worktrees for write-capable workers")
+    prepare.add_argument("run_dir")
+    prepare.add_argument("--worker-id", action="append")
+    prepare.add_argument("--base-ref")
+    prepare.add_argument("--isolation-root")
+    prepare.set_defaults(func=prepare_workspaces)
+
+    cleanup = subparsers.add_parser("cleanup-workspaces", help="Remove clean worker worktrees and preserve dirty ones")
+    cleanup.add_argument("run_dir")
+    cleanup.add_argument("--worker-id", action="append")
+    cleanup.set_defaults(func=cleanup_workspaces)
+
     check = subparsers.add_parser("check", help="Validate a TeamExecutor run directory")
     check.add_argument("run_dir")
     check.set_defaults(func=check_run)
@@ -1282,6 +1617,9 @@ def build_parser() -> argparse.ArgumentParser:
     launch_parser.add_argument("--session")
     launch_parser.add_argument("--cwd")
     launch_parser.add_argument("--worker-command", action="append", type=parse_assignment)
+    launch_parser.add_argument("--isolate-write-workers", action="store_true")
+    launch_parser.add_argument("--base-ref")
+    launch_parser.add_argument("--isolation-root")
     launch_parser.add_argument("--dry-run", action="store_true")
     launch_parser.set_defaults(func=launch)
 

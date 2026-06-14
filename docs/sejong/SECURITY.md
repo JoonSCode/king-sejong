@@ -69,6 +69,14 @@ before proceeding. Without approval, stop, summarize the risk, and ask the user.
   [SILLOK_TRACE.md](SILLOK_TRACE.md).
 - Treat evidence-manifest hashes as integrity evidence only. They do not prove
   sandboxing, permission safety, or untrusted-content sanitization.
+- Treat TeamExecutor per-worker git worktrees as edit isolation only. They help
+  separate tracked edits and untracked worker output, but they do not isolate
+  processes, network, credentials, permissions, shell access, or host-level side
+  effects.
+- Keep container-backed TeamExecutor execution as a shadow option until a
+  separate approved design covers mounts, credentials, network policy, cleanup,
+  tool availability, and host portability. The default local TeamExecutor path
+  must not require Docker, E2B, or another container runtime.
 
 ## Relationship To Hooks
 

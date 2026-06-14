@@ -71,6 +71,8 @@ state/team/<run-id>/
   workers/
     <worker-id>/state.json
     <worker-id>/notes.md
+  workspaces/
+    <worker-id>/
   artifacts/
     <worker-id>/
 ```
@@ -166,6 +168,8 @@ python3 docs/sejong/scripts/team_executor.py send-message <run-dir> --worker-id 
 python3 docs/sejong/scripts/team_executor.py receive-messages <run-dir> --worker-id advocate
 python3 docs/sejong/scripts/team_executor.py acquire-lease <run-dir> --worker-id implementer --scope "src/example.py"
 python3 docs/sejong/scripts/team_executor.py check <run-dir>
+python3 docs/sejong/scripts/team_executor.py prepare-workspaces <run-dir>
+python3 docs/sejong/scripts/team_executor.py cleanup-workspaces <run-dir>
 python3 docs/sejong/scripts/team_executor.py launch <run-dir> --worker-command 'critic=codex ...' --dry-run
 ```
 
@@ -173,22 +177,58 @@ python3 docs/sejong/scripts/team_executor.py launch <run-dir> --worker-command '
 
 ## Isolation Hardening Options
 
-Current TeamExecutor protection is lease-first: workers must declare write
+Current TeamExecutor protection is worktree-first for write-capable isolated
+workers and lease-first for all write ownership. Workers must declare write
 scope, acquire non-overlapping leases, and return bounded evidence to the lead.
-This reduces write collisions, but it is not process isolation and not a
-sandbox.
+When isolation is requested, only write-capable workers receive temporary git
+worktrees. Read-only workers continue to launch from the normal cwd unless a
+future contract explicitly requests otherwise.
 
-Before promoting stronger worker isolation, compare these options:
+This is edit-surface isolation only. A git worktree separates tracked and
+untracked file edits for reviewable worker output; it is not process, network,
+credential, permission, or host sandboxing.
+
+The approved default path is:
+
+1. Register workers with `write_scope`, using `none` for read-only workers.
+2. Acquire file-scope leases for planned writes.
+3. Run `prepare-workspaces <run-dir>` or `launch --isolate-write-workers` to
+   create per-worker worktrees for write-capable workers.
+4. Launch workers. The helper starts isolated workers with their worktree as
+   the tmux cwd and injects isolation metadata into the worker environment.
+5. Run `cleanup-workspaces <run-dir>` after integration review. Clean
+   worktrees are removed. Dirty worktrees are preserved and marked
+   `preserved_dirty`; the lead must inspect them before any destructive cleanup.
+
+The worker and worker-state records may include:
+
+- `isolation.backend`: `worktree`, `none`, or `container_shadow`
+- `isolation.workspace_path`
+- `isolation.base_ref`
+- `isolation.lease_refs`
+- `isolation.dirty_status`
+- `isolation.cleanup_status`
+
+The worker launch environment adds:
+
+- `SEJONG_WORKER_ISOLATION_BACKEND`
+- `SEJONG_WORKER_WORKSPACE`
+- `SEJONG_WORKER_ISOLATION_STATUS`
+- `SEJONG_WORKER_ISOLATION_BASE_REF`
+- `SEJONG_WORKER_ISOLATION_LEASE_REFS`
+
+Retained options:
 
 | Option | Benefit | Cost / Risk | Current Status |
 | --- | --- | --- | --- |
-| File-scope leases only | Low overhead and already covered by lease conflict tests. | Does not isolate process state, generated temp files, or untracked side effects. | Selected baseline. |
-| Per-worker temporary worktrees | Stronger separation for file edits and reviewable diffs. | Higher setup cost, branch/worktree cleanup risk, and more complicated installer/user-scope interactions. | Retained for high-risk implementation leaves. |
-| Container or sandbox runner | Strongest execution containment when available. | Host-dependent, heavier, and outside the current Codex-native contract. | Future option only. |
+| File-scope leases only | Low overhead and already covered by lease conflict tests. | Does not isolate generated temp files or untracked side effects. | Fallback baseline. |
+| Per-worker temporary worktrees | Stronger separation for file edits and reviewable diffs. | Requires careful dirty-state preservation and launch cwd checks. | Selected for write-capable isolated workers. |
+| Container or sandbox runner | Stronger execution containment when configured correctly. | Host-dependent, mount/credential/network policy required, and outside the current local default. | Shadow option only. |
 
-The next safe increment is to harden file-scope leases and evidence manifests
-before introducing per-worker worktrees. Re-enter Uigwe design review before
-changing TeamExecutor to create worktrees or containers automatically.
+Container execution remains a shadow backend contract. Do not make Docker,
+E2B, or any other container runtime a default TeamExecutor dependency without a
+separate Uigwe design covering mounts, credentials, network access, cleanup,
+tool availability, and host portability.
 
 Worker isolation must preserve the authority model: workers produce evidence,
 implementation slices, or verification observations; Sejong owns synthesis,
@@ -313,7 +353,9 @@ Lease rules:
 - high-risk leaves should not be parallelized by default
 - each write lease must name the files or globs, owner worker, expiry, and release state
 - stale leases must be resolved by the lead before another worker writes the same scope
-- separate worktrees are preferred for substantial parallel implementation
+- separate worktrees are preferred for substantial parallel implementation and
+  are created only for write-capable workers when `prepare-workspaces` or
+  `launch --isolate-write-workers` is used
 
 Without a valid lease, a worker may only produce analysis, review, or verification evidence.
 

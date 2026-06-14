@@ -1,0 +1,54 @@
+{
+  "allowed_message_kinds": [
+    "status",
+    "verification"
+  ],
+  "allowed_outputs": [
+    "bounded implementation evidence"
+  ],
+  "current_surface": "seungjeongwon",
+  "evidence_refs": [
+    "brief.md"
+  ],
+  "forbidden_worker_claims": [
+    "Uigwe gate approval",
+    "final synthesis",
+    "final verification",
+    "majority-vote decisions",
+    "consensus as approval",
+    "scope widening"
+  ],
+  "format": "sejong.team-worker/v0.1-draft",
+  "isolation": {
+    "backend": "worktree",
+    "base_ref": "HEAD",
+    "cleanup_status": "planned",
+    "dirty_status": "unknown",
+    "lease_refs": [
+      "lease-implementer-docs"
+    ],
+    "workspace_path": "workspaces/implementer"
+  },
+  "objective": "Produce bounded implementation evidence for docs/example.md.",
+  "pending_gates": [],
+  "phase_label": "execution",
+  "prompt_path": "workers/implementer/prompt.md",
+  "return_format": "Return a bounded implementation note with evidence_refs and residual risk.",
+  "role": "executor",
+  "route_sequence": [
+    "seungjeongwon"
+  ],
+  "run_id": "valid-isolated-worker",
+  "scope": "bounded implementation",
+  "source_of_truth_refs": [
+    "brief.md"
+  ],
+  "status": "registered",
+  "stop_condition": "Return implementation evidence to Seungjeongwon.",
+  "updated_at": "2026-06-14T00:00:00Z",
+  "verification_expectation": "Cite changed files or report a blocker.",
+  "worker_id": "implementer",
+  "write_scope": [
+    "docs/example.md"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "format": "sejong.team-leases/v0.1-draft",
+  "leases": [
+    {
+      "acquired_at": "2026-06-14T00:00:00Z",
+      "lease_id": "lease-implementer-docs",
+      "released_at": null,
+      "scopes": [
+        "docs/example.md"
+      ],
+      "status": "active",
+      "worker_id": "implementer"
+    }
+  ],
+  "run_id": "valid-isolated-worker"
+}

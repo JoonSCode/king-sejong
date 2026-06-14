@@ -199,6 +199,9 @@
         },
         "command": {
           "$ref": "#/$defs/NonEmptyString"
+        },
+        "isolation": {
+          "$ref": "#/$defs/IsolationMetadata"
         }
       },
       "required": [
@@ -217,6 +220,59 @@
         "prompt_path",
         "stop_condition",
         "status"
+      ]
+    },
+    "IsolationMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "backend": {
+          "type": "string",
+          "enum": [
+            "none",
+            "worktree",
+            "container_shadow"
+          ]
+        },
+        "workspace_path": {
+          "type": "string"
+        },
+        "base_ref": {
+          "type": "string"
+        },
+        "lease_refs": {
+          "$ref": "#/$defs/StringList"
+        },
+        "dirty_status": {
+          "type": "string",
+          "enum": [
+            "unknown",
+            "clean",
+            "dirty",
+            "missing",
+            "not_applicable"
+          ]
+        },
+        "cleanup_status": {
+          "type": "string",
+          "enum": [
+            "not_required",
+            "planned",
+            "active",
+            "removed",
+            "preserved_dirty",
+            "failed",
+            "shadow_only"
+          ]
+        }
+      },
+      "required": [
+        "backend",
+        "workspace_path",
+        "base_ref",
+        "lease_refs",
+        "dirty_status",
+        "cleanup_status"
       ]
     },
     "Team": {
@@ -497,6 +553,9 @@
         "updated_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "isolation": {
+          "$ref": "#/$defs/IsolationMetadata"
         }
       },
       "required": [

@@ -37,6 +37,16 @@ def run_team_command(args: list[str], *, sejong_home: Path) -> subprocess.Comple
     )
 
 
+def init_git_repo(path: Path) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init", "-b", "main"], cwd=path, text=True, capture_output=True, check=True)
+    subprocess.run(["git", "config", "user.email", "sejong@example.test"], cwd=path, check=True)
+    subprocess.run(["git", "config", "user.name", "King Sejong Tests"], cwd=path, check=True)
+    (path / "README.md").write_text("# fixture\n", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=path, check=True)
+    subprocess.run(["git", "commit", "-m", "initial"], cwd=path, text=True, capture_output=True, check=True)
+
+
 class TeamExecutorAuthorityTests(unittest.TestCase):
     def test_valid_context_fixture_passes(self) -> None:
         result = run_check("valid-context")
@@ -464,6 +474,191 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             self.assertIn("SEJONG_WORKER_RETURN_FORMAT=", result.stdout)
             self.assertIn("< ", result.stdout)
             self.assertIn("workers/critic/prompt.md", result.stdout)
+
+    def test_prepare_workspaces_creates_only_for_write_capable_workers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo_root = root / "repo"
+            init_git_repo(repo_root)
+            sejong_home = root / "sejong"
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "prepare-isolation",
+                    "--repo-root",
+                    str(repo_root),
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--worker",
+                    "writer:executor:implementation",
+                    "--worker",
+                    "reader:critic:review",
+                    "--worker-write-scope",
+                    "writer=docs/example.md",
+                    "--worker-write-scope",
+                    "reader=none",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "prepare-isolation"
+            lease = run_team_command(
+                ["acquire-lease", str(run_dir), "--lease-id", "lease-writer-docs", "--worker-id", "writer", "--scope", "docs/example.md"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(lease.returncode, 0, lease.stderr)
+
+            prepared = run_team_command(["prepare-workspaces", str(run_dir)], sejong_home=sejong_home)
+            self.assertEqual(prepared.returncode, 0, prepared.stderr)
+            writer_state = json.loads((run_dir / "workers" / "writer" / "state.json").read_text(encoding="utf-8"))
+            reader_state = json.loads((run_dir / "workers" / "reader" / "state.json").read_text(encoding="utf-8"))
+
+            isolation = writer_state["isolation"]
+            self.assertEqual(isolation["backend"], "worktree")
+            self.assertEqual(isolation["cleanup_status"], "active")
+            self.assertEqual(isolation["dirty_status"], "clean")
+            self.assertEqual(isolation["lease_refs"], ["lease-writer-docs"])
+            self.assertTrue(Path(isolation["workspace_path"]).exists())
+            self.assertNotIn("isolation", reader_state)
+
+    def test_launch_dry_run_uses_isolated_worker_cwd_and_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo_root = root / "repo"
+            init_git_repo(repo_root)
+            sejong_home = root / "sejong"
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "launch-isolation",
+                    "--repo-root",
+                    str(repo_root),
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--worker",
+                    "writer:executor:implementation",
+                    "--worker-write-scope",
+                    "writer=docs/example.md",
+                    "--command",
+                    "writer=echo writer",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "launch-isolation"
+            prepared = run_team_command(["prepare-workspaces", str(run_dir)], sejong_home=sejong_home)
+            self.assertEqual(prepared.returncode, 0, prepared.stderr)
+            state = json.loads((run_dir / "workers" / "writer" / "state.json").read_text(encoding="utf-8"))
+            workspace = state["isolation"]["workspace_path"]
+
+            result = run_team_command(["launch", str(run_dir), "--dry-run"], sejong_home=sejong_home)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn(f"-c {workspace}", result.stdout)
+            self.assertIn("SEJONG_WORKER_ISOLATION_BACKEND=worktree", result.stdout)
+            self.assertIn(f"SEJONG_WORKER_WORKSPACE={workspace}", result.stdout)
+
+    def test_isolate_write_workers_does_not_force_read_only_worktrees(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo_root = root / "repo"
+            init_git_repo(repo_root)
+            sejong_home = root / "sejong"
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "read-only-no-worktree",
+                    "--repo-root",
+                    str(repo_root),
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--worker",
+                    "reader:critic:review",
+                    "--worker-write-scope",
+                    "reader=none",
+                    "--command",
+                    "reader=echo reader",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "read-only-no-worktree"
+
+            result = run_team_command(["launch", str(run_dir), "--dry-run", "--isolate-write-workers"], sejong_home=sejong_home)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn(f"-c {repo_root.resolve()}", result.stdout)
+            self.assertIn("SEJONG_WORKER_ISOLATION_BACKEND=none", result.stdout)
+            self.assertFalse((run_dir / "workspaces" / "reader").exists())
+
+    def test_launch_blocks_when_worktree_creation_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            non_git_root = root / "not-git"
+            non_git_root.mkdir()
+            sejong_home = root / "sejong"
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "worktree-failure",
+                    "--repo-root",
+                    str(non_git_root),
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--worker",
+                    "writer:executor:implementation",
+                    "--worker-write-scope",
+                    "writer=docs/example.md",
+                    "--command",
+                    "writer=echo writer",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "worktree-failure"
+
+            result = run_team_command(["launch", str(run_dir), "--isolate-write-workers"], sejong_home=sejong_home)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("failed to create worker worktree", result.stderr)
+
+    def test_cleanup_preserves_dirty_isolated_worktree(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo_root = root / "repo"
+            init_git_repo(repo_root)
+            sejong_home = root / "sejong"
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "dirty-preserve",
+                    "--repo-root",
+                    str(repo_root),
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--worker",
+                    "writer:executor:implementation",
+                    "--worker-write-scope",
+                    "writer=docs/example.md",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "dirty-preserve"
+            prepared = run_team_command(["prepare-workspaces", str(run_dir)], sejong_home=sejong_home)
+            self.assertEqual(prepared.returncode, 0, prepared.stderr)
+            state = json.loads((run_dir / "workers" / "writer" / "state.json").read_text(encoding="utf-8"))
+            workspace = Path(state["isolation"]["workspace_path"])
+            (workspace / "untracked.txt").write_text("keep me\n", encoding="utf-8")
+
+            cleanup = run_team_command(["cleanup-workspaces", str(run_dir)], sejong_home=sejong_home)
+            self.assertEqual(cleanup.returncode, 0, cleanup.stderr)
+            updated = json.loads((run_dir / "workers" / "writer" / "state.json").read_text(encoding="utf-8"))
+            self.assertEqual(updated["isolation"]["dirty_status"], "dirty")
+            self.assertEqual(updated["isolation"]["cleanup_status"], "preserved_dirty")
+            self.assertTrue(workspace.exists())
 
 
 if __name__ == "__main__":
