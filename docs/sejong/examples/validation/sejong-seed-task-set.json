@@ -1169,7 +1169,7 @@
         "hook test output"
       ],
       "expected_behavior": [
-        "treats Python, Node, Ruby, and Perl protected-path writes as write-like shell actions",
+        "treats Python, Node, Ruby, Perl, PHP, shell redirection, and common file-copy protected-path writes as write-like shell actions",
         "allows protected-path read snippets while denying write snippets without route evidence",
         "records that hook coverage reduces bypass risk but is not a complete sandbox"
       ],
@@ -1187,9 +1187,14 @@
         ],
         "hook_enforcement": [
           "python open/write_text",
+          "python heredoc write_text",
           "node fs write",
           "ruby File.write",
           "perl open write",
+          "php file_put_contents",
+          "awk or printf shell redirection",
+          "dd output file",
+          "install or rsync target",
           "read-only Python open"
         ]
       },

@@ -80,6 +80,34 @@ Seungjeongwon run and checkpoint artifacts must include provenance:
 - `verification_refs`: checks, commands, or evidence refs that support the
   artifact state
 
+## Evidence Manifests
+
+A run directory may include `evidence-manifest.json` when the workflow needs a
+compact integrity index over runtime artifacts. The manifest is evidence
+integrity metadata, not a sandbox and not an approval gate by itself.
+
+Recommended fields:
+
+- `format`: `sejong.evidence-manifest/v0.1-draft`
+- `manifest_id`: stable id for the manifest
+- `run_id`: Sejong or Seungjeongwon run id
+- `repo_root`: repository root the manifest describes
+- `generated_at`: manifest creation timestamp
+- `producer`: Sejong surface, helper, or worker that produced the manifest
+- `parent_event_refs`: Sillok event ids, hook events, or run ids that explain
+  why the manifest was generated
+- `artifacts`: list of artifact records with `ref`, `sha256`, `size_bytes`,
+  `artifact_format`, `producer`, and `verification_refs`
+
+Use SHA-256 hashes to detect accidental drift or tampering in referenced
+runtime artifacts. Do not describe a passing hash check as proof that tool
+execution was contained, permissions were safe, or untrusted content was
+sanitized.
+
+Hooks may use the manifest at `Stop` or `PreCompact` time to detect broken or
+changed evidence refs when a workflow explicitly references it. A mismatch
+should trigger continuation or re-verification, not silent completion.
+
 Codex-migrated or mocked workflow-like backend runs should follow
 `docs/sejong/workflow-run.schema.json`. Use
 `docs/sejong/scripts/sejong_workflow_run.py` to record mapped court surfaces,

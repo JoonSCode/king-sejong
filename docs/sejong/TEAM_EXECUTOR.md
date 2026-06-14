@@ -171,6 +171,29 @@ python3 docs/sejong/scripts/team_executor.py launch <run-dir> --worker-command '
 
 `append-message` remains a compatibility alias for `send-message`, but wrappers should use `send-message` and `receive-messages` for new mailbox integrations.
 
+## Isolation Hardening Options
+
+Current TeamExecutor protection is lease-first: workers must declare write
+scope, acquire non-overlapping leases, and return bounded evidence to the lead.
+This reduces write collisions, but it is not process isolation and not a
+sandbox.
+
+Before promoting stronger worker isolation, compare these options:
+
+| Option | Benefit | Cost / Risk | Current Status |
+| --- | --- | --- | --- |
+| File-scope leases only | Low overhead and already covered by lease conflict tests. | Does not isolate process state, generated temp files, or untracked side effects. | Selected baseline. |
+| Per-worker temporary worktrees | Stronger separation for file edits and reviewable diffs. | Higher setup cost, branch/worktree cleanup risk, and more complicated installer/user-scope interactions. | Retained for high-risk implementation leaves. |
+| Container or sandbox runner | Strongest execution containment when available. | Host-dependent, heavier, and outside the current Codex-native contract. | Future option only. |
+
+The next safe increment is to harden file-scope leases and evidence manifests
+before introducing per-worker worktrees. Re-enter Uigwe design review before
+changing TeamExecutor to create worktrees or containers automatically.
+
+Worker isolation must preserve the authority model: workers produce evidence,
+implementation slices, or verification observations; Sejong owns synthesis,
+Uigwe owns planning gates, and Seungjeongwon owns final verification.
+
 ## Mailbox Contract
 
 `mailbox.jsonl` is append-only. Each line must use the versioned mailbox envelope format `sejong.team-mailbox-message/v0.1-draft`. New wrappers should not write raw JSON lines directly; they should call `send-message`, then use `receive-messages` to read a normalized `sejong.team-mailbox-receive/v0.1-draft` response.

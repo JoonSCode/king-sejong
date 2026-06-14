@@ -18,13 +18,26 @@ Run the local pack before claiming protected King Sejong behavior changes are
 complete:
 
 ```bash
+uv run --with jsonschema --with referencing python docs/sejong/scripts/run_local_evals.py
+```
+
+By default the runner does not refresh checked-in scorecards and does not run
+install verification. Use explicit flags when those side effects are intended:
+
+```bash
+uv run --with jsonschema --with referencing python docs/sejong/scripts/run_local_evals.py --write-scorecards --install-verify
+```
+
+The runner expands to the following local proof pack:
+
+```bash
 python3 docs/sejong/scripts/test_king_sejong_hooks.py
 python3 docs/sejong/scripts/test_sejong_context.py
 python3 docs/sejong/scripts/test_seungjeongwon_run.py
 python3 docs/sejong/scripts/test_sillok_trace.py
 SEJONG_HOME="$(mktemp -d)" python3 docs/sejong/scripts/test_king_sejong_e2e.py
-python3 docs/sejong/scripts/benchmark_sejong_surface.py --write --require-targets
-python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets
+python3 docs/sejong/scripts/benchmark_sejong_surface.py --require-targets
+python3 docs/sejong/scripts/benchmark_instruction_surface.py --require-targets
 uv run --with jsonschema --with referencing python docs/sejong/scripts/validate_json_contracts.py
 ```
 
@@ -33,6 +46,10 @@ When managed install paths or installer behavior changed, also run:
 ```bash
 bash scripts/install-sejong.sh --verify .
 ```
+
+When scorecard fixtures intentionally changed, rerun the benchmark steps with
+`--write-scorecards` through the local eval runner or call the benchmark
+scripts with `--write --require-targets` directly.
 
 ## Red-Team Fixtures
 

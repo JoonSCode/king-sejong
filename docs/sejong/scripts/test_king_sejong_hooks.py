@@ -445,9 +445,21 @@ class KingSejongHookTests(unittest.TestCase):
                 "python3 -c \"from pathlib import Path; "
                 "Path('docs/sejong/HOOKS.md').write_text('x')\""
             ),
+            "python_heredoc_write_text": (
+                "python3 - <<'PY'\n"
+                "from pathlib import Path\n"
+                "Path('docs/sejong/HOOKS.md').write_text('x')\n"
+                "PY"
+            ),
             "node_write_file_sync": "node -e \"require('fs').writeFileSync('docs/sejong/HOOKS.md', 'x')\"",
             "ruby_file_write": "ruby -e \"File.write('docs/sejong/HOOKS.md', 'x')\"",
             "perl_open_write": "perl -e 'open my $fh, \">\", \"docs/sejong/HOOKS.md\"; print $fh \"x\"'",
+            "php_file_put_contents": "php -r \"file_put_contents('docs/sejong/HOOKS.md', 'x');\"",
+            "awk_redirect": "awk 'BEGIN { print \"x\" }' > docs/sejong/HOOKS.md",
+            "dd_output_file": "dd if=/dev/null of=docs/sejong/HOOKS.md",
+            "install_target": "install /tmp/source.md docs/sejong/HOOKS.md",
+            "rsync_target": "rsync /tmp/source.md docs/sejong/HOOKS.md",
+            "shell_redirect": "printf 'x' > docs/sejong/HOOKS.md",
         }
         for name, command in commands.items():
             with self.subTest(name=name):

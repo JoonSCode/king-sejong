@@ -67,6 +67,8 @@ before proceeding. Without approval, stop, summarize the risk, and ask the user.
   answer the question.
 - Record security-sensitive tool calls and decisions with
   [SILLOK_TRACE.md](SILLOK_TRACE.md).
+- Treat evidence-manifest hashes as integrity evidence only. They do not prove
+  sandboxing, permission safety, or untrusted-content sanitization.
 
 ## Relationship To Hooks
 

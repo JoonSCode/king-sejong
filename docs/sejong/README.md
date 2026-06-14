@@ -168,6 +168,7 @@ It intentionally does not ship private benchmark runs or score histories. See
 Useful commands:
 
 ```bash
+uv run --with jsonschema --with referencing python docs/sejong/scripts/run_local_evals.py
 python3 docs/sejong/scripts/validate_json_contracts.py
 python3 docs/sejong/scripts/continuity_capsule.py check --path docs/sejong/examples/continuity-capsule.example.json
 python3 docs/sejong/scripts/continuity_replay_gate.py judge --context docs/sejong/examples/continuity-context.example.json --require "continuity_capsule=capsule-continuity-example" --require "continuity_rejected=Use only markdown handoff" --forbid "Replay full trace history" --max-chars 2500
