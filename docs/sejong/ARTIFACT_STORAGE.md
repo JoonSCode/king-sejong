@@ -216,3 +216,46 @@ External artifact roots may contain sensitive research notes and execution evide
 - keep context checkpoints compact and reference large artifacts by path
 - support pruning old runs
 - avoid promoting secrets or raw private evidence into tracked files
+
+## Completion And Cleanup Lifecycle
+
+External storage is not a reason to keep every runtime file forever. Sejong
+runs should be compacted when they finish and pruned by policy after they are no
+longer needed for resume, debugging, or review.
+
+The default lifecycle is:
+
+1. During an active run, keep runtime artifacts needed for planning,
+   execution, verification, and resume.
+2. At completion, write a compact `run-summary.json` and preserve compact
+   evidence such as `sillok-record.jsonl`, `evidence-manifest.json`,
+   `execution-feedback.json`, and continuity or checkpoint files.
+3. For successful runs, delete raw research notes, temporary Uigwe packets,
+   worker mailbox state, scratch logs, and unreviewed execution snapshots once
+   the compact record exists.
+4. For failed or blocked runs, keep raw artifacts for the failure retention
+   window so the user or a later session can debug or resume the work.
+5. Periodically prune completed run directories whose compact record is older
+   than the retention window, while preserving the newest configured number of
+   completed runs per repository.
+
+Cleanup must be conservative:
+
+- never delete the active run referenced by the active King Sejong context
+- never delete a run that contains a promotion marker such as
+  `promoted-artifacts.json` or `.sejong-promoted`
+- never delete repository-tracked artifacts as part of external runtime cleanup
+- require an explicit execution flag for destructive cleanup; dry-run reporting
+  is the default
+- report deleted and retained paths with reasons
+
+Default retention values live in `policy.defaults.json`. The intended defaults
+are:
+
+- successful run raw artifacts: prune at finalization after compact evidence is
+  written
+- failed or blocked run raw artifacts: keep for 14 days
+- compact run records: keep for 90 days, while preserving the newest 50 compact
+  runs per repository
+- sensitive raw evidence: compact or redact, then prune as soon as safely
+  possible

@@ -166,5 +166,34 @@
         "hard_guardrails_required": true
       }
     }
+  },
+  "artifact_retention": {
+    "default_profile": "standard",
+    "profiles": {
+      "standard": {
+        "success_raw_ttl_days": 0,
+        "failed_raw_ttl_days": 14,
+        "blocked_raw_ttl_days": 14,
+        "compact_ttl_days": 90,
+        "max_compact_runs_per_repo": 50,
+        "sensitive_raw_ttl_hours": 0,
+        "dry_run_by_default": true,
+        "delete_requires_execute": true,
+        "active_context_protection": true,
+        "compact_keep_names": [
+          "sillok-record.jsonl",
+          "run-summary.json",
+          "evidence-manifest.json",
+          "execution-feedback.json",
+          "king-sejong-context.json",
+          "continuity-capsule.json",
+          "seungjeongwon-checkpoint.json"
+        ],
+        "promoted_marker_names": [
+          "promoted-artifacts.json",
+          ".sejong-promoted"
+        ]
+      }
+    }
   }
 }

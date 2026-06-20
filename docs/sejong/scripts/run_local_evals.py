@@ -64,6 +64,12 @@ def build_steps(*, write_scorecards: bool, include_install_verify: bool) -> list
             python_script("test_sillok_trace.py"),
         ),
         EvalStep(
+            "cleanup-tests",
+            "External Sejong run finalization, pruning, and active-run protection",
+            python_script("test_sejong_cleanup.py"),
+            temp_sejong_home=True,
+        ),
+        EvalStep(
             "e2e-tests",
             "External runtime artifact E2E guardrail check",
             python_script("test_king_sejong_e2e.py"),
@@ -202,4 +208,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

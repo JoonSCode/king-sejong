@@ -4,21 +4,38 @@
 
 [Korean, Joseon-style](README.ko.md)
 
-King Sejong is an all-in-one skill bundle for **Codex** and Codex-style agent environments. It can be installed repo-locally or into a Codex user skill directory.
+King Sejong gives **Codex** a disciplined workflow for work that should not stop at "analysis".
 
 It is designed for maintainers who use Codex on real repositories: pull request review, issue triage, release preparation, installer checks, security guardrails, documentation consistency, and other open-source maintenance workflows where an agent should gather evidence before it edits.
 
-It gives an agent one broad front door, `$sejong`, for moving from research to decision, planning, execution, verification, and evidence recording.
+It gives an agent one broad front door, `$sejong`, for moving from research to decision, planning, execution, verification, and evidence recording. Follow-up turns stay in that active Sejong workflow until the user explicitly exits it or switches to another non-Sejong workflow.
 
-After `$sejong` is invoked, follow-up turns stay in the active Sejong workflow until the user explicitly exits Sejong or switches to another non-Sejong workflow.
+Use it when a request starts vague, touches several files or decisions, or needs proof that the agent actually finished the outcome. King Sejong is a skill bundle and protocol surface, not a replacement runtime: Codex still owns the model loop, tools, shell, files, and approvals; King Sejong owns routing, gates, handoffs, verification shape, and evidence records.
 
-Uigwe is the formal planning protocol behind that front door. Sejong routes into Uigwe only when a durable planning bundle is useful, then continues to execution and verification when the user asked for an outcome rather than a plan artifact.
+## Why Use It
 
-Uigwe decomposes plans by repeatedly selecting candidate work, reviewing whether it satisfies the parent goal, reselecting when it does not, and descending until each branch becomes a consumer-ready executable leaf.
+- Turn broad requests into a concrete path instead of forcing every job into one planning mode.
+- Keep research, discussion, planning, execution, and verification connected across follow-up turns.
+- Use Uigwe only when a durable planning bundle is worth the overhead.
+- Hand approved work to Seungjeongwon for execution, verification, retry, and evidence.
+- Make large or parallel attempts auditable with discipline gates, outcome checks, and workflow-run evidence instead of treating worker agreement as proof.
+- Keep temporary research, planning, runtime, and evidence artifacts outside the target repository unless the user explicitly promotes them, then compact and prune them by policy.
+- Install once per repo or once into `${CODEX_HOME:-~/.codex}/skills` for workspace-wide Codex use.
 
-This is not a standalone CLI or Python package. It is meant to be copied into a target repository or into `${CODEX_HOME:-~/.codex}/skills` so Codex can load the installed skill files.
+## When To Use It
+
+| If the work needs... | Start with... | What happens |
+| --- | --- | --- |
+| Evidence before deciding | `$sejong` or `$jangyeongsil` | Facts, inferences, unknowns, and the next decision are separated. |
+| A recommendation between real options | `$sejong` or `$jiphyeonjeon` | Trade-offs, rejected paths, risks, and a next-surface recommendation are synthesized. |
+| A durable plan | `$sejong` or `$uigwe` | Uigwe produces planning artifacts and handoff leaves tied to success criteria. |
+| Implementation with proof | `$sejong` or `$seungjeongwon` | The executor decomposes the scope, makes changes, verifies them, and reports evidence. |
+| A large or parallel workflow experiment | `$sejong` | Worker output stays subordinate while workflow-run and outcome evidence decide whether the tactic is worth keeping. |
+| A small exact task | `$sejong` | Sejong can act directly and report the completed work plus verification. |
 
 By default, Sejong keeps research, planning, runtime, and evidence artifacts outside the target repository under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`. It does not create git-tracked planning files unless the user explicitly asks to promote a shareable artifact into the repo.
+
+Completed runs should not keep raw runtime files forever. King Sejong can compact a run into `run-summary.json` plus Sillok evidence, then prune raw artifacts with a dry-run-first cleanup helper.
 
 ## Maintainer Workflows
 
@@ -57,13 +74,6 @@ bash "$tmp/king-sejong/scripts/install-sejong.sh" --verify "$PWD"
 rm -rf "$tmp"
 ```
 
-Agent-assisted install prompt:
-
-```text
-Install King Sejong into this repository from https://github.com/JoonSCode/king-sejong.
-Run scripts/install-sejong.sh against the current repo, then verify the install with --verify.
-```
-
 For Codex user scope, available from any workspace:
 
 ```bash
@@ -75,6 +85,21 @@ rm -rf "$tmp"
 ```
 
 User-scope install also writes a managed King Sejong guidance block to `${CODEX_HOME:-~/.codex}/AGENTS.md` by default. That keeps Sejong available as an always-on research, analysis, debate, planning, execution, and verification discipline across Codex workspaces. Use `--codex-guidance none` if you only want the skills, hooks, and active context.
+
+Then try one of these:
+
+```text
+$sejong research this bug, choose the safest fix, implement it, and verify it
+$sejong compare these implementation options and turn the selected path into executable work
+$uigwe design-to-plan this approved feature brief
+```
+
+Agent-assisted install prompt:
+
+```text
+Install King Sejong into this repository from https://github.com/JoonSCode/king-sejong.
+Run scripts/install-sejong.sh against the current repo, then verify the install with --verify.
+```
 
 ## Manual Install
 
@@ -148,6 +173,18 @@ That plugin hook is the canonical user-scope hook source. Reinstalling user scop
 
 Keep each scope's managed paths together. The skills are intentionally small and load their routing, planning, schema, and handoff contracts from the installed Sejong docs. The plugin adapter is hook metadata only, so the user-facing skill remains `$sejong`.
 
+## Runtime Artifact Cleanup
+
+External run artifacts live under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs`. Use the cleanup helper to inspect, finalize, and prune those run directories without touching repository-tracked files:
+
+```bash
+python3 docs/sejong/scripts/sejong_cleanup.py report
+python3 docs/sejong/scripts/sejong_cleanup.py finalize-run ~/.codex/sejong/runs/<repo-id>/<run-id> --status success
+python3 docs/sejong/scripts/sejong_cleanup.py prune-runs
+```
+
+Cleanup is conservative by default. It reports what would be deleted unless `--execute` is passed, refuses paths outside the Sejong runs root, and protects active runs or runs marked with `promoted-artifacts.json` or `.sejong-promoted`.
+
 ## Compatibility
 
 King Sejong is distributed as Codex skills with a thin Codex plugin adapter, not as an npm package, Python package, or standalone CLI.
@@ -191,6 +228,8 @@ What is included:
 - Seungjeongwon execution contract
 - Why Gate rationale checkpoints for reviews, planning choices, retrospectives, and self-audits
 - repo-context `AGENTS.md` init/refresh contract with candidate diffs
+- runtime contracts, discipline gates, workflow-run evidence, and outcome-quality validation helpers
+- external runtime cleanup, retention defaults, and active-run protection for Sejong run directories
 - schema, bundle, and instruction-surface validation helpers
 - install and verify script for managed repo-local and Codex user-scope paths
 
@@ -261,8 +300,11 @@ No `.codex/prompts/{role}.md` files are required. King Sejong uses Codex native 
 
 When changing King Sejong itself, material behavior changes should follow the full Sejong chain: Jiphyeonjeon decision support, Uigwe planning and decomposition, then Seungjeongwon implementation and verification. Use direct edits only for non-behavioral typo, link, formatting, or mechanical fixes.
 
-## Read More
+## Next
 
+- Start with [the Sejong docs index](docs/sejong/README.md) when you want the full contract surface.
+- Read [the runtime contract](docs/sejong/RUNTIME_CONTRACT.md) only if you are installing, maintaining, or changing King Sejong itself.
+- Run `bash scripts/install-sejong.sh --verify .` after changing managed install paths or installer behavior.
 - [Sejong router contract](docs/sejong/ROUTER.md)
 - [Repo context init and refresh](docs/sejong/REPO_CONTEXT.md)
 - [Artifact storage](docs/sejong/ARTIFACT_STORAGE.md)

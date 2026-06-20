@@ -27,12 +27,16 @@
         "greenfield",
         "brownfield"
       ]
+    },
+    "artifact_retention": {
+      "$ref": "#/$defs/ArtifactRetention"
     }
   },
   "required": [
     "format",
     "derived_metrics",
-    "profiles"
+    "profiles",
+    "artifact_retention"
   ],
   "$defs": {
     "Weight": {
@@ -46,6 +50,14 @@
     },
     "StringList": {
       "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "NameList": {
+      "type": "array",
+      "minItems": 1,
       "items": {
         "type": "string",
         "minLength": 1
@@ -316,6 +328,83 @@
         "frontier_policy",
         "reentry_thresholds",
         "completion_thresholds"
+      ]
+    },
+    "ArtifactRetention": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default_profile": {
+          "const": "standard"
+        },
+        "profiles": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "standard": {
+              "$ref": "#/$defs/ArtifactRetentionProfile"
+            }
+          },
+          "required": [
+            "standard"
+          ]
+        }
+      },
+      "required": [
+        "default_profile",
+        "profiles"
+      ]
+    },
+    "ArtifactRetentionProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "success_raw_ttl_days": {
+          "$ref": "#/$defs/IntegerThreshold"
+        },
+        "failed_raw_ttl_days": {
+          "$ref": "#/$defs/IntegerThreshold"
+        },
+        "blocked_raw_ttl_days": {
+          "$ref": "#/$defs/IntegerThreshold"
+        },
+        "compact_ttl_days": {
+          "$ref": "#/$defs/IntegerThreshold"
+        },
+        "max_compact_runs_per_repo": {
+          "$ref": "#/$defs/IntegerThreshold"
+        },
+        "sensitive_raw_ttl_hours": {
+          "$ref": "#/$defs/IntegerThreshold"
+        },
+        "dry_run_by_default": {
+          "type": "boolean"
+        },
+        "delete_requires_execute": {
+          "type": "boolean"
+        },
+        "active_context_protection": {
+          "type": "boolean"
+        },
+        "compact_keep_names": {
+          "$ref": "#/$defs/NameList"
+        },
+        "promoted_marker_names": {
+          "$ref": "#/$defs/NameList"
+        }
+      },
+      "required": [
+        "success_raw_ttl_days",
+        "failed_raw_ttl_days",
+        "blocked_raw_ttl_days",
+        "compact_ttl_days",
+        "max_compact_runs_per_repo",
+        "sensitive_raw_ttl_hours",
+        "dry_run_by_default",
+        "delete_requires_execute",
+        "active_context_protection",
+        "compact_keep_names",
+        "promoted_marker_names"
       ]
     }
   }
