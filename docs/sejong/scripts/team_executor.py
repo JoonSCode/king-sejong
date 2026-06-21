@@ -5,9 +5,12 @@ import argparse
 import fnmatch
 import json
 import os
+import re
 import shlex
+import shutil
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -126,6 +129,31 @@ GLOB_CHARS = "*?["
 ISOLATION_BACKENDS = {"none", "worktree", "container_shadow"}
 ISOLATION_DIRTY_STATUSES = {"unknown", "clean", "dirty", "missing", "not_applicable"}
 ISOLATION_CLEANUP_STATUSES = {"not_required", "planned", "active", "removed", "preserved_dirty", "failed", "shadow_only"}
+SMOKE_ENV_KEYS = (
+    "SEJONG_TEAM_RUN",
+    "SEJONG_TEAM_WORKER",
+    "SEJONG_WORKER_PROMPT",
+    "SEJONG_CURRENT_SURFACE",
+    "SEJONG_PHASE_LABEL",
+    "SEJONG_ROUTE_SEQUENCE",
+    "SEJONG_SOURCE_OF_TRUTH_REFS",
+    "SEJONG_PENDING_GATES",
+    "SEJONG_WORKER_ROLE",
+    "SEJONG_WORKER_OBJECTIVE",
+    "SEJONG_WORKER_SCOPE",
+    "SEJONG_WORKER_ALLOWED_OUTPUTS",
+    "SEJONG_WORKER_WRITE_SCOPE",
+    "SEJONG_WORKER_EVIDENCE_REFS",
+    "SEJONG_WORKER_VERIFICATION_EXPECTATION",
+    "SEJONG_FORBIDDEN_WORKER_CLAIMS",
+    "SEJONG_WORKER_RETURN_FORMAT",
+    "SEJONG_WORKER_STOP_CONDITION",
+    "SEJONG_WORKER_ISOLATION_BACKEND",
+    "SEJONG_WORKER_WORKSPACE",
+    "SEJONG_WORKER_ISOLATION_STATUS",
+    "SEJONG_WORKER_ISOLATION_BASE_REF",
+    "SEJONG_WORKER_ISOLATION_LEASE_REFS",
+)
 
 
 def now_utc() -> str:
@@ -486,6 +514,84 @@ def launch_isolation_metadata(
         lease_refs=[],
         dirty_status="not_applicable",
         cleanup_status="not_required",
+    )
+
+
+def worker_env_values(
+    *,
+    run_dir: Path,
+    team: dict[str, Any],
+    worker: dict[str, Any],
+    worker_id: str,
+    prompt_file: Path,
+    isolation: dict[str, Any],
+) -> dict[str, str]:
+    return {
+        "SEJONG_TEAM_RUN": str(run_dir),
+        "SEJONG_TEAM_WORKER": worker_id,
+        "SEJONG_WORKER_PROMPT": str(prompt_file) if worker.get("prompt_path") else "",
+        "SEJONG_CURRENT_SURFACE": str(team.get("current_surface") or ""),
+        "SEJONG_PHASE_LABEL": str(team.get("phase_label") or ""),
+        "SEJONG_ROUTE_SEQUENCE": json.dumps(team.get("route_sequence") or []),
+        "SEJONG_SOURCE_OF_TRUTH_REFS": json.dumps(team.get("source_of_truth_refs") or []),
+        "SEJONG_PENDING_GATES": json.dumps(team.get("pending_gates") or []),
+        "SEJONG_WORKER_ROLE": str(worker.get("role") or ""),
+        "SEJONG_WORKER_OBJECTIVE": str(worker.get("objective") or ""),
+        "SEJONG_WORKER_SCOPE": str(worker.get("scope") or ""),
+        "SEJONG_WORKER_ALLOWED_OUTPUTS": json.dumps(worker.get("allowed_outputs") or []),
+        "SEJONG_WORKER_WRITE_SCOPE": json.dumps(worker.get("write_scope") or []),
+        "SEJONG_WORKER_EVIDENCE_REFS": json.dumps(worker.get("evidence_refs") or []),
+        "SEJONG_WORKER_VERIFICATION_EXPECTATION": str(worker.get("verification_expectation") or ""),
+        "SEJONG_FORBIDDEN_WORKER_CLAIMS": json.dumps(worker.get("forbidden_worker_claims") or []),
+        "SEJONG_WORKER_RETURN_FORMAT": str(worker.get("return_format") or ""),
+        "SEJONG_WORKER_STOP_CONDITION": str(worker.get("stop_condition") or ""),
+        "SEJONG_WORKER_ISOLATION_BACKEND": str(isolation.get("backend") or "none"),
+        "SEJONG_WORKER_WORKSPACE": str(isolation.get("workspace_path") or ""),
+        "SEJONG_WORKER_ISOLATION_STATUS": str(isolation.get("cleanup_status") or ""),
+        "SEJONG_WORKER_ISOLATION_BASE_REF": str(isolation.get("base_ref") or ""),
+        "SEJONG_WORKER_ISOLATION_LEASE_REFS": json.dumps(isolation.get("lease_refs") or []),
+    }
+
+
+def shell_with_worker_env(env_values: dict[str, str], command: str, prompt_file: Path | None) -> str:
+    worker_env = " ".join(f"{key}={shlex.quote(value)}" for key, value in env_values.items())
+    if prompt_file is not None:
+        return f"{worker_env} {command} < {shlex.quote(str(prompt_file))}"
+    return f"{worker_env} {command}"
+
+
+def tmux_session_exists(session: str) -> bool:
+    result = subprocess.run(["tmux", "has-session", "-t", session], text=True, capture_output=True)
+    return result.returncode == 0
+
+
+def kill_tmux_session(session: str) -> None:
+    subprocess.run(["tmux", "kill-session", "-t", session], text=True, capture_output=True)
+
+
+def live_smoke_script(path: Path) -> None:
+    path.write_text(
+        "\n".join(
+            [
+                "from __future__ import annotations",
+                "import json",
+                "import os",
+                "import sys",
+                "from pathlib import Path",
+                f"ENV_KEYS = {list(SMOKE_ENV_KEYS)!r}",
+                "evidence_path = Path(sys.argv[1])",
+                "stdin_data = sys.stdin.read()",
+                "payload = {",
+                "    'cwd': os.getcwd(),",
+                "    'stdin_bytes': len(stdin_data.encode('utf-8')),",
+                "    'env': {key: os.environ.get(key, '') for key in ENV_KEYS},",
+                "}",
+                "evidence_path.parent.mkdir(parents=True, exist_ok=True)",
+                "evidence_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + '\\n', encoding='utf-8')",
+                "",
+            ]
+        ),
+        encoding="utf-8",
     )
 
 
@@ -1408,6 +1514,168 @@ def cleanup_workspaces(args: argparse.Namespace) -> int:
     return 0
 
 
+def smoke_live_launch(args: argparse.Namespace) -> int:
+    run_dir = require_run_dir(Path(args.run_dir))
+    team = load_team(run_dir)
+    worker = worker_by_id(team, args.worker_id)
+    if worker is None:
+        raise SystemExit(f"unknown worker: {args.worker_id}")
+
+    if shutil.which("tmux") is None:
+        print(json.dumps({"format": "sejong.team-live-smoke/v0.1-draft", "status": "skipped", "reason": "tmux unavailable"}, indent=2, sort_keys=True))
+        return 0
+
+    session = args.session or f"sejong-smoke-{team['run_id']}-{args.worker_id}-{os.getpid()}"
+    if tmux_session_exists(session):
+        raise SystemExit(f"tmux smoke session already exists: {session}")
+
+    prompt_file = run_dir / str(worker.get("prompt_path") or "")
+    isolation = launch_isolation_metadata(
+        run_dir,
+        worker,
+        base_ref=args.base_ref,
+        isolation_root=args.isolation_root,
+        isolate_write_workers=args.isolate_write_workers,
+        dry_run=False,
+    )
+    default_cwd = str(resolve_path(args.cwd or team["repo_root"]))
+    worker_cwd = str(isolation.get("workspace_path") or default_cwd) if isolation.get("backend") == "worktree" else default_cwd
+    evidence_path = Path(args.evidence_path).expanduser() if args.evidence_path else run_dir / "artifacts" / args.worker_id / "live-smoke.json"
+    if not evidence_path.is_absolute():
+        evidence_path = (run_dir / evidence_path).resolve()
+    script_path = run_dir / "artifacts" / args.worker_id / "live-smoke-worker.py"
+    script_path.parent.mkdir(parents=True, exist_ok=True)
+    live_smoke_script(script_path)
+
+    env_values = worker_env_values(
+        run_dir=run_dir,
+        team=team,
+        worker=worker,
+        worker_id=args.worker_id,
+        prompt_file=prompt_file,
+        isolation=isolation,
+    )
+    command = f"{shlex.quote(sys.executable)} {shlex.quote(str(script_path))} {shlex.quote(str(evidence_path))}"
+    shell_command = shell_with_worker_env(env_values, command, prompt_file if worker.get("prompt_path") else None)
+    result = subprocess.run(
+        ["tmux", "new-session", "-d", "-s", session, "-c", worker_cwd, shell_command],
+        text=True,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        message = result.stderr.strip() or result.stdout.strip() or "tmux new-session failed"
+        raise SystemExit(f"failed to launch live smoke session: {message}")
+
+    deadline = time.monotonic() + args.timeout_seconds
+    while time.monotonic() < deadline:
+        if evidence_path.exists() and not tmux_session_exists(session):
+            break
+        if evidence_path.exists() and tmux_session_exists(session):
+            time.sleep(0.1)
+            continue
+        if not tmux_session_exists(session):
+            break
+        time.sleep(0.1)
+
+    session_remaining = tmux_session_exists(session)
+    if session_remaining:
+        kill_tmux_session(session)
+        print(
+            json.dumps(
+                {
+                    "format": "sejong.team-live-smoke/v0.1-draft",
+                    "status": "failed",
+                    "session": session,
+                    "session_remaining": tmux_session_exists(session),
+                    "evidence_path": str(evidence_path),
+                    "reason": "tmux smoke session did not exit before timeout",
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 1
+
+    if not evidence_path.exists():
+        print(
+            json.dumps(
+                {
+                    "format": "sejong.team-live-smoke/v0.1-draft",
+                    "status": "failed",
+                    "session": session,
+                    "session_remaining": session_remaining,
+                    "evidence_path": str(evidence_path),
+                    "reason": "evidence file was not written before timeout or session exit",
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 1
+
+    payload = {
+        "format": "sejong.team-live-smoke/v0.1-draft",
+        "status": "passed",
+        "session": session,
+        "session_remaining": session_remaining,
+        "evidence_path": str(evidence_path),
+        "worker_id": args.worker_id,
+    }
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0
+
+
+def sandbox_claim_line_allowed(line: str, sandbox_index: int) -> bool:
+    lower = line.lower()
+    before = lower[max(0, sandbox_index - 40) : sandbox_index]
+    if "not " in before or "never " in before or "no " in before or "without " in before:
+        return True
+    if "shadow" in lower or "future option" in lower or "future design" in lower:
+        return True
+    return False
+
+
+def sandbox_claim_failures(path: Path) -> list[str]:
+    failures: list[str] = []
+    text = path.read_text(encoding="utf-8")
+    positive_pattern = re.compile(r"\b(provide|provides|guarantee|guarantees|ensure|ensures|is|are|gives|create|creates)\b")
+    for line_no, line in enumerate(text.splitlines(), start=1):
+        lower = line.lower()
+        if "worktree" not in lower or "sandbox" not in lower:
+            continue
+        sandbox_index = lower.find("sandbox")
+        if sandbox_claim_line_allowed(line, sandbox_index):
+            continue
+        if positive_pattern.search(lower):
+            failures.append(f"{path}:{line_no}: worktree sandbox overclaim: {line.strip()}")
+    return failures
+
+
+def iter_claim_paths(paths: list[str]) -> list[Path]:
+    selected = [Path(path).expanduser() for path in paths] or [Path("docs/sejong/TEAM_EXECUTOR.md"), Path("docs/sejong/SECURITY.md")]
+    files: list[Path] = []
+    for path in selected:
+        if path.is_dir():
+            files.extend(sorted(item for item in path.rglob("*") if item.suffix in {".md", ".txt"} and item.is_file()))
+        elif path.is_file():
+            files.append(path)
+        else:
+            raise SystemExit(f"sandbox-claim path does not exist: {path}")
+    return files
+
+
+def check_sandbox_claims(args: argparse.Namespace) -> int:
+    failures: list[str] = []
+    for path in iter_claim_paths(args.path or []):
+        failures.extend(sandbox_claim_failures(path))
+    if failures:
+        for failure in failures:
+            print(f"failure: {failure}", file=sys.stderr)
+        return 1
+    print("sandbox claim guard ok")
+    return 0
+
+
 def launch(args: argparse.Namespace) -> int:
     run_dir = require_run_dir(Path(args.run_dir))
     team = load_team(run_dir)
@@ -1438,36 +1706,15 @@ def launch(args: argparse.Namespace) -> int:
             dry_run=args.dry_run,
         )
         worker_cwd = str(isolation.get("workspace_path") or default_cwd) if isolation.get("backend") == "worktree" else default_cwd
-        env_values = {
-            "SEJONG_TEAM_RUN": str(run_dir),
-            "SEJONG_TEAM_WORKER": worker_id,
-            "SEJONG_WORKER_PROMPT": str(prompt_file) if worker.get("prompt_path") else "",
-            "SEJONG_CURRENT_SURFACE": str(team.get("current_surface") or ""),
-            "SEJONG_PHASE_LABEL": str(team.get("phase_label") or ""),
-            "SEJONG_ROUTE_SEQUENCE": json.dumps(team.get("route_sequence") or []),
-            "SEJONG_SOURCE_OF_TRUTH_REFS": json.dumps(team.get("source_of_truth_refs") or []),
-            "SEJONG_PENDING_GATES": json.dumps(team.get("pending_gates") or []),
-            "SEJONG_WORKER_ROLE": str(worker.get("role") or ""),
-            "SEJONG_WORKER_OBJECTIVE": str(worker.get("objective") or ""),
-            "SEJONG_WORKER_SCOPE": str(worker.get("scope") or ""),
-            "SEJONG_WORKER_ALLOWED_OUTPUTS": json.dumps(worker.get("allowed_outputs") or []),
-            "SEJONG_WORKER_WRITE_SCOPE": json.dumps(worker.get("write_scope") or []),
-            "SEJONG_WORKER_EVIDENCE_REFS": json.dumps(worker.get("evidence_refs") or []),
-            "SEJONG_WORKER_VERIFICATION_EXPECTATION": str(worker.get("verification_expectation") or ""),
-            "SEJONG_FORBIDDEN_WORKER_CLAIMS": json.dumps(worker.get("forbidden_worker_claims") or []),
-            "SEJONG_WORKER_RETURN_FORMAT": str(worker.get("return_format") or ""),
-            "SEJONG_WORKER_STOP_CONDITION": str(worker.get("stop_condition") or ""),
-            "SEJONG_WORKER_ISOLATION_BACKEND": str(isolation.get("backend") or "none"),
-            "SEJONG_WORKER_WORKSPACE": str(isolation.get("workspace_path") or ""),
-            "SEJONG_WORKER_ISOLATION_STATUS": str(isolation.get("cleanup_status") or ""),
-            "SEJONG_WORKER_ISOLATION_BASE_REF": str(isolation.get("base_ref") or ""),
-            "SEJONG_WORKER_ISOLATION_LEASE_REFS": json.dumps(isolation.get("lease_refs") or []),
-        }
-        worker_env = " ".join(f"{key}={shlex.quote(value)}" for key, value in env_values.items())
-        if worker.get("prompt_path"):
-            shell_command = f"{worker_env} {command} < {shlex.quote(str(prompt_file))}"
-        else:
-            shell_command = f"{worker_env} {command}"
+        env_values = worker_env_values(
+            run_dir=run_dir,
+            team=team,
+            worker=worker,
+            worker_id=worker_id,
+            prompt_file=prompt_file,
+            isolation=isolation,
+        )
+        shell_command = shell_with_worker_env(env_values, command, prompt_file if worker.get("prompt_path") else None)
         if index == 0:
             tmux_commands.append(["tmux", "new-session", "-d", "-s", session, "-c", worker_cwd, shell_command])
         else:
@@ -1607,6 +1854,22 @@ def build_parser() -> argparse.ArgumentParser:
     cleanup.add_argument("run_dir")
     cleanup.add_argument("--worker-id", action="append")
     cleanup.set_defaults(func=cleanup_workspaces)
+
+    smoke = subparsers.add_parser("smoke-live-launch", help="Run a bounded live tmux smoke for one worker")
+    smoke.add_argument("run_dir")
+    smoke.add_argument("--worker-id", required=True)
+    smoke.add_argument("--session")
+    smoke.add_argument("--cwd")
+    smoke.add_argument("--isolate-write-workers", action="store_true")
+    smoke.add_argument("--base-ref")
+    smoke.add_argument("--isolation-root")
+    smoke.add_argument("--timeout-seconds", type=float, default=15.0)
+    smoke.add_argument("--evidence-path")
+    smoke.set_defaults(func=smoke_live_launch)
+
+    sandbox = subparsers.add_parser("check-sandbox-claims", help="Reject positive claims that worktrees provide sandboxing")
+    sandbox.add_argument("path", nargs="*")
+    sandbox.set_defaults(func=check_sandbox_claims)
 
     check = subparsers.add_parser("check", help="Validate a TeamExecutor run directory")
     check.add_argument("run_dir")

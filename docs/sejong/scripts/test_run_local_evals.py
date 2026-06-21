@@ -17,10 +17,12 @@ class RunLocalEvalsTests(unittest.TestCase):
                 "context-tests",
                 "seungjeongwon-run-tests",
                 "sillok-trace-tests",
+                "cleanup-tests",
                 "e2e-tests",
                 "sejong-surface-benchmark",
                 "instruction-surface-benchmark",
                 "json-contracts",
+                "sandbox-claim-guard",
             ],
         )
         commands = [" ".join(step.command) for step in steps]
@@ -28,6 +30,7 @@ class RunLocalEvalsTests(unittest.TestCase):
         self.assertTrue(any("benchmark_sejong_surface.py --require-targets" in command for command in commands))
         self.assertTrue(any("benchmark_instruction_surface.py --require-targets" in command for command in commands))
         self.assertTrue(any("validate_json_contracts.py" in command for command in commands))
+        self.assertTrue(any("check-sandbox-claims" in command for command in commands))
         self.assertFalse(any("--write" in command for command in commands))
 
     def test_write_scorecards_and_install_verify_are_explicit(self) -> None:
@@ -48,4 +51,3 @@ class RunLocalEvalsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -90,6 +90,11 @@ def build_steps(*, write_scorecards: bool, include_install_verify: bool) -> list
             "JSON schema and example contract validation",
             python_script("validate_json_contracts.py"),
         ),
+        EvalStep(
+            "sandbox-claim-guard",
+            "TeamExecutor worktree isolation wording stays below sandbox claims",
+            python_script("team_executor.py", "check-sandbox-claims", "docs/sejong/TEAM_EXECUTOR.md", "docs/sejong/SECURITY.md"),
+        ),
     ]
     if include_install_verify:
         steps.append(

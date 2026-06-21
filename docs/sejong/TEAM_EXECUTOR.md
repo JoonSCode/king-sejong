@@ -171,6 +171,8 @@ python3 docs/sejong/scripts/team_executor.py check <run-dir>
 python3 docs/sejong/scripts/team_executor.py prepare-workspaces <run-dir>
 python3 docs/sejong/scripts/team_executor.py cleanup-workspaces <run-dir>
 python3 docs/sejong/scripts/team_executor.py launch <run-dir> --worker-command 'critic=codex ...' --dry-run
+python3 docs/sejong/scripts/team_executor.py smoke-live-launch <run-dir> --worker-id implementer --isolate-write-workers
+python3 docs/sejong/scripts/team_executor.py check-sandbox-claims docs/sejong/TEAM_EXECUTOR.md docs/sejong/SECURITY.md
 ```
 
 `append-message` remains a compatibility alias for `send-message`, but wrappers should use `send-message` and `receive-messages` for new mailbox integrations.
@@ -199,6 +201,18 @@ The approved default path is:
 5. Run `cleanup-workspaces <run-dir>` after integration review. Clean
    worktrees are removed. Dirty worktrees are preserved and marked
    `preserved_dirty`; the lead must inspect them before any destructive cleanup.
+
+Use `smoke-live-launch` for an opt-in live tmux proof after dry-run validation.
+The smoke starts one short-lived tmux session for a harmless Python worker that
+reads the generated prompt from stdin, records cwd and `SEJONG_WORKER_*`
+metadata to an evidence JSON file, exits, and verifies the target session is no
+longer running. It does not launch an autonomous Codex worker and it is not part
+of default validation on hosts where tmux is unavailable.
+
+Use `check-sandbox-claims` to reject wording that misdescribes worktree edit
+isolation as sandboxing. The guard allows explicit warnings such as "not a
+sandbox" and container shadow wording, but it fails positive worktree-sandbox
+claims.
 
 The worker and worker-state records may include:
 
@@ -411,12 +425,20 @@ When launching tmux workers, the helper also injects the active court-mode conte
 - `SEJONG_SOURCE_OF_TRUTH_REFS`
 - `SEJONG_PENDING_GATES`
 - `SEJONG_WORKER_ROLE`
+- `SEJONG_WORKER_OBJECTIVE`
 - `SEJONG_WORKER_SCOPE`
 - `SEJONG_WORKER_ALLOWED_OUTPUTS`
+- `SEJONG_WORKER_WRITE_SCOPE`
+- `SEJONG_WORKER_EVIDENCE_REFS`
 - `SEJONG_WORKER_VERIFICATION_EXPECTATION`
 - `SEJONG_FORBIDDEN_WORKER_CLAIMS`
 - `SEJONG_WORKER_RETURN_FORMAT`
 - `SEJONG_WORKER_STOP_CONDITION`
+- `SEJONG_WORKER_ISOLATION_BACKEND`
+- `SEJONG_WORKER_WORKSPACE`
+- `SEJONG_WORKER_ISOLATION_STATUS`
+- `SEJONG_WORKER_ISOLATION_BASE_REF`
+- `SEJONG_WORKER_ISOLATION_LEASE_REFS`
 
 Workers should treat that prompt and environment context as bounds, not as
 permission to widen scope. The prompt carries refs to the shared brief rather

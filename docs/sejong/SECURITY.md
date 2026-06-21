@@ -72,7 +72,8 @@ before proceeding. Without approval, stop, summarize the risk, and ask the user.
 - Treat TeamExecutor per-worker git worktrees as edit isolation only. They help
   separate tracked edits and untracked worker output, but they do not isolate
   processes, network, credentials, permissions, shell access, or host-level side
-  effects.
+  effects. `team_executor.py check-sandbox-claims` is the deterministic guard
+  for positive worktree-sandbox overclaims in TeamExecutor-facing docs.
 - Keep container-backed TeamExecutor execution as a shadow option until a
   separate approved design covers mounts, credentials, network policy, cleanup,
   tool availability, and host portability. The default local TeamExecutor path

@@ -660,6 +660,72 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             self.assertEqual(updated["isolation"]["cleanup_status"], "preserved_dirty")
             self.assertTrue(workspace.exists())
 
+    def test_live_smoke_records_tmux_worker_cwd_env_and_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo_root = root / "repo"
+            init_git_repo(repo_root)
+            sejong_home = root / "sejong"
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "live-smoke",
+                    "--repo-root",
+                    str(repo_root),
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--worker",
+                    "writer:executor:implementation",
+                    "--worker-write-scope",
+                    "writer=docs/example.md",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "live-smoke"
+            lease = run_team_command(
+                ["acquire-lease", str(run_dir), "--lease-id", "lease-writer-docs", "--worker-id", "writer", "--scope", "docs/example.md"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(lease.returncode, 0, lease.stderr)
+
+            smoke = run_team_command(
+                ["smoke-live-launch", str(run_dir), "--worker-id", "writer", "--isolate-write-workers", "--timeout-seconds", "10"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(smoke.returncode, 0, smoke.stderr)
+            payload = json.loads(smoke.stdout)
+            if payload["status"] == "skipped":
+                self.assertEqual(payload["reason"], "tmux unavailable")
+                return
+            self.assertEqual(payload["status"], "passed")
+            self.assertFalse(payload["session_remaining"])
+            evidence_path = Path(payload["evidence_path"])
+            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+            state = json.loads((run_dir / "workers" / "writer" / "state.json").read_text(encoding="utf-8"))
+            workspace = state["isolation"]["workspace_path"]
+            self.assertEqual(evidence["cwd"], workspace)
+            self.assertEqual(evidence["env"]["SEJONG_WORKER_ISOLATION_BACKEND"], "worktree")
+            self.assertEqual(evidence["env"]["SEJONG_WORKER_WORKSPACE"], workspace)
+            self.assertEqual(json.loads(evidence["env"]["SEJONG_WORKER_ISOLATION_LEASE_REFS"]), ["lease-writer-docs"])
+            self.assertGreater(evidence["stdin_bytes"], 0)
+
+    def test_sandbox_claim_guard_allows_negated_warning_and_rejects_positive_claim(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            allowed = root / "allowed.md"
+            allowed.write_text("A git worktree is edit isolation only; it is not process sandboxing.\n", encoding="utf-8")
+            rejected = root / "rejected.md"
+            rejected.write_text("TeamExecutor worktrees provide process sandboxing for workers.\n", encoding="utf-8")
+
+            ok = run_team_command(["check-sandbox-claims", str(allowed)], sejong_home=root / "sejong")
+            self.assertEqual(ok.returncode, 0, ok.stderr)
+
+            bad = run_team_command(["check-sandbox-claims", str(rejected)], sejong_home=root / "sejong")
+            self.assertNotEqual(bad.returncode, 0)
+            self.assertIn("worktree sandbox overclaim", bad.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
