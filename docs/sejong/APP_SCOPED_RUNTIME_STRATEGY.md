@@ -50,10 +50,9 @@ while King Sejong's live runtime state is stale, invalid, or scoped to another
 repository. In that state, Seungjeongwon discipline becomes a post-hoc audit
 instead of the execution controller.
 
-The strategy below keeps King Sejong Codex-native. It does not introduce an
-OMX/OMO-style replacement runtime, and it does not turn every app edit into a
-hard block. It adds the smallest runtime checks needed to prevent the observed
-failure:
+The strategy below keeps King Sejong Codex-native. It does not introduce a
+replacement runtime, and it does not turn every app edit into a hard block. It
+adds the smallest runtime checks needed to prevent the observed failure:
 
 - no silent stale active context
 - no hidden product objective or repo-migration context in short follow-up turns
@@ -80,9 +79,9 @@ Current source surfaces:
 
 External patterns reviewed during the failure analysis:
 
-- Superpowers: mandatory skill-before-action and verification-before-completion.
-- OMX: repo session resume, HUD, durable task/review state, explicit verdict.
-- OMO: compaction context and todo capture/restore.
+- Skill-first systems: mandatory skill-before-action and verification-before-completion.
+- Repo runtime systems: session resume, HUD, durable task/review state, explicit verdict.
+- Compaction runtimes: compaction context and todo capture/restore.
 - Codex: lifecycle hooks and repo instruction surfaces are primitives, not a
   full Sejong runtime by themselves.
 
@@ -116,9 +115,9 @@ declares the specific pending gate.
 
 ### Option B: Separate full runtime with HUD, task graph, and scheduler
 
-Build a new Sejong runtime surface similar to OMX/OMO with repo sessions,
-current-run HUD, task graph, compaction restore, worker coordination, and
-execution ledger.
+Build a new Sejong runtime surface similar to external repo runtimes with repo
+sessions, current-run HUD, task graph, compaction restore, worker coordination,
+and execution ledger.
 
 Pros:
 
@@ -401,8 +400,8 @@ Non-goals:
   pass.
 - Do not hard-block every write-like action when no active goal-bearing Sejong
   context exists.
-- Do not store Sejong runtime state in `.omx`, `.omo`, target repo tracked
-  paths, or plugin adapter state.
+- Do not store Sejong runtime state in non-Sejong runtime paths, target repo
+  tracked paths, or plugin adapter state.
 - Do not treat route-marker success as proof of better user outcomes.
 
 Must preserve:
@@ -481,6 +480,6 @@ python3 docs/sejong/scripts/outcome_quality_evaluator.py compare \
 - "Move Sejong runtime state into each target repo."
   - Rejected because Sejong state belongs under `${SEJONG_HOME}` unless the user
     explicitly promotes an artifact.
-- "Adopt OMX or OMO wholesale."
+- "Adopt an external runtime wholesale."
   - Rejected because the useful pieces are context durability, mismatch
     visibility, and compaction continuity, not a new authority layer.

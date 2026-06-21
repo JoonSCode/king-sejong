@@ -73,6 +73,23 @@ class BoundedWorkerBriefTests(unittest.TestCase):
 
         self.assertEqual(validate_bounded_worker_brief(brief, expected_source_of_truth_refs=["brief.md"]), [])
 
+    def test_hidden_external_runtime_write_scope_fails(self) -> None:
+        brief = valid_brief()
+        brief["write_scope"] = [".external-runtime/state.json"]
+
+        failures = validate_bounded_worker_brief(brief, expected_source_of_truth_refs=["brief.md"])
+
+        self.assertIn(
+            "worker brief write_scope must not depend on hidden external runtime state: .external-runtime/state.json",
+            failures,
+        )
+
+    def test_known_repo_hidden_write_scope_roots_pass(self) -> None:
+        brief = valid_brief()
+        brief["write_scope"] = [".agents/skills/example", ".codex/prompts/reviewer.md", ".github/workflows/ci.yml"]
+
+        self.assertEqual(validate_bounded_worker_brief(brief, expected_source_of_truth_refs=["brief.md"]), [])
+
 
 if __name__ == "__main__":
     unittest.main()

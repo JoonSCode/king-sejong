@@ -36,7 +36,7 @@
   },
   "dimensions": {
     "goal_alignment": {
-      "user_goal_restated": "The answer restates that King Sejong feels shorter than OMX or OMO."
+      "user_goal_restated": "The answer restates that King Sejong feels shorter than prior external workflow runtimes."
     },
     "evidence_quality": {
       "known_inferred_unknown": "Known, inferred, and unknown claims are partially separated."

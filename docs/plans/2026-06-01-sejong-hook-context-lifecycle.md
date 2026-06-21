@@ -1,6 +1,6 @@
 # Sejong Hook Context Lifecycle Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Execution:** Use King Sejong/Seungjeongwon execution discipline to implement this plan task-by-task.
 
 **Goal:** Implement the approved A-first and C-ready King Sejong hook/context lifecycle fix.
 

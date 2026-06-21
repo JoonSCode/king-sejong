@@ -52,7 +52,7 @@ Codex guidance:
   --codex-guidance none skips writing ${CODEX_HOME:-~/.codex}/AGENTS.md.
   --codex-guidance print prints a compact generic AGENTS.md block.
   --codex-guidance user writes that block to ${CODEX_HOME:-~/.codex}/AGENTS.md.
-  The block is generic Codex guidance and does not depend on OMX or repo-local state.
+  The block is generic Codex guidance and does not depend on external runtime or repo-local state.
 EOF
 }
 
@@ -270,7 +270,7 @@ For work that needs research, analysis, debate, planning, execution, or verifica
 - Use Seungjeongwon to decompose, execute, retry, and verify until the Uigwe pass criteria are met or a real blocker is recorded.
 - Iterate through research, analysis, and discussion when evidence is thin or options are unsettled; do not collapse those states into one answer.
 - Store Sejong runtime artifacts under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` unless the user explicitly asks to promote a tracked artifact.
-- Do not use `.omx` paths as Sejong state.
+- Do not use non-Sejong runtime paths as Sejong state.
 
 Hooks and schemas are guardrails, not a sandbox. Completion still requires fresh verification evidence.
 <!-- END King Sejong Codex Guidance -->
@@ -893,8 +893,8 @@ verify_user_codex_guidance() {
     echo "King Sejong Codex guidance block is missing from AGENTS.md" >&2
     return 1
   fi
-  if ! grep -q 'Do not use `.omx` paths as Sejong state.' "$agents_file"; then
-    echo "King Sejong Codex guidance block is missing OMX-independent state rule" >&2
+  if ! grep -q 'Do not use non-Sejong runtime paths as Sejong state.' "$agents_file"; then
+    echo "King Sejong Codex guidance block is missing external-runtime-independent state rule" >&2
     return 1
   fi
 }

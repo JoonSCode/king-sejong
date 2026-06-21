@@ -15,16 +15,16 @@ The current installed user state showed two separate failures:
 
 The repeated Stop hook prompts were a direct symptom of both issues: duplicated hook registration made the prompt appear twice, and the receipt predicate treated `required_route_sequence` containing `seungjeongwon` as sufficient reason to block completion even when no explicit receipt gate was pending.
 
-## Comparable Patterns
+## Comparable Host-Surface Patterns
 
-Superpowers separates installation surfaces by host:
+External workflow tools commonly separate installation surfaces by host:
 
-- Codex uses native skill discovery through a `~/.agents/skills/superpowers` symlink.
+- Codex uses native skill discovery through user-scope skill directories.
 - Legacy Codex bootstrap blocks are removed during migration.
-- Claude/OpenCode plugin hooks stay narrow and bootstrap only the skill-usage discipline.
+- Claude/OpenCode plugin hooks stay narrow and bootstrap only the workflow discipline.
 - Tests use isolated homes and explicit skill-trigger fixtures to catch regressions without depending on the maintainer's local state.
 
-The useful pattern for Sejong is not to copy Superpowers' workflow, but to copy the ownership boundary: one canonical injection path per host, explicit migration from legacy paths, and isolated verification of install state.
+The useful pattern for Sejong is not to copy another workflow, but to copy the ownership boundary: one canonical injection path per host, explicit migration from legacy paths, and isolated verification of install state.
 
 ## Decision
 

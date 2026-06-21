@@ -35,7 +35,7 @@ Runtime state belongs under:
 ${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}
 ```
 
-Do not use `.omx` paths as Sejong state.
+Do not use non-Sejong runtime paths as Sejong state.
 
 Target repositories should not receive Sejong runtime files unless the user explicitly asks to promote a reviewed artifact. This rule covers active contexts, ambiguity registers, TeamExecutor mailboxes, Seungjeongwon run artifacts, attempt ledgers, outcome comparisons, and Sillok traces.
 It also covers workflow-run artifacts used to shadow Codex-migrated dynamic

@@ -8,9 +8,9 @@ Discipline gates define why King Sejong should perform a workflow step, what
 failure that step prevents, which court surface owns it, how strongly it is
 enforced, and how the behavior is verified.
 
-They exist so King Sejong can absorb the useful discipline from external
-workflow systems without making those systems the authority layer. Sejong stays
-the lead router. OMX, Superpowers, native subagents, host teams, and shell tools
+They exist so King Sejong can absorb useful discipline from external workflow
+systems without making those systems the authority layer. Sejong stays the lead
+router. Native subagents, host teams, shell tools, and other runtime helpers
 remain subordinate techniques or runtimes.
 
 ## Force Levels
@@ -40,8 +40,8 @@ same failure the gate was meant to prevent.
 - **Owner:** Sejong.
 - **Force:** `route`.
 - **Behavior:** When Sejong or a court surface is active, route through Sejong
-  first. Use OMX, Superpowers, native subagents, host teams, or shell helpers
-  only as subordinate techniques selected by the current court mode.
+  first. Use native subagents, host teams, shell helpers, or other runtime
+  helpers only as subordinate techniques selected by the current court mode.
 - **Verification:** Active context, hook-injected continuation, or final report
   names the current Sejong surface and the next surface when the task is not
   complete.
@@ -335,8 +335,8 @@ same failure the gate was meant to prevent.
 - **Force:** `route` for substantial workflows; `hard` when Stop or PreCompact
   would lose an active gate or invalid run artifact.
 - **Behavior:** Runtime state belongs under
-  `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` by default, not `.omx` and not
-  target-repo tracked paths.
+  `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` by default, not non-Sejong
+  runtime paths and not target-repo tracked paths.
 - **Verification:** Hook checks, context doctor, Seungjeongwon run checks, or
   TeamExecutor checks validate active state and keep repository `git status`
   free of unintended runtime artifacts.
@@ -390,8 +390,8 @@ mapped into Sejong surfaces:
 | Dynamic workflow scripts | External Dynamic Workflow Adoption / Seungjeongwon backend | Useful for repeatable fan-out, cross-checking, and verification; never a new court mode or Uigwe replacement. |
 | Deep-research workflows | JangYeongsil evidence + Sillok evidence | Cited reports and claim ledgers are evidence; decision-prep research still promotes to Uigwe. |
 | Worktree isolation | Durable Runtime State / execution safety | Useful tactic, not a Sejong authority requirement. |
-| OMX Team | TeamExecutor backend | Optional runtime backend under Sejong state and lead ownership. |
-| OMX Ultragoal ledger | Durable Runtime State | Useful ledger pattern; do not store Sejong state in `.omx`. |
+| Worker mailbox patterns | TeamExecutor backend | Optional runtime backend under Sejong state and lead ownership. |
+| Durable goal ledgers | Durable Runtime State | Useful ledger pattern; keep Sejong state under the Sejong runtime root. |
 
 ## Enforcement Guidance
 

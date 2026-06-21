@@ -28,13 +28,12 @@ def run_installer(args: list[str], *, codex_home: Path | None = None) -> subproc
 
 
 class InstallSejongTests(unittest.TestCase):
-    def test_print_codex_guidance_is_generic_and_omx_free(self) -> None:
+    def test_print_codex_guidance_is_generic_and_external_runtime_free(self) -> None:
         result = run_installer(["--print-codex-guidance"])
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("King Sejong Codex Guidance", result.stdout)
         self.assertIn("Always treat King Sejong as available", result.stdout)
-        self.assertIn("Do not use `.omx` paths as Sejong state.", result.stdout)
-        self.assertNotIn("oh-my-codex", result.stdout.lower())
+        self.assertIn("Do not use non-Sejong runtime paths as Sejong state.", result.stdout)
 
     def test_user_scope_writes_managed_agents_guidance_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -51,7 +50,7 @@ class InstallSejongTests(unittest.TestCase):
             self.assertIn("BEGIN King Sejong Codex Guidance", text)
             self.assertIn("END King Sejong Codex Guidance", text)
             self.assertIn("Always treat King Sejong as available", text)
-            self.assertIn("Do not use `.omx` paths as Sejong state.", text)
+            self.assertIn("Do not use non-Sejong runtime paths as Sejong state.", text)
             self.assertNotIn("This repository is both the source repository", text)
 
     def test_user_scope_installs_codex_plugin_adapter(self) -> None:

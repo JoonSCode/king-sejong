@@ -46,7 +46,7 @@
     "goal_alignment": {
       "user_goal_restated": "The artifact states the user wants a long-session mode only if it produces better outcomes, not just longer traces.",
       "non_goals": [
-        "Do not copy OMX or OMO wholesale.",
+        "Do not copy external workflow runtimes wholesale.",
         "Do not promote a massive prompt surface.",
         "Do not claim product success from deterministic fixtures."
       ],
@@ -57,10 +57,10 @@
       ]
     },
     "evidence_quality": {
-      "known_inferred_unknown": "The artifact separates sourced OMX/OMO behavior from inferred Sejong changes and unknown live-session effects.",
+      "known_inferred_unknown": "The artifact separates sourced external-runtime behavior from inferred Sejong changes and unknown live-session effects.",
       "source_refs": [
-        "OMX docs",
-        "OMO orchestration guide",
+        "External runtime docs",
+        "Compaction orchestration guide",
         "Sejong validation docs"
       ],
       "unsupported_claims_rejected": [

@@ -129,9 +129,16 @@ def validate_bounded_worker_brief(
             if forbidden:
                 failures.append(f"{label} {field} claims forbidden authority: {forbidden}")
 
+    allowed_hidden_roots = {".agents", ".codex", ".git", ".github"}
     for scope in brief.get("write_scope") or []:
-        if isinstance(scope, str) and scope.strip().startswith(".omx"):
-            failures.append(f"{label} write_scope must not depend on .omx state: {scope}")
+        if not isinstance(scope, str):
+            continue
+        normalized_scope = scope.strip()
+        hidden_root = normalized_scope.split("/", 1)[0]
+        if hidden_root.startswith(".") and hidden_root not in allowed_hidden_roots:
+            failures.append(
+                f"{label} write_scope must not depend on hidden external runtime state: {scope}"
+            )
 
     return failures
 
