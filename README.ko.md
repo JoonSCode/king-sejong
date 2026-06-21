@@ -20,7 +20,9 @@ King Sejong은 **Codex**가 "분석"에서 멈추지 않고, 사용자가 바란
 - 조사, 논의, 기획, 실행, 검증을 이어지는 맥락 안에 묶어 둡니다.
 - 오래 남길 기획 꾸러미가 값어치 있을 때에만 의궤를 엽니다.
 - 허락된 일은 승정원으로 넘겨 실행, 검증, 재시도, 증거 보고까지 잇습니다.
+- 한 번 살핌으로는 얕은 일은 장영실 deep research로 여러 증거 축을 모읍니다.
 - 큰 병렬 작업이나 workflow 실험은 worker 동의가 아니라 discipline gate, outcome check, workflow-run 증거로 살핍니다.
+- 설치, 의존성, hook, 활성 맥락은 읽기 전용 doctor로 점검합니다.
 - 조사, 기획, 실행 중 기록, 증거 산출물은 기본으로 대상 저장소 밖에 두고, 사용자가 명시할 때만 git에 남기며, 끝난 뒤에는 정책대로 작게 접고 정리합니다.
 - 저장소마다 들이거나 `${CODEX_HOME:-~/.codex}/skills`에 한 번 들여 여러 workspace에서 함께 쓸 수 있사옵니다.
 
@@ -29,6 +31,7 @@ King Sejong은 **Codex**가 "분석"에서 멈추지 않고, 사용자가 바란
 | 일이 필요로 하는 것 | 먼저 부를 말 | 이어지는 일 |
 | --- | --- | --- |
 | 결정 전 증거 | `$sejong` 또는 `$jangyeongsil` | 아는 것, 추정, 모르는 것, 다음 결정을 가릅니다. |
+| 깊은 자료 조사 | `$sejong` 또는 `$jangyeongsil` | 여러 조사 축을 모아 known, inferred, unknown, 모순, 다음 길목을 아룁니다. |
 | 선택지 사이의 권고 | `$sejong` 또는 `$jiphyeonjeon` | 장단점, 버린 길, 위험, 다음 길목을 종합합니다. |
 | 오래 남길 기획 | `$sejong` 또는 `$uigwe` | 의궤 산출물과 성공 기준에 묶인 handoff leaf를 만듭니다. |
 | 증거 있는 구현 | `$sejong` 또는 `$seungjeongwon` | 범위를 쪼개 실행하고, 검증하고, 증거를 아룁니다. |
@@ -88,6 +91,7 @@ rm -rf "$tmp"
 
 ```text
 $sejong 이 버그를 조사하고, 가장 안전한 고침을 고르고, 구현한 뒤 검증해줘
+$jangyeongsil 이 migration을 deep research하고 known/inferred/unknown으로 정리해줘
 $sejong 이 구현 선택지들을 비교하고, 고른 길을 실행 가능한 일로 풀어줘
 $uigwe design-to-plan 이 승인된 기능 개요를 실행 계획으로 세워줘
 ```

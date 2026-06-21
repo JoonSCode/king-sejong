@@ -15,6 +15,12 @@ It exists for cases where a workflow-like tactic may help:
 - TeamExecutor or host-native team backends
 - mocked or shadowed dynamic workflow concepts
 
+Deep research is usually just a JangYeongsil profile. Use a workflow-run
+artifact only when evaluating a reusable research tactic, worker backend, or
+promotion candidate. Ordinary deep research should return source-backed
+`known` / `inferred` / `unknown` evidence without creating a workflow-run by
+default. See [DEEP_RESEARCH.md](DEEP_RESEARCH.md).
+
 The contract does not call Claude CLI, Claude API, or an external Claude
 workflow runtime. It records a Codex-native, host-native, TeamExecutor, manual
 shadow, or approved mock run so Sejong can decide whether the result is good

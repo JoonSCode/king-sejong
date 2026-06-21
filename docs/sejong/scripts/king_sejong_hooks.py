@@ -15,7 +15,7 @@ from continuity_capsule import FORMAT as CONTINUITY_CAPSULE_FORMAT
 from continuity_capsule import capsule_failures, capsule_projection
 from seungjeongwon_run import checkpoint_failures, checkpoint_payload
 from seungjeongwon_run import RUN_FORMAT as SEUNGJEONGWON_RUN_FORMAT
-from seungjeongwon_run import open_todos as seungjeongwon_open_todos
+from seungjeongwon_run import format_run_summary as seungjeongwon_format_run_summary
 from seungjeongwon_run import run_failures as seungjeongwon_run_failures
 
 
@@ -706,8 +706,7 @@ def active_seungjeongwon_run_summaries(context: dict[str, Any]) -> list[str]:
     summaries: list[str] = []
     for run in runs:
         if run.get("status") == "active":
-            open_count = len(seungjeongwon_open_todos(run))
-            summaries.append(f"{run.get('run_id')} open_todos={open_count}")
+            summaries.append(seungjeongwon_format_run_summary(run))
     return summaries
 
 

@@ -6,7 +6,7 @@ usage() {
   cat <<'EOF'
 Usage:
   scripts/install-sejong.sh [--scope repo|user] [--force] [--dry-run] [--legacy-direct-hooks] [--codex-guidance default|none|print|user] [target-repo]
-  scripts/install-sejong.sh --verify [--scope repo|user] [target-repo]
+  scripts/install-sejong.sh --verify [--scope repo|user] [--codex-guidance default|none|user] [target-repo]
   scripts/install-sejong.sh --check-updates
   scripts/install-sejong.sh --auto-update [--scope repo|user] [target-repo]
   scripts/install-sejong.sh --print-codex-guidance
@@ -182,8 +182,8 @@ if [[ "$UPDATE_CHECK" -eq 1 && "$VERIFY_ONLY" -eq 1 ]]; then
   exit 1
 fi
 
-if [[ "$VERIFY_ONLY" -eq 1 && "$CODEX_GUIDANCE_EXPLICIT" -eq 1 ]]; then
-  echo "--codex-guidance cannot be combined with --verify" >&2
+if [[ "$VERIFY_ONLY" -eq 1 && "$CODEX_GUIDANCE" == "print" ]]; then
+  echo "--codex-guidance print cannot be combined with --verify" >&2
   exit 1
 fi
 

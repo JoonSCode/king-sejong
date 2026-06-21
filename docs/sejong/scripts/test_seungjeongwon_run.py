@@ -132,6 +132,43 @@ class SeungjeongwonRunTests(unittest.TestCase):
             self.assertEqual(data["provenance"]["host"], "codex")
             self.assertIn("score_delta=0.28", data["provenance"]["verification_refs"])
 
+    def test_summary_surfaces_current_todo_and_next_action(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "summary-run.json"
+            start = run_command(
+                [
+                    "start",
+                    "--path",
+                    str(run_path),
+                    "--run-id",
+                    "run-summary",
+                    "--repo-root",
+                    ".",
+                    "--goal",
+                    "Make continuation state visible.",
+                    "--success-criterion",
+                    "The next action is clear.",
+                    "--verification-method",
+                    "Inspect summary.",
+                    "--todo",
+                    "T1|Implement HUD summary|Summary names the next todo|summary command",
+                ]
+            )
+            self.assertEqual(start.returncode, 0, start.stderr)
+
+            summary = run_command(["summary", "--path", str(run_path)])
+            self.assertEqual(summary.returncode, 0, summary.stderr)
+            self.assertIn("run-summary open_todos=1", summary.stdout)
+            self.assertIn("current_todo=T1", summary.stdout)
+            self.assertIn("next_action=continue_todo:T1", summary.stdout)
+
+            summary_json = run_command(["summary", "--path", str(run_path), "--json"])
+            self.assertEqual(summary_json.returncode, 0, summary_json.stderr)
+            payload = json.loads(summary_json.stdout)
+            self.assertEqual(payload["format"], "sejong.seungjeongwon-run-summary/v0.1-draft")
+            self.assertEqual(payload["current_todo_id"], "T1")
+            self.assertEqual(payload["next_action"], "continue_todo:T1")
+
     def test_check_rejects_completed_run_without_verification_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             run_path = Path(tmp) / "bad-run.json"

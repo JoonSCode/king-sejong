@@ -230,6 +230,12 @@ command = 'python3 "/duplicate/king_sejong_hooks.py" Stop'
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertFalse((codex_home / "AGENTS.md").exists())
 
+            verify = run_installer(
+                ["--scope", "user", "--verify", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(verify.returncode, 0, verify.stderr)
+
     def test_invalid_codex_guidance_mode_fails(self) -> None:
         result = run_installer(["--codex-guidance", "sideways"])
         self.assertNotEqual(result.returncode, 0)

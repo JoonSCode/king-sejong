@@ -86,6 +86,17 @@ Separate evidence into:
 7. Verify with `git diff --check` and any repo-specific instruction validation
    that exists.
 
+For a read-only first pass, use:
+
+```bash
+python3 docs/sejong/scripts/repo_context_candidate.py \
+  --repo-root . \
+  --lesson "Preserve release validation commands in maintainer guidance."
+```
+
+The helper emits a candidate block and rejected lesson inventory. It does not
+write `AGENTS.md`; the Sejong lead still owns the final diff and approval gate.
+
 For substantial changes to King Sejong's own repo-context behavior, follow the
 material self-modification route:
 

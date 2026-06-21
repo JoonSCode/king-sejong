@@ -142,6 +142,75 @@ def open_todos(data: dict[str, Any]) -> list[dict[str, Any]]:
     return [todo for todo in data.get("todos") or [] if todo.get("status") in OPEN_TODO_STATUSES]
 
 
+def current_todo(data: dict[str, Any]) -> dict[str, Any] | None:
+    open_items = open_todos(data)
+    for todo in open_items:
+        if todo.get("status") == "in_progress":
+            return todo
+    return open_items[0] if open_items else None
+
+
+def run_summary(data: dict[str, Any]) -> dict[str, Any]:
+    active_todo = current_todo(data) or {}
+    attempts = data.get("attempt_ledger") or []
+    last_attempt = attempts[-1] if attempts else {}
+    verification_refs = data.get("verification_evidence") or []
+    blockers = data.get("blockers") or []
+    uigwe_reentry_requests = data.get("uigwe_reentry_requests") or []
+    open_count = len(open_todos(data))
+    status = data.get("status")
+    current_todo_id = active_todo.get("todo_id")
+
+    if status == "completed":
+        next_action = "no_action_completed"
+    elif blockers:
+        next_action = "resolve_blocker_or_reenter_uigwe"
+    elif status == "blocked":
+        next_action = "resolve_blocker_or_reenter_uigwe"
+    elif status == "active" and current_todo_id:
+        next_action = f"continue_todo:{current_todo_id}"
+    elif status == "active" and verification_refs:
+        next_action = "complete_or_block_run"
+    elif status == "active":
+        next_action = "add_actionable_todo_or_record_blocker"
+    else:
+        next_action = "inspect_run_status"
+
+    return {
+        "format": "sejong.seungjeongwon-run-summary/v0.1-draft",
+        "run_id": data.get("run_id"),
+        "status": status,
+        "goal": data.get("goal"),
+        "open_todo_count": open_count,
+        "current_todo_id": current_todo_id,
+        "current_todo_description": active_todo.get("description"),
+        "attempt_count": len(attempts),
+        "last_attempt_id": last_attempt.get("attempt_id"),
+        "last_attempt_result": last_attempt.get("result"),
+        "last_attempt_next_decision": last_attempt.get("next_decision"),
+        "verification_evidence_count": len(verification_refs),
+        "last_verification_ref": verification_refs[-1] if verification_refs else None,
+        "blocker_count": len(blockers),
+        "uigwe_reentry_request_count": len(uigwe_reentry_requests),
+        "next_action": next_action,
+    }
+
+
+def format_run_summary(data: dict[str, Any]) -> str:
+    summary = run_summary(data)
+    current_todo_id = summary.get("current_todo_id") or "none"
+    last_attempt_id = summary.get("last_attempt_id") or "none"
+    return (
+        f"{summary.get('run_id')} "
+        f"open_todos={summary.get('open_todo_count')} "
+        f"status={summary.get('status')} "
+        f"current_todo={current_todo_id} "
+        f"blockers={summary.get('blocker_count')} "
+        f"last_attempt={last_attempt_id} "
+        f"next_action={summary.get('next_action')}"
+    )
+
+
 def todo_by_id(data: dict[str, Any], todo_id: str) -> dict[str, Any] | None:
     for todo in data.get("todos") or []:
         if todo.get("todo_id") == todo_id:
@@ -539,6 +608,18 @@ def check(args: argparse.Namespace) -> int:
     return 0
 
 
+def summary(args: argparse.Namespace) -> int:
+    data = load_json(Path(args.path))
+    failures = run_failures(data)
+    if failures:
+        return emit_failures(failures)
+    if args.json:
+        print(json.dumps(run_summary(data), indent=2, sort_keys=True))
+        return 0
+    print(format_run_summary(data))
+    return 0
+
+
 def record_attempt(args: argparse.Namespace) -> int:
     path = Path(args.path)
     data = load_json(path)
@@ -705,6 +786,11 @@ def build_parser() -> argparse.ArgumentParser:
     check_parser = subparsers.add_parser("check", help="Validate a Seungjeongwon run artifact.")
     check_parser.add_argument("--path", required=True)
     check_parser.set_defaults(func=check)
+
+    summary_parser = subparsers.add_parser("summary", help="Print the current run HUD summary.")
+    summary_parser.add_argument("--path", required=True)
+    summary_parser.add_argument("--json", action="store_true")
+    summary_parser.set_defaults(func=summary)
 
     attempt_parser = subparsers.add_parser("record-attempt", help="Append an execution attempt.")
     attempt_parser.add_argument("--path", required=True)

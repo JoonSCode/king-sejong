@@ -18,7 +18,9 @@ Use it when a request starts vague, touches several files or decisions, or needs
 - Keep research, discussion, planning, execution, and verification connected across follow-up turns.
 - Use Uigwe only when a durable planning bundle is worth the overhead.
 - Hand approved work to Seungjeongwon for execution, verification, retry, and evidence.
+- Run deep, multi-axis JangYeongsil research when ordinary single-pass evidence is too thin.
 - Make large or parallel attempts auditable with discipline gates, outcome checks, and workflow-run evidence instead of treating worker agreement as proof.
+- Check local install, dependency, hook, and active-context health with a read-only doctor.
 - Keep temporary research, planning, runtime, and evidence artifacts outside the target repository unless the user explicitly promotes them, then compact and prune them by policy.
 - Install once per repo or once into `${CODEX_HOME:-~/.codex}/skills` for workspace-wide Codex use.
 
@@ -27,6 +29,7 @@ Use it when a request starts vague, touches several files or decisions, or needs
 | If the work needs... | Start with... | What happens |
 | --- | --- | --- |
 | Evidence before deciding | `$sejong` or `$jangyeongsil` | Facts, inferences, unknowns, and the next decision are separated. |
+| Deep source-backed research | `$sejong` or `$jangyeongsil` | Independent research axes fan in to known, inferred, unknown, contradictions, and next surface. |
 | A recommendation between real options | `$sejong` or `$jiphyeonjeon` | Trade-offs, rejected paths, risks, and a next-surface recommendation are synthesized. |
 | A durable plan | `$sejong` or `$uigwe` | Uigwe produces planning artifacts and handoff leaves tied to success criteria. |
 | Implementation with proof | `$sejong` or `$seungjeongwon` | The executor decomposes the scope, makes changes, verifies them, and reports evidence. |
@@ -90,6 +93,7 @@ Then try one of these:
 
 ```text
 $sejong research this bug, choose the safest fix, implement it, and verify it
+$jangyeongsil deep research this migration and return known/inferred/unknown evidence
 $sejong compare these implementation options and turn the selected path into executable work
 $uigwe design-to-plan this approved feature brief
 ```
@@ -123,6 +127,18 @@ To check an existing install without copying files:
 bash scripts/install-sejong.sh --verify /path/to/your-repo
 ```
 
+To run a read-only local health check:
+
+```bash
+python3 docs/sejong/scripts/sejong_doctor.py
+```
+
+To draft a repo-context candidate without editing `AGENTS.md`:
+
+```bash
+python3 docs/sejong/scripts/repo_context_candidate.py --repo-root . --lesson "Preserve release validation commands in maintainer guidance."
+```
+
 To check whether your King Sejong source checkout has upstream updates:
 
 ```bash
@@ -147,6 +163,7 @@ bash scripts/install-sejong.sh --scope user --verify
 Set `CODEX_HOME` first if your Codex home is not `~/.codex`.
 
 Use `bash scripts/install-sejong.sh --scope user --codex-guidance none` to skip the managed `${CODEX_HOME:-~/.codex}/AGENTS.md` guidance block.
+Verify that opt-out install with `bash scripts/install-sejong.sh --scope user --verify --codex-guidance none`.
 
 Repo scope copies these managed paths into the target repository:
 
@@ -223,9 +240,12 @@ Sejong can finish work in two ways:
 What is included:
 
 - direct execution for clear implementation and verification work
+- deep-research profile for source-backed JangYeongsil investigations
 - recursive Uigwe decomposition that keeps selected leaves tied to the parent goal and verification criteria
 - `Seungjeongwon` native executor skill
 - Seungjeongwon execution contract
+- Seungjeongwon run HUD summaries for continuation and compaction-sensitive work
+- read-only doctor for local install, dependency, hook, and active-context checks
 - Why Gate rationale checkpoints for reviews, planning choices, retrospectives, and self-audits
 - repo-context `AGENTS.md` init/refresh contract with candidate diffs
 - runtime contracts, discipline gates, workflow-run evidence, and outcome-quality validation helpers

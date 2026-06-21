@@ -65,13 +65,16 @@ For normal use:
 9. Read [HOOKS.md](HOOKS.md) if you want deterministic Codex lifecycle guardrails.
 10. Read [SECURITY.md](SECURITY.md) and [SILLOK_TRACE.md](SILLOK_TRACE.md) if a workflow mixes private data, untrusted content, external actions, or durable evidence records.
 11. Read [REPO_CONTEXT.md](REPO_CONTEXT.md) if you want guarded `AGENTS.md` init or refresh behavior.
-12. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
-13. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
-14. Read [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md) when live clarification needs a durable readiness and open-ambiguity record.
-15. Read [OUTCOME_EVALUATION.md](OUTCOME_EVALUATION.md) when behavior changes must prove better resulting artifacts, not only correct routing.
-16. Read [WORKFLOW_RUN.md](WORKFLOW_RUN.md) when evaluating dynamic workflow, deep-research, ultracode-style, or many-agent backend ideas without giving them Sejong authority.
-17. Read [APP_SCOPED_RUNTIME_STRATEGY.md](APP_SCOPED_RUNTIME_STRATEGY.md) when hardening repo-scoped active context, Seungjeongwon pre-edit receipts, or app-style outcome workflows.
-18. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
+12. Read [DEEP_RESEARCH.md](DEEP_RESEARCH.md) when JangYeongsil needs deep, multi-axis, source-backed research.
+13. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
+14. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
+15. Read [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md) when live clarification needs a durable readiness and open-ambiguity record.
+16. Read [OUTCOME_EVALUATION.md](OUTCOME_EVALUATION.md) when behavior changes must prove better resulting artifacts, not only correct routing.
+17. Read [WORKFLOW_RUN.md](WORKFLOW_RUN.md) when evaluating dynamic workflow, deep-research, ultracode-style, or many-agent backend ideas without giving them Sejong authority.
+18. Read [DOCTOR.md](DOCTOR.md) when checking local install, dependency, hook, and active-context health.
+19. Read [OPTIONAL_ADAPTERS.md](OPTIONAL_ADAPTERS.md) before adding code-intel, specialist, custom-agent, marketplace, or remote-install adapters.
+20. Read [APP_SCOPED_RUNTIME_STRATEGY.md](APP_SCOPED_RUNTIME_STRATEGY.md) when hardening repo-scoped active context, Seungjeongwon pre-edit receipts, or app-style outcome workflows.
+21. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
 
 ## Practical Usage
 
@@ -88,6 +91,7 @@ Use JangYeongsil or Jiphyeonjeon directly when you already know the needed court
 
 ```text
 $jangyeongsil inspect the repo history and separate known/inferred/unknown evidence
+$jangyeongsil deep research this API migration and return known/inferred/unknown evidence
 $jiphyeonjeon compare these options with advocate, critic, and risk-review lenses
 ```
 
@@ -104,6 +108,19 @@ When AI-only working context must survive compaction or session clearing, refere
 When long-run execution must survive compaction or unattended continuation, reference a Seungjeongwon run artifact from active context `artifact_refs`. The run follows [seungjeongwon-run.schema.json](seungjeongwon-run.schema.json) and records active todos, attempts, verification evidence, blockers, and Uigwe re-entry requests. `Stop` should not conclude while that run is active or invalid.
 
 Use Sejong repo-context init/refresh when a target repository needs an initial `AGENTS.md` or an existing instruction file should absorb durable lessons from recent work. That workflow is candidate-diff first: inspect the repo, deduplicate lessons, reject transient or unsafe material, and apply tracked instruction edits only after explicit user approval or an explicit apply instruction. See [REPO_CONTEXT.md](REPO_CONTEXT.md).
+
+Use the local doctor when the environment itself is uncertain:
+
+```bash
+python3 docs/sejong/scripts/sejong_doctor.py
+```
+
+Use the repo-context candidate helper when a durable lesson should be considered
+without immediately editing tracked instructions:
+
+```bash
+python3 docs/sejong/scripts/repo_context_candidate.py --repo-root . --lesson "Preserve release validation commands in maintainer guidance."
+```
 
 Court modes can also be helper calls inside another active mode. JangYeongsil can gather missing evidence for Sejong, Uigwe, or Jiphyeonjeon, then return `known` / `inferred` / `unknown` evidence to the calling mode. Jiphyeonjeon can provide decision support from Sejong, Uigwe, JangYeongsil, or Seungjeongwon whenever multiple perspectives would improve accuracy, then return a decision note and next-surface recommendation. These helper calls do not approve Uigwe gates, finalize packets, or replace lead synthesis.
 

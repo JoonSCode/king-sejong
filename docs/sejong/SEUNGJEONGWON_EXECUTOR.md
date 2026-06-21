@@ -69,6 +69,18 @@ The run artifact must also carry provenance: `created_by`, `source_repo`,
 can; otherwise `source_commit` is the explicit value `unknown`. Host, model, and
 skill-version fields are traceability metadata, not authority or approval.
 
+Use the run summary command to expose continuation state without reading the
+whole artifact:
+
+```bash
+python3 docs/sejong/scripts/seungjeongwon_run.py summary --path <seungjeongwon-run.json>
+python3 docs/sejong/scripts/seungjeongwon_run.py summary --path <seungjeongwon-run.json> --json
+```
+
+The summary is a HUD only. It shows open todo count, current todo, latest
+attempt, blocker count, and next action. It does not complete the run or approve
+any gate.
+
 Before compaction or handoff, create a derived durable checkpoint from that run
 artifact with `docs/sejong/scripts/seungjeongwon_run.py checkpoint`. The
 checkpoint follows [seungjeongwon-checkpoint.schema.json](seungjeongwon-checkpoint.schema.json)

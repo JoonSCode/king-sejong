@@ -1230,6 +1230,8 @@ class KingSejongHookTests(unittest.TestCase):
             )
         additional = output["hookSpecificOutput"]["additionalContext"]
         self.assertIn("active_seungjeongwon_runs=active-run open_todos=1", additional)
+        self.assertIn("current_todo=T1", additional)
+        self.assertIn("next_action=continue_todo:T1", additional)
 
     def test_couple_investment_replay_blocks_write_until_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
