@@ -56,6 +56,9 @@ WORKFLOW_RUN_STABILITY_BENCHMARK_PATH = SEJONG_ROOT / "scripts" / "benchmark_wor
 WORKFLOW_RUN_RISK_AUDIT_PATH = SEJONG_ROOT / "scripts" / "audit_workflow_run_risks.py"
 ORCHESTRATOR_HYPOTHESIS_MATRIX_PATH = SEJONG_ROOT / "scripts" / "benchmark_orchestrator_hypothesis_matrix.py"
 ORCHESTRATOR_HYPOTHESIS_MATRIX_TEST_PATH = SEJONG_ROOT / "scripts" / "test_orchestrator_hypothesis_matrix.py"
+UX_PROFILES_PATH = SEJONG_ROOT / "UX_PROFILES.md"
+UX_PROFILE_CONTRACT_PATH = SEJONG_ROOT / "scripts" / "ux_profile_contract.py"
+UX_PROFILE_CONTRACT_TEST_PATH = SEJONG_ROOT / "scripts" / "test_ux_profile_contract.py"
 
 UIGWE_SKILL_LINE_BUDGET = 320
 SEJONG_SKILL_LINE_BUDGET = 90
@@ -87,6 +90,7 @@ SCENARIO_IDS = (
     "instruction-decision-justification",
     "instruction-dynamic-workflow-adoption",
     "instruction-orchestrator-hypothesis-matrix",
+    "instruction-ux-profile-boundaries",
     "instruction-compression-budget",
 )
 
@@ -105,6 +109,7 @@ REQUIRED_GUARDRAIL_SCENARIOS = {
     "instruction-decision-justification",
     "instruction-dynamic-workflow-adoption",
     "instruction-orchestrator-hypothesis-matrix",
+    "instruction-ux-profile-boundaries",
 }
 
 
@@ -1004,6 +1009,66 @@ def evaluate_orchestrator_hypothesis_matrix() -> list[dict[str, Any]]:
     ]
 
 
+def evaluate_ux_profile_boundaries() -> list[dict[str, Any]]:
+    router = load_text(ROUTER_PATH)
+    protocol = load_text(PROTOCOL_PATH)
+    adapters = load_text(SEJONG_ROOT / "OPTIONAL_ADAPTERS.md")
+    profiles = load_text(UX_PROFILES_PATH)
+    deep_research = load_text(SEJONG_ROOT / "DEEP_RESEARCH.md")
+    contract = load_text(UX_PROFILE_CONTRACT_PATH)
+    tests = load_text(UX_PROFILE_CONTRACT_TEST_PATH)
+    readme = load_text(README_PATH)
+    combined = "\n".join(
+        [
+            router,
+            protocol,
+            adapters,
+            profiles,
+            deep_research,
+            contract,
+            tests,
+            str(UX_PROFILE_CONTRACT_PATH),
+            str(UX_PROFILE_CONTRACT_TEST_PATH),
+            readme,
+        ]
+    )
+    required = [
+        "UX Profiles",
+        "compact/default",
+        "expanded/detail",
+        "bounded-specialist-evidence",
+        "not Sejong surfaces",
+        "not court modes",
+        "presentation and helper-selection overlays",
+        "must not change route authority",
+        "approve Uigwe gates",
+        "claim Seungjeongwon completion",
+        "owner_surface",
+        "next_surface",
+        "claim_type",
+        "forbidden_claims",
+        "no_gate_approval",
+        "no_execution_approval",
+        "no_completion_claim",
+        "ux_profile_contract.py",
+        "test_ux_profile_contract.py",
+        "profile output cannot claim completion",
+        "forbidden authority term",
+        "Deep research uses the",
+        "Profile output cannot carry authority_claims".lower(),
+    ]
+    lower_combined = combined.casefold()
+    missing = [value for value in required if value.casefold() not in lower_combined]
+    return [
+        check(
+            "ux_profile_boundary_contract_present",
+            not missing,
+            "LazyCodex-style default/detail/specialist behavior remains a UX profile and evidence-helper layer, not a new authority surface.",
+            missing=missing,
+        )
+    ]
+
+
 def evaluate_compression() -> list[dict[str, Any]]:
     uigwe_lines = line_count(UIGWE_SKILL_PATH)
     sejong_lines = line_count(SEJONG_SKILL_PATH)
@@ -1065,6 +1130,7 @@ EVALUATORS: dict[str, Callable[[], list[dict[str, Any]]]] = {
     "instruction-decision-justification": evaluate_decision_justification,
     "instruction-dynamic-workflow-adoption": evaluate_dynamic_workflow_adoption,
     "instruction-orchestrator-hypothesis-matrix": evaluate_orchestrator_hypothesis_matrix,
+    "instruction-ux-profile-boundaries": evaluate_ux_profile_boundaries,
     "instruction-compression-budget": evaluate_compression,
 }
 
@@ -1117,6 +1183,18 @@ def expectation_text_for_scenario(scenario_id: str) -> str:
                 load_text(SEJONG_ROOT / "WORKFLOW_RUN.md"),
                 load_text(ORCHESTRATOR_HYPOTHESIS_MATRIX_PATH),
                 load_text(ORCHESTRATOR_HYPOTHESIS_MATRIX_TEST_PATH),
+            ]
+        )
+    if scenario_id == "instruction-ux-profile-boundaries":
+        return "\n".join(
+            [
+                load_text(UX_PROFILES_PATH),
+                load_text(ROUTER_PATH),
+                load_text(PROTOCOL_PATH),
+                load_text(SEJONG_ROOT / "OPTIONAL_ADAPTERS.md"),
+                load_text(SEJONG_ROOT / "DEEP_RESEARCH.md"),
+                load_text(UX_PROFILE_CONTRACT_PATH),
+                load_text(UX_PROFILE_CONTRACT_TEST_PATH),
             ]
         )
     if scenario_id == "instruction-long-session-outcome-entry":

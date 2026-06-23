@@ -66,15 +66,16 @@ For normal use:
 10. Read [SECURITY.md](SECURITY.md) and [SILLOK_TRACE.md](SILLOK_TRACE.md) if a workflow mixes private data, untrusted content, external actions, or durable evidence records.
 11. Read [REPO_CONTEXT.md](REPO_CONTEXT.md) if you want guarded `AGENTS.md` init or refresh behavior.
 12. Read [DEEP_RESEARCH.md](DEEP_RESEARCH.md) when JangYeongsil needs deep, multi-axis, source-backed research.
-13. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
-14. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
-15. Read [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md) when live clarification needs a durable readiness and open-ambiguity record.
-16. Read [OUTCOME_EVALUATION.md](OUTCOME_EVALUATION.md) when behavior changes must prove better resulting artifacts, not only correct routing.
-17. Read [WORKFLOW_RUN.md](WORKFLOW_RUN.md) when evaluating dynamic workflow, deep-research, ultracode-style, or many-agent backend ideas without giving them Sejong authority.
-18. Read [DOCTOR.md](DOCTOR.md) when checking local install, dependency, hook, and active-context health.
-19. Read [OPTIONAL_ADAPTERS.md](OPTIONAL_ADAPTERS.md) before adding code-intel, specialist, custom-agent, marketplace, or remote-install adapters.
-20. Read [APP_SCOPED_RUNTIME_STRATEGY.md](APP_SCOPED_RUNTIME_STRATEGY.md) when hardening repo-scoped active context, Seungjeongwon pre-edit receipts, or app-style outcome workflows.
-21. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
+13. Read [UX_PROFILES.md](UX_PROFILES.md) when adding default/detail/specialist presentation profiles.
+14. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
+15. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
+16. Read [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md) when live clarification needs a durable readiness and open-ambiguity record.
+17. Read [OUTCOME_EVALUATION.md](OUTCOME_EVALUATION.md) when behavior changes must prove better resulting artifacts, not only correct routing.
+18. Read [WORKFLOW_RUN.md](WORKFLOW_RUN.md) when evaluating dynamic workflow, deep-research, ultracode-style, or many-agent backend ideas without giving them Sejong authority.
+19. Read [DOCTOR.md](DOCTOR.md) when checking local install, dependency, hook, and active-context health.
+20. Read [OPTIONAL_ADAPTERS.md](OPTIONAL_ADAPTERS.md) before adding code-intel, specialist, custom-agent, marketplace, or remote-install adapters.
+21. Read [APP_SCOPED_RUNTIME_STRATEGY.md](APP_SCOPED_RUNTIME_STRATEGY.md) when hardening repo-scoped active context, Seungjeongwon pre-edit receipts, or app-style outcome workflows.
+22. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
 
 ## Practical Usage
 

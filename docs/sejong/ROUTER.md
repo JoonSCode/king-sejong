@@ -43,6 +43,13 @@ Use `King Sejong` when referring to the total orchestration system: Sejong lead 
 
 Uigwe is the whole formal planning surface. It has entry modes such as `full`, `design-to-plan`, and `decompose-only`, but the Sejong surface name remains `uigwe`.
 
+LazyCodex-style UX profiles such as `compact/default`, `expanded/detail`, and
+`bounded-specialist-evidence` are not Sejong surfaces. They are presentation and
+helper-selection overlays described in [UX_PROFILES.md](UX_PROFILES.md).
+Profiles may change how much evidence is shown or whether a bounded specialist
+lane is used, but they must not change route authority, approve Uigwe gates,
+claim Seungjeongwon completion, or create a parallel planning surface.
+
 ## Boundary Rules
 
 The three pre-execution surfaces are intentionally different:
@@ -105,6 +112,11 @@ Use `JangYeongsil` before Uigwe when evidence is missing. Use `Jiphyeonjeon` bef
 `Sejong direct` is only for small exact tasks that do not need a durable plan: one-command checks, simple explanations, narrow non-behavioral typo or link fixes, deterministic regeneration already covered by an approved contract, or obvious mechanical corrections. Do not classify a goal-bearing implementation request as `Sejong direct` merely because it is phrased clearly.
 
 When in doubt, ask the smallest missing clarification needed to decide whether the user wants advice-only/research-only or goal completion. If the answer is goal completion, enter Uigwe.
+
+When a user asks for a default/detail/specialist experience, treat that wording
+as a UX profile request, not a routing override. Sejong still decides whether
+the real route is direct action, JangYeongsil, Jiphyeonjeon, Uigwe, or
+Seungjeongwon from evidence, ambiguity, risk, and completion requirements.
 
 ## Long-Session Outcome Entry
 

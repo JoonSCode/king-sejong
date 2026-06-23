@@ -3,13 +3,13 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-06-21T04:22:33Z",
+    "generated_at": "2026-06-21T08:06:31Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
   "aggregate": {
-    "scenario_count": 26,
-    "pass_count": 26,
+    "scenario_count": 27,
+    "pass_count": 27,
     "partial_count": 0,
     "fail_count": 0,
     "average_score": 1.0,
@@ -624,6 +624,38 @@
           "id": "guardrail_hypothesis_adopted_tactics",
           "passed": true,
           "detail": "Typed guardrail expectation hypothesis_adopted_tactics is represented in the instruction surface."
+        }
+      ],
+      "blockers": [],
+      "notes": [
+        "Deterministic instruction-surface guardrail check."
+      ]
+    },
+    {
+      "scenario_id": "instruction-ux-profile-boundaries",
+      "title": "LazyCodex-style UX profiles stay below Sejong authority",
+      "status": "pass",
+      "score": 1.0,
+      "checks": [
+        {
+          "id": "ux_profile_boundary_contract_present",
+          "passed": true,
+          "detail": "LazyCodex-style default/detail/specialist behavior remains a UX profile and evidence-helper layer, not a new authority surface."
+        },
+        {
+          "id": "guardrail_profile_names",
+          "passed": true,
+          "detail": "Typed guardrail expectation profile_names is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_authority_boundaries",
+          "passed": true,
+          "detail": "Typed guardrail expectation authority_boundaries is represented in the instruction surface."
+        },
+        {
+          "id": "guardrail_profile_output_contract",
+          "passed": true,
+          "detail": "Typed guardrail expectation profile_output_contract is represented in the instruction surface."
         }
       ],
       "blockers": [],

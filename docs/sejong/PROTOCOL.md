@@ -42,6 +42,13 @@ Entry is not chosen only by user preference. It is gated by input readiness.
 
 If the input does not satisfy the required contract for a later stage, Uigwe automatically re-enters the earlier stage needed to restore planning quality.
 
+UX profiles such as `compact/default`, `expanded/detail`, and
+`bounded-specialist-evidence` do not change Uigwe entry mode or readiness
+requirements. They can change how much of the planning reasoning is shown to
+the user, or whether Uigwe calls a bounded helper, but they cannot replace
+`deep-interview`, `brainstorming`, `decomposition`, approval gates, or canonical
+Uigwe artifacts. See [UX_PROFILES.md](UX_PROFILES.md).
+
 ## Live Session Contract
 
 In a live user session, Uigwe must behave as an interactive protocol rather than a one-shot bundle generator.
@@ -110,6 +117,11 @@ For material planning or design decisions, Uigwe must make the decision boundary
 - 2-3 credible options when a choice materially changes scope, architecture, validation, cost, or risk
 - the recommended option with trade-offs, rejected alternatives, and a free-response path
 - success criteria, verification plan, and re-entry triggers
+
+When a UX profile or specialist adapter contributes evidence, Uigwe should name
+the adapter output's `owner_surface`, `next_surface`, forbidden claims, and
+whether the output is evidence, diagnostics, status, presentation, or handoff
+input. Uigwe must not treat that output as gate approval or final synthesis.
 
 Material choices also follow the `Decision Justification` gate in
 [DISCIPLINE_GATES.md](DISCIPLINE_GATES.md): the selected option, serious

@@ -13,6 +13,11 @@ strategy, or a decision that needs several independent evidence lanes.
 It is not a new court mode. It does not approve Uigwe gates, choose final
 strategy by worker vote, or replace Sejong lead synthesis.
 
+When exposed as a user-facing specialist UX, deep research uses the
+`bounded-specialist-evidence` profile from [UX_PROFILES.md](UX_PROFILES.md).
+That profile changes evidence depth and presentation only; it does not change
+authority.
+
 ## Activation
 
 Activate this profile only when one of these is true:

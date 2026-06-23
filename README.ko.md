@@ -23,6 +23,7 @@ King Sejong은 **Codex**가 "분석"에서 멈추지 않고, 사용자가 바란
 - 한 번 살핌으로는 얕은 일은 장영실 deep research로 여러 증거 축을 모읍니다.
 - 큰 병렬 작업이나 workflow 실험은 worker 동의가 아니라 discipline gate, outcome check, workflow-run 증거로 살핍니다.
 - 설치, 의존성, hook, 활성 맥락은 읽기 전용 doctor로 점검합니다.
+- 기본/상세/specialist UX는 새 실행 mode가 아니라 Sejong 권한 위의 profile로 둡니다.
 - 조사, 기획, 실행 중 기록, 증거 산출물은 기본으로 대상 저장소 밖에 두고, 사용자가 명시할 때만 git에 남기며, 끝난 뒤에는 정책대로 작게 접고 정리합니다.
 - 저장소마다 들이거나 `${CODEX_HOME:-~/.codex}/skills`에 한 번 들여 여러 workspace에서 함께 쓸 수 있사옵니다.
 

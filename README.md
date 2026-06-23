@@ -21,6 +21,7 @@ Use it when a request starts vague, touches several files or decisions, or needs
 - Run deep, multi-axis JangYeongsil research when ordinary single-pass evidence is too thin.
 - Make large or parallel attempts auditable with discipline gates, outcome checks, and workflow-run evidence instead of treating worker agreement as proof.
 - Check local install, dependency, hook, and active-context health with a read-only doctor.
+- Keep default/detail/specialist UX as profiles over Sejong authority, not new planning or execution modes.
 - Keep temporary research, planning, runtime, and evidence artifacts outside the target repository unless the user explicitly promotes them, then compact and prune them by policy.
 - Install once per repo or once into `${CODEX_HOME:-~/.codex}/skills` for workspace-wide Codex use.
 
@@ -241,6 +242,7 @@ What is included:
 
 - direct execution for clear implementation and verification work
 - deep-research profile for source-backed JangYeongsil investigations
+- UX profile contract for compact/default, expanded/detail, and bounded specialist evidence behavior
 - recursive Uigwe decomposition that keeps selected leaves tied to the parent goal and verification criteria
 - `Seungjeongwon` native executor skill
 - Seungjeongwon execution contract

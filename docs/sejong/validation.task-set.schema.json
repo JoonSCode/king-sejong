@@ -234,6 +234,15 @@
         },
         "hypothesis_adopted_tactics": {
           "$ref": "#/$defs/StringList"
+        },
+        "profile_names": {
+          "$ref": "#/$defs/StringList"
+        },
+        "authority_boundaries": {
+          "$ref": "#/$defs/StringList"
+        },
+        "profile_output_contract": {
+          "$ref": "#/$defs/StringList"
         }
       }
     },

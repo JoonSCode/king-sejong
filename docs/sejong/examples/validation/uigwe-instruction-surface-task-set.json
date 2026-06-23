@@ -1004,6 +1004,63 @@
       }
     },
     {
+      "id": "instruction-ux-profile-boundaries",
+      "title": "LazyCodex-style UX profiles stay below Sejong authority",
+      "profile": "instruction",
+      "input_shape": "instruction-surface check",
+      "prompt": "Check that default/detail/specialist UX is a presentation and helper-selection layer, not a new court mode or approval path.",
+      "expected_mode": "none",
+      "expected_artifacts": [
+        "docs/sejong/UX_PROFILES.md",
+        "docs/sejong/ROUTER.md",
+        "docs/sejong/PROTOCOL.md",
+        "docs/sejong/OPTIONAL_ADAPTERS.md",
+        "docs/sejong/scripts/ux_profile_contract.py",
+        "docs/sejong/scripts/test_ux_profile_contract.py"
+      ],
+      "expected_behavior": [
+        "compact/default, expanded/detail, and bounded-specialist-evidence are UX profiles rather than Sejong court surfaces",
+        "profiles can affect presentation, evidence depth, and helper selection without changing route authority",
+        "specialist and adapter outputs must name owner_surface, next_surface, claim_type, and forbidden_claims",
+        "profile outputs must forbid gate approval, execution approval, and completion claims",
+        "Uigwe entry and readiness gates remain governed by Uigwe, not by detail profile selection",
+        "Seungjeongwon completion remains governed by verification evidence and completion guardrails"
+      ],
+      "forbidden_behavior": [
+        "creating a new default/detail/specialist court surface",
+        "letting a specialist profile approve or waive Uigwe gates",
+        "letting a profile claim final completion or final verification",
+        "letting detail mode create competing Uigwe artifacts",
+        "treating doctor or deep research output as execution approval"
+      ],
+      "grading_notes": [
+        "This scenario is scored by benchmark_instruction_surface.py and test_ux_profile_contract.py."
+      ],
+      "guardrail_expectations": {
+        "profile_names": [
+          "compact/default",
+          "expanded/detail",
+          "bounded-specialist-evidence"
+        ],
+        "authority_boundaries": [
+          "not Sejong surfaces",
+          "not court modes",
+          "must not change route authority",
+          "approve Uigwe gates",
+          "claim Seungjeongwon completion"
+        ],
+        "profile_output_contract": [
+          "owner_surface",
+          "next_surface",
+          "claim_type",
+          "forbidden_claims",
+          "no_gate_approval",
+          "no_execution_approval",
+          "no_completion_claim"
+        ]
+      }
+    },
+    {
       "id": "instruction-compression-budget",
       "title": "Skill files stay small enough to load",
       "profile": "instruction",

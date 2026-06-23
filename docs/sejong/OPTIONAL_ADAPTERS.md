@@ -11,6 +11,10 @@ but they must not become hidden runtime dependencies or alternate authorities.
 Use this document when adding LazyCodex-style product surfaces without copying
 LazyCodex's state model or permission model.
 
+For user-facing default/detail/specialist behavior, use the UX profile contract
+in [UX_PROFILES.md](UX_PROFILES.md). Profiles are presentation and helper
+selection overlays, not court modes.
+
 ## Adapter Rules
 
 All optional adapters must follow these rules:
@@ -24,6 +28,16 @@ All optional adapters must follow these rules:
 - Uigwe owns planning approval
 - Seungjeongwon owns execution completion and verification evidence
 - uninstall, repair, and update actions require explicit user intent
+
+Every adapter output that claims a UX profile must include `owner_surface`,
+`next_surface`, `claim_type`, `known`, `inferred`, `unknown`, and
+`forbidden_claims`. Required forbidden claims are `no_gate_approval`,
+`no_execution_approval`, and `no_completion_claim`. Validate profile-like output
+with:
+
+```bash
+python3 docs/sejong/scripts/ux_profile_contract.py <profile-output.json>
+```
 
 ## Codex Agent Roles
 
@@ -69,6 +83,7 @@ must declare:
 - verification expectation
 - stop condition
 - forbidden claims
+- owner surface and next surface
 
 ## Marketplace And Remote Install
 
