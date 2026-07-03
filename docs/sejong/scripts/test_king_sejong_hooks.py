@@ -17,8 +17,16 @@ HOOK_SCRIPT = SEJONG_ROOT / "scripts" / "king_sejong_hooks.py"
 CONTEXT_PATH = SEJONG_ROOT / "examples" / "king-sejong-context.example.json"
 
 
-def run_hook(event_name: str, payload: dict, context_path: Path = CONTEXT_PATH, *, sejong_home: Path | None = None) -> dict:
-    env = os.environ if sejong_home is None else {**os.environ, "SEJONG_HOME": str(sejong_home)}
+def run_hook(
+    event_name: str,
+    payload: dict,
+    context_path: Path = CONTEXT_PATH,
+    *,
+    sejong_home: Path | None = None,
+) -> dict:
+    env = os.environ.copy()
+    if sejong_home is not None:
+        env["SEJONG_HOME"] = str(sejong_home)
     result = subprocess.run(
         [sys.executable, str(HOOK_SCRIPT), event_name, "--context", str(context_path)],
         input=json.dumps(payload),
@@ -41,6 +49,21 @@ def run_hook_without_context(event_name: str, payload: dict, *, sejong_home: Pat
         capture_output=True,
         cwd=str(REPO_ROOT),
         env={**os.environ, "SEJONG_HOME": str(sejong_home)},
+    )
+    if result.returncode != 0:
+        raise AssertionError(f"hook failed: {result.stderr or result.stdout}")
+    output = result.stdout.strip()
+    return json.loads(output) if output else {}
+
+
+def run_hook_with_env_context(event_name: str, payload: dict, *, sejong_home: Path, context_path: Path) -> dict:
+    result = subprocess.run(
+        [sys.executable, str(HOOK_SCRIPT), event_name],
+        input=json.dumps(payload),
+        text=True,
+        capture_output=True,
+        cwd=str(REPO_ROOT),
+        env={**os.environ, "SEJONG_HOME": str(sejong_home), "SEJONG_ACTIVE_CONTEXT": str(context_path)},
     )
     if result.returncode != 0:
         raise AssertionError(f"hook failed: {result.stderr or result.stdout}")
@@ -1228,6 +1251,91 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertEqual(checkpoint["provenance"]["created_by"], "seungjeongwon")
         self.assertIn(str(run_path.resolve()), checkpoint["provenance"]["input_refs"])
 
+    def test_precompact_allows_missing_implicit_active_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            output = run_hook_without_context(
+                "PreCompact",
+                {"hook_event_name": "PreCompact", "trigger": "auto", "cwd": str(REPO_ROOT)},
+                sejong_home=Path(tmp),
+            )
+        self.assertEqual(output, {})
+
+    def test_precompact_blocks_malformed_implicit_active_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            active_context_path = sejong_home / "state" / "active-context.json"
+            active_context_path.parent.mkdir(parents=True)
+            active_context_path.write_text("{not-json", encoding="utf-8")
+
+            output = run_hook_without_context(
+                "PreCompact",
+                {"hook_event_name": "PreCompact", "trigger": "auto", "cwd": str(REPO_ROOT)},
+                sejong_home=sejong_home,
+            )
+        self.assertFalse(output["continue"])
+        self.assertIn("active context checkpoint could not be loaded", output["stopReason"])
+
+    def test_precompact_blocks_non_object_implicit_active_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            active_context_path = sejong_home / "state" / "active-context.json"
+            active_context_path.parent.mkdir(parents=True)
+            active_context_path.write_text("[]", encoding="utf-8")
+
+            output = run_hook_without_context(
+                "PreCompact",
+                {"hook_event_name": "PreCompact", "trigger": "auto", "cwd": str(REPO_ROOT)},
+                sejong_home=sejong_home,
+            )
+        self.assertFalse(output["continue"])
+        self.assertIn("context JSON must be an object", output["stopReason"])
+
+    def test_precompact_ignores_mismatched_implicit_active_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            active_context_path = sejong_home / "state" / "active-context.json"
+            active_context_path.parent.mkdir(parents=True)
+
+            sibling_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            sibling_context["active_context_id"] = "ctx-sibling"
+            sibling_context["repo_root"] = str(REPO_ROOT / "sibling-repo")
+            sibling_context["pending_gates"] = ["uigwe_promotion_required"]
+            active_context_path.write_text(json.dumps(sibling_context), encoding="utf-8")
+
+            output = run_hook_without_context(
+                "PreCompact",
+                {"hook_event_name": "PreCompact", "trigger": "auto", "cwd": str(REPO_ROOT)},
+                sejong_home=sejong_home,
+            )
+        self.assertEqual(output, {})
+
+    def test_precompact_uses_matching_repo_context_without_active_pointer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            run_path = sejong_home / "runs" / "repo-test" / "context-run" / "seungjeongwon-run.json"
+            run_path.parent.mkdir(parents=True)
+            run_data = seungjeongwon_run_fixture(status="active", todo_status="in_progress")
+            run_data["repo_root"] = str(REPO_ROOT)
+            run_path.write_text(json.dumps(run_data), encoding="utf-8")
+
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["repo_id"] = "repo-test"
+            context["run_id"] = "context-run"
+            context["active_context_id"] = "ctx-repo-continuation"
+            context["repo_root"] = str(REPO_ROOT)
+            context["artifact_refs"] = [str(run_path)]
+            context_path = run_path.parent / "king-sejong-context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook_without_context(
+                "PreCompact",
+                {"hook_event_name": "PreCompact", "trigger": "auto", "cwd": str(REPO_ROOT)},
+                sejong_home=sejong_home,
+            )
+        additional = output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("active_context_id=ctx-repo-continuation", additional)
+        self.assertIn("seungjeongwon_checkpoints_created", additional)
+
     def test_precompact_blocks_broken_ambiguity_register_ref(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
@@ -1291,6 +1399,52 @@ class KingSejongHookTests(unittest.TestCase):
                 "PreCompact",
                 {"hook_event_name": "PreCompact", "trigger": "auto"},
                 context_path=Path(handle.name),
+            )
+        self.assertFalse(output["continue"])
+        self.assertIn("missing checkpoint fields", output["stopReason"])
+
+    def test_precompact_blocks_non_object_explicit_context(self) -> None:
+        with tempfile.NamedTemporaryFile("w", suffix=".json") as handle:
+            json.dump(["bad"], handle)
+            handle.flush()
+            output = run_hook(
+                "PreCompact",
+                {"hook_event_name": "PreCompact", "trigger": "auto"},
+                context_path=Path(handle.name),
+            )
+        self.assertFalse(output["continue"])
+        self.assertIn("context JSON must be an object", output["stopReason"])
+
+    def test_precompact_blocks_missing_explicit_context_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            output = run_hook(
+                "PreCompact",
+                {"hook_event_name": "PreCompact", "trigger": "auto"},
+                context_path=Path(tmp) / "missing-context.json",
+            )
+        self.assertFalse(output["continue"])
+        self.assertIn("missing checkpoint fields", output["stopReason"])
+
+    def test_precompact_blocks_missing_env_context_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            run_path = sejong_home / "runs" / "repo-test" / "context-run" / "seungjeongwon-run.json"
+            run_path.parent.mkdir(parents=True)
+            run_data = seungjeongwon_run_fixture(status="active", todo_status="in_progress")
+            run_data["repo_root"] = str(REPO_ROOT)
+            run_path.write_text(json.dumps(run_data), encoding="utf-8")
+
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["repo_root"] = str(REPO_ROOT)
+            context["artifact_refs"] = [str(run_path)]
+            context_path = run_path.parent / "king-sejong-context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook_with_env_context(
+                "PreCompact",
+                {"hook_event_name": "PreCompact", "trigger": "auto", "cwd": str(REPO_ROOT)},
+                sejong_home=sejong_home,
+                context_path=Path(tmp) / "missing-env-context.json",
             )
         self.assertFalse(output["continue"])
         self.assertIn("missing checkpoint fields", output["stopReason"])

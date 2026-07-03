@@ -193,6 +193,11 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 
 `PreCompact`
 
+- Do nothing when no active context or matching active repository
+  continuation exists; compaction should not be blocked by completed or closed
+  workflows from sibling sessions.
+- Block compaction when the active context pointer exists but cannot be read or
+  parsed.
 - Block compaction when a referenced ambiguity register, Seungjeongwon run, or
   continuity capsule is broken or invalid.
 - For each valid referenced `sejong.seungjeongwon-run/v0.1-draft` artifact,
@@ -202,6 +207,8 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 
 `PreCompact`
 
+- Allow compaction when there is no active context checkpoint to preserve.
+- Block compaction when the active context checkpoint exists but is unreadable.
 - Check that the active context checkpoint has the required fields before compaction.
 - Block compaction when an ambiguity-register reference is broken.
 - Block compaction when a Seungjeongwon run reference is broken or invalid.

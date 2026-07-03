@@ -40,6 +40,7 @@ REQUIRED_CONTEXT_FIELDS = (
     "exit_conditions",
     "last_updated_at",
 )
+CONTEXT_LOAD_ERROR_FIELD = "_king_sejong_context_load_error"
 CONTEXT_LIST_FIELDS = (
     "route_sequence",
     "required_route_sequence",
@@ -135,9 +136,19 @@ def load_stdin_json() -> dict[str, Any]:
 
 def load_context_file(path: Path) -> dict[str, Any]:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return {CONTEXT_LOAD_ERROR_FIELD: f"{type(exc).__name__}: {exc}", "context_path": str(path)}
+    if not isinstance(data, dict):
+        return {
+            CONTEXT_LOAD_ERROR_FIELD: f"context JSON must be an object, got {type(data).__name__}",
+            "context_path": str(path),
+        }
+    return data
+
+
+def context_load_failed(context: dict[str, Any]) -> bool:
+    return CONTEXT_LOAD_ERROR_FIELD in context
 
 
 def iter_run_context_paths() -> list[Path]:
@@ -187,10 +198,12 @@ def newest_matching_repo_context(payload: dict[str, Any]) -> dict[str, Any]:
 def load_context(path: str | None, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     context_path = resolve_context_path(path)
     if not context_path.exists():
-        if not path and payload:
+        if not context_path_is_explicit(path) and payload:
             return newest_matching_repo_context(payload)
         return {}
     active_context = load_context_file(context_path)
+    if context_load_failed(active_context):
+        return active_context
     if path or not payload or context_applies_to_cwd(active_context, payload):
         return active_context
     matching_context = newest_matching_repo_context(payload)
@@ -214,6 +227,10 @@ def resolve_context_path(path: str | None) -> Path:
     if os.environ.get("SEJONG_ACTIVE_CONTEXT"):
         return Path(os.environ["SEJONG_ACTIVE_CONTEXT"]).expanduser()
     return sejong_root() / "state" / "active-context.json"
+
+
+def context_path_is_explicit(path: str | None) -> bool:
+    return bool(path or os.environ.get("SEJONG_ACTIVE_CONTEXT"))
 
 
 def emit(payload: dict[str, Any]) -> int:
@@ -1024,7 +1041,18 @@ def missing_context_fields(context: dict[str, Any]) -> list[str]:
     return [field for field in REQUIRED_CONTEXT_FIELDS if field not in context or context[field] is None]
 
 
-def handle_precompact(context: dict[str, Any]) -> dict[str, Any]:
+def handle_precompact(context: dict[str, Any], *, allow_missing_context: bool = False) -> dict[str, Any]:
+    if not context and allow_missing_context:
+        return {}
+    if context_load_failed(context):
+        return {
+            "continue": False,
+            "stopReason": (
+                "active context checkpoint could not be loaded: "
+                f"{context.get(CONTEXT_LOAD_ERROR_FIELD, 'unknown error')}"
+            ),
+            "systemMessage": "King Sejong active context checkpoint is unreadable before compaction.",
+        }
     missing = missing_context_fields(context)
     if missing:
         return {
@@ -1096,7 +1124,17 @@ def handle_post_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> di
     return {}
 
 
-def dispatch(event_name: str, payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+def dispatch(
+    event_name: str,
+    payload: dict[str, Any],
+    context: dict[str, Any],
+    *,
+    allow_missing_context: bool = False,
+) -> dict[str, Any]:
+    if context_load_failed(context):
+        if event_name == "PreCompact":
+            return handle_precompact(context, allow_missing_context=allow_missing_context)
+        return {}
     if context and not context_applies_to_cwd(context, payload):
         if event_name == "UserPromptSubmit" and is_explicit_exit(payload.get("prompt", "")):
             return {}
@@ -1122,7 +1160,7 @@ def dispatch(event_name: str, payload: dict[str, Any], context: dict[str, Any]) 
     if event_name == "Stop":
         return handle_stop(payload, context)
     if event_name == "PreCompact":
-        return handle_precompact(context)
+        return handle_precompact(context, allow_missing_context=allow_missing_context)
     return {}
 
 
@@ -1130,7 +1168,8 @@ def main() -> int:
     args = parse_args()
     payload = load_stdin_json()
     context = load_context(args.context, payload)
-    return emit(dispatch(args.event_name, payload, context))
+    allow_missing_context = args.event_name == "PreCompact" and not context_path_is_explicit(args.context)
+    return emit(dispatch(args.event_name, payload, context, allow_missing_context=allow_missing_context))
 
 
 if __name__ == "__main__":
