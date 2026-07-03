@@ -24,6 +24,40 @@ def run_command(args: list[str]) -> subprocess.CompletedProcess[str]:
     )
 
 
+def consumer_feedback_fixture() -> dict:
+    return {
+        "format": "uigwe.codex-consumer-feedback/v0.2-draft",
+        "visible_todo_events": [
+            {
+                "event_id": "ev-publish",
+                "event_type": "publish",
+                "todo_id": "T1",
+                "related_todo_ids": [],
+                "summary": "Published T1.",
+                "status": "pending",
+                "evidence_refs": ["plan.packet.json"],
+            },
+            {
+                "event_id": "ev-verify",
+                "event_type": "verify",
+                "todo_id": "T1",
+                "related_todo_ids": [],
+                "summary": "Verified T1 evidence.",
+                "status": "in_progress",
+                "evidence_refs": ["test output"],
+            },
+        ],
+        "escalations": [
+            {
+                "reason": "No planner re-entry needed.",
+                "severity": "low",
+                "related_node_ids": ["T1"],
+                "recommended_reentry_target": "none",
+            }
+        ],
+    }
+
+
 class SeungjeongwonRunTests(unittest.TestCase):
     def test_run_lifecycle_requires_attempts_before_completion(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -128,6 +162,7 @@ class SeungjeongwonRunTests(unittest.TestCase):
             self.assertEqual(data["format"], "sejong.seungjeongwon-run/v0.1-draft")
             self.assertEqual(data["status"], "completed")
             self.assertEqual(data["todos"][0]["status"], "completed")
+            self.assertEqual(data["execution_feedback_refs"], [])
             self.assertEqual(data["provenance"]["created_by"], "seungjeongwon")
             self.assertEqual(data["provenance"]["host"], "codex")
             self.assertIn("score_delta=0.28", data["provenance"]["verification_refs"])
@@ -168,6 +203,114 @@ class SeungjeongwonRunTests(unittest.TestCase):
             self.assertEqual(payload["format"], "sejong.seungjeongwon-run-summary/v0.1-draft")
             self.assertEqual(payload["current_todo_id"], "T1")
             self.assertEqual(payload["next_action"], "continue_todo:T1")
+            self.assertEqual(payload["execution_feedback_ref_count"], 0)
+            self.assertEqual(payload["visible_todo_event_count"], 0)
+
+    def test_check_rejects_broken_execution_feedback_ref(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "broken-feedback-run.json"
+            start = run_command(
+                [
+                    "start",
+                    "--path",
+                    str(run_path),
+                    "--run-id",
+                    "run-broken-feedback",
+                    "--goal",
+                    "Reject broken execution feedback refs.",
+                    "--success-criterion",
+                    "Feedback refs resolve.",
+                    "--verification-method",
+                    "Run check.",
+                ]
+            )
+            self.assertEqual(start.returncode, 0, start.stderr)
+            data = json.loads(run_path.read_text(encoding="utf-8"))
+            data["execution_feedback_refs"] = [str(Path(tmp) / "missing-feedback.json")]
+            run_path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+            result = run_command(["check", "--path", str(run_path)])
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("broken execution feedback ref", result.stderr)
+
+    def test_feedback_refs_are_summarized_and_preserved_in_checkpoint_replay(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "feedback-run.json"
+            feedback_path = Path(tmp) / "codex-consumer-feedback.json"
+            checkpoint_path = Path(tmp) / "feedback-checkpoint.json"
+            replay_path = Path(tmp) / "feedback-replay.json"
+            feedback_path.write_text(json.dumps(consumer_feedback_fixture()), encoding="utf-8")
+            start = run_command(
+                [
+                    "start",
+                    "--path",
+                    str(run_path),
+                    "--run-id",
+                    "run-feedback",
+                    "--repo-root",
+                    ".",
+                    "--goal",
+                    "Carry execution feedback through checkpoints.",
+                    "--success-criterion",
+                    "Feedback refs are preserved.",
+                    "--verification-method",
+                    "Summary and replay.",
+                    "--todo",
+                    "T1|Use feedback refs|Feedback survives checkpoint|summary command",
+                ]
+            )
+            self.assertEqual(start.returncode, 0, start.stderr)
+            data = json.loads(run_path.read_text(encoding="utf-8"))
+            data["execution_feedback_refs"] = [str(feedback_path)]
+            data["updated_at"] = "2026-06-09T00:00:00Z"
+            run_path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+            check = run_command(["check", "--path", str(run_path)])
+            self.assertEqual(check.returncode, 0, check.stderr)
+            summary = run_command(["summary", "--path", str(run_path), "--json"])
+            self.assertEqual(summary.returncode, 0, summary.stderr)
+            summary_payload = json.loads(summary.stdout)
+            self.assertEqual(summary_payload["execution_feedback_ref_count"], 1)
+            self.assertEqual(summary_payload["latest_execution_feedback_ref"], str(feedback_path))
+            self.assertEqual(summary_payload["visible_todo_event_count"], 2)
+            self.assertEqual(summary_payload["latest_reentry_target"], "none")
+
+            checkpoint = run_command(
+                [
+                    "checkpoint",
+                    "--path",
+                    str(run_path),
+                    "--output",
+                    str(checkpoint_path),
+                    "--context-id",
+                    "ctx-feedback",
+                    "--objective-id",
+                    "obj-feedback",
+                ]
+            )
+            self.assertEqual(checkpoint.returncode, 0, checkpoint.stderr)
+            checkpoint_data = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+            self.assertEqual(checkpoint_data["execution_feedback_refs"], [str(feedback_path)])
+
+            replay = run_command(
+                [
+                    "replay",
+                    "--checkpoint",
+                    str(checkpoint_path),
+                    "--path",
+                    str(run_path),
+                    "--output",
+                    str(replay_path),
+                    "--expect-repo-root",
+                    ".",
+                    "--expect-objective-id",
+                    "obj-feedback",
+                ]
+            )
+            self.assertEqual(replay.returncode, 0, replay.stderr)
+            replay_data = json.loads(replay_path.read_text(encoding="utf-8"))
+            self.assertEqual(replay_data["execution_feedback_refs"], [str(feedback_path)])
 
     def test_check_rejects_completed_run_without_verification_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -203,6 +346,7 @@ class SeungjeongwonRunTests(unittest.TestCase):
                         "todos": [],
                         "attempt_ledger": [],
                         "verification_evidence": [],
+                        "execution_feedback_refs": [],
                         "guardrail_scores": {},
                         "blockers": [],
                         "uigwe_reentry_requests": [],

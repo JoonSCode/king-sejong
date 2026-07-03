@@ -61,7 +61,7 @@ Native goal backing is a runtime persistence aid, not the execution plan. The go
 
 Do not activate a native goal for research-only, advice-only, plan-only, open-ambiguity, non-handoff-ready, or tiny Sejong-direct maintenance work. If the host lacks native goal support, continue with the normal Seungjeongwon loop and record that native goal support was unavailable when structured execution feedback is produced.
 
-For long-running or compaction-sensitive work, Seungjeongwon should also maintain a `sejong.seungjeongwon-run/v0.1-draft` artifact. The artifact records the approved goal, success criteria, verification methods, active todos, attempt ledger, verification evidence, blockers, and Uigwe re-entry requests. Hooks can block `Stop` and `PreCompact` when this artifact is active or invalid.
+For long-running or compaction-sensitive work, Seungjeongwon should also maintain a `sejong.seungjeongwon-run/v0.1-draft` artifact. The artifact records the approved goal, success criteria, verification methods, active todos, attempt ledger, verification evidence, execution feedback refs, blockers, and Uigwe re-entry requests. Hooks can block `Stop` and `PreCompact` when this artifact is active or invalid.
 
 The run artifact must also carry provenance: `created_by`, `source_repo`,
 `source_commit`, `skill_version`, `host`, `model`, `generated_at`,
@@ -81,15 +81,23 @@ The summary is a HUD only. It shows open todo count, current todo, latest
 attempt, blocker count, and next action. It does not complete the run or approve
 any gate.
 
+When Codex consumer feedback is produced, keep the full ordered
+`visible_todo_events` in the `uigwe.codex-consumer-feedback/v0.2-draft`
+artifact. The Seungjeongwon run stores validated `execution_feedback_refs` to
+those feedback artifacts instead of copying the full event stream into two
+places. The run summary exposes the feedback ref count, latest feedback ref,
+visible todo event count, latest event type, and latest recommended re-entry
+target when those feedback refs are readable.
+
 Before compaction or handoff, create a derived durable checkpoint from that run
 artifact with `docs/sejong/scripts/seungjeongwon_run.py checkpoint`. The
 checkpoint follows [seungjeongwon-checkpoint.schema.json](seungjeongwon-checkpoint.schema.json)
 and preserves the approved goal, active todos, attempt ledger, verification
-evidence, blockers, guardrail state, and Uigwe re-entry requests without
-becoming a new court surface or approval authority. Resume and replay must use
-`resume`, `stale-check`, or `replay` against the checkpoint; replay is rejected
-when the checkpoint no longer matches the active run, expected repo root,
-objective id, or context id.
+evidence, execution feedback refs, blockers, guardrail state, and Uigwe re-entry
+requests without becoming a new court surface or approval authority. Resume and
+replay must use `resume`, `stale-check`, or `replay` against the checkpoint;
+replay is rejected when the checkpoint no longer matches the active run,
+expected repo root, objective id, context id, or execution feedback refs.
 The checkpoint carries derived provenance with the source run path in
 `input_refs` and the run verification evidence in `verification_refs`.
 When hooks are enabled, `PreCompact` creates the same checkpoint automatically

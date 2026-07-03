@@ -131,6 +131,39 @@ class InstallSejongTests(unittest.TestCase):
             self.assertEqual(hook_result.returncode, 0, hook_result.stderr)
             self.assertEqual(hook_result.stdout.strip(), "")
 
+    def test_plugin_adapter_surfaces_missing_canonical_hook_for_protected_event(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            result = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+            plugin_root = (
+                codex_home
+                / "plugins"
+                / "cache"
+                / "king-sejong-local"
+                / "king-sejong"
+                / "0.1.0"
+            )
+            hook_runner_path = plugin_root / "hooks" / "king-sejong-hook.py"
+            canonical_hook_path = codex_home / "skills" / "sejong" / "docs" / "scripts" / "king_sejong_hooks.py"
+            canonical_hook_path.unlink()
+
+            hook_result = subprocess.run(
+                ["python3", str(hook_runner_path), "PreToolUse"],
+                input='{"tool_name":"apply_patch"}',
+                text=True,
+                capture_output=True,
+                env={**os.environ, "CODEX_HOME": str(codex_home), "PLUGIN_ROOT": str(plugin_root)},
+                cwd=str(REPO_ROOT),
+            )
+
+        self.assertNotEqual(hook_result.returncode, 0)
+        self.assertIn("missing King Sejong canonical hook script", hook_result.stderr)
+
     def test_user_scope_install_does_not_mutate_existing_active_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             codex_home = Path(tmp)

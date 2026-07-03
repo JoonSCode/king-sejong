@@ -260,6 +260,174 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             self.assertEqual(message["recipients"][0]["id"], "advocate")
             self.assertTrue(message["requires_response"])
 
+    def test_send_message_rejects_duplicate_message_id(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "duplicate-message-id",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--worker",
+                    "critic:critic:bounded risk review",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "duplicate-message-id"
+            opened = run_team_command(["open-round", str(run_dir), "--purpose", "duplicate id test"], sejong_home=sejong_home)
+            self.assertEqual(opened.returncode, 0, opened.stderr)
+
+            first = run_team_command(
+                [
+                    "send-message",
+                    str(run_dir),
+                    "--message-id",
+                    "m-duplicate",
+                    "--worker-id",
+                    "critic",
+                    "--kind",
+                    "claim",
+                    "--summary",
+                    "First message.",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(first.returncode, 0, first.stderr)
+
+            duplicate = run_team_command(
+                [
+                    "send-message",
+                    str(run_dir),
+                    "--message-id",
+                    "m-duplicate",
+                    "--worker-id",
+                    "critic",
+                    "--kind",
+                    "claim",
+                    "--summary",
+                    "Duplicate message.",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertNotEqual(duplicate.returncode, 0)
+            self.assertIn("duplicate message_id", duplicate.stderr)
+
+    def test_send_message_generates_non_positional_message_ids(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "generated-message-id",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--worker",
+                    "critic:critic:bounded risk review",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "generated-message-id"
+            opened = run_team_command(["open-round", str(run_dir), "--purpose", "id generation test"], sejong_home=sejong_home)
+            self.assertEqual(opened.returncode, 0, opened.stderr)
+
+            sent = run_team_command(
+                [
+                    "send-message",
+                    str(run_dir),
+                    "--worker-id",
+                    "critic",
+                    "--kind",
+                    "claim",
+                    "--summary",
+                    "Generated id message.",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(sent.returncode, 0, sent.stderr)
+
+            messages = [
+                json.loads(line)
+                for line in (run_dir / "mailbox.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            self.assertEqual(len(messages), 1)
+            self.assertTrue(str(messages[0]["message_id"]).startswith("msg-"))
+            self.assertNotEqual(messages[0]["message_id"], "round-1-critic-1")
+
+    def test_send_message_rejects_unresolvable_evidence_ref(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "message-evidence-ref",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--worker",
+                    "critic:critic:bounded risk review",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "message-evidence-ref"
+            opened = run_team_command(["open-round", str(run_dir), "--purpose", "evidence ref test"], sejong_home=sejong_home)
+            self.assertEqual(opened.returncode, 0, opened.stderr)
+
+            result = run_team_command(
+                [
+                    "send-message",
+                    str(run_dir),
+                    "--worker-id",
+                    "critic",
+                    "--kind",
+                    "claim",
+                    "--summary",
+                    "Missing evidence.",
+                    "--evidence-ref",
+                    "missing-evidence.md",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("evidence_ref does not exist", result.stderr)
+
+    def test_acquire_lease_rejects_duplicate_lease_id(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            init = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "duplicate-lease-id",
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--worker",
+                    "a:implementer:docs",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(init.returncode, 0, init.stderr)
+            run_dir = sejong_home / "state" / "team" / "duplicate-lease-id"
+
+            first = run_team_command(
+                ["acquire-lease", str(run_dir), "--lease-id", "lease-duplicate", "--worker-id", "a", "--scope", "docs/a.md"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(first.returncode, 0, first.stderr)
+
+            duplicate = run_team_command(
+                ["acquire-lease", str(run_dir), "--lease-id", "lease-duplicate", "--worker-id", "a", "--scope", "docs/b.md"],
+                sejong_home=sejong_home,
+            )
+            self.assertNotEqual(duplicate.returncode, 0)
+            self.assertIn("duplicate lease_id", duplicate.stderr)
+
     def test_persuasion_round_is_bounded_to_thirty_minutes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)

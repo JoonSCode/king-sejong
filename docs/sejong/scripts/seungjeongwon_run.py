@@ -17,6 +17,7 @@ RUN_FORMAT = "sejong.seungjeongwon-run/v0.1-draft"
 CHECKPOINT_FORMAT = "sejong.seungjeongwon-checkpoint/v0.1-draft"
 RESUME_FORMAT = "sejong.seungjeongwon-resume/v0.1-draft"
 REPLAY_FORMAT = "sejong.seungjeongwon-replay/v0.1-draft"
+CONSUMER_FEEDBACK_FORMAT = "uigwe.codex-consumer-feedback/v0.2-draft"
 STATUSES = {"active", "completed", "blocked", "invalidated", "failed"}
 OPEN_TODO_STATUSES = {"pending", "in_progress"}
 CLOSED_TODO_STATUSES = {"completed", "blocked", "invalidated", "replaced"}
@@ -157,6 +158,8 @@ def run_summary(data: dict[str, Any]) -> dict[str, Any]:
     verification_refs = data.get("verification_evidence") or []
     blockers = data.get("blockers") or []
     uigwe_reentry_requests = data.get("uigwe_reentry_requests") or []
+    execution_feedback_refs = data.get("execution_feedback_refs") or []
+    feedback_summary = execution_feedback_summary(data)
     open_count = len(open_todos(data))
     status = data.get("status")
     current_todo_id = active_todo.get("todo_id")
@@ -190,6 +193,11 @@ def run_summary(data: dict[str, Any]) -> dict[str, Any]:
         "last_attempt_next_decision": last_attempt.get("next_decision"),
         "verification_evidence_count": len(verification_refs),
         "last_verification_ref": verification_refs[-1] if verification_refs else None,
+        "execution_feedback_ref_count": len(execution_feedback_refs),
+        "latest_execution_feedback_ref": execution_feedback_refs[-1] if execution_feedback_refs else None,
+        "visible_todo_event_count": feedback_summary["visible_todo_event_count"],
+        "latest_visible_todo_event_type": feedback_summary["latest_visible_todo_event_type"],
+        "latest_reentry_target": feedback_summary["latest_reentry_target"],
         "blocker_count": len(blockers),
         "uigwe_reentry_request_count": len(uigwe_reentry_requests),
         "next_action": next_action,
@@ -206,9 +214,81 @@ def format_run_summary(data: dict[str, Any]) -> str:
         f"status={summary.get('status')} "
         f"current_todo={current_todo_id} "
         f"blockers={summary.get('blocker_count')} "
+        f"feedback_refs={summary.get('execution_feedback_ref_count')} "
         f"last_attempt={last_attempt_id} "
         f"next_action={summary.get('next_action')}"
     )
+
+
+def resolve_run_ref(data: dict[str, Any], ref: str) -> Path:
+    path = Path(ref).expanduser()
+    if path.is_absolute():
+        return path
+    return resolve_path(str(data.get("repo_root") or ".")) / path
+
+
+def load_execution_feedback(data: dict[str, Any], ref: str) -> tuple[dict[str, Any] | None, str | None]:
+    path = resolve_run_ref(data, ref)
+    if not path.exists():
+        return None, f"broken execution feedback ref: {path}"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        return None, f"invalid execution feedback ref: {path}: {exc}"
+    if not isinstance(payload, dict):
+        return None, f"invalid execution feedback ref: {path}: root must be an object"
+    if payload.get("format") != CONSUMER_FEEDBACK_FORMAT:
+        return None, f"invalid execution feedback ref: {path}: unexpected format"
+    events = payload.get("visible_todo_events")
+    if not isinstance(events, list) or not events:
+        return None, f"invalid execution feedback ref: {path}: visible_todo_events must be non-empty"
+    return payload, None
+
+
+def execution_feedback_failures(data: dict[str, Any]) -> list[str]:
+    refs = data.get("execution_feedback_refs")
+    if not isinstance(refs, list):
+        return ["execution_feedback_refs must be a list"]
+    failures: list[str] = []
+    for ref in refs:
+        if not isinstance(ref, str) or not ref:
+            failures.append("execution_feedback_refs must contain only non-empty strings")
+            continue
+        _, failure = load_execution_feedback(data, ref)
+        if failure:
+            failures.append(failure)
+    return failures
+
+
+def latest_reentry_target(feedback: dict[str, Any]) -> str | None:
+    targets: list[str] = []
+    for escalation in feedback.get("escalations") or []:
+        if isinstance(escalation, dict) and isinstance(escalation.get("recommended_reentry_target"), str):
+            targets.append(escalation["recommended_reentry_target"])
+    return targets[-1] if targets else None
+
+
+def execution_feedback_summary(data: dict[str, Any]) -> dict[str, Any]:
+    event_count = 0
+    latest_event_type: str | None = None
+    reentry_target: str | None = None
+    for ref in data.get("execution_feedback_refs") or []:
+        if not isinstance(ref, str):
+            continue
+        feedback, failure = load_execution_feedback(data, ref)
+        if failure or feedback is None:
+            continue
+        events = feedback.get("visible_todo_events") or []
+        if isinstance(events, list):
+            event_count += len(events)
+            latest_event = events[-1] if events and isinstance(events[-1], dict) else {}
+            latest_event_type = latest_event.get("event_type") if isinstance(latest_event.get("event_type"), str) else latest_event_type
+        reentry_target = latest_reentry_target(feedback) or reentry_target
+    return {
+        "visible_todo_event_count": event_count,
+        "latest_visible_todo_event_type": latest_event_type,
+        "latest_reentry_target": reentry_target,
+    }
 
 
 def todo_by_id(data: dict[str, Any], todo_id: str) -> dict[str, Any] | None:
@@ -233,6 +313,7 @@ def run_failures(data: dict[str, Any]) -> list[str]:
         "todos",
         "attempt_ledger",
         "verification_evidence",
+        "execution_feedback_refs",
         "guardrail_scores",
         "blockers",
         "uigwe_reentry_requests",
@@ -247,9 +328,20 @@ def run_failures(data: dict[str, Any]) -> list[str]:
     if data.get("status") not in STATUSES:
         failures.append(f"unsupported run status: {data.get('status')}")
     failures.extend(provenance_failures(data))
-    for field in ("success_criteria", "verification_methods", "todos", "attempt_ledger", "verification_evidence", "blockers", "uigwe_reentry_requests"):
+    for field in (
+        "success_criteria",
+        "verification_methods",
+        "todos",
+        "attempt_ledger",
+        "verification_evidence",
+        "execution_feedback_refs",
+        "blockers",
+        "uigwe_reentry_requests",
+    ):
         if field in data and not isinstance(data.get(field), list):
             failures.append(f"{field} must be a list")
+    if "execution_feedback_refs" in data:
+        failures.extend(execution_feedback_failures(data))
     guardrail_thresholds = data.get("guardrail_thresholds")
     if not isinstance(guardrail_thresholds, dict):
         failures.append("guardrail_thresholds must be an object")
@@ -418,6 +510,7 @@ def checkpoint_payload(data: dict[str, Any], run_path: Path, args: argparse.Name
         ],
         "attempt_ledger": data["attempt_ledger"],
         "verification_evidence": data["verification_evidence"],
+        "execution_feedback_refs": data["execution_feedback_refs"],
         "guardrail_scores": data["guardrail_scores"],
         "blockers": data["blockers"],
         "uigwe_reentry_requests": data["uigwe_reentry_requests"],
@@ -446,6 +539,7 @@ def checkpoint_failures(data: dict[str, Any]) -> list[str]:
         "todo_statuses",
         "attempt_ledger",
         "verification_evidence",
+        "execution_feedback_refs",
         "guardrail_scores",
         "blockers",
         "uigwe_reentry_requests",
@@ -464,6 +558,7 @@ def checkpoint_failures(data: dict[str, Any]) -> list[str]:
         "todo_statuses",
         "attempt_ledger",
         "verification_evidence",
+        "execution_feedback_refs",
         "blockers",
         "uigwe_reentry_requests",
     ):
@@ -496,6 +591,7 @@ def resume_payload(checkpoint: dict[str, Any], *, format_name: str) -> dict[str,
         "active_todos": checkpoint["active_todos"],
         "attempt_ledger": checkpoint["attempt_ledger"],
         "verification_evidence": checkpoint["verification_evidence"],
+        "execution_feedback_refs": checkpoint["execution_feedback_refs"],
         "blockers": checkpoint["blockers"],
         "uigwe_reentry_requests": checkpoint["uigwe_reentry_requests"],
         "source_run_updated_at": checkpoint["source_run_updated_at"],
@@ -542,7 +638,7 @@ def replay_stale_failures(
         failures.append("stale checkpoint approved_goal mismatch")
     if checkpoint["active_todos"] != open_todos(run_data):
         failures.append("stale checkpoint active_todos mismatch")
-    for field in ("attempt_ledger", "verification_evidence", "guardrail_scores", "blockers", "uigwe_reentry_requests"):
+    for field in ("attempt_ledger", "verification_evidence", "execution_feedback_refs", "guardrail_scores", "blockers", "uigwe_reentry_requests"):
         if checkpoint.get(field) != run_data.get(field):
             failures.append(f"stale checkpoint {field} mismatch")
     return failures
@@ -585,6 +681,7 @@ def start(args: argparse.Namespace) -> int:
         "todos": args.todo or [],
         "attempt_ledger": [],
         "verification_evidence": [],
+        "execution_feedback_refs": [],
         "guardrail_scores": {},
         "blockers": [],
         "uigwe_reentry_requests": [],

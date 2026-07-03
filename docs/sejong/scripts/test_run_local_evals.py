@@ -14,6 +14,7 @@ class RunLocalEvalsTests(unittest.TestCase):
             step_ids,
             [
                 "hook-tests",
+                "adversarial-confidence-pack",
                 "context-tests",
                 "seungjeongwon-run-tests",
                 "sillok-trace-tests",
@@ -27,6 +28,7 @@ class RunLocalEvalsTests(unittest.TestCase):
         )
         commands = [" ".join(step.command) for step in steps]
         self.assertTrue(any("test_king_sejong_hooks.py" in command for command in commands))
+        self.assertTrue(any("run_adversarial_confidence_pack.py" in command for command in commands))
         self.assertTrue(any("benchmark_sejong_surface.py --require-targets" in command for command in commands))
         self.assertTrue(any("benchmark_instruction_surface.py --require-targets" in command for command in commands))
         self.assertTrue(any("validate_json_contracts.py" in command for command in commands))

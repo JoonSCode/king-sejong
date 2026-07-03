@@ -129,7 +129,8 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 - Deny write-like execution while `seungjeongwon_receipt_required` is pending
   until the route has entered Seungjeongwon and the active context references a
   valid `sejong.seungjeongwon-run/v0.1-draft` artifact or an explicit
-  `native_goal_unavailable` execution-feedback ref.
+  `sejong.seungjeongwon-receipt/v0.1-draft` artifact whose
+  `receipt_type` is `native_goal_unavailable`.
 - Deny write-like execution while the current Uigwe live stage has a referenced
   ambiguity register below `100%` readiness or with blocking `open`, `pending`,
   or `answered` question obligations. Runtime clarification artifact updates
@@ -198,21 +199,16 @@ the repository-scoped run directory. Hooks read the active pointer by default.
   workflows from sibling sessions.
 - Block compaction when the active context pointer exists but cannot be read or
   parsed.
+- Fail closed when an explicit `--context` path or `SEJONG_ACTIVE_CONTEXT`
+  path is missing.
+- Check that the active context checkpoint has the required fields before
+  compaction.
 - Block compaction when a referenced ambiguity register, Seungjeongwon run, or
   continuity capsule is broken or invalid.
 - For each valid referenced `sejong.seungjeongwon-run/v0.1-draft` artifact,
   write a derived `sejong.seungjeongwon-checkpoint/v0.1-draft` artifact under
   `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` and inject the checkpoint
   refs into the compacted context.
-
-`PreCompact`
-
-- Allow compaction when there is no active context checkpoint to preserve.
-- Block compaction when the active context checkpoint exists but is unreadable.
-- Check that the active context checkpoint has the required fields before compaction.
-- Block compaction when an ambiguity-register reference is broken.
-- Block compaction when a Seungjeongwon run reference is broken or invalid.
-- Block compaction when a continuity capsule reference is broken or invalid.
 
 `PostCompact`
 
@@ -228,6 +224,9 @@ User-scope King Sejong install enables hooks through the local
 `king-sejong-local` Codex plugin by default. The plugin hook is a thin adapter
 that delegates to the canonical user-scope script under
 `${CODEX_HOME:-~/.codex}/skills/sejong/docs/scripts/king_sejong_hooks.py`.
+If that canonical script is missing, the adapter stays quiet for non-protected
+events but returns a non-zero error for protected lifecycle events such as
+`PreToolUse`, `PermissionRequest`, `Stop`, and `PreCompact`.
 The installer owns a marked King Sejong plugin block and sets
 `[features].hooks = true`. On macOS, installed hook path verification and
 active-context `repo_root` matching normalize path case so `/Users/Junsu` and
@@ -240,7 +239,20 @@ explicit `--legacy-direct-hooks` installer option keeps direct hooks as a
 fallback mode, but verification fails when direct hooks and plugin hooks are
 enabled together.
 
-Hooks are scoped by active context and repository-scoped run contexts. The reference hook script first reads `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json`; if that pointer is missing or stale for the current workspace, it scans `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs/*/*/king-sejong-context.json` and selects the newest valid context whose `repo_root` contains the current `cwd`. If an active context exists but no matching repo context is available, continuation events such as `UserPromptSubmit`, `SessionStart`, and `PostCompact` surface a compact `repo_mismatch=true` warning instead of silently applying the stale context. Other events remain quiet on mismatch unless a matching repo-scoped context is provided.
+Hooks are scoped by active context and repository-scoped run contexts. The
+reference hook script first reads
+`${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json`; if
+that implicit pointer is missing or stale for the current workspace, it scans
+`${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs/*/*/king-sejong-context.json`
+and selects the newest valid context whose `repo_root` contains the current
+`cwd`. An explicit `--context` path or `SEJONG_ACTIVE_CONTEXT` path is not a
+hint; if it is missing, hooks surface `missing_explicit_active_context=true`
+instead of falling back to another repo-scoped context. If an active context
+exists but no matching repo context is available, continuation events such as
+`UserPromptSubmit`, `SessionStart`, and `PostCompact` surface a compact
+`repo_mismatch=true` warning instead of silently applying the stale context.
+Other events remain quiet on mismatch unless a matching repo-scoped context is
+provided.
 
 A target repo or user profile can also wire the reference scripts manually:
 

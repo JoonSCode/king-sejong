@@ -113,6 +113,7 @@ def seungjeongwon_run_fixture(*, status: str = "active", todo_status: str = "pen
         else [],
         "attempt_ledger": [],
         "verification_evidence": ["tests passed"] if status == "completed" else [],
+        "execution_feedback_refs": [],
         "guardrail_scores": {"selected_leaf_coverage": 1.0, "success_criteria_coverage": 1.0, "overall": 1.0}
         if status == "completed"
         else {},
@@ -120,6 +121,18 @@ def seungjeongwon_run_fixture(*, status: str = "active", todo_status: str = "pen
         "uigwe_reentry_requests": [],
         "created_at": "2026-05-26T00:00:00Z",
         "updated_at": "2026-05-26T00:00:00Z",
+    }
+
+
+def native_goal_unavailable_receipt_fixture() -> dict:
+    return {
+        "format": "sejong.seungjeongwon-receipt/v0.1-draft",
+        "receipt_type": "native_goal_unavailable",
+        "status": "recorded",
+        "created_by": "seungjeongwon",
+        "reason": "Host native goal support is unavailable in this runtime.",
+        "created_at": "2026-05-26T00:00:00Z",
+        "evidence_refs": ["execution board published"],
     }
 
 
@@ -729,6 +742,58 @@ class KingSejongHookTests(unittest.TestCase):
             )
         self.assertNotEqual(output.get("hookSpecificOutput", {}).get("permissionDecision"), "deny")
 
+    def test_pre_tool_use_rejects_bare_native_goal_unavailable_string_receipt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["current_surface"] = "seungjeongwon"
+            context["route_sequence"] = ["jangyeongsil", "jiphyeonjeon", "uigwe", "seungjeongwon"]
+            context["pending_gates"] = ["seungjeongwon_receipt_required"]
+            context["artifact_refs"] = ["native_goal_unavailable"]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "PreToolUse",
+                {
+                    "hook_event_name": "PreToolUse",
+                    "tool_name": "apply_patch",
+                    "tool_input": {
+                        "command": "*** Begin Patch\n*** Update File: README.md\n@@\n-old\n+new\n*** End Patch\n"
+                    },
+                },
+                context_path=context_path,
+            )
+
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("Seungjeongwon execution receipt is required", specific["permissionDecisionReason"])
+
+    def test_pre_tool_use_accepts_typed_native_goal_unavailable_receipt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            receipt_path = Path(tmp) / "native-goal-unavailable-receipt.json"
+            receipt_path.write_text(json.dumps(native_goal_unavailable_receipt_fixture()), encoding="utf-8")
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["current_surface"] = "seungjeongwon"
+            context["route_sequence"] = ["jangyeongsil", "jiphyeonjeon", "uigwe", "seungjeongwon"]
+            context["pending_gates"] = ["seungjeongwon_receipt_required"]
+            context["artifact_refs"] = [str(receipt_path)]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "PreToolUse",
+                {
+                    "hook_event_name": "PreToolUse",
+                    "tool_name": "apply_patch",
+                    "tool_input": {
+                        "command": "*** Begin Patch\n*** Update File: README.md\n@@\n-old\n+new\n*** End Patch\n"
+                    },
+                },
+                context_path=context_path,
+            )
+
+        self.assertNotEqual(output.get("hookSpecificOutput", {}).get("permissionDecision"), "deny")
+
     def test_pre_tool_use_blocks_write_while_uigwe_live_stage_incomplete(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             ambiguity_path = Path(tmp) / "ambiguity-register.json"
@@ -1336,6 +1401,34 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertIn("active_context_id=ctx-repo-continuation", additional)
         self.assertIn("seungjeongwon_checkpoints_created", additional)
 
+    def test_user_prompt_submit_missing_env_context_path_does_not_fall_back_to_repo_match(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            matching_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            matching_context["active_context_id"] = "ctx-matching"
+            matching_context["repo_root"] = str(REPO_ROOT)
+            matching_context["pending_gates"] = ["seungjeongwon_receipt_required"]
+            matching_path = sejong_home / "runs" / "matching-repo" / "run" / "king-sejong-context.json"
+            matching_path.parent.mkdir(parents=True)
+            matching_path.write_text(json.dumps(matching_context), encoding="utf-8")
+            missing_context_path = sejong_home / "state" / "missing-active-context.json"
+
+            output = run_hook_with_env_context(
+                "UserPromptSubmit",
+                {
+                    "prompt": "다음",
+                    "hook_event_name": "UserPromptSubmit",
+                    "cwd": str(REPO_ROOT),
+                },
+                sejong_home=sejong_home,
+                context_path=missing_context_path,
+            )
+
+        additional = output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("missing_explicit_active_context=true", additional)
+        self.assertIn(str(missing_context_path), additional)
+        self.assertNotIn("active_context_id=ctx-matching", additional)
+
     def test_precompact_blocks_broken_ambiguity_register_ref(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
@@ -1417,13 +1510,15 @@ class KingSejongHookTests(unittest.TestCase):
 
     def test_precompact_blocks_missing_explicit_context_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
+            missing_context_path = Path(tmp) / "missing-context.json"
             output = run_hook(
                 "PreCompact",
                 {"hook_event_name": "PreCompact", "trigger": "auto"},
-                context_path=Path(tmp) / "missing-context.json",
+                context_path=missing_context_path,
             )
         self.assertFalse(output["continue"])
-        self.assertIn("missing checkpoint fields", output["stopReason"])
+        self.assertIn("missing explicit active context path", output["stopReason"])
+        self.assertIn(str(missing_context_path), output["stopReason"])
 
     def test_precompact_blocks_missing_env_context_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1440,14 +1535,16 @@ class KingSejongHookTests(unittest.TestCase):
             context_path = run_path.parent / "king-sejong-context.json"
             context_path.write_text(json.dumps(context), encoding="utf-8")
 
+            missing_context_path = Path(tmp) / "missing-env-context.json"
             output = run_hook_with_env_context(
                 "PreCompact",
                 {"hook_event_name": "PreCompact", "trigger": "auto", "cwd": str(REPO_ROOT)},
                 sejong_home=sejong_home,
-                context_path=Path(tmp) / "missing-env-context.json",
+                context_path=missing_context_path,
             )
         self.assertFalse(output["continue"])
-        self.assertIn("missing checkpoint fields", output["stopReason"])
+        self.assertIn("missing explicit active context path", output["stopReason"])
+        self.assertIn(str(missing_context_path), output["stopReason"])
 
     def test_postcompact_injects_active_run_summary(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
