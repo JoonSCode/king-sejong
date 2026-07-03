@@ -32,6 +32,7 @@ The runner expands to the following local proof pack:
 
 ```bash
 python3 docs/sejong/scripts/test_king_sejong_hooks.py
+python3 docs/sejong/scripts/run_adversarial_confidence_pack.py
 python3 docs/sejong/scripts/test_sejong_context.py
 python3 docs/sejong/scripts/test_seungjeongwon_run.py
 python3 docs/sejong/scripts/test_sillok_trace.py
@@ -64,6 +65,13 @@ The seed surface benchmark includes local guardrail scenarios for:
 The hook and Sillok tests back those scenarios with deterministic fixtures. A
 scenario can pass only when the expected blocked behavior is explicit and the
 allowed evidence path remains usable.
+
+The adversarial confidence pack is a small black-box layer over the deterministic
+tests. It mutates the surface rather than only importing unit helpers: bare
+`native_goal_unavailable` receipt strings, missing explicit
+`SEJONG_ACTIVE_CONTEXT` paths, interpreter-mediated protected writes, and
+TeamExecutor duplicate mailbox ids must all fail through the public CLI or hook
+surface.
 
 ## Tool Poisoning Boundary
 

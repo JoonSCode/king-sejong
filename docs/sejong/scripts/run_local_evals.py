@@ -49,6 +49,11 @@ def build_steps(*, write_scorecards: bool, include_install_verify: bool) -> list
             python_script("test_king_sejong_hooks.py"),
         ),
         EvalStep(
+            "adversarial-confidence-pack",
+            "Black-box guardrail mutations for receipts, active context, write bypasses, and team state",
+            python_script("run_adversarial_confidence_pack.py"),
+        ),
+        EvalStep(
             "context-tests",
             "Active context start, update, doctor, close, and repo matching",
             python_script("test_sejong_context.py"),
