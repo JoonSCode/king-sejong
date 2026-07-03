@@ -89,6 +89,9 @@ UIGWE_LIVE_STAGE_IDS = {
 }
 UIGWE_PROMOTION_GATE = "uigwe_promotion_required"
 SEUNGJEONGWON_RECEIPT_GATE = "seungjeongwon_receipt_required"
+SEUNGJEONGWON_RECEIPT_FORMAT = "sejong.seungjeongwon-receipt/v0.1-draft"
+CONTEXT_ERROR_KEY = "_king_sejong_context_error"
+CONTEXT_ERROR_PATH_KEY = "_king_sejong_context_path"
 WRITE_LIKE_TOOL_NAMES = {
     "apply_patch",
     "edit",
@@ -140,6 +143,17 @@ def load_context_file(path: Path) -> dict[str, Any]:
         return {}
 
 
+def explicit_context_path_missing(path: Path) -> dict[str, Any]:
+    return {
+        CONTEXT_ERROR_KEY: "missing_explicit_active_context",
+        CONTEXT_ERROR_PATH_KEY: str(path),
+    }
+
+
+def context_path_is_explicit(path: str | None) -> bool:
+    return bool(path or os.environ.get("SEJONG_ACTIVE_CONTEXT"))
+
+
 def iter_run_context_paths() -> list[Path]:
     runs_root = sejong_root() / "runs"
     if not runs_root.exists():
@@ -187,6 +201,8 @@ def newest_matching_repo_context(payload: dict[str, Any]) -> dict[str, Any]:
 def load_context(path: str | None, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     context_path = resolve_context_path(path)
     if not context_path.exists():
+        if context_path_is_explicit(path):
+            return explicit_context_path_missing(context_path)
         if not path and payload:
             return newest_matching_repo_context(payload)
         return {}
@@ -413,9 +429,30 @@ def required_route_needs_seungjeongwon_receipt(context: dict[str, Any]) -> bool:
     return "seungjeongwon" in (context.get("required_route_sequence") or [])
 
 
+def seungjeongwon_receipt_is_valid(data: dict[str, Any]) -> bool:
+    return (
+        data.get("format") == SEUNGJEONGWON_RECEIPT_FORMAT
+        and data.get("receipt_type") == "native_goal_unavailable"
+        and data.get("status") == "recorded"
+        and isinstance(data.get("reason"), str)
+        and bool(data.get("reason"))
+    )
+
+
 def has_native_goal_unavailable_receipt(context: dict[str, Any]) -> bool:
-    refs = (context.get("artifact_refs") or []) + (context.get("evidence_refs") or [])
-    return any("native_goal_unavailable" in ref for ref in refs if isinstance(ref, str))
+    for ref in context.get("artifact_refs") or []:
+        if not isinstance(ref, str):
+            continue
+        path = resolve_artifact_ref(ref, context)
+        if not path.exists():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if isinstance(data, dict) and seungjeongwon_receipt_is_valid(data):
+            return True
+    return False
 
 
 def has_valid_seungjeongwon_receipt(context: dict[str, Any]) -> bool:
@@ -477,6 +514,11 @@ def looks_like_ambiguity_register_ref(ref: str) -> bool:
 def looks_like_seungjeongwon_run_ref(ref: str) -> bool:
     lowered = ref.lower()
     return "seungjeongwon-run" in lowered and lowered.endswith(".json")
+
+
+def looks_like_seungjeongwon_receipt_ref(ref: str) -> bool:
+    lowered = ref.lower()
+    return "seungjeongwon-receipt" in lowered and lowered.endswith(".json")
 
 
 def looks_like_continuity_capsule_ref(ref: str) -> bool:
@@ -1025,6 +1067,8 @@ def missing_context_fields(context: dict[str, Any]) -> list[str]:
 
 
 def handle_precompact(context: dict[str, Any]) -> dict[str, Any]:
+    if not context:
+        return {}
     missing = missing_context_fields(context)
     if missing:
         return {
@@ -1097,6 +1141,21 @@ def handle_post_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> di
 
 
 def dispatch(event_name: str, payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    if context.get(CONTEXT_ERROR_KEY) == "missing_explicit_active_context":
+        context_path = context.get(CONTEXT_ERROR_PATH_KEY) or "unknown"
+        if event_name == "PreCompact":
+            return {
+                "continue": False,
+                "stopReason": f"missing explicit active context path: {context_path}",
+                "systemMessage": "King Sejong explicit active context checkpoint must exist before compaction.",
+            }
+        if event_name in {"UserPromptSubmit", "SessionStart", "PostCompact"}:
+            return hook_context(
+                event_name,
+                "King Sejong active context missing_explicit_active_context=true; "
+                f"context_path={context_path}. Restore or refresh the active context before continuing.",
+            )
+        return {}
     if context and not context_applies_to_cwd(context, payload):
         if event_name == "UserPromptSubmit" and is_explicit_exit(payload.get("prompt", "")):
             return {}
