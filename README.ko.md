@@ -86,7 +86,7 @@ bash "$tmp/king-sejong/scripts/install-sejong.sh" --scope user --verify
 rm -rf "$tmp"
 ```
 
-사용자 범위 설치는 기본으로 `${CODEX_HOME:-~/.codex}/AGENTS.md`에 킹 세종 안내 블록도 쓰옵니다. 이로써 어느 Codex 작업 공간에서나 리서치, 분석, 토론, 기획, 실행, 검증의 상시 규율로 킹 세종을 떠올리게 하옵니다. 스킬, 훅, 활성 맥락만 들이고자 하면 `--codex-guidance none`을 쓰시옵소서.
+사용자 범위 설치는 기본으로 `${CODEX_HOME:-~/.codex}/AGENTS.md`에 킹 세종 안내 블록도 쓰옵니다. 이로써 어느 Codex 작업 공간에서나 리서치, 분석, 토론, 기획, 실행, 검증의 상시 규율로 킹 세종을 떠올리게 하옵니다. 스킬과 훅만 들이고자 하면 `--codex-guidance none`을 쓰시옵소서. 설치는 Sejong 상태 디렉터리를 만들지만, 활성 workflow context를 만들거나 기존 활성 context를 바꾸지는 않사옵니다.
 
 들인 뒤에는 이처럼 부르시면 되옵니다.
 

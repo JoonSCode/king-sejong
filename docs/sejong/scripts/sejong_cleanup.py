@@ -67,6 +67,10 @@ def active_context() -> dict[str, Any] | None:
         return None
 
 
+def active_context_path() -> Path:
+    return sejong_home() / "state" / "active-context.json"
+
+
 def path_contains_or_equals(child: Path, root: Path) -> bool:
     try:
         child.resolve().relative_to(root.resolve())
@@ -88,6 +92,24 @@ def is_active_run(run_dir: Path) -> bool:
             ref_path = sejong_home() / ref_path
         if path_contains_or_equals(ref_path, run_dir):
             return True
+    return False
+
+
+def active_context_matches_run_identity(run_dir: Path) -> bool:
+    context = active_context()
+    if not context:
+        return False
+    repo_id, run_id = run_identity(run_dir)
+    return context.get("repo_id") == repo_id and context.get("run_id") == run_id
+
+
+def close_active_context_pointer_for_run(run_dir: Path) -> bool:
+    if not active_context_matches_run_identity(run_dir):
+        return False
+    path = active_context_path()
+    if path.exists():
+        path.unlink()
+        return True
     return False
 
 
@@ -150,6 +172,7 @@ def build_run_summary(
     run_dir = resolve_under_runs(run_dir)
     repo_id, run_id = run_identity(run_dir)
     active = is_active_run(run_dir)
+    active_identity = active_context_matches_run_identity(run_dir)
     promoted = has_promoted_marker(run_dir, policy)
     kept, prunable = classify_children(run_dir, policy)
     prunable_sizes = {relative_to_run(run_dir, path): path_size(path) for path in prunable}
@@ -160,7 +183,9 @@ def build_run_summary(
     would_delete: list[str] = []
     retained: list[dict[str, str]] = []
 
-    if active and destructive_requested:
+    close_active_context_after_success = destructive_requested and status == "success" and active_identity
+
+    if active and destructive_requested and not close_active_context_after_success:
         failures.append("active run is protected from cleanup")
     if promoted and destructive_requested:
         failures.append("promoted run is protected from cleanup")
@@ -170,7 +195,7 @@ def build_run_summary(
         rel_path = relative_to_run(run_dir, path)
         if not allow_raw_prune:
             retained.append({"path": rel_path, "reason": "status retention window keeps raw artifacts"})
-        elif active:
+        elif active and not close_active_context_after_success:
             retained.append({"path": rel_path, "reason": "active run"})
         elif promoted:
             retained.append({"path": rel_path, "reason": "promoted run"})
@@ -208,6 +233,9 @@ def build_run_summary(
             "would_delete": would_delete,
             "retained": retained,
             "failures": failures,
+            "closed_active_context": close_active_context_pointer_for_run(run_dir)
+            if can_delete and close_active_context_after_success
+            else False,
         },
         "bytes": {
             "deleted": sum(prunable_sizes[path] for path in deleted),

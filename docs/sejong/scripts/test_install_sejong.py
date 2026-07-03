@@ -76,6 +76,7 @@ class InstallSejongTests(unittest.TestCase):
             plugin_skill_path = plugin_root / "skills" / "sejong" / "SKILL.md"
             plugin_why_gate_skill_path = plugin_root / "skills" / "why-gate" / "SKILL.md"
             why_gate_skill_path = codex_home / "skills" / "why-gate" / "SKILL.md"
+            active_context_path = codex_home / "sejong" / "state" / "active-context.json"
             marketplace_path = (
                 codex_home
                 / "plugins"
@@ -90,6 +91,7 @@ class InstallSejongTests(unittest.TestCase):
             self.assertTrue(hook_runner_path.exists())
             self.assertTrue(marketplace_path.exists())
             self.assertTrue(why_gate_skill_path.exists())
+            self.assertFalse(active_context_path.exists())
             self.assertIn("Why Gate", why_gate_skill_path.read_text(encoding="utf-8"))
 
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -127,15 +129,44 @@ class InstallSejongTests(unittest.TestCase):
                 cwd=str(REPO_ROOT),
             )
             self.assertEqual(hook_result.returncode, 0, hook_result.stderr)
-            hook_payload = json.loads(hook_result.stdout)
-            self.assertEqual(
-                hook_payload["hookSpecificOutput"]["hookEventName"],
-                "SessionStart",
+            self.assertEqual(hook_result.stdout.strip(), "")
+
+    def test_user_scope_install_does_not_mutate_existing_active_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            context_path = codex_home / "sejong" / "state" / "active-context.json"
+            context_path.parent.mkdir(parents=True)
+            original_context = {
+                "format": "king-sejong.context/v0.1-draft",
+                "active_context_id": "ctx-user-workflow",
+                "repo_id": "user-workflow",
+                "repo_root": "/tmp/user-workflow",
+                "run_id": "run-user-workflow",
+                "session_id": "session-user-workflow",
+                "route_id": "route-user-workflow",
+                "current_surface": "sejong",
+                "route_sequence": ["sejong"],
+                "required_route_sequence": [],
+                "last_user_intent": "Existing user workflow.",
+                "pending_gates": [],
+                "protected_paths": ["user-owned-path"],
+                "allowed_direct_change_types": [],
+                "evidence_refs": [],
+                "artifact_refs": [],
+                "team_run_refs": [],
+                "subagent_refs": [],
+                "exit_conditions": ["user_explicitly_exits_sejong"],
+                "last_updated_at": "2026-06-20T00:00:00Z",
+            }
+            context_path.write_text(json.dumps(original_context, indent=2) + "\n", encoding="utf-8")
+
+            result = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
             )
-            self.assertIn(
-                "King Sejong active context",
-                hook_payload["hookSpecificOutput"]["additionalContext"],
-            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(context_path.read_text(encoding="utf-8")), original_context)
 
     def test_user_scope_force_migrates_legacy_direct_hooks_to_plugin_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

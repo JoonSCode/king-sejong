@@ -183,6 +183,7 @@ class KingSejongHookTests(unittest.TestCase):
             matching_context["repo_id"] = "matching-repo"
             matching_context["repo_root"] = str(REPO_ROOT)
             matching_context["current_surface"] = "uigwe"
+            matching_context["pending_gates"] = ["uigwe_promotion_required"]
             matching_context["last_updated_at"] = "2026-06-01T00:00:00Z"
             matching_path = sejong_home / "runs" / "matching-repo" / "run" / "king-sejong-context.json"
             matching_path.parent.mkdir(parents=True)
@@ -215,6 +216,7 @@ class KingSejongHookTests(unittest.TestCase):
             valid_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
             valid_context["active_context_id"] = "ctx-valid"
             valid_context["repo_root"] = str(REPO_ROOT)
+            valid_context["pending_gates"] = ["seungjeongwon_receipt_required"]
             valid_path = sejong_home / "runs" / "app" / "old" / "king-sejong-context.json"
             valid_path.parent.mkdir(parents=True)
             valid_path.write_text(json.dumps(valid_context), encoding="utf-8")
@@ -239,6 +241,88 @@ class KingSejongHookTests(unittest.TestCase):
         additional = output["hookSpecificOutput"]["additionalContext"]
         self.assertIn("active_context_id=ctx-valid", additional)
         self.assertNotIn("active_context_id=ctx-invalid", additional)
+
+    def test_hook_ignores_completed_stale_active_pointer_without_obligations(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            active_context_path = sejong_home / "state" / "active-context.json"
+            active_context_path.parent.mkdir(parents=True)
+
+            stale_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            stale_context["active_context_id"] = "ctx-completed-stale"
+            stale_context["repo_root"] = str(REPO_ROOT / "not-this-repo")
+            stale_context["current_surface"] = "seungjeongwon"
+            stale_context["route_sequence"] = ["jiphyeonjeon", "uigwe", "seungjeongwon"]
+            stale_context["required_route_sequence"] = ["jiphyeonjeon", "uigwe", "seungjeongwon"]
+            stale_context["pending_gates"] = []
+            stale_context["artifact_refs"] = []
+            active_context_path.write_text(json.dumps(stale_context), encoding="utf-8")
+
+            output = run_hook_without_context(
+                "UserPromptSubmit",
+                {
+                    "prompt": "다음",
+                    "hook_event_name": "UserPromptSubmit",
+                    "cwd": str(REPO_ROOT),
+                },
+                sejong_home=sejong_home,
+            )
+
+        self.assertEqual(output, {})
+
+    def test_hook_surfaces_stale_active_pointer_with_pending_obligation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            active_context_path = sejong_home / "state" / "active-context.json"
+            active_context_path.parent.mkdir(parents=True)
+
+            stale_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            stale_context["active_context_id"] = "ctx-pending-stale"
+            stale_context["repo_root"] = str(REPO_ROOT / "not-this-repo")
+            stale_context["pending_gates"] = ["seungjeongwon_receipt_required"]
+            active_context_path.write_text(json.dumps(stale_context), encoding="utf-8")
+
+            output = run_hook_without_context(
+                "UserPromptSubmit",
+                {
+                    "prompt": "다음",
+                    "hook_event_name": "UserPromptSubmit",
+                    "cwd": str(REPO_ROOT),
+                },
+                sejong_home=sejong_home,
+            )
+
+        additional = output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("repo_mismatch=true", additional)
+        self.assertIn("active_context_id=ctx-pending-stale", additional)
+
+    def test_hook_does_not_restore_old_repo_context_only_because_refs_are_broken(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+
+            old_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            old_context["active_context_id"] = "ctx-old-broken-ref"
+            old_context["repo_root"] = str(REPO_ROOT)
+            old_context["current_surface"] = "seungjeongwon"
+            old_context["route_sequence"] = ["jiphyeonjeon", "uigwe", "seungjeongwon"]
+            old_context["required_route_sequence"] = ["jiphyeonjeon", "uigwe", "seungjeongwon"]
+            old_context["pending_gates"] = []
+            old_context["artifact_refs"] = ["missing-seungjeongwon-run.json"]
+            old_path = sejong_home / "runs" / "matching-repo" / "old-run" / "king-sejong-context.json"
+            old_path.parent.mkdir(parents=True)
+            old_path.write_text(json.dumps(old_context), encoding="utf-8")
+
+            output = run_hook_without_context(
+                "UserPromptSubmit",
+                {
+                    "prompt": "다음",
+                    "hook_event_name": "UserPromptSubmit",
+                    "cwd": str(REPO_ROOT),
+                },
+                sejong_home=sejong_home,
+            )
+
+        self.assertEqual(output, {})
 
     def test_user_prompt_submit_injects_ambiguity_register_summary(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

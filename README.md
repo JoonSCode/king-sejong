@@ -88,7 +88,7 @@ bash "$tmp/king-sejong/scripts/install-sejong.sh" --scope user --verify
 rm -rf "$tmp"
 ```
 
-User-scope install also writes a managed King Sejong guidance block to `${CODEX_HOME:-~/.codex}/AGENTS.md` by default. That keeps Sejong available as an always-on research, analysis, debate, planning, execution, and verification discipline across Codex workspaces. Use `--codex-guidance none` if you only want the skills, hooks, and active context.
+User-scope install also writes a managed King Sejong guidance block to `${CODEX_HOME:-~/.codex}/AGENTS.md` by default. That keeps Sejong available as an always-on research, analysis, debate, planning, execution, and verification discipline across Codex workspaces. Use `--codex-guidance none` if you only want the skills and hooks. Installation creates the Sejong state directory, but it does not create or mutate an active workflow context.
 
 Then try one of these:
 

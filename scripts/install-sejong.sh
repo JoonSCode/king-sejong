@@ -42,7 +42,7 @@ Installs:
     ${CODEX_HOME:-~/.codex}/skills/why-gate/
     ${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/
     ${CODEX_HOME:-~/.codex}/config.toml managed King Sejong plugin block
-    ${CODEX_HOME:-~/.codex}/sejong/state/active-context.json
+    ${CODEX_HOME:-~/.codex}/sejong/state/
 
 Source-only:
   AGENTS.md is maintainer guidance for this source repository and is never installed.
@@ -668,92 +668,9 @@ EOF
   mv "$tmp_file" "$config_file"
 }
 
-write_active_context_if_missing() {
+ensure_sejong_state_dir() {
   local codex_home=$1
-  local context_file="$codex_home/sejong/state/active-context.json"
-  local repo_root
-  local timestamp
-
-  repo_root=$(canonical_path "$SOURCE_ROOT")
-  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  mkdir -p "$(dirname "$context_file")"
-
-  if [[ -f "$context_file" ]]; then
-    python3 - "$context_file" "$timestamp" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-path = Path(sys.argv[1])
-timestamp = sys.argv[2]
-data = json.loads(path.read_text(encoding="utf-8"))
-protected = data.setdefault("protected_paths", [])
-for item in [
-    ".agents/skills/sejong/",
-    ".agents/skills/jangyeongsil/",
-    ".agents/skills/jiphyeonjeon/",
-    ".agents/skills/uigwe/",
-    ".agents/skills/seungjeongwon/",
-    ".agents/skills/why-gate/",
-    "plugins/king-sejong/",
-    "docs/sejong/",
-    "scripts/install-sejong.sh",
-]:
-    if item not in protected:
-        protected.append(item)
-required = data.setdefault("required_route_sequence", [])
-for item in ["jiphyeonjeon", "uigwe", "seungjeongwon"]:
-    if item not in required:
-        required.append(item)
-data["last_updated_at"] = timestamp
-path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-PY
-    return
-  fi
-
-  cat > "$context_file" <<EOF
-{
-  "format": "king-sejong.context/v0.1-draft",
-  "active_context_id": "ctx-king-sejong-user-install",
-  "repo_id": "king-sejong",
-  "repo_root": "$repo_root",
-  "run_id": "user-install",
-  "session_id": "user-scope-install",
-  "route_id": "route-user-scope-install",
-  "current_surface": "sejong",
-  "route_sequence": ["sejong"],
-  "required_route_sequence": ["jiphyeonjeon", "uigwe", "seungjeongwon"],
-  "last_user_intent": "King Sejong user-scope hooks are installed.",
-  "pending_gates": [],
-  "protected_paths": [
-    ".agents/skills/sejong/",
-    ".agents/skills/jangyeongsil/",
-    ".agents/skills/jiphyeonjeon/",
-    ".agents/skills/uigwe/",
-    ".agents/skills/seungjeongwon/",
-    ".agents/skills/why-gate/",
-    "plugins/king-sejong/",
-    "docs/sejong/",
-    "scripts/install-sejong.sh"
-  ],
-  "allowed_direct_change_types": [
-    "typo",
-    "broken_link",
-    "formatting_only",
-    "deterministic_scorecard_regeneration"
-  ],
-  "evidence_refs": [],
-  "artifact_refs": [],
-  "team_run_refs": [],
-  "subagent_refs": [],
-  "exit_conditions": [
-    "user_explicitly_exits_sejong",
-    "user_switches_to_non_sejong_workflow",
-    "host_conversation_ends"
-  ],
-  "last_updated_at": "$timestamp"
-}
-EOF
+  mkdir -p "$codex_home/sejong/state"
 }
 
 configure_user_hooks() {
@@ -767,7 +684,7 @@ configure_user_hooks() {
   else
     remove_managed_hooks_block "$config_file"
   fi
-  write_active_context_if_missing "$codex_home"
+  ensure_sejong_state_dir "$codex_home"
 }
 
 configure_user_plugin() {
@@ -811,7 +728,6 @@ verify_user_hooks_config() {
   local codex_home=$1
   local config_file="$codex_home/config.toml"
   local hook_script="$codex_home/skills/sejong/docs/scripts/king_sejong_hooks.py"
-  local context_file="$codex_home/sejong/state/active-context.json"
 
   if [[ ! -f "$config_file" ]]; then
     echo "missing Codex config: $config_file" >&2
@@ -831,19 +747,10 @@ verify_user_hooks_config() {
       return 1
     fi
   fi
-  if [[ ! -f "$context_file" ]]; then
-    echo "missing King Sejong active context checkpoint: $context_file" >&2
+  if [[ ! -d "$codex_home/sejong/state" ]]; then
+    echo "missing King Sejong state directory: $codex_home/sejong/state" >&2
     return 1
   fi
-  for path in \
-    ".agents/skills/jangyeongsil/" \
-    ".agents/skills/jiphyeonjeon/" \
-    "scripts/install-sejong.sh"; do
-    if ! grep -q "$path" "$context_file"; then
-      echo "King Sejong active context checkpoint is missing protected path: $path" >&2
-      return 1
-    fi
-  done
 }
 
 verify_user_plugin_adapter() {
@@ -1249,7 +1156,7 @@ Managed paths:
 
 Managed hooks:
   $codex_home/config.toml
-  $codex_home/sejong/state/active-context.json
+  $codex_home/sejong/state/
 $managed_guidance_block
 
 Invoke from any Codex workspace with:

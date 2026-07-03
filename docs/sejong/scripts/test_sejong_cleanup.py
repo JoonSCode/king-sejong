@@ -34,7 +34,13 @@ def make_run(sejong_home: Path, repo_id: str = "repo-test", run_id: str = "run-t
     return run_dir
 
 
-def write_active_context(sejong_home: Path, *, repo_id: str, run_id: str) -> None:
+def write_active_context(
+    sejong_home: Path,
+    *,
+    repo_id: str,
+    run_id: str,
+    artifact_refs: list[str] | None = None,
+) -> None:
     state_dir = sejong_home / "state"
     state_dir.mkdir(parents=True)
     (state_dir / "active-context.json").write_text(
@@ -55,7 +61,7 @@ def write_active_context(sejong_home: Path, *, repo_id: str, run_id: str) -> Non
                 "protected_paths": [],
                 "allowed_direct_change_types": [],
                 "evidence_refs": [],
-                "artifact_refs": [],
+                "artifact_refs": artifact_refs or [],
                 "team_run_refs": [],
                 "subagent_refs": [],
                 "exit_conditions": ["test"],
@@ -100,7 +106,7 @@ class SejongCleanupTests(unittest.TestCase):
             self.assertTrue((run_dir / "run-summary.json").exists())
             self.assertFalse((run_dir / "execution-ledger.jsonl").exists())
 
-    def test_finalize_execute_refuses_active_run_cleanup(self) -> None:
+    def test_finalize_success_execute_closes_matching_active_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)
             run_dir = make_run(sejong_home, repo_id="repo-test", run_id="active-run")
@@ -112,8 +118,32 @@ class SejongCleanupTests(unittest.TestCase):
                 sejong_home=sejong_home,
             )
 
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse((run_dir / "scratch.log").exists())
+            self.assertFalse((sejong_home / "state" / "active-context.json").exists())
+            summary = json.loads((run_dir / "run-summary.json").read_text(encoding="utf-8"))
+            self.assertTrue(summary["actions"]["closed_active_context"])
+
+    def test_finalize_execute_refuses_active_artifact_ref_cleanup(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            run_dir = make_run(sejong_home, repo_id="repo-test", run_id="referenced-run")
+            (run_dir / "scratch.log").write_text("raw", encoding="utf-8")
+            write_active_context(
+                sejong_home,
+                repo_id="repo-test",
+                run_id="other-active-run",
+                artifact_refs=[str(run_dir / "king-sejong-context.json")],
+            )
+
+            result = run_cleanup(
+                ["finalize-run", str(run_dir), "--status", "success", "--execute"],
+                sejong_home=sejong_home,
+            )
+
             self.assertNotEqual(result.returncode, 0)
             self.assertTrue((run_dir / "scratch.log").exists())
+            self.assertTrue((sejong_home / "state" / "active-context.json").exists())
             summary = json.loads((run_dir / "run-summary.json").read_text(encoding="utf-8"))
             self.assertIn("active run is protected from cleanup", summary["actions"]["failures"])
 

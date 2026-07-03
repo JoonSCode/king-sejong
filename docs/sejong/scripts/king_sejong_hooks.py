@@ -169,6 +169,8 @@ def newest_matching_repo_context(payload: dict[str, Any]) -> dict[str, Any]:
         context = load_context_file(context_path)
         if not context_is_well_formed(context):
             continue
+        if not context_has_active_continuation(context):
+            continue
         if not context_applies_to_cwd(context, payload):
             continue
         try:
@@ -191,7 +193,12 @@ def load_context(path: str | None, payload: dict[str, Any] | None = None) -> dic
     active_context = load_context_file(context_path)
     if path or not payload or context_applies_to_cwd(active_context, payload):
         return active_context
-    return newest_matching_repo_context(payload) or active_context
+    matching_context = newest_matching_repo_context(payload)
+    if matching_context:
+        return matching_context
+    if context_has_active_continuation(active_context):
+        return active_context
+    return {}
 
 
 def sejong_root() -> Path:
@@ -344,6 +351,16 @@ def context_applies_to_cwd(context: dict[str, Any], payload: dict[str, Any]) -> 
     cwd = resolve_path(payload.get("cwd") or os.getcwd())
     root = resolve_path(repo_root)
     return path_contains_or_equals(cwd, root)
+
+
+def context_has_active_continuation(context: dict[str, Any]) -> bool:
+    if context.get("pending_gates"):
+        return True
+    if active_seungjeongwon_run_summaries(context):
+        return True
+    if open_ambiguity_total(context) or pending_question_obligation_total(context):
+        return True
+    return False
 
 
 def repo_mismatch_summary(context: dict[str, Any], payload: dict[str, Any]) -> str:

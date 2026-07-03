@@ -38,9 +38,9 @@ User scope under `${CODEX_HOME:-~/.codex}/skills`:
 
 In user scope, this docs tree is installed under `skills/sejong/docs/`, and the installed skill files are rewritten to load contracts from that user-scope docs copy.
 
-User-scope install also copies the Codex plugin adapter to `${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/`, manages the King Sejong hook and plugin blocks in `${CODEX_HOME:-~/.codex}/config.toml`, sets `[features].hooks = true`, and creates `${CODEX_HOME:-~/.codex}/sejong/state/active-context.json` if it does not already exist. The managed blocks are marked and idempotent, so rerunning the installer replaces only King Sejong's sections.
+User-scope install also copies the Codex plugin adapter to `${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/`, manages the King Sejong hook and plugin blocks in `${CODEX_HOME:-~/.codex}/config.toml`, sets `[features].hooks = true`, and creates `${CODEX_HOME:-~/.codex}/sejong/state/` if it does not already exist. It does not create or mutate `${CODEX_HOME:-~/.codex}/sejong/state/active-context.json`; active workflow context is created by Sejong workflow commands. The managed blocks are marked and idempotent, so rerunning the installer replaces only King Sejong's sections.
 
-The plugin adapter is a hook-metadata surface. It does not expose duplicate plugin-scoped skills and does not replace the installer-owned skills, docs, active context, or verification contracts.
+The plugin adapter is a hook-metadata surface. It does not expose duplicate plugin-scoped skills and does not replace the installer-owned skills, docs, runtime state directory, or verification contracts.
 
 `why-gate` is distributed as an installer-owned user-scope skill, not as a plugin-scoped skill. It supports compact rationale checkpoints for code review, planning, product analysis, retrospectives, and agent self-audit while the Sejong router remains the authority for workflow routing.
 
