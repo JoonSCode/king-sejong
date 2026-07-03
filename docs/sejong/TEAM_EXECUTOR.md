@@ -177,6 +177,16 @@ python3 docs/sejong/scripts/team_executor.py check-sandbox-claims docs/sejong/TE
 
 `append-message` remains a compatibility alias for `send-message`, but wrappers should use `send-message` and `receive-messages` for new mailbox integrations.
 
+Mailbox and lease writes are serialized with a per-run lock file under the run
+directory. `send-message` performs target lookup, generated message id creation,
+duplicate id checks, evidence ref checks, and JSONL append inside the locked
+critical section. Generated message ids use a `msg-<uuid>` shape rather than
+mailbox-length counters. `acquire-lease` performs duplicate lease id checks,
+active scope conflict checks, generated lease id creation, and lease file update
+inside the same per-run lock. Evidence refs in mailbox messages must resolve to
+an absolute path, a run-directory path, or a path under the run's `repo_root`;
+otherwise the message is rejected and `check` reports the unresolved ref.
+
 ## Isolation Hardening Options
 
 Current TeamExecutor protection is worktree-first for write-capable isolated

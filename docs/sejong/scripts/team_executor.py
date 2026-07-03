@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import fnmatch
 import json
 import os
@@ -11,6 +12,9 @@ import shutil
 import subprocess
 import sys
 import time
+import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -180,12 +184,25 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
-    path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temp_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    temp_path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temp_path.replace(path)
 
 
 def append_jsonl(path: Path, data: dict[str, Any]) -> None:
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(data, sort_keys=True) + "\n")
+
+
+@contextmanager
+def run_state_lock(run_dir: Path) -> Iterator[None]:
+    lock_path = run_dir / ".team-executor.lock"
+    with lock_path.open("a+", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def require_run_dir(run_dir: Path) -> Path:
@@ -1006,6 +1023,32 @@ def message_by_id(messages: list[dict[str, Any]], message_id: str | None) -> dic
     return None
 
 
+def generated_message_id() -> str:
+    return f"msg-{uuid.uuid4().hex}"
+
+
+def generated_lease_id(worker_id: str) -> str:
+    return f"lease-{worker_id}-{uuid.uuid4().hex}"
+
+
+def message_id_exists(messages: list[dict[str, Any]], message_id: str) -> bool:
+    return any(message.get("message_id") == message_id for message in messages)
+
+
+def evidence_ref_exists(run_dir: Path, team: dict[str, Any], ref: str) -> bool:
+    candidate = Path(ref)
+    if candidate.is_absolute():
+        return candidate.exists()
+    repo_root = Path(str(team.get("repo_root") or "")).expanduser()
+    return (run_dir / candidate).exists() or (repo_root / candidate).exists()
+
+
+def require_evidence_refs(run_dir: Path, team: dict[str, Any], refs: list[str]) -> None:
+    missing = [ref for ref in refs if not evidence_ref_exists(run_dir, team, ref)]
+    if missing:
+        raise SystemExit("evidence_ref does not exist: " + ", ".join(missing))
+
+
 def send_message(args: argparse.Namespace) -> int:
     run_dir = require_run_dir(Path(args.run_dir))
     team = load_team(run_dir)
@@ -1026,12 +1069,6 @@ def send_message(args: argparse.Namespace) -> int:
 
     round_id = args.round_id or current_open_round(run_dir)
     require_open_round(run_dir, round_id)
-    existing_messages = read_mailbox(run_dir)
-    target = message_by_id(existing_messages, args.target_message_id)
-    if args.target_message_id and target is None:
-        raise SystemExit(f"target_message_id not found before send: {args.target_message_id}")
-
-    message_id = args.message_id or f"{round_id}-{args.worker_id}-{len(existing_messages) + 1}"
     sender = worker_endpoint(args.worker_id, {"role": role, "scope": scope})
     recipients = [normalize_endpoint(team, recipient) for recipient in (args.recipient or [{"type": "lead", "id": "sejong"}])]
     direction = args.direction or infer_direction(sender, recipients)
@@ -1039,26 +1076,39 @@ def send_message(args: argparse.Namespace) -> int:
         raise SystemExit(f"unsupported message direction: {direction}")
     if not direction_is_consistent(direction, sender, recipients):
         raise SystemExit(f"message direction is inconsistent with sender and recipients: {direction}")
-    thread_id = args.thread_id or (target.get("thread_id") if target else None) or message_id
 
-    message = {
-        "format": MAILBOX_MESSAGE_FORMAT,
-        "message_id": message_id,
-        "run_id": team["run_id"],
-        "round_id": round_id,
-        "thread_id": thread_id,
-        "target_message_id": args.target_message_id,
-        "direction": direction,
-        "sender": sender,
-        "recipients": recipients,
-        "kind": args.kind,
-        "summary": args.summary,
-        "body": args.body,
-        "evidence_refs": args.evidence_ref or [],
-        "requires_response": args.requires_response,
-        "created_at": now_utc(),
-    }
-    append_jsonl(mailbox_path(run_dir), message)
+    evidence_refs = args.evidence_ref or []
+    require_evidence_refs(run_dir, team, evidence_refs)
+
+    with run_state_lock(run_dir):
+        existing_messages = read_mailbox(run_dir)
+        target = message_by_id(existing_messages, args.target_message_id)
+        if args.target_message_id and target is None:
+            raise SystemExit(f"target_message_id not found before send: {args.target_message_id}")
+
+        message_id = args.message_id or generated_message_id()
+        if message_id_exists(existing_messages, message_id):
+            raise SystemExit(f"duplicate message_id: {message_id}")
+        thread_id = args.thread_id or (target.get("thread_id") if target else None) or message_id
+
+        message = {
+            "format": MAILBOX_MESSAGE_FORMAT,
+            "message_id": message_id,
+            "run_id": team["run_id"],
+            "round_id": round_id,
+            "thread_id": thread_id,
+            "target_message_id": args.target_message_id,
+            "direction": direction,
+            "sender": sender,
+            "recipients": recipients,
+            "kind": args.kind,
+            "summary": args.summary,
+            "body": args.body,
+            "evidence_refs": evidence_refs,
+            "requires_response": args.requires_response,
+            "created_at": now_utc(),
+        }
+        append_jsonl(mailbox_path(run_dir), message)
     print(f"message sent: {message_id}")
     return 0
 
@@ -1072,52 +1122,56 @@ def acquire_lease(args: argparse.Namespace) -> int:
     team = load_team(run_dir)
     if args.worker_id not in worker_ids(team):
         raise SystemExit(f"unknown worker: {args.worker_id}")
-    leases = load_json(leases_path(run_dir))
-    active = [lease for lease in leases.get("leases", []) if lease.get("status") == "active"]
     requested = [normalize_scope(scope) for scope in args.scope]
-    for lease in active:
-        if lease.get("worker_id") == args.worker_id:
-            continue
-        existing_scopes = [normalize_scope(scope) for scope in lease.get("scopes", [])]
-        overlaps = sorted(
+    with run_state_lock(run_dir):
+        leases = load_json(leases_path(run_dir))
+        active = [lease for lease in leases.get("leases", []) if lease.get("status") == "active"]
+        lease_id = args.lease_id or generated_lease_id(args.worker_id)
+        if any(lease.get("lease_id") == lease_id for lease in leases.get("leases", [])):
+            raise SystemExit(f"duplicate lease_id: {lease_id}")
+        for lease in active:
+            if lease.get("worker_id") == args.worker_id:
+                continue
+            existing_scopes = [normalize_scope(scope) for scope in lease.get("scopes", [])]
+            overlaps = sorted(
+                {
+                    f"{requested_scope} overlaps {existing_scope}"
+                    for requested_scope in requested
+                    for existing_scope in existing_scopes
+                    if scopes_overlap(requested_scope, existing_scope)
+                }
+            )
+            if overlaps:
+                raise SystemExit(f"lease conflict with {lease.get('worker_id')}: {', '.join(overlaps)}")
+
+        leases.setdefault("leases", []).append(
             {
-                f"{requested_scope} overlaps {existing_scope}"
-                for requested_scope in requested
-                for existing_scope in existing_scopes
-                if scopes_overlap(requested_scope, existing_scope)
+                "lease_id": lease_id,
+                "worker_id": args.worker_id,
+                "scopes": args.scope,
+                "status": "active",
+                "acquired_at": now_utc(),
+                "released_at": None,
             }
         )
-        if overlaps:
-            raise SystemExit(f"lease conflict with {lease.get('worker_id')}: {', '.join(overlaps)}")
-
-    lease_id = args.lease_id or f"lease-{args.worker_id}-{len(leases.get('leases', [])) + 1}"
-    leases.setdefault("leases", []).append(
-        {
-            "lease_id": lease_id,
-            "worker_id": args.worker_id,
-            "scopes": args.scope,
-            "status": "active",
-            "acquired_at": now_utc(),
-            "released_at": None,
-        }
-    )
-    write_json(leases_path(run_dir), leases)
+        write_json(leases_path(run_dir), leases)
     print(f"lease acquired: {lease_id}")
     return 0
 
 
 def release_lease(args: argparse.Namespace) -> int:
     run_dir = require_run_dir(Path(args.run_dir))
-    leases = load_json(leases_path(run_dir))
-    for lease in leases.get("leases", []):
-        if lease["lease_id"] == args.lease_id:
-            if lease["status"] == "released":
-                raise SystemExit(f"lease already released: {args.lease_id}")
-            lease["status"] = "released"
-            lease["released_at"] = now_utc()
-            write_json(leases_path(run_dir), leases)
-            print(f"lease released: {args.lease_id}")
-            return 0
+    with run_state_lock(run_dir):
+        leases = load_json(leases_path(run_dir))
+        for lease in leases.get("leases", []):
+            if lease["lease_id"] == args.lease_id:
+                if lease["status"] == "released":
+                    raise SystemExit(f"lease already released: {args.lease_id}")
+                lease["status"] = "released"
+                lease["released_at"] = now_utc()
+                write_json(leases_path(run_dir), leases)
+                print(f"lease released: {args.lease_id}")
+                return 0
     raise SystemExit(f"unknown lease: {args.lease_id}")
 
 
@@ -1144,6 +1198,7 @@ def worker_claims_forbidden_authority(message: dict[str, Any]) -> bool:
 
 
 def mailbox_message_failures(
+    run_dir: Path,
     team: dict[str, Any],
     message: dict[str, Any],
     *,
@@ -1220,6 +1275,13 @@ def mailbox_message_failures(
         failures.append(f"mailbox message references unknown round: {message_id}")
     if not isinstance(message.get("evidence_refs"), list):
         failures.append(f"mailbox evidence_refs must be a list: {message_id}")
+    else:
+        for ref in message.get("evidence_refs") or []:
+            if not isinstance(ref, str) or not ref:
+                failures.append(f"mailbox evidence_ref must be a non-empty string: {message_id}")
+                continue
+            if not evidence_ref_exists(run_dir, team, ref):
+                failures.append(f"mailbox evidence_ref does not exist: {message_id}: {ref}")
     if not isinstance(message.get("requires_response"), bool):
         failures.append(f"mailbox requires_response must be boolean: {message_id}")
     if worker_claims_forbidden_authority(message):
@@ -1372,7 +1434,7 @@ def check_run(args: argparse.Namespace) -> int:
             failures.append(f"closed round missing supported closed_reason: {round_id}")
     seen_messages: set[str] = set()
     for message in read_mailbox(run_dir):
-        failures.extend(mailbox_message_failures(team, message, seen_messages=seen_messages, round_ids=round_ids))
+        failures.extend(mailbox_message_failures(run_dir, team, message, seen_messages=seen_messages, round_ids=round_ids))
 
     leases = load_json(leases_path(run_dir))
     active: dict[str, str] = {}
