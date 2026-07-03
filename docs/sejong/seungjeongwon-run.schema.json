@@ -54,6 +54,9 @@
     "verification_evidence": {
       "$ref": "#/$defs/StringList"
     },
+    "execution_feedback_refs": {
+      "$ref": "#/$defs/StringList"
+    },
     "guardrail_scores": {
       "$ref": "#/$defs/GuardrailScores"
     },
@@ -85,6 +88,7 @@
     "todos",
     "attempt_ledger",
     "verification_evidence",
+    "execution_feedback_refs",
     "guardrail_scores",
     "blockers",
     "uigwe_reentry_requests",

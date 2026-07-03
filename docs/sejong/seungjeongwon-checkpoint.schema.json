@@ -82,6 +82,9 @@
     "verification_evidence": {
       "$ref": "#/$defs/StringList"
     },
+    "execution_feedback_refs": {
+      "$ref": "#/$defs/StringList"
+    },
     "guardrail_scores": {
       "$ref": "https://kinno.dev/schemas/sejong/seungjeongwon-run.schema.json#/$defs/GuardrailScores"
     },
@@ -115,6 +118,7 @@
     "todo_statuses",
     "attempt_ledger",
     "verification_evidence",
+    "execution_feedback_refs",
     "guardrail_scores",
     "blockers",
     "uigwe_reentry_requests",

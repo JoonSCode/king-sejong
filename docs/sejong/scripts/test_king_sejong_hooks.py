@@ -105,6 +105,7 @@ def seungjeongwon_run_fixture(*, status: str = "active", todo_status: str = "pen
         else [],
         "attempt_ledger": [],
         "verification_evidence": ["tests passed"] if status == "completed" else [],
+        "execution_feedback_refs": [],
         "guardrail_scores": {"selected_leaf_coverage": 1.0, "success_criteria_coverage": 1.0, "overall": 1.0}
         if status == "completed"
         else {},

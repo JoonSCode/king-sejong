@@ -218,6 +218,12 @@ At minimum, feedback should carry:
 - `verification_perspectives` when the work validates, compares, reviews, or proves readiness; each perspective records the question, evidence target, method, sufficiency threshold, falsification signal, owner boundary, status, and evidence refs
 - `paired_result_comparison` when Seungjeongwon compares a baseline and candidate result, such as non-goal-backed execution versus implicit native goal handoff
 
+When this feedback is attached to a Seungjeongwon run, the feedback artifact
+remains the canonical owner of the full `visible_todo_events` stream.
+Seungjeongwon run and checkpoint artifacts should store validated
+`execution_feedback_refs` pointing to these feedback files, not duplicate the
+entire event stream.
+
 Default persistence rule for the current Uigwe draft:
 
 - the executor chooses the canonical feedback path
