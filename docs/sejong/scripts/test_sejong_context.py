@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# noqa: SIZE_OK -- context CLI integration tests stay colocated for Phase 1 review traceability
 from __future__ import annotations
 
 import json
@@ -7,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -16,13 +18,49 @@ REPO_ROOT = SCRIPT_PATH.parents[3]
 CONTEXT_SCRIPT = SEJONG_ROOT / "scripts" / "sejong_context.py"
 
 
-def run_context(args: list[str], *, sejong_home: Path) -> subprocess.CompletedProcess[str]:
+def run_context(
+    args: list[str],
+    *,
+    sejong_home: Path,
+    lock_timeout_seconds: str = "0.05",
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(CONTEXT_SCRIPT), *args],
         text=True,
         capture_output=True,
         cwd=str(REPO_ROOT),
-        env={**os.environ, "SEJONG_HOME": str(sejong_home)},
+        env={
+            **os.environ,
+            "SEJONG_HOME": str(sejong_home),
+            "SEJONG_CONTEXT_LOCK_TIMEOUT_SECONDS": lock_timeout_seconds,
+        },
+    )
+
+
+def write_active_pointer_lock(sejong_home: Path) -> None:
+    lock_path = sejong_home / "state" / "locks" / "active-pointer.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    lock_path.write_text(
+        json.dumps(
+            {
+                "format": "sejong.runtime-lock/v0.1-draft",
+                "lock_name": "active-pointer",
+                "lock_class": "active-pointer",
+                "owner_session_id": "session-owner",
+                "owner_run_id": "run-owner",
+                "owner_device_id": "device-owner",
+                "owner_process_id": os.getpid(),
+                "operation": "manual held active pointer",
+                "token": "held-token",
+                "created_at": timestamp,
+                "heartbeat_at": timestamp,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
     )
 
 
@@ -115,6 +153,160 @@ class SejongContextTests(unittest.TestCase):
             context = json.loads((sejong_home / "state" / "active-context.json").read_text(encoding="utf-8"))
             self.assertEqual(context["required_route_sequence"], ["uigwe", "seungjeongwon"])
             self.assertEqual(context["pending_gates"], ["seungjeongwon_receipt_required"])
+
+    def test_start_rejects_held_active_pointer_lock(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            write_active_pointer_lock(sejong_home)
+
+            start = run_context(
+                [
+                    "start",
+                    "--repo-root",
+                    str(REPO_ROOT),
+                    "--run-id",
+                    "locked-start",
+                    "--session-id",
+                    "session-contender",
+                    "--last-user-intent",
+                    "held pointer start",
+                ],
+                sejong_home=sejong_home,
+            )
+
+            combined = start.stdout + start.stderr
+            self.assertNotEqual(start.returncode, 0, combined)
+            self.assertIn("active-pointer", combined)
+            self.assertIn("session-owner", combined)
+            self.assertFalse((sejong_home / "state" / "active-context.json").exists())
+
+    def test_start_rejects_invalid_lock_timeout_env_without_traceback(self) -> None:
+        invalid_timeouts = ("not-a-number", "nan", "inf", "-1", "0")
+        for invalid_timeout in invalid_timeouts:
+            with self.subTest(invalid_timeout=invalid_timeout):
+                with tempfile.TemporaryDirectory() as tmp:
+                    sejong_home = Path(tmp)
+
+                    start = run_context(
+                        [
+                            "start",
+                            "--repo-root",
+                            str(REPO_ROOT),
+                            "--run-id",
+                            f"invalid-timeout-{invalid_timeout}",
+                            "--last-user-intent",
+                            "malformed timeout env",
+                        ],
+                        sejong_home=sejong_home,
+                        lock_timeout_seconds=invalid_timeout,
+                    )
+
+                    combined = start.stdout + start.stderr
+                    self.assertNotEqual(start.returncode, 0, combined)
+                    self.assertIn(
+                        f"failure: invalid SEJONG_CONTEXT_LOCK_TIMEOUT_SECONDS={invalid_timeout!r}",
+                        combined,
+                    )
+                    self.assertIn("expected a finite positive number of seconds", combined)
+                    self.assertNotIn("Traceback", combined)
+                    self.assertFalse((sejong_home / "state" / "active-context.json").exists())
+
+    def test_start_rejects_nan_lock_timeout_before_waiting_on_held_lock(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            write_active_pointer_lock(sejong_home)
+
+            try:
+                start = subprocess.run(
+                    [
+                        sys.executable,
+                        str(CONTEXT_SCRIPT),
+                        "start",
+                        "--repo-root",
+                        str(REPO_ROOT),
+                        "--run-id",
+                        "invalid-timeout-nan-held-lock",
+                        "--last-user-intent",
+                        "nan timeout held lock",
+                    ],
+                    text=True,
+                    capture_output=True,
+                    cwd=str(REPO_ROOT),
+                    env={
+                        **os.environ,
+                        "SEJONG_HOME": str(sejong_home),
+                        "SEJONG_CONTEXT_LOCK_TIMEOUT_SECONDS": "nan",
+                    },
+                    timeout=1.0,
+                )
+            except subprocess.TimeoutExpired as error:
+                self.fail(f"context start hung with nan lock timeout: {error}")
+
+            combined = start.stdout + start.stderr
+            self.assertNotEqual(start.returncode, 0, combined)
+            self.assertIn("failure: invalid SEJONG_CONTEXT_LOCK_TIMEOUT_SECONDS='nan'", combined)
+            self.assertNotIn("Traceback", combined)
+            self.assertFalse((sejong_home / "state" / "active-context.json").exists())
+
+    def test_update_rejects_held_active_pointer_lock_without_corrupting_pointer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            start = run_context(
+                [
+                    "start",
+                    "--repo-root",
+                    str(REPO_ROOT),
+                    "--run-id",
+                    "locked-update",
+                    "--current-surface",
+                    "uigwe",
+                    "--last-user-intent",
+                    "held pointer update setup",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(start.returncode, 0, start.stderr)
+            active_path = sejong_home / "state" / "active-context.json"
+            before = json.loads(active_path.read_text(encoding="utf-8"))
+            write_active_pointer_lock(sejong_home)
+
+            update = run_context(["update", "--current-surface", "seungjeongwon"], sejong_home=sejong_home)
+
+            combined = update.stdout + update.stderr
+            self.assertNotEqual(update.returncode, 0, combined)
+            self.assertIn("active-pointer", combined)
+            self.assertIn("session-owner", combined)
+            after = json.loads(active_path.read_text(encoding="utf-8"))
+            self.assertEqual(after["current_surface"], before["current_surface"])
+
+    def test_close_rejects_held_active_pointer_lock_without_removing_pointer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            start = run_context(
+                [
+                    "start",
+                    "--repo-root",
+                    str(REPO_ROOT),
+                    "--run-id",
+                    "locked-close",
+                    "--last-user-intent",
+                    "held pointer close setup",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(start.returncode, 0, start.stderr)
+            active_path = sejong_home / "state" / "active-context.json"
+            before = json.loads(active_path.read_text(encoding="utf-8"))
+            write_active_pointer_lock(sejong_home)
+
+            close = run_context(["close"], sejong_home=sejong_home)
+
+            combined = close.stdout + close.stderr
+            self.assertNotEqual(close.returncode, 0, combined)
+            self.assertIn("active-pointer", combined)
+            self.assertIn("session-owner", combined)
+            after = json.loads(active_path.read_text(encoding="utf-8"))
+            self.assertEqual(after["active_context_id"], before["active_context_id"])
 
     def test_start_records_objective_metadata_for_current_run_summary(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

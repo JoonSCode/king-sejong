@@ -1,16 +1,27 @@
 #!/usr/bin/env python3
+# noqa: SIZE_OK -- active-context CLI remains single-file for Phase 1 compatibility
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import math
 import os
+import socket
 import sys
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from sejong_paths import path_contains_or_equals, path_key, resolve_path
+from sejong_runtime_lock import (
+    RuntimeLock,
+    RuntimeLockClass,
+    RuntimeLockRequest,
+    RuntimeLockTimeout,
+    acquire_runtime_lock,
+)
 
 
 FORMAT = "king-sejong.context/v0.1-draft"
@@ -72,6 +83,21 @@ DEFAULT_EXIT_CONDITIONS = (
     "host_conversation_ends",
 )
 SEUNGJEONGWON_RECEIPT_GATE = "seungjeongwon_receipt_required"
+ACTIVE_POINTER_LOCK_NAME = "active-pointer"
+CONTEXT_LOCK_TIMEOUT_ENV = "SEJONG_CONTEXT_LOCK_TIMEOUT_SECONDS"
+DEFAULT_CONTEXT_LOCK_TIMEOUT_SECONDS = 2.0
+ACTIVE_POINTER_STALE_AFTER_SECONDS = 7.0 * 24.0 * 60.0 * 60.0
+
+
+@dataclass(frozen=True, slots=True)
+class InvalidContextLockTimeout(Exception):
+    raw_value: str
+
+    def __str__(self) -> str:
+        return (
+            f"invalid {CONTEXT_LOCK_TIMEOUT_ENV}={self.raw_value!r}; "
+            "expected a finite positive number of seconds"
+        )
 
 
 def now_utc() -> str:
@@ -109,6 +135,76 @@ def load_json(path: Path) -> dict[str, Any]:
 def write_json(path: Path, data: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def context_lock_timeout_seconds() -> float:
+    configured = os.environ.get(CONTEXT_LOCK_TIMEOUT_ENV)
+    if configured is None:
+        return DEFAULT_CONTEXT_LOCK_TIMEOUT_SECONDS
+    try:
+        timeout_seconds = float(configured)
+    except ValueError as error:
+        raise InvalidContextLockTimeout(configured) from error
+    if not math.isfinite(timeout_seconds) or timeout_seconds <= 0.0:
+        raise InvalidContextLockTimeout(configured)
+    return timeout_seconds
+
+
+def device_id() -> str:
+    configured = os.environ.get("SEJONG_DEVICE_ID")
+    if configured:
+        return configured
+    return socket.gethostname() or "local-device"
+
+
+def context_identity_value(context: dict[str, Any], field: str, fallback: str) -> str:
+    value = context.get(field)
+    return value if isinstance(value, str) and value else fallback
+
+
+def run_context_lock_name(context: dict[str, Any]) -> str:
+    repo_id = context_identity_value(context, "repo_id", "unknown-repo")
+    run_id = context_identity_value(context, "run_id", "unknown-run")
+    digest = hashlib.sha1(f"{repo_id}:{run_id}".encode("utf-8")).hexdigest()[:16]
+    return f"run-context-{digest}"
+
+
+def acquire_active_pointer_lock(context: dict[str, Any], operation: str) -> RuntimeLock:
+    return acquire_runtime_lock(
+        RuntimeLockRequest(
+            sejong_home=sejong_root(),
+            lock_name=ACTIVE_POINTER_LOCK_NAME,
+            lock_class=RuntimeLockClass.ACTIVE_POINTER,
+            owner_session_id=context_identity_value(context, "session_id", "unknown-session"),
+            owner_device_id=device_id(),
+            operation=operation,
+            owner_run_id=context_identity_value(context, "run_id", "") or None,
+            repo_id=context_identity_value(context, "repo_id", "") or None,
+            timeout_seconds=context_lock_timeout_seconds(),
+            stale_after_seconds=ACTIVE_POINTER_STALE_AFTER_SECONDS,
+        )
+    )
+
+
+def acquire_run_context_lock(context: dict[str, Any], operation: str) -> RuntimeLock:
+    return acquire_runtime_lock(
+        RuntimeLockRequest(
+            sejong_home=sejong_root(),
+            lock_name=run_context_lock_name(context),
+            lock_class=RuntimeLockClass.RUN_CONTEXT,
+            owner_session_id=context_identity_value(context, "session_id", "unknown-session"),
+            owner_device_id=device_id(),
+            operation=operation,
+            owner_run_id=context_identity_value(context, "run_id", "") or None,
+            repo_id=context_identity_value(context, "repo_id", "") or None,
+            timeout_seconds=context_lock_timeout_seconds(),
+        )
+    )
+
+
+def release_context_locks(locks: list[RuntimeLock]) -> None:
+    for runtime_lock in reversed(locks):
+        runtime_lock.release()
 
 
 def unique_append(values: list[str], additions: list[str]) -> list[str]:
@@ -197,13 +293,20 @@ def context_run_path(context: dict[str, Any]) -> Path:
     return sejong_root() / "runs" / repo_id / run_id / "king-sejong-context.json"
 
 
-def save_context(context: dict[str, Any], *, update_active: bool = True) -> Path:
-    context["last_updated_at"] = now_utc()
-    run_path = context_run_path(context)
-    write_json(run_path, context)
-    if update_active:
-        write_json(active_context_path(), context)
-    return run_path
+def save_context(context: dict[str, Any], *, update_active: bool = True, operation: str = "save context") -> Path:
+    locks: list[RuntimeLock] = []
+    try:
+        if update_active:
+            locks.append(acquire_active_pointer_lock(context, operation))
+        locks.append(acquire_run_context_lock(context, operation))
+        context["last_updated_at"] = now_utc()
+        run_path = context_run_path(context)
+        write_json(run_path, context)
+        if update_active:
+            write_json(active_context_path(), context)
+        return run_path
+    finally:
+        release_context_locks(locks)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -316,7 +419,7 @@ def start_context(args: argparse.Namespace) -> int:
         for failure in failures:
             print(f"failure: {failure}", file=sys.stderr)
         return 1
-    run_path = save_context(context)
+    run_path = save_context(context, operation="start context")
     print(f"active_context={active_context_path()}")
     print(f"run_context={run_path}")
     return 0
@@ -379,7 +482,7 @@ def update_context(args: argparse.Namespace) -> int:
         for failure in failures:
             print(f"failure: {failure}", file=sys.stderr)
         return 1
-    run_path = save_context(context)
+    run_path = save_context(context, operation="update context")
     print(f"context updated: {run_path}")
     return 0
 
@@ -419,16 +522,20 @@ def repair_context(args: argparse.Namespace) -> int:
         for failure in failures:
             print(f"failure: {failure}", file=sys.stderr)
         return 1
-    run_path = save_context(repaired)
+    run_path = save_context(repaired, operation="repair context")
     print(f"context repaired: {run_path}")
     return 0
 
 
 def close_context(args: argparse.Namespace) -> int:
     context_path, context = load_context_argument(args.context)
-    save_context(context, update_active=False)
-    if context_path == active_context_path() and context_path.exists():
-        context_path.unlink()
+    active_lock = acquire_active_pointer_lock(context, "close context")
+    try:
+        save_context(context, update_active=False, operation="close context")
+        if context_path == active_context_path() and context_path.exists():
+            context_path.unlink()
+    finally:
+        active_lock.release()
     print(f"context closed: {context['active_context_id']}")
     return 0
 
@@ -436,7 +543,11 @@ def close_context(args: argparse.Namespace) -> int:
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
-    return args.func(args)
+    try:
+        return args.func(args)
+    except (InvalidContextLockTimeout, RuntimeLockTimeout) as error:
+        print(f"failure: {error}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
