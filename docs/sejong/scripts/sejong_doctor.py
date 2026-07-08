@@ -4,17 +4,16 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
-import os
 import site
 import subprocess
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+
+from sejong_doctor_runtime import Check, load_hook_module, multisession_checks, sejong_home
 
 
 SCRIPT_PATH = Path(__file__).resolve()
-SEJONG_ROOT = SCRIPT_PATH.parents[1]
 REPO_ROOT = SCRIPT_PATH.parents[3]
 
 REQUIRED_SOURCE_PATHS = (
@@ -48,18 +47,10 @@ PYTHON_DEPENDENCIES = (
 )
 
 
-@dataclass
-class Check:
-    name: str
-    status: str
-    detail: str
-    hint: str = ""
-
-
 def add_user_site() -> None:
     try:
         user_site = site.getusersitepackages()
-    except Exception:
+    except (AttributeError, OSError):
         return
     if user_site and user_site not in sys.path:
         sys.path.append(user_site)
@@ -68,13 +59,6 @@ def add_user_site() -> None:
 def module_available(name: str) -> bool:
     add_user_site()
     return importlib.util.find_spec(name) is not None
-
-
-def sejong_home() -> Path:
-    if os.environ.get("SEJONG_HOME"):
-        return Path(os.environ["SEJONG_HOME"]).expanduser()
-    codex_home = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
-    return codex_home / "sejong"
 
 
 def source_path_checks(repo_root: Path) -> list[Check]:
@@ -97,7 +81,7 @@ def plugin_manifest_check(repo_root: Path) -> list[Check]:
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         hooks = json.loads(hooks_path.read_text(encoding="utf-8"))
-    except Exception as exc:
+    except (json.JSONDecodeError, OSError) as exc:
         return [Check("plugin-adapter-json", "fail", f"plugin adapter JSON is unreadable: {exc}")]
     plugin_name = manifest.get("name")
     if plugin_name != "king-sejong":
@@ -120,29 +104,29 @@ def dependency_checks(skip: bool) -> list[Check]:
 
 
 def git_check(repo_root: Path) -> list[Check]:
+    if repo_root != REPO_ROOT:
+        return [
+            Check(
+                "git-status",
+                "warn",
+                "git status not executed: repo root is not the trusted King Sejong source tree",
+                f"Run from trusted source root: {REPO_ROOT}",
+            )
+        ]
     try:
         result = subprocess.run(
-            ["git", "-C", str(repo_root), "status", "--short"],
+            ["git", "-C", str(REPO_ROOT), "status", "--short"],
             text=True,
             capture_output=True,
             timeout=5,
         )
-    except Exception as exc:
+    except (OSError, subprocess.TimeoutExpired) as exc:
         return [Check("git-status", "warn", f"could not inspect git status: {exc}")]
     if result.returncode != 0:
         return [Check("git-status", "warn", result.stderr.strip() or "git status failed")]
     if result.stdout.strip():
         return [Check("git-status", "warn", "source checkout has uncommitted changes")]
     return [Check("git-status", "ok", "source checkout is clean")]
-
-
-def load_hook_module() -> Any:
-    scripts_path = str(SEJONG_ROOT / "scripts")
-    if scripts_path not in sys.path:
-        sys.path.insert(0, scripts_path)
-    import king_sejong_hooks
-
-    return king_sejong_hooks
 
 
 def active_context_check(context_path: Path | None) -> list[Check]:
@@ -159,7 +143,7 @@ def active_context_check(context_path: Path | None) -> list[Check]:
         ]
     try:
         context = json.loads(resolved_path.read_text(encoding="utf-8"))
-    except Exception as exc:
+    except (json.JSONDecodeError, OSError) as exc:
         return [Check("active-context", "fail", f"active context is unreadable: {exc}")]
     missing = hooks.missing_context_fields(context)
     if missing:
@@ -181,6 +165,7 @@ def run_checks(args: argparse.Namespace) -> list[Check]:
     checks.extend(git_check(repo_root))
     if not args.skip_active_context:
         checks.extend(active_context_check(Path(args.context).expanduser() if args.context else None))
+    checks.extend(multisession_checks(repo_root))
     return checks
 
 

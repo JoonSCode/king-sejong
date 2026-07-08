@@ -47,6 +47,23 @@ The doctor currently checks:
 - Python modules required by JSON schema validation
 - git dirty state
 - active context shape and active Seungjeongwon run HUD
+- `multisession-active-runs`: warns when Sejong runtime run contexts still
+  have active continuations, so cleanup and completion claims can account for
+  live work.
+- `active-pointer-staleness`: warns when the implicit active context pointer
+  is missing, unreadable, off-repo, or older than another active matching run
+  context.
+- `runtime-broken-refs`: fails for broken or invalid ambiguity-register,
+  Seungjeongwon-run, or continuity-capsule refs that apply to the checked repo;
+  off-repo broken refs are reported as warnings.
+- `runtime-locks`: reports runtime lock health, including malformed lock
+  metadata as failures and stale owner-process locks as warnings with owner
+  session, run, device, operation, and reason metadata.
+- `runtime-cleanup-dry-run`: reports which active runtime runs would be
+  retained by cleanup without deleting or repairing runtime state.
+- `install-update-drift`: runs user-scope install verification only from the
+  trusted King Sejong source checkout and warns when the user-scope install is
+  stale or cannot be inspected.
 
 Missing `jsonschema` or `referencing` is reported as a failure because
 `validate_json_contracts.py` cannot run without them. A local one-shot command
