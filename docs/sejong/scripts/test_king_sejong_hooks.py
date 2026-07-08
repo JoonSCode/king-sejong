@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# noqa: SIZE_OK -- hook contract tests stay colocated for Phase 1 review traceability
 from __future__ import annotations
 
 import json
@@ -8,6 +9,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from typing import TypeAlias
 
 
 SCRIPT_PATH = Path(__file__).resolve()
@@ -15,6 +17,9 @@ SEJONG_ROOT = SCRIPT_PATH.parents[1]
 REPO_ROOT = SCRIPT_PATH.parents[3]
 HOOK_SCRIPT = SEJONG_ROOT / "scripts" / "king_sejong_hooks.py"
 CONTEXT_PATH = SEJONG_ROOT / "examples" / "king-sejong-context.example.json"
+JsonScalar: TypeAlias = str | int | float | bool | None
+JsonValue: TypeAlias = JsonScalar | list["JsonValue"] | dict[str, "JsonValue"]
+JsonObject: TypeAlias = dict[str, JsonValue]
 
 
 def run_hook(
@@ -23,7 +28,7 @@ def run_hook(
     context_path: Path = CONTEXT_PATH,
     *,
     sejong_home: Path | None = None,
-) -> dict:
+) -> JsonObject:
     env = os.environ.copy()
     if sejong_home is not None:
         env["SEJONG_HOME"] = str(sejong_home)
@@ -41,7 +46,7 @@ def run_hook(
     return json.loads(output) if output else {}
 
 
-def run_hook_without_context(event_name: str, payload: dict, *, sejong_home: Path) -> dict:
+def run_hook_without_context(event_name: str, payload: dict, *, sejong_home: Path) -> dict:  # noqa: DICT_OK
     result = subprocess.run(
         [sys.executable, str(HOOK_SCRIPT), event_name],
         input=json.dumps(payload),
@@ -56,7 +61,13 @@ def run_hook_without_context(event_name: str, payload: dict, *, sejong_home: Pat
     return json.loads(output) if output else {}
 
 
-def run_hook_with_env_context(event_name: str, payload: dict, *, sejong_home: Path, context_path: Path) -> dict:
+def run_hook_with_env_context(
+    event_name: str,
+    payload: dict,
+    *,
+    sejong_home: Path,
+    context_path: Path,
+) -> JsonObject:
     result = subprocess.run(
         [sys.executable, str(HOOK_SCRIPT), event_name],
         input=json.dumps(payload),
@@ -71,7 +82,7 @@ def run_hook_with_env_context(event_name: str, payload: dict, *, sejong_home: Pa
     return json.loads(output) if output else {}
 
 
-def seungjeongwon_run_fixture(*, status: str = "active", todo_status: str = "pending") -> dict:
+def seungjeongwon_run_fixture(*, status: str = "active", todo_status: str = "pending") -> dict:  # noqa: DICT_OK
     return {
         "format": "sejong.seungjeongwon-run/v0.1-draft",
         "run_id": f"{status}-run",
@@ -124,7 +135,7 @@ def seungjeongwon_run_fixture(*, status: str = "active", todo_status: str = "pen
     }
 
 
-def native_goal_unavailable_receipt_fixture() -> dict:
+def native_goal_unavailable_receipt_fixture() -> dict:  # noqa: DICT_OK
     return {
         "format": "sejong.seungjeongwon-receipt/v0.1-draft",
         "receipt_type": "native_goal_unavailable",
@@ -236,7 +247,76 @@ class KingSejongHookTests(unittest.TestCase):
             )
         additional = output["hookSpecificOutput"]["additionalContext"]
         self.assertIn("active_context_id=ctx-matching", additional)
+        self.assertIn("active_pointer_fallback=true", additional)
+        self.assertIn("stale_active_context_id=ctx-stale", additional)
         self.assertNotIn("repo_mismatch=true", additional)
+
+    def test_env_explicit_context_repo_mismatch_does_not_fallback_to_matching_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+
+            mismatched_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            mismatched_context["active_context_id"] = "ctx-env-explicit-mismatch"
+            mismatched_context["repo_root"] = str(REPO_ROOT / "not-this-repo")
+            mismatched_context["pending_gates"] = ["seungjeongwon_receipt_required"]
+            env_context_path = sejong_home / "state" / "explicit-context.json"
+            env_context_path.parent.mkdir(parents=True)
+            env_context_path.write_text(json.dumps(mismatched_context), encoding="utf-8")
+
+            matching_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            matching_context["active_context_id"] = "ctx-matching-run-should-not-be-used"
+            matching_context["repo_root"] = str(REPO_ROOT)
+            matching_context["pending_gates"] = ["seungjeongwon_receipt_required"]
+            matching_path = sejong_home / "runs" / "matching-repo" / "run" / "king-sejong-context.json"
+            matching_path.parent.mkdir(parents=True)
+            matching_path.write_text(json.dumps(matching_context), encoding="utf-8")
+
+            output = run_hook_with_env_context(
+                "UserPromptSubmit",
+                {
+                    "prompt": "다음",
+                    "hook_event_name": "UserPromptSubmit",
+                    "cwd": str(REPO_ROOT),
+                },
+                sejong_home=sejong_home,
+                context_path=env_context_path,
+            )
+
+        additional = output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("repo_mismatch=true", additional)
+        self.assertIn("active_context_id=ctx-env-explicit-mismatch", additional)
+        self.assertNotIn("active_context_id=ctx-matching-run-should-not-be-used", additional)
+        self.assertNotIn("active_pointer_fallback=true", additional)
+
+    def test_hook_reports_fallback_when_active_pointer_is_malformed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            active_context_path = sejong_home / "state" / "active-context.json"
+            active_context_path.parent.mkdir(parents=True)
+            active_context_path.write_text("{not-json", encoding="utf-8")
+
+            matching_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            matching_context["active_context_id"] = "ctx-matching-after-malformed-pointer"
+            matching_context["repo_root"] = str(REPO_ROOT)
+            matching_context["pending_gates"] = ["seungjeongwon_receipt_required"]
+            matching_path = sejong_home / "runs" / "matching-repo" / "run" / "king-sejong-context.json"
+            matching_path.parent.mkdir(parents=True)
+            matching_path.write_text(json.dumps(matching_context), encoding="utf-8")
+
+            output = run_hook_without_context(
+                "UserPromptSubmit",
+                {
+                    "prompt": "다음",
+                    "hook_event_name": "UserPromptSubmit",
+                    "cwd": str(REPO_ROOT),
+                },
+                sejong_home=sejong_home,
+            )
+
+        additional = output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("active_context_id=ctx-matching-after-malformed-pointer", additional)
+        self.assertIn("active_pointer_fallback=true", additional)
+        self.assertIn("stale_active_pointer_error=JSONDecodeError", additional)
 
     def test_hook_skips_invalid_matching_repo_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -277,6 +357,60 @@ class KingSejongHookTests(unittest.TestCase):
         additional = output["hookSpecificOutput"]["additionalContext"]
         self.assertIn("active_context_id=ctx-valid", additional)
         self.assertNotIn("active_context_id=ctx-invalid", additional)
+
+    def test_hook_fallback_uses_semantic_freshness_and_compatible_objective(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            active_context_path = sejong_home / "state" / "active-context.json"
+            active_context_path.parent.mkdir(parents=True)
+
+            stale_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            stale_context["active_context_id"] = "ctx-stale-pointer"
+            stale_context["repo_root"] = str(REPO_ROOT / "not-this-repo")
+            stale_context["objective_id"] = "phase-1-core"
+            stale_context["task_class"] = "install-maintenance"
+            stale_context["pending_gates"] = ["seungjeongwon_receipt_required"]
+            active_context_path.write_text(json.dumps(stale_context), encoding="utf-8")
+
+            incompatible_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            incompatible_context["active_context_id"] = "ctx-incompatible-newer"
+            incompatible_context["repo_root"] = str(REPO_ROOT)
+            incompatible_context["objective_id"] = "different-objective"
+            incompatible_context["task_class"] = "strategy-research"
+            incompatible_context["pending_gates"] = ["seungjeongwon_receipt_required"]
+            incompatible_context["last_updated_at"] = "2026-07-01T00:00:00Z"
+            incompatible_path = sejong_home / "runs" / "app" / "incompatible" / "king-sejong-context.json"
+            incompatible_path.parent.mkdir(parents=True)
+            incompatible_path.write_text(json.dumps(incompatible_context), encoding="utf-8")
+
+            compatible_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            compatible_context["active_context_id"] = "ctx-compatible-semantic-newer"
+            compatible_context["repo_root"] = str(REPO_ROOT)
+            compatible_context["objective_id"] = "phase-1-core"
+            compatible_context["task_class"] = "install-maintenance"
+            compatible_context["pending_gates"] = ["seungjeongwon_receipt_required"]
+            compatible_context["last_updated_at"] = "2026-06-01T00:00:00Z"
+            compatible_path = sejong_home / "runs" / "app" / "compatible" / "king-sejong-context.json"
+            compatible_path.parent.mkdir(parents=True)
+            compatible_path.write_text(json.dumps(compatible_context), encoding="utf-8")
+
+            old_time = 1_700_000_000
+            new_time = old_time + 100
+            os.utime(compatible_path, (old_time, old_time))
+            os.utime(incompatible_path, (new_time, new_time))
+
+            output = run_hook_without_context(
+                "UserPromptSubmit",
+                {
+                    "prompt": "다음",
+                    "hook_event_name": "UserPromptSubmit",
+                    "cwd": str(REPO_ROOT),
+                },
+                sejong_home=sejong_home,
+            )
+        additional = output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("active_context_id=ctx-compatible-semantic-newer", additional)
+        self.assertNotIn("active_context_id=ctx-incompatible-newer", additional)
 
     def test_hook_ignores_completed_stale_active_pointer_without_obligations(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1339,6 +1473,31 @@ class KingSejongHookTests(unittest.TestCase):
             )
         self.assertFalse(output["continue"])
         self.assertIn("active context checkpoint could not be loaded", output["stopReason"])
+
+    def test_precompact_blocks_malformed_implicit_active_context_with_matching_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            active_context_path = sejong_home / "state" / "active-context.json"
+            active_context_path.parent.mkdir(parents=True)
+            active_context_path.write_text("{not-json", encoding="utf-8")
+
+            matching_context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            matching_context["active_context_id"] = "ctx-matching-for-malformed-precompact"
+            matching_context["repo_root"] = str(REPO_ROOT)
+            matching_context["pending_gates"] = ["seungjeongwon_receipt_required"]
+            matching_path = sejong_home / "runs" / "matching-repo" / "run" / "king-sejong-context.json"
+            matching_path.parent.mkdir(parents=True)
+            matching_path.write_text(json.dumps(matching_context), encoding="utf-8")
+
+            output = run_hook_without_context(
+                "PreCompact",
+                {"hook_event_name": "PreCompact", "trigger": "auto", "cwd": str(REPO_ROOT)},
+                sejong_home=sejong_home,
+            )
+
+        self.assertEqual(output.get("continue"), False)
+        self.assertIn("active context checkpoint could not be loaded", output["stopReason"])
+        self.assertNotIn("active_pointer_fallback=true", json.dumps(output, sort_keys=True))
 
     def test_precompact_blocks_non_object_implicit_active_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

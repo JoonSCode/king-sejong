@@ -245,14 +245,20 @@ reference hook script first reads
 that implicit pointer is missing or stale for the current workspace, it scans
 `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs/*/*/king-sejong-context.json`
 and selects the newest valid context whose `repo_root` contains the current
-`cwd`. An explicit `--context` path or `SEJONG_ACTIVE_CONTEXT` path is not a
-hint; if it is missing, hooks surface `missing_explicit_active_context=true`
-instead of falling back to another repo-scoped context. If an active context
+`cwd`. When this safe fallback happens, continuation context includes
+`active_pointer_fallback=true` and, when known, the stale pointer id, stale repo
+root, or pointer load error. This warning is model-visible context only; it
+does not make the active pointer authoritative.
+
+An explicit `--context` path or `SEJONG_ACTIVE_CONTEXT` path is not a hint; if
+it is missing, hooks surface `missing_explicit_active_context=true` instead of
+falling back to another repo-scoped context. If an implicit active context
 exists but no matching repo context is available, continuation events such as
 `UserPromptSubmit`, `SessionStart`, and `PostCompact` surface a compact
 `repo_mismatch=true` warning instead of silently applying the stale context.
 Other events remain quiet on mismatch unless a matching repo-scoped context is
-provided.
+provided. Broken artifact refs inside the selected context remain explicit
+context obligations and fail closed for compaction and completion gates.
 
 A target repo or user profile can also wire the reference scripts manually:
 

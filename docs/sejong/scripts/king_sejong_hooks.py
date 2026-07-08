@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# noqa: SIZE_OK -- monolithic reference hook script; Phase 1 blocker repair avoids behavior-risking split
 from __future__ import annotations
 
 import argparse
@@ -6,6 +7,7 @@ import json
 import os
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +43,10 @@ REQUIRED_CONTEXT_FIELDS = (
     "last_updated_at",
 )
 CONTEXT_LOAD_ERROR_FIELD = "_king_sejong_context_load_error"
+CONTEXT_ACTIVE_POINTER_FALLBACK_FIELD = "_king_sejong_active_pointer_fallback"
+CONTEXT_STALE_ACTIVE_CONTEXT_ID_FIELD = "_king_sejong_stale_active_context_id"
+CONTEXT_STALE_ACTIVE_REPO_ROOT_FIELD = "_king_sejong_stale_active_repo_root"
+CONTEXT_STALE_ACTIVE_POINTER_ERROR_FIELD = "_king_sejong_stale_active_pointer_error"
 CONTEXT_LIST_FIELDS = (
     "route_sequence",
     "required_route_sequence",
@@ -140,7 +146,7 @@ def load_stdin_json() -> dict[str, Any]:
 def load_context_file(path: Path) -> dict[str, Any]:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-    except Exception as exc:
+    except (json.JSONDecodeError, OSError, UnicodeError) as exc:
         return {CONTEXT_LOAD_ERROR_FIELD: f"{type(exc).__name__}: {exc}", "context_path": str(path)}
     if not isinstance(data, dict):
         return {
@@ -188,8 +194,40 @@ def context_is_well_formed(context: dict[str, Any]) -> bool:
     return True
 
 
-def newest_matching_repo_context(payload: dict[str, Any]) -> dict[str, Any]:
-    candidates: list[tuple[float, dict[str, Any]]] = []
+def parse_context_last_updated_at(context: dict[str, Any]) -> float:
+    value = context.get("last_updated_at")
+    if not isinstance(value, str):
+        return 0.0
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return 0.0
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).timestamp()
+
+
+def context_compatibility_rank(context: dict[str, Any], reference_context: dict[str, Any] | None) -> int:
+    if not reference_context:
+        return 0
+    rank = 0
+    for field in ("objective_id", "task_class"):
+        reference_value = reference_context.get(field)
+        if not isinstance(reference_value, str) or not reference_value:
+            continue
+        context_value = context.get(field)
+        if context_value == reference_value:
+            rank += 1
+        elif isinstance(context_value, str) and context_value:
+            rank -= 1
+    return rank
+
+
+def newest_matching_repo_context(
+    payload: dict[str, Any],
+    reference_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    candidates: list[tuple[int, float, float, dict[str, Any]]] = []
     for context_path in iter_run_context_paths():
         context = load_context_file(context_path)
         if not context_is_well_formed(context):
@@ -202,29 +240,61 @@ def newest_matching_repo_context(payload: dict[str, Any]) -> dict[str, Any]:
             mtime = context_path.stat().st_mtime
         except OSError:
             mtime = 0
-        candidates.append((mtime, context))
+        candidates.append(
+            (context_compatibility_rank(context, reference_context), parse_context_last_updated_at(context), mtime, context)
+        )
     if not candidates:
         return {}
-    candidates.sort(key=lambda item: item[0], reverse=True)
-    return candidates[0][1]
+    candidates.sort(key=lambda item: (item[0], item[1], item[2]), reverse=True)
+    return candidates[0][3]
 
 
-def load_context(path: str | None, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+def with_active_pointer_fallback(
+    context: dict[str, Any],
+    *,
+    stale_context: dict[str, Any] | None = None,
+    stale_error: str | None = None,
+) -> dict[str, Any]:
+    selected_context = dict(context)
+    selected_context[CONTEXT_ACTIVE_POINTER_FALLBACK_FIELD] = True
+    if stale_context:
+        selected_context[CONTEXT_STALE_ACTIVE_CONTEXT_ID_FIELD] = stale_context.get("active_context_id")
+        selected_context[CONTEXT_STALE_ACTIVE_REPO_ROOT_FIELD] = str(resolve_path(stale_context.get("repo_root", "")))
+    if stale_error:
+        selected_context[CONTEXT_STALE_ACTIVE_POINTER_ERROR_FIELD] = stale_error
+    return selected_context
+
+
+def load_context(
+    path: str | None,
+    payload: dict[str, Any] | None = None,
+    *,
+    allow_load_error_fallback: bool = True,
+) -> dict[str, Any]:
     context_path = resolve_context_path(path)
     if not context_path.exists():
         if context_path_is_explicit(path):
             return explicit_context_path_missing(context_path)
         if payload:
-            return newest_matching_repo_context(payload)
+            matching_context = newest_matching_repo_context(payload)
+            if matching_context:
+                return with_active_pointer_fallback(matching_context, stale_error="missing_active_pointer")
         return {}
     active_context = load_context_file(context_path)
     if context_load_failed(active_context):
+        if allow_load_error_fallback and not context_path_is_explicit(path) and payload:
+            matching_context = newest_matching_repo_context(payload)
+            if matching_context:
+                return with_active_pointer_fallback(
+                    matching_context,
+                    stale_error=str(active_context.get(CONTEXT_LOAD_ERROR_FIELD, "load_error")),
+                )
         return active_context
-    if path or not payload or context_applies_to_cwd(active_context, payload):
+    if context_path_is_explicit(path) or not payload or context_applies_to_cwd(active_context, payload):
         return active_context
-    matching_context = newest_matching_repo_context(payload)
+    matching_context = newest_matching_repo_context(payload, active_context)
     if matching_context:
-        return matching_context
+        return with_active_pointer_fallback(matching_context, stale_context=active_context)
     if context_has_active_continuation(active_context):
         return active_context
     return {}
@@ -295,6 +365,18 @@ def context_summary(context: dict[str, Any]) -> str:
             " uigwe_promotion_required=true; research or council output is not final; "
             "enter Uigwe or ask the user to convert the request to research-only."
         )
+    if context.get(CONTEXT_ACTIVE_POINTER_FALLBACK_FIELD):
+        summary += " active_pointer_fallback=true"
+        stale_context_id = context.get(CONTEXT_STALE_ACTIVE_CONTEXT_ID_FIELD)
+        if stale_context_id:
+            summary += f"; stale_active_context_id={stale_context_id}"
+        stale_repo_root = context.get(CONTEXT_STALE_ACTIVE_REPO_ROOT_FIELD)
+        if stale_repo_root:
+            summary += f"; stale_active_repo_root={stale_repo_root}"
+        stale_error = context.get(CONTEXT_STALE_ACTIVE_POINTER_ERROR_FIELD)
+        if stale_error:
+            summary += f"; stale_active_pointer_error={stale_error}"
+        summary += "."
     return summary
 
 
@@ -554,7 +636,7 @@ def load_ambiguity_registers(context: dict[str, Any]) -> tuple[list[dict[str, An
             continue
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
+        except (json.JSONDecodeError, OSError, UnicodeError):
             if looks_like_ambiguity_register_ref(ref):
                 broken_refs.append(str(path))
             continue
@@ -663,7 +745,7 @@ def load_continuity_capsules(context: dict[str, Any]) -> tuple[list[dict[str, An
             continue
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
+        except (json.JSONDecodeError, OSError, UnicodeError):
             if looks_like_continuity_capsule_ref(ref):
                 broken_refs.append(str(path))
             continue
@@ -728,7 +810,7 @@ def load_seungjeongwon_run_entries(context: dict[str, Any]) -> tuple[list[tuple[
             continue
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
+        except (json.JSONDecodeError, OSError, UnicodeError):
             if looks_like_seungjeongwon_run_ref(ref):
                 broken_refs.append(str(path))
             continue
@@ -1226,7 +1308,11 @@ def dispatch(
 def main() -> int:
     args = parse_args()
     payload = load_stdin_json()
-    context = load_context(args.context, payload)
+    context = load_context(
+        args.context,
+        payload,
+        allow_load_error_fallback=args.event_name != "PreCompact",
+    )
     allow_missing_context = args.event_name == "PreCompact" and not context_path_is_explicit(args.context)
     return emit(dispatch(args.event_name, payload, context, allow_missing_context=allow_missing_context))
 
