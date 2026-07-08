@@ -50,6 +50,27 @@ The installer also owns explicit update maintenance. `--check-updates` fetches t
 
 The skill files stay short by design. They load the detailed contracts from the installed Sejong docs only when needed.
 
+## Multisession Runtime Core
+
+King Sejong runtime state is built for multiple Codex sessions, repositories,
+devices, and worker backends. The active pointer at
+`${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json` is a
+convenience hint, not the authority for a workflow. The authoritative record is
+the run-scoped `king-sejong-context.json` under the matching repository run
+directory.
+
+Hooks and tools must verify that an active context fits the current repository
+and objective before using it. If the pointer is missing or stale, they may
+select the newest valid matching run context and report that fallback. Explicit
+context paths such as `--context` or `SEJONG_ACTIVE_CONTEXT` are different: if
+an explicit context is missing, unreadable, or broken, the caller should surface
+that failure instead of silently falling back.
+
+Shared runtime writes use bounded file locks under the Sejong runtime state
+root. Lock owner metadata includes session, run, repository, device, process,
+operation, and stale-break information where available, so a blocked session can
+report the real owner instead of claiming a write succeeded.
+
 ## Start Here
 
 For normal use:
@@ -61,21 +82,22 @@ For normal use:
 5. Read [PROTOCOL.md](PROTOCOL.md) to understand Uigwe's planning model.
 6. Read [WRAPPER.md](WRAPPER.md) if you want machine-consumable packet flow.
 7. Read [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md) to understand where research, planning, runtime, and evidence artifacts are stored.
-8. Read [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) if you want repo-local role prompt overlays.
-9. Read [HOOKS.md](HOOKS.md) if you want deterministic Codex lifecycle guardrails.
-10. Read [SECURITY.md](SECURITY.md) and [SILLOK_TRACE.md](SILLOK_TRACE.md) if a workflow mixes private data, untrusted content, external actions, or durable evidence records.
-11. Read [REPO_CONTEXT.md](REPO_CONTEXT.md) if you want guarded `AGENTS.md` init or refresh behavior.
-12. Read [DEEP_RESEARCH.md](DEEP_RESEARCH.md) when JangYeongsil needs deep, multi-axis, source-backed research.
-13. Read [UX_PROFILES.md](UX_PROFILES.md) when adding default/detail/specialist presentation profiles.
-14. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
-15. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
-16. Read [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md) when live clarification needs a durable readiness and open-ambiguity record.
-17. Read [OUTCOME_EVALUATION.md](OUTCOME_EVALUATION.md) when behavior changes must prove better resulting artifacts, not only correct routing.
-18. Read [WORKFLOW_RUN.md](WORKFLOW_RUN.md) when evaluating dynamic workflow, deep-research, ultracode-style, or many-agent backend ideas without giving them Sejong authority.
-19. Read [DOCTOR.md](DOCTOR.md) when checking local install, dependency, hook, and active-context health.
-20. Read [OPTIONAL_ADAPTERS.md](OPTIONAL_ADAPTERS.md) before adding code-intel, specialist, custom-agent, marketplace, or remote-install adapters.
-21. Read [APP_SCOPED_RUNTIME_STRATEGY.md](APP_SCOPED_RUNTIME_STRATEGY.md) when hardening repo-scoped active context, Seungjeongwon pre-edit receipts, or app-style outcome workflows.
-22. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
+8. Read [MULTI_SESSION.md](MULTI_SESSION.md) to understand session, run, repository, device, active pointer, lock, stale-state, and cleanup semantics.
+9. Read [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) if you want repo-local role prompt overlays.
+10. Read [HOOKS.md](HOOKS.md) if you want deterministic Codex lifecycle guardrails.
+11. Read [SECURITY.md](SECURITY.md) and [SILLOK_TRACE.md](SILLOK_TRACE.md) if a workflow mixes private data, untrusted content, external actions, or durable evidence records.
+12. Read [REPO_CONTEXT.md](REPO_CONTEXT.md) if you want guarded `AGENTS.md` init or refresh behavior.
+13. Read [DEEP_RESEARCH.md](DEEP_RESEARCH.md) when JangYeongsil needs deep, multi-axis, source-backed research.
+14. Read [UX_PROFILES.md](UX_PROFILES.md) when adding default/detail/specialist presentation profiles.
+15. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
+16. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
+17. Read [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md) when live clarification needs a durable readiness and open-ambiguity record.
+18. Read [OUTCOME_EVALUATION.md](OUTCOME_EVALUATION.md) when behavior changes must prove better resulting artifacts, not only correct routing.
+19. Read [WORKFLOW_RUN.md](WORKFLOW_RUN.md) when evaluating dynamic workflow, deep-research, ultracode-style, or many-agent backend ideas without giving them Sejong authority.
+20. Read [DOCTOR.md](DOCTOR.md) when checking local install, dependency, hook, and active-context health.
+21. Read [OPTIONAL_ADAPTERS.md](OPTIONAL_ADAPTERS.md) before adding code-intel, specialist, custom-agent, marketplace, or remote-install adapters.
+22. Read [APP_SCOPED_RUNTIME_STRATEGY.md](APP_SCOPED_RUNTIME_STRATEGY.md) when hardening repo-scoped active context, Seungjeongwon pre-edit receipts, or app-style outcome workflows.
+23. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
 
 ## Practical Usage
 
@@ -115,6 +137,11 @@ Use the local doctor when the environment itself is uncertain:
 ```bash
 python3 docs/sejong/scripts/sejong_doctor.py
 ```
+
+The doctor is read-only by default. In addition to source, dependency, hook, git,
+and active-context checks, it reports multisession active runs, stale active
+pointers, broken runtime refs, runtime lock owner metadata, cleanup dry-run
+retention, and user-scope install drift.
 
 Use the repo-context candidate helper when a durable lesson should be considered
 without immediately editing tracked instructions:

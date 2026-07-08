@@ -20,7 +20,8 @@ Use it when a request starts vague, touches several files or decisions, or needs
 - Hand approved work to Seungjeongwon for execution, verification, retry, and evidence.
 - Run deep, multi-axis JangYeongsil research when ordinary single-pass evidence is too thin.
 - Make large or parallel attempts auditable with discipline gates, outcome checks, and workflow-run evidence instead of treating worker agreement as proof.
-- Check local install, dependency, hook, and active-context health with a read-only doctor.
+- Continue safely across multiple Codex sessions, repositories, and devices by treating the active pointer as a hint and the run-scoped context as the source of truth.
+- Check local install, dependency, hook, active-context, multisession, lock, and stale-pointer health with a read-only doctor.
 - Keep default/detail/specialist UX as profiles over Sejong authority, not new planning or execution modes.
 - Keep temporary research, planning, runtime, and evidence artifacts outside the target repository unless the user explicitly promotes them, then compact and prune them by policy.
 - Install once per repo or once into `${CODEX_HOME:-~/.codex}/skills` for workspace-wide Codex use.
@@ -38,6 +39,8 @@ Use it when a request starts vague, touches several files or decisions, or needs
 | A small exact task | `$sejong` | Sejong can act directly and report the completed work plus verification. |
 
 By default, Sejong keeps research, planning, runtime, and evidence artifacts outside the target repository under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`. It does not create git-tracked planning files unless the user explicitly asks to promote a shareable artifact into the repo.
+
+Multisession state uses run-scoped context files as the authoritative workflow record. The active context pointer under `state/active-context.json` is only a fast lookup hint: hooks verify repository and objective fit, fall back to a valid matching run context when safe, and fail closed for explicit context paths or broken required refs.
 
 Completed runs should not keep raw runtime files forever. King Sejong can compact a run into `run-summary.json` plus Sillok evidence, then prune raw artifacts with a dry-run-first cleanup helper.
 
@@ -133,6 +136,8 @@ To run a read-only local health check:
 ```bash
 python3 docs/sejong/scripts/sejong_doctor.py
 ```
+
+The doctor reports managed-path health, dependency availability, git cleanliness, active context shape, active Seungjeongwon runs, multisession active runs, stale active pointers, broken runtime refs, lock owner metadata, cleanup dry-run retention, and user-scope install drift. It is read-only by default.
 
 To draft a repo-context candidate without editing `AGENTS.md`:
 
