@@ -53,6 +53,45 @@ independent reason to trust the source. Add `credential_access` when the event
 uses tokens, cookies, sessions, or account configuration, even when the event is
 read-only.
 
+When an approved external action is resumable, store its policy-neutral ledger
+under the Sejong run and validate it with:
+
+```bash
+python3 docs/sejong/scripts/external_action_receipt.py check \
+  "${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs/<repo-id>/<run-id>/external-actions.json"
+```
+
+Before the first receipt is recorded, a host-owned dispatcher or user-decision
+surface supplies a separate approval-record artifact. Core does not create that
+artifact. Record its binding without executing the action:
+
+```bash
+python3 docs/sejong/scripts/external_action_receipt.py authorize \
+  --ledger "${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs/<repo-id>/<run-id>/external-actions.json" \
+  --run-id <run-id> \
+  --action-id <action-id> \
+  --action-name <opaque-action-name> \
+  --target-description <safe-target-description> \
+  --input-file <local-input-file> \
+  --idempotency-key <stable-key> \
+  --approval-record <host-or-user-provided-record.json>
+```
+
+The approval record must contain exactly `run_id`, `action_sha256`,
+`issuer_authority`, `issued_at`, `expires_at`, and
+`source_user_decision_ref`. The receipt stores the record reference and byte
+hash. Those bindings are evidence, not cryptographic issuer identity; the
+dispatcher must independently validate the host/user source before it executes
+the external action.
+
+The ledger follows
+[external-action-receipt.schema.json](external-action-receipt.schema.json).
+Its `evidence_refs` may point to Sillok events, while the corresponding Sillok
+event may point back to the ledger. Keep both directions as references only;
+do not copy raw provider responses, credentials, or private payloads into either
+artifact. Approval and completion receipts remain evidence and cannot approve
+Uigwe gates or replace Seungjeongwon verification.
+
 ## Helper
 
 The reference helper records and checks trace events:

@@ -160,6 +160,26 @@ python3 docs/sejong/scripts/team_executor.py init \
 
 The helper manages Sejong-owned state, mailbox messages, rounds, leases, and optional tmux launch commands. It is a coordination helper for wrappers such as `$team`; it is not a replacement for the lead Sejong agent.
 
+When a caller supplies `--delegation-run <run.json>`, TeamExecutor registers its
+workers against the shared Core budget and checks the same concurrency limit
+before launch. Team state stores `delegation_run_ref` and `budget_ref`; these are
+references to Core enforcement, not a second budget implementation. Terminal
+worker output must still enter the generic receipt and fan-in flow described in
+[DELEGATION_RUNTIME.md](DELEGATION_RUNTIME.md). Team registration or tmux launch
+alone is never a terminal receipt. Workers assigned to a Core wave cannot use
+the TeamExecutor `launch` path; the caller must use Core `open-wave` after its
+dependencies pass.
+
+Delegation-linked initialization preflights the full worker batch before either
+artifact commits it. Add-worker materialization, local round validation, and
+launch planning also complete before their corresponding delegation mutation.
+If local worker persistence or tmux launch fails after a delegation mutation,
+TeamExecutor compensates by unregistering or releasing only the affected
+workers; a failed local round write cancels only the just-started Core round.
+To avoid replacing an existing local run while retaining registrations in a
+shared Core artifact, delegation-linked initialization rejects `--force` when
+the target TeamExecutor run directory already exists.
+
 Useful commands:
 
 ```bash

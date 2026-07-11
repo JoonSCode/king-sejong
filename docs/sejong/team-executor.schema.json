@@ -152,6 +152,12 @@
         "worker_id": {
           "$ref": "#/$defs/NonEmptyString"
         },
+        "backend": {
+          "const": "team_executor"
+        },
+        "budget_ref": {
+          "const": "#/budget"
+        },
         "objective": {
           "$ref": "#/$defs/NonEmptyString"
         },
@@ -322,6 +328,12 @@
         "forbidden_worker_claims": {
           "$ref": "#/$defs/StringList"
         },
+        "delegation_run_ref": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "budget_ref": {
+          "const": "#/budget"
+        },
         "workers": {
           "type": "array",
           "items": {
@@ -429,6 +441,12 @@
         },
         "worker_id": {
           "$ref": "#/$defs/NonEmptyString"
+        },
+        "backend": {
+          "const": "team_executor"
+        },
+        "budget_ref": {
+          "const": "#/budget"
         },
         "scopes": {
           "$ref": "#/$defs/StringList"

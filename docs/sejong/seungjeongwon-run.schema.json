@@ -57,6 +57,12 @@
     "execution_feedback_refs": {
       "$ref": "#/$defs/StringList"
     },
+    "delegation_fan_in_refs": {
+      "$ref": "#/$defs/StringList"
+    },
+    "delegation_run_refs": {
+      "$ref": "#/$defs/StringList"
+    },
     "guardrail_scores": {
       "$ref": "#/$defs/GuardrailScores"
     },

@@ -16,6 +16,10 @@ class RunLocalEvalsTests(unittest.TestCase):
                 "hook-tests",
                 "adversarial-confidence-pack",
                 "context-tests",
+                "delegation-run-tests",
+                "delegation-wave-correlation-tests",
+                "external-action-receipt-tests",
+                "team-executor-tests",
                 "seungjeongwon-run-tests",
                 "sillok-trace-tests",
                 "cleanup-tests",
@@ -29,6 +33,10 @@ class RunLocalEvalsTests(unittest.TestCase):
         commands = [" ".join(step.command) for step in steps]
         self.assertTrue(any("test_king_sejong_hooks.py" in command for command in commands))
         self.assertTrue(any("run_adversarial_confidence_pack.py" in command for command in commands))
+        self.assertTrue(any("test_delegation_run.py" in command for command in commands))
+        self.assertTrue(any("test_delegation_wave_validation.py" in command for command in commands))
+        self.assertTrue(any("test_external_action_receipt.py" in command for command in commands))
+        self.assertTrue(any("test_team_executor.py" in command for command in commands))
         self.assertTrue(any("benchmark_sejong_surface.py --require-targets" in command for command in commands))
         self.assertTrue(any("benchmark_instruction_surface.py --require-targets" in command for command in commands))
         self.assertTrue(any("validate_json_contracts.py" in command for command in commands))

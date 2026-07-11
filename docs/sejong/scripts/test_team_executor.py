@@ -6,14 +6,20 @@ import os
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
+from argparse import Namespace
 from pathlib import Path
+from unittest import mock
+
+import team_executor as team_executor_module
 
 
 SCRIPT_PATH = Path(__file__).resolve()
 SEJONG_ROOT = SCRIPT_PATH.parents[1]
 REPO_ROOT = SCRIPT_PATH.parents[3]
 TEAM_EXECUTOR = SEJONG_ROOT / "scripts" / "team_executor.py"
+DELEGATION_RUN = SEJONG_ROOT / "scripts" / "delegation_run.py"
 FIXTURE_ROOT = SEJONG_ROOT / "examples" / "team-executor"
 
 
@@ -26,14 +32,43 @@ def run_check(name: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def run_team_command(args: list[str], *, sejong_home: Path) -> subprocess.CompletedProcess[str]:
-    env = {**os.environ, "SEJONG_HOME": str(sejong_home)}
+def run_team_command(
+    args: list[str],
+    *,
+    sejong_home: Path,
+    env_overrides: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    env = {**os.environ, "SEJONG_HOME": str(sejong_home), **(env_overrides or {})}
     return subprocess.run(
         [sys.executable, str(TEAM_EXECUTOR), *args],
         text=True,
         capture_output=True,
         cwd=str(REPO_ROOT),
         env=env,
+    )
+
+
+def init_delegation_run(path: Path, *, total: int, concurrency: int, rounds: int = 2) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [
+            sys.executable,
+            str(DELEGATION_RUN),
+            "init",
+            str(path),
+            "--run-id",
+            "team-budget",
+            "--max-total-workers",
+            str(total),
+            "--max-concurrency",
+            str(concurrency),
+            "--max-spawn-depth",
+            "1",
+            "--max-rounds",
+            str(rounds),
+        ],
+        text=True,
+        capture_output=True,
+        cwd=str(REPO_ROOT),
     )
 
 
@@ -893,6 +928,600 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             bad = run_team_command(["check-sandbox-claims", str(rejected)], sejong_home=root / "sejong")
             self.assertNotEqual(bad.returncode, 0)
             self.assertIn("worktree sandbox overclaim", bad.stderr)
+
+    def test_delegation_budget_registers_team_workers_with_shared_reference(self) -> None:
+        # Given: a caller-owned delegation budget with one worker slot.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=1, concurrency=1).returncode, 0)
+
+            # When: TeamExecutor initializes one bounded worker against that run.
+            result = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "budget-linked",
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--delegation-run",
+                    str(delegation_path),
+                    "--worker",
+                    "implementer:executor:bounded change",
+                ],
+                sejong_home=root / "sejong",
+            )
+
+            # Then: team and worker records carry the same generic budget reference.
+            self.assertEqual(result.returncode, 0, result.stderr)
+            run_dir = root / "sejong" / "state" / "team" / "budget-linked"
+            team = json.loads((run_dir / "team.json").read_text(encoding="utf-8"))
+            worker = team["workers"][0]
+            self.assertEqual(team["delegation_run_ref"], str(delegation_path.resolve()))
+            self.assertEqual(team["budget_ref"], "#/budget")
+            self.assertEqual(worker["backend"], "team_executor")
+            self.assertEqual(worker["budget_ref"], "#/budget")
+
+    def test_delegation_budget_rejects_team_worker_registration_overflow(self) -> None:
+        # Given: a caller-owned delegation budget with one total worker slot.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=1, concurrency=1).returncode, 0)
+
+            # When: TeamExecutor tries to initialize two workers.
+            result = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "budget-overflow",
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--delegation-run",
+                    str(delegation_path),
+                    "--worker",
+                    "worker-a:executor:first",
+                    "--worker",
+                    "worker-b:executor:second",
+                ],
+                sejong_home=root / "sejong",
+            )
+
+            # Then: the generic total-worker cap blocks the second registration.
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("max_total_workers exceeded", result.stderr)
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            self.assertEqual(delegation["workers"], [])
+            self.assertFalse((root / "sejong" / "state" / "team" / "budget-overflow").exists())
+
+    def test_delegation_budget_add_worker_local_failure_does_not_register_worker(self) -> None:
+        # Given: a delegation-linked team whose target worker directory cannot be created.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sejong_home = root / "sejong"
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=1, concurrency=1).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "add-worker-failure",
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--delegation-run",
+                    str(delegation_path),
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            run_dir = sejong_home / "state" / "team" / "add-worker-failure"
+            blocked_worker_path = run_dir / "workers" / "worker-a"
+            blocked_worker_path.write_text("not a directory", encoding="utf-8")
+
+            # When: local worker materialization fails.
+            result = run_team_command(
+                ["add-worker", str(run_dir), "worker-a:executor:bounded"],
+                sejong_home=sejong_home,
+            )
+
+            # Then: the shared delegation budget remains unchanged.
+            self.assertNotEqual(result.returncode, 0)
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            self.assertEqual(delegation["workers"], [])
+
+    def test_add_worker_save_failure_compensates_delegation_registration(self) -> None:
+        # Given: a delegation-linked team and an injected local team-state write failure.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sejong_home = root / "sejong"
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=1, concurrency=1).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "add-worker-save-failure",
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--delegation-run",
+                    str(delegation_path),
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            run_dir = sejong_home / "state" / "team" / "add-worker-save-failure"
+
+            # When: local team persistence fails after Core registration.
+            with mock.patch.object(team_executor_module, "save_team", side_effect=OSError("injected save failure")):
+                with self.assertRaisesRegex(OSError, "injected save failure"):
+                    team_executor_module.add_worker_record(
+                        run_dir,
+                        {"worker_id": "worker-a", "role": "executor", "scope": "bounded"},
+                    )
+
+            # Then: Core and local worker paths both roll back.
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            self.assertEqual(delegation["workers"], [])
+            self.assertFalse((run_dir / "workers" / "worker-a").exists())
+            self.assertFalse((run_dir / "artifacts" / "worker-a").exists())
+
+    def test_delegation_budget_rejects_team_launch_concurrency_overflow(self) -> None:
+        # Given: two TeamExecutor workers sharing one concurrent launch slot.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=2, concurrency=1).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "launch-overflow",
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--delegation-run",
+                    str(delegation_path),
+                    "--worker",
+                    "worker-a:executor:first",
+                    "--worker",
+                    "worker-b:executor:second",
+                    "--command",
+                    "worker-a=echo a",
+                    "--command",
+                    "worker-b=echo b",
+                ],
+                sejong_home=root / "sejong",
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            run_dir = root / "sejong" / "state" / "team" / "launch-overflow"
+
+            # When: TeamExecutor dry-runs both workers in one launch batch.
+            result = run_team_command(["launch", str(run_dir), "--dry-run"], sejong_home=root / "sejong")
+
+            # Then: the shared concurrency budget rejects the launch before tmux planning.
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("max_concurrency exceeded", result.stderr)
+
+    def test_delegation_budget_rejects_team_round_overflow(self) -> None:
+        # Given: a TeamExecutor run sharing a one-round delegation budget.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=1, concurrency=1, rounds=1).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "round-overflow",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--delegation-run",
+                    str(delegation_path),
+                ],
+                sejong_home=root / "sejong",
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            run_dir = root / "sejong" / "state" / "team" / "round-overflow"
+            self.assertEqual(
+                run_team_command(["open-round", str(run_dir), "--purpose", "first"], sejong_home=root / "sejong").returncode,
+                0,
+            )
+
+            # When: TeamExecutor opens a second round.
+            result = run_team_command(["open-round", str(run_dir), "--purpose", "second"], sejong_home=root / "sejong")
+
+            # Then: the shared maximum round count rejects it.
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("max_rounds exceeded", result.stderr)
+
+    def test_invalid_local_round_does_not_consume_delegation_round(self) -> None:
+        # Given: a delegation-linked TeamExecutor run with an unused round budget.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=1, concurrency=1, rounds=1).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "invalid-local-round",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--delegation-run",
+                    str(delegation_path),
+                ],
+                sejong_home=root / "sejong",
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            run_dir = root / "sejong" / "state" / "team" / "invalid-local-round"
+
+            # When: local persuasion-round validation rejects an overlong duration.
+            result = run_team_command(
+                [
+                    "open-round",
+                    str(run_dir),
+                    "--purpose",
+                    "invalid duration",
+                    "--round-kind",
+                    "persuasion",
+                    "--max-duration-minutes",
+                    "31",
+                ],
+                sejong_home=root / "sejong",
+            )
+
+            # Then: Core has not consumed the round.
+            self.assertNotEqual(result.returncode, 0)
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            self.assertEqual(delegation["rounds_started"], [])
+
+    def test_round_write_failure_cancels_just_started_delegation_round(self) -> None:
+        # Given: a valid delegation-linked round whose local write will fail.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=1, concurrency=1, rounds=1).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "round-write-failure",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--delegation-run",
+                    str(delegation_path),
+                ],
+                sejong_home=root / "sejong",
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            run_dir = root / "sejong" / "state" / "team" / "round-write-failure"
+            args = Namespace(
+                run_dir=str(run_dir),
+                round_id=None,
+                purpose="injected persistence failure",
+                round_kind="challenge",
+                max_duration_minutes=None,
+            )
+
+            # When: the local rounds artifact cannot be persisted.
+            with mock.patch.object(team_executor_module, "write_json", side_effect=OSError("injected round failure")):
+                with self.assertRaisesRegex(OSError, "injected round failure"):
+                    team_executor_module.open_round(args)
+
+            # Then: the newly consumed Core round is compensated.
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            self.assertEqual(delegation["rounds_started"], [])
+
+    def test_open_round_serializes_a_concurrent_local_round_writer(self) -> None:
+        # Given: another lock-aware writer attempts to update rounds after open-round reads local state.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sejong_home = root / "sejong"
+            initialized = run_team_command(
+                ["init", "--run-id", "round-concurrency", "--current-surface", "jiphyeonjeon"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            run_dir = sejong_home / "state" / "team" / "round-concurrency"
+            threads: list[threading.Thread] = []
+
+            def concurrent_write() -> None:
+                with team_executor_module.run_state_lock(run_dir):
+                    payload = team_executor_module.load_json(team_executor_module.rounds_path(run_dir))
+                    payload["rounds"].append({"round_id": "concurrent-round", "status": "open"})
+                    team_executor_module.write_json(team_executor_module.rounds_path(run_dir), payload)
+
+            def start_concurrent_write() -> str:
+                thread = threading.Thread(target=concurrent_write)
+                threads.append(thread)
+                thread.start()
+                thread.join(timeout=0.2)
+                return "2026-07-11T00:00:00Z"
+
+            args = Namespace(
+                run_dir=str(run_dir),
+                round_id=None,
+                purpose="serialized round",
+                round_kind="challenge",
+                max_duration_minutes=None,
+            )
+
+            # When: TeamExecutor opens its round while the second writer races the same artifact.
+            with mock.patch.object(team_executor_module, "now_utc", side_effect=start_concurrent_write):
+                self.assertEqual(team_executor_module.open_round(args), 0)
+            for thread in threads:
+                thread.join(timeout=1)
+
+            # Then: the lock prevents stale-snapshot overwrite and preserves both round ids.
+            self.assertTrue(all(not thread.is_alive() for thread in threads))
+            rounds = team_executor_module.load_json(team_executor_module.rounds_path(run_dir))["rounds"]
+            self.assertEqual([item["round_id"] for item in rounds], ["round-1", "concurrent-round"])
+
+    def test_close_round_serializes_a_concurrent_local_round_writer(self) -> None:
+        # Given: another lock-aware writer attempts to append a round after close-round reads local state.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sejong_home = root / "sejong"
+            initialized = run_team_command(
+                ["init", "--run-id", "round-close-concurrency", "--current-surface", "jiphyeonjeon"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            run_dir = sejong_home / "state" / "team" / "round-close-concurrency"
+            opened = run_team_command(
+                ["open-round", str(run_dir), "--round-id", "round-1", "--purpose", "round to close"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(opened.returncode, 0, opened.stderr)
+            writer_started = threading.Event()
+            threads: list[threading.Thread] = []
+
+            def concurrent_write() -> None:
+                writer_started.set()
+                with team_executor_module.run_state_lock(run_dir):
+                    payload = team_executor_module.load_json(team_executor_module.rounds_path(run_dir))
+                    payload["rounds"].append({"round_id": "concurrent-round", "status": "open"})
+                    team_executor_module.write_json(team_executor_module.rounds_path(run_dir), payload)
+
+            def start_concurrent_write() -> str:
+                thread = threading.Thread(target=concurrent_write)
+                threads.append(thread)
+                thread.start()
+                self.assertTrue(writer_started.wait(timeout=1))
+                thread.join(timeout=0.2)
+                return "2026-07-11T00:00:00Z"
+
+            args = Namespace(run_dir=str(run_dir), round_id="round-1", closed_reason="completed")
+
+            # When: TeamExecutor closes its round while the second writer races the same artifact.
+            with mock.patch.object(team_executor_module, "now_utc", side_effect=start_concurrent_write):
+                self.assertEqual(team_executor_module.close_round(args), 0)
+            for thread in threads:
+                thread.join(timeout=1)
+
+            # Then: the lock preserves both the closure and the concurrently appended round.
+            self.assertTrue(all(not thread.is_alive() for thread in threads))
+            rounds = team_executor_module.load_json(team_executor_module.rounds_path(run_dir))["rounds"]
+            self.assertEqual([item["round_id"] for item in rounds], ["round-1", "concurrent-round"])
+            self.assertEqual(rounds[0]["status"], "closed")
+            self.assertEqual(rounds[0]["closed_at"], "2026-07-11T00:00:00Z")
+            self.assertEqual(rounds[0]["closed_reason"], "completed")
+
+    def test_open_round_rejects_preexisting_linked_core_round_drift_without_mutation(self) -> None:
+        # Given: a linked run with one local round but a different persisted Core round id.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sejong_home = root / "sejong"
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=1, concurrency=1).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "open-round-drift",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--delegation-run",
+                    str(delegation_path),
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            run_dir = sejong_home / "state" / "team" / "open-round-drift"
+            opened = run_team_command(
+                ["open-round", str(run_dir), "--round-id", "round-1", "--purpose", "first"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(opened.returncode, 0, opened.stderr)
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            delegation["rounds_started"] = ["core-only-round"]
+            delegation_path.write_text(json.dumps(delegation), encoding="utf-8")
+            core_before = delegation_path.read_bytes()
+            local_before = team_executor_module.rounds_path(run_dir).read_bytes()
+
+            # When: another round is opened while the linked ledgers already disagree.
+            result = run_team_command(
+                ["open-round", str(run_dir), "--round-id", "round-2", "--purpose", "second"],
+                sejong_home=sejong_home,
+            )
+
+            # Then: the command fails closed and neither state file changes by one byte.
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Core round ids do not match TeamExecutor round ids", result.stderr)
+            self.assertEqual(delegation_path.read_bytes(), core_before)
+            self.assertEqual(team_executor_module.rounds_path(run_dir).read_bytes(), local_before)
+
+    def test_close_round_rejects_preexisting_linked_core_round_drift_without_mutation(self) -> None:
+        # Given: a linked open round whose persisted Core round id was replaced out of band.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sejong_home = root / "sejong"
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=1, concurrency=1).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "close-round-drift",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--delegation-run",
+                    str(delegation_path),
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            run_dir = sejong_home / "state" / "team" / "close-round-drift"
+            opened = run_team_command(
+                ["open-round", str(run_dir), "--round-id", "round-1", "--purpose", "first"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(opened.returncode, 0, opened.stderr)
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            delegation["rounds_started"] = ["core-only-round"]
+            delegation_path.write_text(json.dumps(delegation), encoding="utf-8")
+            core_before = delegation_path.read_bytes()
+            local_before = team_executor_module.rounds_path(run_dir).read_bytes()
+
+            # When: the local round is closed while the linked ledgers already disagree.
+            result = run_team_command(
+                ["close-round", str(run_dir), "round-1", "--closed-reason", "completed"],
+                sejong_home=sejong_home,
+            )
+
+            # Then: the command fails closed and neither state file changes by one byte.
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Core round ids do not match TeamExecutor round ids", result.stderr)
+            self.assertEqual(delegation_path.read_bytes(), core_before)
+            self.assertEqual(team_executor_module.rounds_path(run_dir).read_bytes(), local_before)
+
+    def test_check_rejects_linked_core_round_id_drift(self) -> None:
+        # Given: a linked TeamExecutor run whose local and Core round ids initially agree.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sejong_home = root / "sejong"
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=1, concurrency=1).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "round-drift",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--delegation-run",
+                    str(delegation_path),
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            run_dir = sejong_home / "state" / "team" / "round-drift"
+            self.assertEqual(
+                run_team_command(["open-round", str(run_dir), "--purpose", "first"], sejong_home=sejong_home).returncode,
+                0,
+            )
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            delegation["rounds_started"] = ["core-only-round"]
+            delegation_path.write_text(json.dumps(delegation), encoding="utf-8")
+
+            # When: the persisted TeamExecutor run is checked.
+            checked = run_team_command(["check", str(run_dir)], sejong_home=sejong_home)
+
+            # Then: round-id drift is a validation failure rather than silent budget divergence.
+            self.assertNotEqual(checked.returncode, 0)
+            self.assertIn("Core round ids do not match TeamExecutor round ids", checked.stderr)
+
+    def test_tmux_launch_failure_releases_delegation_worker_reservations(self) -> None:
+        # Given: one delegation-linked worker and a tmux executable that always fails.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sejong_home = root / "sejong"
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=1, concurrency=1).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "launch-failure",
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--delegation-run",
+                    str(delegation_path),
+                    "--worker",
+                    "worker-a:executor:bounded",
+                    "--command",
+                    "worker-a=echo ready",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            fake_bin = root / "bin"
+            fake_bin.mkdir()
+            fake_tmux = fake_bin / "tmux"
+            fake_tmux.write_text("#!/bin/sh\nexit 42\n", encoding="utf-8")
+            fake_tmux.chmod(0o755)
+            run_dir = sejong_home / "state" / "team" / "launch-failure"
+
+            # When: the process launch fails after reservation.
+            result = run_team_command(
+                ["launch", str(run_dir)],
+                sejong_home=sejong_home,
+                env_overrides={"PATH": f"{fake_bin}:{os.environ.get('PATH', '')}"},
+            )
+
+            # Then: the delegation worker returns to registered instead of staying launched.
+            self.assertNotEqual(result.returncode, 0)
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            self.assertEqual(delegation["workers"][0]["status"], "registered")
+
+    def test_delegation_wave_workers_cannot_launch_through_team_executor(self) -> None:
+        # Given: a TeamExecutor worker assigned to a declared Core wave.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=1, concurrency=1).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "wave-gated",
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--delegation-run",
+                    str(delegation_path),
+                    "--worker",
+                    "worker-a:executor:bounded",
+                    "--command",
+                    "worker-a=echo ready",
+                ],
+                sejong_home=root / "sejong",
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            declared = subprocess.run(
+                [
+                    sys.executable,
+                    str(DELEGATION_RUN),
+                    "add-wave",
+                    str(delegation_path),
+                    "--wave-id",
+                    "wave-1",
+                    "--worker-id",
+                    "worker-a",
+                ],
+                text=True,
+                capture_output=True,
+                cwd=str(REPO_ROOT),
+            )
+            self.assertEqual(declared.returncode, 0, declared.stderr)
+            run_dir = root / "sejong" / "state" / "team" / "wave-gated"
+
+            # When: TeamExecutor attempts its normal direct launch path.
+            result = run_team_command(["launch", str(run_dir), "--dry-run"], sejong_home=root / "sejong")
+
+            # Then: Core requires open-wave and leaves the worker registered.
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("assigned to a wave", result.stderr)
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            self.assertEqual(delegation["workers"][0]["status"], "registered")
 
 
 if __name__ == "__main__":

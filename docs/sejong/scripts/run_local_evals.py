@@ -59,6 +59,26 @@ def build_steps(*, write_scorecards: bool, include_install_verify: bool) -> list
             python_script("test_sejong_context.py"),
         ),
         EvalStep(
+            "delegation-run-tests",
+            "Shared worker budgets, dependency waves, and terminal fan-in receipts",
+            python_script("test_delegation_run.py"),
+        ),
+        EvalStep(
+            "delegation-wave-correlation-tests",
+            "Persisted worker receipts and fan-in aggregates remain exactly correlated",
+            python_script("test_delegation_wave_validation.py"),
+        ),
+        EvalStep(
+            "external-action-receipt-tests",
+            "Approval-bound external actions, idempotency, chronology, and safe evidence",
+            python_script("test_external_action_receipt.py"),
+        ),
+        EvalStep(
+            "team-executor-tests",
+            "TeamExecutor authority, state, isolation, and shared delegation budgets",
+            python_script("test_team_executor.py"),
+        ),
+        EvalStep(
             "seungjeongwon-run-tests",
             "Seungjeongwon run lifecycle and numeric completion guardrails",
             python_script("test_seungjeongwon_run.py"),

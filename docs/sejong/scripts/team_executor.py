@@ -13,13 +13,28 @@ import subprocess
 import sys
 import time
 import uuid
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from bounded_worker_brief import brief_from_team_worker, validate_bounded_worker_brief
+from delegation_run import (
+    BUDGET_REF,
+    Backend,
+    DelegationContractError,
+    WorkerId as DelegationWorkerId,
+    WorkerRegistration,
+    cancel_round as cancel_delegation_round,
+    check_failures as delegation_check_failures,
+    launch_workers as reserve_delegation_workers,
+    register_workers as register_delegation_workers,
+    release_workers as release_delegation_workers,
+    start_round as start_delegation_round,
+    unregister_workers as unregister_delegation_workers,
+)
+from delegation_run_model import load_run as load_delegation_run
 from sejong_paths import resolve_path
 
 
@@ -342,6 +357,35 @@ def load_team(run_dir: Path) -> dict[str, Any]:
 
 def save_team(run_dir: Path, team: dict[str, Any]) -> None:
     write_json(team_path(run_dir), team)
+
+
+def delegation_run_path(team: dict[str, Any]) -> Path | None:
+    ref = team.get("delegation_run_ref")
+    return Path(str(ref)).expanduser().resolve() if ref else None
+
+
+def linked_round_id_failure(delegation_path: Path, rounds: dict[str, Any]) -> str | None:
+    core_round_ids = load_delegation_run(delegation_path).rounds_started
+    local_round_ids = tuple(str(item.get("round_id") or "") for item in rounds.get("rounds", []))
+    if core_round_ids == local_round_ids:
+        return None
+    return (
+        "linked Core round ids do not match TeamExecutor round ids: "
+        f"Core={list(core_round_ids)} TeamExecutor={list(local_round_ids)}"
+    )
+
+
+def require_linked_round_ids_match(delegation_path: Path, rounds: dict[str, Any]) -> None:
+    failure = linked_round_id_failure(delegation_path, rounds)
+    if failure is not None:
+        raise DelegationContractError(failure)
+
+
+def require_delegation_action(action: Callable[[], None]) -> None:
+    try:
+        action()
+    except DelegationContractError as error:
+        raise SystemExit(str(error)) from error
 
 
 def worker_ids(team: dict[str, Any]) -> set[str]:
@@ -710,6 +754,7 @@ def add_worker_record(
     evidence_refs: list[str] | None = None,
     verification_expectation: str | None = None,
     stop_condition: str | None = None,
+    register_delegation: bool = True,
 ) -> None:
     team = load_team(run_dir)
     for required_field in ("current_surface", "phase_label"):
@@ -717,6 +762,20 @@ def add_worker_record(
             raise SystemExit(f"team run missing {required_field}; initialize a court-mode-aware run first")
     if worker["worker_id"] in worker_ids(team):
         raise SystemExit(f"worker already exists: {worker['worker_id']}")
+    worker_dir = run_dir / "workers" / worker["worker_id"]
+    artifact_dir = run_dir / "artifacts" / worker["worker_id"]
+    if worker_dir.exists() or artifact_dir.exists():
+        raise SystemExit(f"worker paths already exist: {worker['worker_id']}")
+    delegation_path = delegation_run_path(team)
+    registration = WorkerRegistration(
+        DelegationWorkerId(worker["worker_id"]),
+        Backend.TEAM_EXECUTOR,
+        1,
+    )
+    if delegation_path is not None and register_delegation:
+        require_delegation_action(
+            lambda: register_delegation_workers(delegation_path, (registration,), persist=False)
+        )
 
     record: dict[str, Any] = {
         "worker_id": worker["worker_id"],
@@ -735,46 +794,67 @@ def add_worker_record(
         "stop_condition": stop_condition or default_stop_condition(worker),
         "status": "registered",
     }
+    if delegation_path is not None:
+        record["backend"] = Backend.TEAM_EXECUTOR.value
+        record["budget_ref"] = BUDGET_REF
     if command:
         record["command"] = command
 
-    team.setdefault("workers", []).append(record)
-    save_team(run_dir, team)
-
-    worker_dir = run_dir / "workers" / worker["worker_id"]
-    worker_dir.mkdir(parents=True, exist_ok=True)
-    write_worker_prompt(run_dir, team, record)
-    write_json(
-        worker_dir / "state.json",
-        {
-            "format": WORKER_FORMAT,
-            "run_id": team["run_id"],
-            "current_surface": team["current_surface"],
-            "phase_label": team["phase_label"],
-            "route_sequence": team.get("route_sequence") or [],
-            "pending_gates": team.get("pending_gates") or [],
-            "source_of_truth_refs": team.get("source_of_truth_refs") or [],
-            "worker_id": worker["worker_id"],
-            "objective": record["objective"],
-            "role": worker["role"],
-            "scope": worker["scope"],
-            "allowed_message_kinds": record["allowed_message_kinds"],
-            "allowed_outputs": record["allowed_outputs"],
-            "forbidden_worker_claims": record["forbidden_worker_claims"],
-            "write_scope": record["write_scope"],
-            "evidence_refs": record["evidence_refs"],
-            "verification_expectation": record["verification_expectation"],
-            "return_format": record["return_format"],
-            "prompt_path": record["prompt_path"],
-            "stop_condition": record["stop_condition"],
-            "status": "registered",
-            "updated_at": now_utc(),
-        },
-    )
-    notes_path = worker_dir / "notes.md"
-    if not notes_path.exists():
-        notes_path.write_text(f"# {worker['worker_id']} Notes\n", encoding="utf-8")
-    (run_dir / "artifacts" / worker["worker_id"]).mkdir(parents=True, exist_ok=True)
+    state: dict[str, Any] = {
+        "format": WORKER_FORMAT,
+        "run_id": team["run_id"],
+        "current_surface": team["current_surface"],
+        "phase_label": team["phase_label"],
+        "route_sequence": team.get("route_sequence") or [],
+        "pending_gates": team.get("pending_gates") or [],
+        "source_of_truth_refs": team.get("source_of_truth_refs") or [],
+        "worker_id": worker["worker_id"],
+        "objective": record["objective"],
+        "role": worker["role"],
+        "scope": worker["scope"],
+        "allowed_message_kinds": record["allowed_message_kinds"],
+        "allowed_outputs": record["allowed_outputs"],
+        "forbidden_worker_claims": record["forbidden_worker_claims"],
+        "write_scope": record["write_scope"],
+        "evidence_refs": record["evidence_refs"],
+        "verification_expectation": record["verification_expectation"],
+        "return_format": record["return_format"],
+        "prompt_path": record["prompt_path"],
+        "stop_condition": record["stop_condition"],
+        "status": "registered",
+        "updated_at": now_utc(),
+    }
+    if delegation_path is not None:
+        state["backend"] = Backend.TEAM_EXECUTOR.value
+        state["budget_ref"] = BUDGET_REF
+    delegation_registered = False
+    try:
+        worker_dir.mkdir(parents=True)
+        write_worker_prompt(run_dir, team, record)
+        write_json(worker_dir / "state.json", state)
+        (worker_dir / "notes.md").write_text(f"# {worker['worker_id']} Notes\n", encoding="utf-8")
+        artifact_dir.mkdir(parents=True)
+        if delegation_path is not None and register_delegation:
+            register_delegation_workers(delegation_path, (registration,))
+            delegation_registered = True
+        team["workers"] = [*team.get("workers", []), record]
+        save_team(run_dir, team)
+    except DelegationContractError as error:
+        try:
+            if delegation_registered and delegation_path is not None:
+                unregister_delegation_workers(delegation_path, (registration.worker_id,))
+        finally:
+            shutil.rmtree(worker_dir, ignore_errors=True)
+            shutil.rmtree(artifact_dir, ignore_errors=True)
+        raise SystemExit(str(error)) from error
+    except OSError:
+        try:
+            if delegation_registered and delegation_path is not None:
+                unregister_delegation_workers(delegation_path, (registration.worker_id,))
+        finally:
+            shutil.rmtree(worker_dir, ignore_errors=True)
+            shutil.rmtree(artifact_dir, ignore_errors=True)
+        raise
 
 
 def init_run(args: argparse.Namespace) -> int:
@@ -783,51 +863,18 @@ def init_run(args: argparse.Namespace) -> int:
     if run_dir.exists() and not args.force:
         raise SystemExit(f"team run already exists: {run_dir}")
 
-    run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "workers").mkdir(exist_ok=True)
-    (run_dir / "artifacts").mkdir(exist_ok=True)
-
     if args.brief_file:
         brief = Path(args.brief_file).read_text(encoding="utf-8")
     elif args.brief:
         brief = args.brief
     else:
         brief = "# Team Brief\n\n- Source of truth:\n- Decision question:\n- Fixed options:\n- Stop condition:\n"
-    (run_dir / "brief.md").write_text(brief.rstrip() + "\n", encoding="utf-8")
-
     repo_root = resolve_path(args.repo_root)
     source_of_truth_refs = args.source_of_truth_ref or ["brief.md"]
     current_surface = args.current_surface
     phase_label = args.phase_label or DEFAULT_PHASE_LABELS[current_surface]
     route_sequence = args.route_sequence or [current_surface]
-    write_json(
-        team_path(run_dir),
-        {
-            "format": TEAM_FORMAT,
-            "run_id": run_id,
-            "created_at": now_utc(),
-            "repo_root": str(repo_root),
-            "brief_path": "brief.md",
-            "active_context_id": args.active_context_id or f"ctx-{run_id}",
-            "route_id": args.route_id or f"route-{run_id}",
-            "current_surface": current_surface,
-            "phase_label": phase_label,
-            "route_sequence": route_sequence,
-            "pending_gates": args.pending_gate or [],
-            "source_of_truth_refs": source_of_truth_refs,
-            "lead_authority": {
-                "gate_owner": "sejong",
-                "synthesis_owner": "sejong",
-                "final_verification_owner": "seungjeongwon",
-            },
-            "forbidden_worker_claims": list(DEFAULT_FORBIDDEN_WORKER_CLAIMS),
-            "workers": [],
-        },
-    )
-    write_json(rounds_path(run_dir), {"format": ROUNDS_FORMAT, "run_id": run_id, "rounds": []})
-    write_json(leases_path(run_dir), {"format": LEASES_FORMAT, "run_id": run_id, "leases": []})
-    mailbox_path(run_dir).write_text("", encoding="utf-8")
-
+    delegation_ref = str(Path(args.delegation_run).expanduser().resolve()) if args.delegation_run else None
     commands = dict(args.command or [])
     objectives = single_assignments(args.worker_objective)
     allowed_outputs = grouped_assignments(args.worker_allowed_output)
@@ -835,7 +882,10 @@ def init_run(args: argparse.Namespace) -> int:
     evidence_refs = grouped_assignments(args.worker_evidence_ref)
     verification_expectations = single_assignments(args.worker_verification)
     stop_conditions = single_assignments(args.worker_stop)
-    declared_worker_ids = {worker["worker_id"] for worker in args.worker or []}
+    workers = args.worker or []
+    declared_worker_ids = [worker["worker_id"] for worker in workers]
+    if len(declared_worker_ids) != len(set(declared_worker_ids)):
+        raise SystemExit("worker ids must be unique")
     assigned_worker_ids = (
         set(commands)
         | set(objectives)
@@ -845,22 +895,83 @@ def init_run(args: argparse.Namespace) -> int:
         | set(verification_expectations)
         | set(stop_conditions)
     )
-    unknown_worker_ids = sorted(assigned_worker_ids - declared_worker_ids)
+    unknown_worker_ids = sorted(assigned_worker_ids - set(declared_worker_ids))
     if unknown_worker_ids:
         raise SystemExit(f"worker assignments reference unknown workers: {unknown_worker_ids}")
-    for worker in args.worker or []:
-        worker_id = worker["worker_id"]
-        add_worker_record(
-            run_dir,
-            worker,
-            commands.get(worker_id),
-            objective=objectives.get(worker_id),
-            allowed_outputs=allowed_outputs.get(worker_id),
-            write_scope=write_scopes.get(worker_id),
-            evidence_refs=evidence_refs.get(worker_id),
-            verification_expectation=verification_expectations.get(worker_id),
-            stop_condition=stop_conditions.get(worker_id),
-        )
+    registrations = tuple(
+        WorkerRegistration(DelegationWorkerId(worker_id), Backend.TEAM_EXECUTOR, 1)
+        for worker_id in declared_worker_ids
+    )
+    delegation_path = Path(delegation_ref) if delegation_ref is not None else None
+    if delegation_path is not None:
+        if run_dir.exists() and args.force:
+            raise SystemExit("--force cannot replace a delegation-linked team run")
+        try:
+            failures = delegation_check_failures(delegation_path)
+            if failures:
+                raise DelegationContractError("; ".join(failures))
+            if registrations:
+                register_delegation_workers(delegation_path, registrations, persist=False)
+        except DelegationContractError as error:
+            raise SystemExit(str(error)) from error
+    team_record: dict[str, Any] = {
+        "format": TEAM_FORMAT,
+        "run_id": run_id,
+        "created_at": now_utc(),
+        "repo_root": str(repo_root),
+        "brief_path": "brief.md",
+        "active_context_id": args.active_context_id or f"ctx-{run_id}",
+        "route_id": args.route_id or f"route-{run_id}",
+        "current_surface": current_surface,
+        "phase_label": phase_label,
+        "route_sequence": route_sequence,
+        "pending_gates": args.pending_gate or [],
+        "source_of_truth_refs": source_of_truth_refs,
+        "lead_authority": {
+            "gate_owner": "sejong",
+            "synthesis_owner": "sejong",
+            "final_verification_owner": "seungjeongwon",
+        },
+        "forbidden_worker_claims": list(DEFAULT_FORBIDDEN_WORKER_CLAIMS),
+        "workers": [],
+    }
+    if delegation_ref is not None:
+        team_record["delegation_run_ref"] = delegation_ref
+        team_record["budget_ref"] = BUDGET_REF
+    created_run_dir = not run_dir.exists()
+    try:
+        run_dir.mkdir(parents=True, exist_ok=True)
+        (run_dir / "workers").mkdir(exist_ok=True)
+        (run_dir / "artifacts").mkdir(exist_ok=True)
+        (run_dir / "brief.md").write_text(brief.rstrip() + "\n", encoding="utf-8")
+        write_json(team_path(run_dir), team_record)
+        write_json(rounds_path(run_dir), {"format": ROUNDS_FORMAT, "run_id": run_id, "rounds": []})
+        write_json(leases_path(run_dir), {"format": LEASES_FORMAT, "run_id": run_id, "leases": []})
+        mailbox_path(run_dir).write_text("", encoding="utf-8")
+        for worker in workers:
+            worker_id = worker["worker_id"]
+            add_worker_record(
+                run_dir,
+                worker,
+                commands.get(worker_id),
+                objective=objectives.get(worker_id),
+                allowed_outputs=allowed_outputs.get(worker_id),
+                write_scope=write_scopes.get(worker_id),
+                evidence_refs=evidence_refs.get(worker_id),
+                verification_expectation=verification_expectations.get(worker_id),
+                stop_condition=stop_conditions.get(worker_id),
+                register_delegation=False,
+            )
+        if delegation_path is not None and registrations:
+            register_delegation_workers(delegation_path, registrations)
+    except DelegationContractError as error:
+        if created_run_dir:
+            shutil.rmtree(run_dir, ignore_errors=True)
+        raise SystemExit(str(error)) from error
+    except (OSError, SystemExit):
+        if created_run_dir:
+            shutil.rmtree(run_dir, ignore_errors=True)
+        raise
 
     print(str(run_dir))
     return 0
@@ -885,53 +996,67 @@ def add_worker(args: argparse.Namespace) -> int:
 
 def open_round(args: argparse.Namespace) -> int:
     run_dir = require_run_dir(Path(args.run_dir))
-    rounds = load_json(rounds_path(run_dir))
-    round_id = args.round_id or f"round-{len(rounds.get('rounds', [])) + 1}"
-    if any(item["round_id"] == round_id for item in rounds.get("rounds", [])):
-        raise SystemExit(f"round already exists: {round_id}")
-    max_duration = args.max_duration_minutes
-    if args.round_kind == "persuasion":
-        max_duration = 30 if max_duration is None else max_duration
-        if max_duration > 30:
-            raise SystemExit("persuasion rounds are capped at 30 minutes")
-    elif max_duration is not None and max_duration <= 0:
-        raise SystemExit("max_duration_minutes must be positive")
-    rounds.setdefault("rounds", []).append(
-        {
-            "round_id": round_id,
-            "status": "open",
-            "purpose": args.purpose,
-            "round_kind": args.round_kind,
-            "max_duration_minutes": max_duration,
-            "closure_policy": (
-                "lead_synthesis_after_convergence_or_30m_deadlock"
-                if args.round_kind == "persuasion"
-                else "lead_closes_after_bounded_challenge"
-            ),
-            "opened_at": now_utc(),
-            "closed_at": None,
-            "closed_reason": None,
-        }
-    )
-    write_json(rounds_path(run_dir), rounds)
+    with run_state_lock(run_dir):
+        rounds = load_json(rounds_path(run_dir))
+        round_id = args.round_id or f"round-{len(rounds.get('rounds', [])) + 1}"
+        if any(item["round_id"] == round_id for item in rounds.get("rounds", [])):
+            raise SystemExit(f"round already exists: {round_id}")
+        max_duration = args.max_duration_minutes
+        if args.round_kind == "persuasion":
+            max_duration = 30 if max_duration is None else max_duration
+            if max_duration > 30:
+                raise SystemExit("persuasion rounds are capped at 30 minutes")
+        elif max_duration is not None and max_duration <= 0:
+            raise SystemExit("max_duration_minutes must be positive")
+        delegation_path = delegation_run_path(load_team(run_dir))
+        if delegation_path is not None:
+            require_delegation_action(lambda: require_linked_round_ids_match(delegation_path, rounds))
+            require_delegation_action(lambda: start_delegation_round(delegation_path, round_id))
+        rounds.setdefault("rounds", []).append(
+            {
+                "round_id": round_id,
+                "status": "open",
+                "purpose": args.purpose,
+                "round_kind": args.round_kind,
+                "max_duration_minutes": max_duration,
+                "closure_policy": (
+                    "lead_synthesis_after_convergence_or_30m_deadlock"
+                    if args.round_kind == "persuasion"
+                    else "lead_closes_after_bounded_challenge"
+                ),
+                "opened_at": now_utc(),
+                "closed_at": None,
+                "closed_reason": None,
+            }
+        )
+        try:
+            write_json(rounds_path(run_dir), rounds)
+        except OSError:
+            if delegation_path is not None:
+                require_delegation_action(lambda: cancel_delegation_round(delegation_path, round_id))
+            raise
     print(f"round opened: {round_id}")
     return 0
 
 
 def close_round(args: argparse.Namespace) -> int:
     run_dir = require_run_dir(Path(args.run_dir))
-    rounds = load_json(rounds_path(run_dir))
-    for item in rounds.get("rounds", []):
-        if item["round_id"] == args.round_id:
-            if item["status"] == "closed":
-                raise SystemExit(f"round already closed: {args.round_id}")
-            item["status"] = "closed"
-            item["closed_at"] = now_utc()
-            item["closed_reason"] = args.closed_reason
-            write_json(rounds_path(run_dir), rounds)
-            print(f"round closed: {args.round_id}")
-            return 0
-    raise SystemExit(f"unknown round: {args.round_id}")
+    with run_state_lock(run_dir):
+        rounds = load_json(rounds_path(run_dir))
+        delegation_path = delegation_run_path(load_team(run_dir))
+        if delegation_path is not None:
+            require_delegation_action(lambda: require_linked_round_ids_match(delegation_path, rounds))
+        for item in rounds.get("rounds", []):
+            if item["round_id"] == args.round_id:
+                if item["status"] == "closed":
+                    raise SystemExit(f"round already closed: {args.round_id}")
+                item["status"] = "closed"
+                item["closed_at"] = now_utc()
+                item["closed_reason"] = args.closed_reason
+                write_json(rounds_path(run_dir), rounds)
+                print(f"round closed: {args.round_id}")
+                return 0
+        raise SystemExit(f"unknown round: {args.round_id}")
 
 
 def current_open_round(run_dir: Path) -> str:
@@ -1351,6 +1476,15 @@ def check_run(args: argparse.Namespace) -> int:
             failures.append(f"team.json missing {required_field}")
     if team.get("current_surface") not in SURFACES:
         failures.append(f"team.json has invalid current_surface: {team.get('current_surface')}")
+    delegation_path = delegation_run_path(team)
+    if delegation_path is not None:
+        try:
+            failures.extend(f"delegation run: {failure}" for failure in delegation_check_failures(delegation_path))
+            round_failure = linked_round_id_failure(delegation_path, load_json(rounds_path(run_dir)))
+            if round_failure is not None:
+                failures.append(round_failure)
+        except DelegationContractError as error:
+            failures.append(f"delegation run: {error}")
 
     lead_authority = team.get("lead_authority") or {}
     if lead_authority.get("gate_owner") != "sejong":
@@ -1752,6 +1886,12 @@ def launch(args: argparse.Namespace) -> int:
         raise SystemExit(f"commands reference unknown workers: {sorted(unknown)}")
     if not commands:
         raise SystemExit("at least one --worker-command worker_id=command is required")
+    delegation_path = delegation_run_path(team)
+    delegation_worker_ids = tuple(DelegationWorkerId(worker_id) for worker_id in commands)
+    if delegation_path is not None:
+        require_delegation_action(
+            lambda: reserve_delegation_workers(delegation_path, delegation_worker_ids, persist=False)
+        )
 
     session = args.session or f"sejong-{team['run_id']}"
     default_cwd = str(resolve_path(args.cwd or team["repo_root"]))
@@ -1788,8 +1928,34 @@ def launch(args: argparse.Namespace) -> int:
             print(" ".join(command))
         return 0
 
-    for command in tmux_commands:
-        subprocess.run(command, check=True)
+    if delegation_path is not None:
+        require_delegation_action(lambda: reserve_delegation_workers(delegation_path, delegation_worker_ids))
+    try:
+        for command in tmux_commands:
+            subprocess.run(command, check=True)
+    except (OSError, subprocess.CalledProcessError) as error:
+        rollback_failure: str | None = None
+        cleanup_failure: str | None = None
+        if delegation_path is not None:
+            try:
+                release_delegation_workers(delegation_path, delegation_worker_ids)
+            except DelegationContractError as rollback_error:
+                rollback_failure = str(rollback_error)
+        try:
+            subprocess.run(
+                ["tmux", "kill-session", "-t", session],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        except OSError as cleanup_error:
+            cleanup_failure = str(cleanup_error)
+        detail = f"tmux launch failed: {error}"
+        if rollback_failure is not None:
+            detail = f"{detail}; delegation rollback failed: {rollback_failure}"
+        if cleanup_failure is not None:
+            detail = f"{detail}; tmux cleanup failed: {cleanup_failure}"
+        raise SystemExit(detail) from error
     print(f"tmux session launched: {session}")
     return 0
 
@@ -1810,6 +1976,7 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--route-sequence", action="append")
     init.add_argument("--pending-gate", action="append")
     init.add_argument("--source-of-truth-ref", action="append")
+    init.add_argument("--delegation-run")
     init.add_argument("--worker", action="append", type=parse_worker)
     init.add_argument("--command", action="append", type=parse_assignment)
     init.add_argument("--worker-objective", action="append", type=parse_assignment)

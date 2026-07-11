@@ -8,6 +8,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from delegation_run_model import JsonObject
+
 
 SCRIPT_PATH = Path(__file__).resolve()
 SEJONG_ROOT = SCRIPT_PATH.parents[1]
@@ -58,7 +60,251 @@ def consumer_feedback_fixture() -> dict:
     }
 
 
+def fan_in_receipt_fixture(*, status: str = "passed") -> JsonObject:
+    return {
+        "format": "sejong.delegation-fan-in-receipt/v0.1-draft",
+        "receipt_type": "fan_in",
+        "receipt_id": "fan-in-wave-1",
+        "run_id": "delegation-run-1",
+        "wave_id": "wave-1",
+        "required_worker_ids": ["worker-a"],
+        "terminal_receipt_ids": ["receipt-worker-a"],
+        "aggregate_status": status,
+        "blocking_receipt_ids": [] if status == "passed" else ["receipt-worker-a"],
+        "authority": "orchestration_evidence_only",
+        "created_at": "2026-07-10T00:00:00Z",
+    }
+
+
+def delegation_run_fixture(receipt: JsonObject) -> JsonObject:
+    terminal_status = "completed" if receipt["aggregate_status"] == "passed" else receipt["aggregate_status"]
+    terminal_receipt: JsonObject = {
+        "format": "sejong.delegation-worker-receipt/v0.1-draft",
+        "receipt_type": "worker_terminal",
+        "receipt_id": "receipt-worker-a",
+        "run_id": receipt["run_id"],
+        "wave_id": "wave-1",
+        "worker_id": "worker-a",
+        "backend": "native",
+        "backend_worker_ref": "native://worker-a",
+        "worker_contract_ref": "contract://worker-a",
+        "worker_output_ref": "output://worker-a",
+        "terminal_status": terminal_status,
+        "summary": "worker-a terminal",
+        "evidence_refs": ["evidence://worker-a"],
+        "blocker": None if terminal_status == "completed" else "worker-a disposition",
+        "authority": "evidence_only",
+        "created_at": "2026-07-10T00:00:00Z",
+    }
+    return {
+        "format": "sejong.delegation-run/v0.1-draft",
+        "run_id": receipt["run_id"],
+        "created_at": "2026-07-10T00:00:00Z",
+        "budget": {
+            "max_total_workers": 1,
+            "max_concurrency": 1,
+            "max_spawn_depth": 1,
+            "max_rounds": 1,
+        },
+        "workers": [
+            {
+                "worker_id": "worker-a",
+                "backend": "native",
+                "spawn_depth": 0,
+                "status": terminal_status,
+                "budget_ref": "#/budget",
+            }
+        ],
+        "rounds_started": ["wave:wave-1"],
+        "waves": [
+            {
+                "wave_id": "wave-1",
+                "ordinal": 1,
+                "depends_on": [],
+                "required_worker_ids": ["worker-a"],
+                "status": receipt["aggregate_status"],
+                "opened_at": "2026-07-10T00:00:00Z",
+                "closed_at": "2026-07-10T00:00:00Z",
+                "fan_in_receipt_id": receipt["receipt_id"],
+            }
+        ],
+        "receipts": [terminal_receipt, receipt],
+    }
+
+
 class SeungjeongwonRunTests(unittest.TestCase):
+    def test_add_fan_in_receipt_preserves_execution_evidence_without_completing_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "seungjeongwon-run.json"
+            receipt_path = Path(tmp) / "fan-in.json"
+            delegation_path = Path(tmp) / "delegation-run.json"
+            receipt = fan_in_receipt_fixture()
+            receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+            delegation_path.write_text(json.dumps(delegation_run_fixture(receipt)), encoding="utf-8")
+            start = run_command(
+                [
+                    "start", "--path", str(run_path), "--run-id", "run-fan-in", "--goal", "Use fan-in evidence.",
+                    "--success-criterion", "Fan-in is referenced.", "--verification-method", "Inspect the run.",
+                ]
+            )
+            self.assertEqual(start.returncode, 0, start.stderr)
+
+            added = run_command(
+                [
+                    "add-fan-in",
+                    "--path",
+                    str(run_path),
+                    "--delegation-run",
+                    str(delegation_path),
+                    "--receipt",
+                    str(receipt_path),
+                ]
+            )
+
+            self.assertEqual(added.returncode, 0, added.stderr)
+            payload = json.loads(run_path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["delegation_fan_in_refs"], [str(receipt_path.resolve())])
+            self.assertEqual(payload["delegation_run_refs"], [str(delegation_path.resolve())])
+            self.assertIn(str(delegation_path.resolve()), payload["provenance"]["input_refs"])
+            self.assertEqual(payload["status"], "active")
+            summary = run_command(["summary", "--path", str(run_path), "--json"])
+            self.assertEqual(summary.returncode, 0, summary.stderr)
+            self.assertEqual(json.loads(summary.stdout)["delegation_fan_in_ref_count"], 1)
+
+    def test_add_fan_in_requires_delegation_run_without_mutating_state(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "seungjeongwon-run.json"
+            receipt_path = Path(tmp) / "fan-in.json"
+            receipt_path.write_text(json.dumps(fan_in_receipt_fixture()), encoding="utf-8")
+            self.assertEqual(
+                run_command(
+                    [
+                        "start", "--path", str(run_path), "--run-id", "run-requires-delegation", "--goal", "Require provenance.",
+                        "--success-criterion", "Detached receipts are rejected.", "--verification-method", "Inspect state.",
+                    ]
+                ).returncode,
+                0,
+            )
+            before = run_path.read_bytes()
+
+            added = run_command(["add-fan-in", "--path", str(run_path), "--receipt", str(receipt_path)])
+
+            self.assertNotEqual(added.returncode, 0)
+            self.assertIn("--delegation-run", added.stderr)
+            self.assertEqual(run_path.read_bytes(), before)
+
+    def test_add_fan_in_rejects_receipt_not_exactly_embedded_in_delegation_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "seungjeongwon-run.json"
+            receipt_path = Path(tmp) / "fabricated-fan-in.json"
+            delegation_path = Path(tmp) / "delegation-run.json"
+            embedded = fan_in_receipt_fixture()
+            fabricated = {**embedded, "terminal_receipt_ids": ["different-receipt"]}
+            receipt_path.write_text(json.dumps(fabricated), encoding="utf-8")
+            delegation_path.write_text(json.dumps(delegation_run_fixture(embedded)), encoding="utf-8")
+            self.assertEqual(
+                run_command(
+                    [
+                        "start", "--path", str(run_path), "--run-id", "run-fabricated-fan-in", "--goal", "Reject fabrication.",
+                        "--success-criterion", "Receipt content matches Core.", "--verification-method", "Inspect state.",
+                    ]
+                ).returncode,
+                0,
+            )
+            before = run_path.read_bytes()
+
+            added = run_command(
+                [
+                    "add-fan-in",
+                    "--path",
+                    str(run_path),
+                    "--delegation-run",
+                    str(delegation_path),
+                    "--receipt",
+                    str(receipt_path),
+                ]
+            )
+
+            self.assertNotEqual(added.returncode, 0)
+            self.assertIn("does not exactly match", added.stderr)
+            self.assertEqual(run_path.read_bytes(), before)
+
+    def test_add_fan_in_rejects_embedded_non_passed_receipt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "seungjeongwon-run.json"
+            receipt_path = Path(tmp) / "blocked-fan-in.json"
+            delegation_path = Path(tmp) / "delegation-run.json"
+            receipt = fan_in_receipt_fixture(status="blocked")
+            receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+            delegation_path.write_text(json.dumps(delegation_run_fixture(receipt)), encoding="utf-8")
+            self.assertEqual(
+                run_command(
+                    [
+                        "start", "--path", str(run_path), "--run-id", "run-blocked-fan-in", "--goal", "Reject blockers.",
+                        "--success-criterion", "Only passed fan-in is attached.", "--verification-method", "Inspect state.",
+                    ]
+                ).returncode,
+                0,
+            )
+            before = run_path.read_bytes()
+
+            added = run_command(
+                [
+                    "add-fan-in",
+                    "--path",
+                    str(run_path),
+                    "--delegation-run",
+                    str(delegation_path),
+                    "--receipt",
+                    str(receipt_path),
+                ]
+            )
+
+            self.assertNotEqual(added.returncode, 0)
+            self.assertIn("fan-in receipt is not passed", added.stderr)
+            self.assertEqual(run_path.read_bytes(), before)
+
+    def test_check_accepts_run_without_optional_delegation_run_refs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "seungjeongwon-run.json"
+            self.assertEqual(
+                run_command(
+                    [
+                        "start", "--path", str(run_path), "--run-id", "run-legacy-shape", "--goal", "Keep old runs readable.",
+                        "--success-criterion", "Optional refs remain optional.", "--verification-method", "Run check.",
+                    ]
+                ).returncode,
+                0,
+            )
+            payload = json.loads(run_path.read_text(encoding="utf-8"))
+            payload.pop("delegation_run_refs")
+            run_path.write_text(json.dumps(payload), encoding="utf-8")
+
+            checked = run_command(["check", "--path", str(run_path)])
+
+            self.assertEqual(checked.returncode, 0, checked.stderr)
+
+    def test_check_rejects_broken_fan_in_receipt_ref(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "seungjeongwon-run.json"
+            self.assertEqual(
+                run_command(
+                    [
+                        "start", "--path", str(run_path), "--run-id", "run-broken-fan-in", "--goal", "Reject broken refs.",
+                        "--success-criterion", "Refs resolve.", "--verification-method", "Run check.",
+                    ]
+                ).returncode,
+                0,
+            )
+            payload = json.loads(run_path.read_text(encoding="utf-8"))
+            payload["delegation_fan_in_refs"] = [str(Path(tmp) / "missing.json")]
+            run_path.write_text(json.dumps(payload), encoding="utf-8")
+
+            checked = run_command(["check", "--path", str(run_path)])
+
+            self.assertNotEqual(checked.returncode, 0)
+            self.assertIn("broken delegation fan-in ref", checked.stderr)
+
     def test_run_lifecycle_requires_attempts_before_completion(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             run_path = Path(tmp) / "seungjeongwon-run.json"

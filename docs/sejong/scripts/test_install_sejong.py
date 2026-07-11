@@ -76,6 +76,16 @@ class InstallSejongTests(unittest.TestCase):
             plugin_skill_path = plugin_root / "skills" / "sejong" / "SKILL.md"
             plugin_why_gate_skill_path = plugin_root / "skills" / "why-gate" / "SKILL.md"
             why_gate_skill_path = codex_home / "skills" / "why-gate" / "SKILL.md"
+            delegation_cli_path = codex_home / "skills" / "sejong" / "docs" / "scripts" / "delegation_run.py"
+            delegation_validation_path = (
+                codex_home / "skills" / "sejong" / "docs" / "scripts" / "delegation_wave_validation.py"
+            )
+            delegation_validation_test_path = (
+                codex_home / "skills" / "sejong" / "docs" / "scripts" / "test_delegation_wave_validation.py"
+            )
+            action_cli_path = codex_home / "skills" / "sejong" / "docs" / "scripts" / "external_action_receipt.py"
+            delegation_schema_path = codex_home / "skills" / "sejong" / "docs" / "delegation-run.schema.json"
+            action_schema_path = codex_home / "skills" / "sejong" / "docs" / "external-action-receipt.schema.json"
             active_context_path = codex_home / "sejong" / "state" / "active-context.json"
             marketplace_path = (
                 codex_home
@@ -91,6 +101,12 @@ class InstallSejongTests(unittest.TestCase):
             self.assertTrue(hook_runner_path.exists())
             self.assertTrue(marketplace_path.exists())
             self.assertTrue(why_gate_skill_path.exists())
+            self.assertTrue(delegation_cli_path.exists())
+            self.assertTrue(delegation_validation_path.exists())
+            self.assertTrue(delegation_validation_test_path.exists())
+            self.assertTrue(action_cli_path.exists())
+            self.assertTrue(delegation_schema_path.exists())
+            self.assertTrue(action_schema_path.exists())
             self.assertFalse(active_context_path.exists())
             self.assertIn("Why Gate", why_gate_skill_path.read_text(encoding="utf-8"))
 

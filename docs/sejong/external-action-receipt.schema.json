@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/external-action-receipt.schema.json",
+  "title": "King Sejong External Action Receipt Ledger Schema Draft",
+  "description": "Policy-neutral approval-record, hash, idempotency, status, and evidence receipts for externally executed actions. This contract records evidence and never grants approval, authenticates an issuer, or executes an action.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "sejong.external-action-receipts/v0.1-draft"
+    },
+    "run_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "updated_at": {
+      "$ref": "#/$defs/DateTime"
+    },
+    "receipts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Receipt"
+      }
+    }
+  },
+  "required": [
+    "format",
+    "run_id",
+    "updated_at",
+    "receipts"
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "Hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "DateTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "DateTimeOrNull": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DateTime"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "Approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "approval_record_ref": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "approval_record_sha256": {
+          "$ref": "#/$defs/Hash"
+        },
+        "run_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "action_sha256": {
+          "$ref": "#/$defs/Hash"
+        },
+        "issuer_authority": {
+          "type": "string",
+          "enum": [
+            "host",
+            "user"
+          ]
+        },
+        "issued_at": {
+          "$ref": "#/$defs/DateTime"
+        },
+        "expires_at": {
+          "$ref": "#/$defs/DateTime"
+        },
+        "source_user_decision_ref": {
+          "$ref": "#/$defs/NonEmptyString"
+        }
+      },
+      "required": [
+        "approval_record_ref",
+        "approval_record_sha256",
+        "run_id",
+        "action_sha256",
+        "issuer_authority",
+        "issued_at",
+        "expires_at",
+        "source_user_decision_ref"
+      ]
+    },
+    "Receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "action_name": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "target_description": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "input_sha256": {
+          "$ref": "#/$defs/Hash"
+        },
+        "action_sha256": {
+          "$ref": "#/$defs/Hash"
+        },
+        "idempotency_key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "approval": {
+          "$ref": "#/$defs/Approval"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "authorized",
+            "dispatched",
+            "completed",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "dispatched_at": {
+          "$ref": "#/$defs/DateTimeOrNull"
+        },
+        "terminal_at": {
+          "$ref": "#/$defs/DateTimeOrNull"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NonEmptyString"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "action_id",
+        "action_name",
+        "target_description",
+        "input_sha256",
+        "action_sha256",
+        "idempotency_key",
+        "approval",
+        "status",
+        "dispatched_at",
+        "terminal_at",
+        "evidence_refs"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "authorized"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "dispatched_at": {
+                "type": "null"
+              },
+              "terminal_at": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "dispatched"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "dispatched_at": {
+                "$ref": "#/$defs/DateTime"
+              },
+              "terminal_at": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "completed",
+                  "failed"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "dispatched_at": {
+                "$ref": "#/$defs/DateTime"
+              },
+              "terminal_at": {
+                "$ref": "#/$defs/DateTime"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "cancelled"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "dispatched_at": {
+                "type": "null"
+              },
+              "terminal_at": {
+                "$ref": "#/$defs/DateTime"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

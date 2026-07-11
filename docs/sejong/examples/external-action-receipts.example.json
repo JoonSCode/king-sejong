@@ -1,0 +1,31 @@
+{
+  "format": "sejong.external-action-receipts/v0.1-draft",
+  "run_id": "example-run",
+  "updated_at": "2026-07-10T01:01:00Z",
+  "receipts": [
+    {
+      "action_id": "example-action",
+      "action_name": "publish-message",
+      "target_description": "sandbox://message/example",
+      "input_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "action_sha256": "3463ac7354c45c86f4208ac474e0bc18622e079689f7d6335389120d03ae2e22",
+      "idempotency_key": "publish:example:1",
+      "approval": {
+        "approval_record_ref": "/sejong-runtime/runs/example-run/approval-record.json",
+        "approval_record_sha256": "d1b7f952a9887a6ae588590f810dfc27c419335cea7891ba35d06ff7f402e790",
+        "run_id": "example-run",
+        "action_sha256": "3463ac7354c45c86f4208ac474e0bc18622e079689f7d6335389120d03ae2e22",
+        "issuer_authority": "user",
+        "issued_at": "2026-07-10T01:00:00Z",
+        "expires_at": "2026-07-10T01:30:00Z",
+        "source_user_decision_ref": "user-decision://example-run/decision-1"
+      },
+      "status": "completed",
+      "dispatched_at": "2026-07-10T01:00:30Z",
+      "terminal_at": "2026-07-10T01:01:00Z",
+      "evidence_refs": [
+        "sillok://example-run/event-1"
+      ]
+    }
+  ]
+}

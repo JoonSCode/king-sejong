@@ -10,6 +10,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from delegation_run import check_failures as delegation_check_failures
+from delegation_run_model import DelegationContractError, DelegationRun, load_run
 from sejong_paths import resolve_path
 
 
@@ -18,6 +20,7 @@ CHECKPOINT_FORMAT = "sejong.seungjeongwon-checkpoint/v0.1-draft"
 RESUME_FORMAT = "sejong.seungjeongwon-resume/v0.1-draft"
 REPLAY_FORMAT = "sejong.seungjeongwon-replay/v0.1-draft"
 CONSUMER_FEEDBACK_FORMAT = "uigwe.codex-consumer-feedback/v0.2-draft"
+DELEGATION_FAN_IN_FORMAT = "sejong.delegation-fan-in-receipt/v0.1-draft"
 STATUSES = {"active", "completed", "blocked", "invalidated", "failed"}
 OPEN_TODO_STATUSES = {"pending", "in_progress"}
 CLOSED_TODO_STATUSES = {"completed", "blocked", "invalidated", "replaced"}
@@ -159,6 +162,8 @@ def run_summary(data: dict[str, Any]) -> dict[str, Any]:
     blockers = data.get("blockers") or []
     uigwe_reentry_requests = data.get("uigwe_reentry_requests") or []
     execution_feedback_refs = data.get("execution_feedback_refs") or []
+    delegation_fan_in_refs = data.get("delegation_fan_in_refs") or []
+    delegation_run_refs = data.get("delegation_run_refs") or []
     feedback_summary = execution_feedback_summary(data)
     open_count = len(open_todos(data))
     status = data.get("status")
@@ -195,6 +200,10 @@ def run_summary(data: dict[str, Any]) -> dict[str, Any]:
         "last_verification_ref": verification_refs[-1] if verification_refs else None,
         "execution_feedback_ref_count": len(execution_feedback_refs),
         "latest_execution_feedback_ref": execution_feedback_refs[-1] if execution_feedback_refs else None,
+        "delegation_fan_in_ref_count": len(delegation_fan_in_refs),
+        "latest_delegation_fan_in_ref": delegation_fan_in_refs[-1] if delegation_fan_in_refs else None,
+        "delegation_run_ref_count": len(delegation_run_refs),
+        "latest_delegation_run_ref": delegation_run_refs[-1] if delegation_run_refs else None,
         "visible_todo_event_count": feedback_summary["visible_todo_event_count"],
         "latest_visible_todo_event_type": feedback_summary["latest_visible_todo_event_type"],
         "latest_reentry_target": feedback_summary["latest_reentry_target"],
@@ -257,6 +266,70 @@ def execution_feedback_failures(data: dict[str, Any]) -> list[str]:
         _, failure = load_execution_feedback(data, ref)
         if failure:
             failures.append(failure)
+    return failures
+
+
+def load_delegation_fan_in(data: dict[str, Any], ref: str) -> tuple[dict[str, Any] | None, str | None]:
+    path = resolve_run_ref(data, ref)
+    if not path.exists():
+        return None, f"broken delegation fan-in ref: {path}"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        return None, f"invalid delegation fan-in ref: {path}: {exc}"
+    if not isinstance(payload, dict) or payload.get("format") != DELEGATION_FAN_IN_FORMAT:
+        return None, f"invalid delegation fan-in ref: {path}: unexpected format"
+    if payload.get("receipt_type") != "fan_in" or payload.get("authority") != "orchestration_evidence_only":
+        return None, f"invalid delegation fan-in ref: {path}: invalid receipt boundary"
+    if payload.get("aggregate_status") not in {"passed", "failed", "blocked"}:
+        return None, f"invalid delegation fan-in ref: {path}: unsupported aggregate_status"
+    return payload, None
+
+
+def load_validated_delegation_run(data: dict[str, Any], ref: str) -> tuple[DelegationRun | None, str | None]:
+    path = resolve_run_ref(data, ref)
+    try:
+        failures = delegation_check_failures(path)
+        if failures:
+            return None, f"invalid delegation run ref: {path}: {'; '.join(failures)}"
+        return load_run(path), None
+    except DelegationContractError as exc:
+        return None, f"invalid delegation run ref: {path}: {exc}"
+
+
+def delegation_fan_in_failures(data: dict[str, Any]) -> list[str]:
+    refs = data.get("delegation_fan_in_refs") or []
+    if not isinstance(refs, list):
+        return ["delegation_fan_in_refs must be a list"]
+    run_refs = data.get("delegation_run_refs") or []
+    if not isinstance(run_refs, list):
+        return ["delegation_run_refs must be a list"]
+    failures: list[str] = []
+    delegation_runs: list[DelegationRun] = []
+    for ref in run_refs:
+        if not isinstance(ref, str) or not ref:
+            failures.append("delegation_run_refs must contain only non-empty strings")
+            continue
+        delegation_run, failure = load_validated_delegation_run(data, ref)
+        if failure:
+            failures.append(failure)
+        elif delegation_run is not None:
+            delegation_runs.append(delegation_run)
+    if refs and not delegation_runs:
+        failures.append("delegation fan-in refs require a validated delegation run ref")
+    for ref in refs:
+        if not isinstance(ref, str) or not ref:
+            failures.append("delegation_fan_in_refs must contain only non-empty strings")
+            continue
+        receipt, failure = load_delegation_fan_in(data, ref)
+        if failure:
+            failures.append(failure)
+            continue
+        if receipt is not None and receipt.get("aggregate_status") != "passed":
+            failures.append(f"fan-in receipt is not passed: {ref}")
+            continue
+        if receipt is not None and not any(receipt in delegation_run.receipts for delegation_run in delegation_runs):
+            failures.append(f"fan-in receipt does not exactly match an embedded delegation run receipt: {ref}")
     return failures
 
 
@@ -335,6 +408,7 @@ def run_failures(data: dict[str, Any]) -> list[str]:
         "attempt_ledger",
         "verification_evidence",
         "execution_feedback_refs",
+        "delegation_run_refs",
         "blockers",
         "uigwe_reentry_requests",
     ):
@@ -342,6 +416,7 @@ def run_failures(data: dict[str, Any]) -> list[str]:
             failures.append(f"{field} must be a list")
     if "execution_feedback_refs" in data:
         failures.extend(execution_feedback_failures(data))
+    failures.extend(delegation_fan_in_failures(data))
     guardrail_thresholds = data.get("guardrail_thresholds")
     if not isinstance(guardrail_thresholds, dict):
         failures.append("guardrail_thresholds must be an object")
@@ -511,6 +586,7 @@ def checkpoint_payload(data: dict[str, Any], run_path: Path, args: argparse.Name
         "attempt_ledger": data["attempt_ledger"],
         "verification_evidence": data["verification_evidence"],
         "execution_feedback_refs": data["execution_feedback_refs"],
+        "delegation_fan_in_refs": data.get("delegation_fan_in_refs") or [],
         "guardrail_scores": data["guardrail_scores"],
         "blockers": data["blockers"],
         "uigwe_reentry_requests": data["uigwe_reentry_requests"],
@@ -592,6 +668,7 @@ def resume_payload(checkpoint: dict[str, Any], *, format_name: str) -> dict[str,
         "attempt_ledger": checkpoint["attempt_ledger"],
         "verification_evidence": checkpoint["verification_evidence"],
         "execution_feedback_refs": checkpoint["execution_feedback_refs"],
+        "delegation_fan_in_refs": checkpoint.get("delegation_fan_in_refs") or [],
         "blockers": checkpoint["blockers"],
         "uigwe_reentry_requests": checkpoint["uigwe_reentry_requests"],
         "source_run_updated_at": checkpoint["source_run_updated_at"],
@@ -638,7 +715,7 @@ def replay_stale_failures(
         failures.append("stale checkpoint approved_goal mismatch")
     if checkpoint["active_todos"] != open_todos(run_data):
         failures.append("stale checkpoint active_todos mismatch")
-    for field in ("attempt_ledger", "verification_evidence", "execution_feedback_refs", "guardrail_scores", "blockers", "uigwe_reentry_requests"):
+    for field in ("attempt_ledger", "verification_evidence", "execution_feedback_refs", "delegation_fan_in_refs", "guardrail_scores", "blockers", "uigwe_reentry_requests"):
         if checkpoint.get(field) != run_data.get(field):
             failures.append(f"stale checkpoint {field} mismatch")
     return failures
@@ -682,6 +759,8 @@ def start(args: argparse.Namespace) -> int:
         "attempt_ledger": [],
         "verification_evidence": [],
         "execution_feedback_refs": [],
+        "delegation_fan_in_refs": [],
+        "delegation_run_refs": [],
         "guardrail_scores": {},
         "blockers": [],
         "uigwe_reentry_requests": [],
@@ -777,6 +856,14 @@ def complete(args: argparse.Namespace) -> int:
     if open_todos(data):
         print("open todos remain; cannot complete run", file=sys.stderr)
         return 1
+    for ref in data.get("delegation_fan_in_refs") or []:
+        receipt, failure = load_delegation_fan_in(data, ref)
+        if failure:
+            print(failure, file=sys.stderr)
+            return 1
+        if receipt is not None and receipt.get("aggregate_status") != "passed":
+            print(f"fan-in receipt is not passed: {ref}", file=sys.stderr)
+            return 1
     data.setdefault("verification_evidence", []).append(args.verification_evidence)
     if isinstance(data.get("provenance"), dict):
         data["provenance"]["verification_refs"] = unique_strings(
@@ -790,6 +877,50 @@ def complete(args: argparse.Namespace) -> int:
         return emit_failures(failures)
     write_json(path, data)
     print(f"run completed: {path}")
+    return 0
+
+
+def add_fan_in(args: argparse.Namespace) -> int:
+    path = Path(args.path)
+    data = load_json(path)
+    receipt_path = resolve_path(args.receipt)
+    delegation_path = resolve_path(args.delegation_run)
+    receipt, failure = load_delegation_fan_in(data, str(receipt_path))
+    if failure:
+        print(failure, file=sys.stderr)
+        return 1
+    if receipt is None or receipt.get("aggregate_status") != "passed":
+        print(f"fan-in receipt is not passed: {receipt_path}", file=sys.stderr)
+        return 1
+    delegation_run, failure = load_validated_delegation_run(data, str(delegation_path))
+    if failure:
+        print(failure, file=sys.stderr)
+        return 1
+    if delegation_run is None or receipt not in delegation_run.receipts:
+        print(
+            f"fan-in receipt does not exactly match an embedded delegation run receipt: {receipt_path}",
+            file=sys.stderr,
+        )
+        return 1
+    refs = data.setdefault("delegation_fan_in_refs", [])
+    if str(receipt_path) in refs:
+        print(f"delegation fan-in ref already exists: {receipt_path}", file=sys.stderr)
+        return 1
+    run_refs = data.setdefault("delegation_run_refs", [])
+    refs.append(str(receipt_path))
+    if str(delegation_path) not in run_refs:
+        run_refs.append(str(delegation_path))
+    provenance = data.get("provenance")
+    if isinstance(provenance, dict):
+        provenance["input_refs"] = unique_strings(
+            [*(provenance.get("input_refs") or []), str(delegation_path)]
+        )
+    data["updated_at"] = now_utc()
+    failures = run_failures(data)
+    if failures:
+        return emit_failures(failures)
+    write_json(path, data)
+    print(f"delegation fan-in added: {receipt_path}")
     return 0
 
 
@@ -907,6 +1038,12 @@ def build_parser() -> argparse.ArgumentParser:
     todo_parser.add_argument("--todo-id", required=True)
     todo_parser.add_argument("--guardrail-score", action="append", type=parse_guardrail_score, required=True)
     todo_parser.set_defaults(func=complete_todo)
+
+    fan_in_parser = subparsers.add_parser("add-fan-in", help="Attach a Core fan-in receipt as execution evidence.")
+    fan_in_parser.add_argument("--path", required=True)
+    fan_in_parser.add_argument("--delegation-run", required=True)
+    fan_in_parser.add_argument("--receipt", required=True)
+    fan_in_parser.set_defaults(func=add_fan_in)
 
     complete_parser = subparsers.add_parser("complete", help="Mark the run completed after all todos close.")
     complete_parser.add_argument("--path", required=True)

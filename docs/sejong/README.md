@@ -91,6 +91,7 @@ For normal use:
 14. Read [UX_PROFILES.md](UX_PROFILES.md) when adding default/detail/specialist presentation profiles.
 15. Read [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) if you want to execute and verify a validated plan.
 16. Read [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) if you want `$team` tmux workers coordinated by Sejong mailbox and state files.
+17. Read [DELEGATION_RUNTIME.md](DELEGATION_RUNTIME.md) for shared worker budgets, dependency waves, and fan-in receipts across native subagents and TeamExecutor.
 17. Read [AMBIGUITY_REGISTER.md](AMBIGUITY_REGISTER.md) when live clarification needs a durable readiness and open-ambiguity record.
 18. Read [OUTCOME_EVALUATION.md](OUTCOME_EVALUATION.md) when behavior changes must prove better resulting artifacts, not only correct routing.
 19. Read [WORKFLOW_RUN.md](WORKFLOW_RUN.md) when evaluating dynamic workflow, deep-research, ultracode-style, or many-agent backend ideas without giving them Sejong authority.

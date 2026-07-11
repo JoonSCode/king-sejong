@@ -79,6 +79,53 @@ before proceeding. Without approval, stop, summarize the risk, and ask the user.
   tool availability, and host portability. The default local TeamExecutor path
   must not require Docker, E2B, or another container runtime.
 
+## Approved External-Action Receipts
+
+Use [external-action-receipt.schema.json](external-action-receipt.schema.json)
+and `scripts/external_action_receipt.py` when an approved workflow may dispatch
+an external side effect and must remain safe to resume.
+
+The generic Core mechanism:
+
+- binds an opaque action name, target description, input hash, and idempotency
+  key to a canonical action hash
+- requires `authorize --approval-record <path>` to load a separate, exact-field
+  JSON artifact; inline `approval_ref`, `approved_at`, and expiry assertions are
+  not accepted
+- requires the approval record to bind `run_id`, canonical `action_sha256`,
+  `issuer_authority`, `issued_at`, `expires_at`, and
+  `source_user_decision_ref`; only `host` and `user` issuer values are accepted
+- requires authorization to occur inside the record window, limits that window
+  to one hour, and rejects records issued more than five minutes before the
+  authorization attempt as stale or backdated
+- rejects a symlink or non-regular approval-record file and stores the absolute
+  record reference plus SHA-256 of the exact bytes in the receipt
+- rejects reused idempotency keys, stale approvals, invalid state transitions,
+  and inconsistent action hashes
+- records only hashes, status timestamps, and safe evidence refs; raw action
+  input and credentials do not belong in the ledger
+- serializes updates under a Sejong runtime lock so concurrent resumptions use
+  one read-modify-write boundary
+
+Core intentionally provides no command that creates an approval record. A
+host-owned dispatcher or user-decision surface must produce it outside the
+worker authorization flow, then validate that the record and its
+`source_user_decision_ref` actually came from the claimed host or user authority
+before executing any external action.
+
+The receipt is evidence-only. `issuer_authority: user` or `host` is a protocol
+binding, not cryptographic identity or proof of who wrote the file. The local
+same-user filesystem remains a trust boundary: a process with the same account
+can create a false record or race replacement through a parent directory even
+though direct record symlinks and non-regular files are rejected. The stored
+record hash makes later byte changes detectable, but it does not authenticate
+the original issuer. A dispatcher must independently validate the host/user
+source before execution.
+
+The receipt does not classify an action, grant approval, execute a provider
+call, or replace host permissions. A `completed` receipt is evidence that the
+caller reported completion; Seungjeongwon still owns outcome verification.
+
 ## Relationship To Hooks
 
 Hooks can catch some protected edits and worker authority claims. They are not a

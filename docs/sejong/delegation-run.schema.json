@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/delegation-run.schema.json",
+  "title": "King Sejong Delegation Run Schema Draft",
+  "description": "Backend-neutral delegation budgets, registered workers, and extension surfaces for execution waves and receipts.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "sejong.delegation-run/v0.1-draft"
+    },
+    "run_id": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "budget": {
+      "$ref": "#/$defs/Budget"
+    },
+    "workers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Worker"
+      }
+    },
+    "rounds_started": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      },
+      "uniqueItems": true
+    },
+    "waves": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Wave"
+      }
+    },
+    "receipts": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {"$ref": "#/$defs/WorkerReceipt"},
+          {"$ref": "#/$defs/FanInReceipt"}
+        ]
+      }
+    }
+  },
+  "required": [
+    "format",
+    "run_id",
+    "created_at",
+    "budget",
+    "workers",
+    "rounds_started",
+    "waves",
+    "receipts"
+  ],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "PositiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "StringList": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/NonEmptyString"},
+      "uniqueItems": true
+    },
+    "NullableString": {
+      "oneOf": [
+        {"$ref": "#/$defs/NonEmptyString"},
+        {"type": "null"}
+      ]
+    },
+    "Budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_total_workers": {
+          "$ref": "#/$defs/PositiveInteger"
+        },
+        "max_concurrency": {
+          "$ref": "#/$defs/PositiveInteger"
+        },
+        "max_spawn_depth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_rounds": {
+          "$ref": "#/$defs/PositiveInteger"
+        }
+      },
+      "required": [
+        "max_total_workers",
+        "max_concurrency",
+        "max_spawn_depth",
+        "max_rounds"
+      ]
+    },
+    "Worker": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "worker_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "backend": {
+          "type": "string",
+          "enum": [
+            "native",
+            "team_executor"
+          ]
+        },
+        "spawn_depth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "registered",
+            "launched",
+            "completed",
+            "failed",
+            "timed_out",
+            "blocked"
+          ]
+        },
+        "budget_ref": {
+          "const": "#/budget"
+        }
+      },
+      "required": [
+        "worker_id",
+        "backend",
+        "spawn_depth",
+        "status",
+        "budget_ref"
+      ]
+    },
+    "Wave": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "wave_id": {"$ref": "#/$defs/NonEmptyString"},
+        "ordinal": {"$ref": "#/$defs/PositiveInteger"},
+        "depends_on": {"$ref": "#/$defs/StringList"},
+        "required_worker_ids": {"$ref": "#/$defs/StringList"},
+        "status": {
+          "type": "string",
+          "enum": ["pending", "active", "passed", "failed", "blocked"]
+        },
+        "opened_at": {"$ref": "#/$defs/NullableString"},
+        "closed_at": {"$ref": "#/$defs/NullableString"},
+        "fan_in_receipt_id": {"$ref": "#/$defs/NullableString"}
+      },
+      "required": [
+        "wave_id", "ordinal", "depends_on", "required_worker_ids", "status",
+        "opened_at", "closed_at", "fan_in_receipt_id"
+      ]
+    },
+    "WorkerReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {"const": "sejong.delegation-worker-receipt/v0.1-draft"},
+        "receipt_type": {"const": "worker_terminal"},
+        "receipt_id": {"$ref": "#/$defs/NonEmptyString"},
+        "run_id": {"$ref": "#/$defs/NonEmptyString"},
+        "wave_id": {"$ref": "#/$defs/NonEmptyString"},
+        "worker_id": {"$ref": "#/$defs/NonEmptyString"},
+        "backend": {"type": "string", "enum": ["native", "team_executor"]},
+        "backend_worker_ref": {"$ref": "#/$defs/NonEmptyString"},
+        "worker_contract_ref": {"$ref": "#/$defs/NonEmptyString"},
+        "worker_output_ref": {"$ref": "#/$defs/NonEmptyString"},
+        "terminal_status": {"type": "string", "enum": ["completed", "failed", "timed_out", "blocked"]},
+        "summary": {"$ref": "#/$defs/NonEmptyString"},
+        "evidence_refs": {"$ref": "#/$defs/StringList"},
+        "blocker": {"$ref": "#/$defs/NullableString"},
+        "authority": {"const": "evidence_only"},
+        "created_at": {"type": "string", "format": "date-time"}
+      },
+      "required": [
+        "format", "receipt_type", "receipt_id", "run_id", "wave_id", "worker_id", "backend",
+        "backend_worker_ref", "worker_contract_ref", "worker_output_ref", "terminal_status", "summary",
+        "evidence_refs", "blocker", "authority", "created_at"
+      ]
+    },
+    "FanInReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {"const": "sejong.delegation-fan-in-receipt/v0.1-draft"},
+        "receipt_type": {"const": "fan_in"},
+        "receipt_id": {"$ref": "#/$defs/NonEmptyString"},
+        "run_id": {"$ref": "#/$defs/NonEmptyString"},
+        "wave_id": {"$ref": "#/$defs/NonEmptyString"},
+        "required_worker_ids": {"$ref": "#/$defs/StringList"},
+        "terminal_receipt_ids": {"$ref": "#/$defs/StringList"},
+        "aggregate_status": {"type": "string", "enum": ["passed", "failed", "blocked"]},
+        "blocking_receipt_ids": {"$ref": "#/$defs/StringList"},
+        "authority": {"const": "orchestration_evidence_only"},
+        "created_at": {"type": "string", "format": "date-time"}
+      },
+      "required": [
+        "format", "receipt_type", "receipt_id", "run_id", "wave_id", "required_worker_ids",
+        "terminal_receipt_ids", "aggregate_status", "blocking_receipt_ids", "authority", "created_at"
+      ]
+    }
+  }
+}

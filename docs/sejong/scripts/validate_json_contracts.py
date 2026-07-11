@@ -29,6 +29,8 @@ SCHEMA_FILES = {
     "king_sejong_context": SEJONG_ROOT / "king-sejong-context.schema.json",
     "ambiguity_register": SEJONG_ROOT / "ambiguity-register.schema.json",
     "team_executor": SEJONG_ROOT / "team-executor.schema.json",
+    "delegation_run": SEJONG_ROOT / "delegation-run.schema.json",
+    "external_action_receipt": SEJONG_ROOT / "external-action-receipt.schema.json",
     "continuity_capsule": SEJONG_ROOT / "continuity-capsule.schema.json",
     "seungjeongwon_run": SEJONG_ROOT / "seungjeongwon-run.schema.json",
     "seungjeongwon_checkpoint": SEJONG_ROOT / "seungjeongwon-checkpoint.schema.json",
@@ -58,6 +60,8 @@ FORMAT_TO_SCHEMA = {
     "sejong.team-worker/v0.1-draft": "team_executor",
     "sejong.team-mailbox-message/v0.1-draft": "team_executor",
     "sejong.team-mailbox-receive/v0.1-draft": "team_executor",
+    "sejong.delegation-run/v0.1-draft": "delegation_run",
+    "sejong.external-action-receipts/v0.1-draft": "external_action_receipt",
     "sejong.continuity-capsule/v0.1-draft": "continuity_capsule",
     "sejong.seungjeongwon-run/v0.1-draft": "seungjeongwon_run",
     "sejong.seungjeongwon-checkpoint/v0.1-draft": "seungjeongwon_checkpoint",
@@ -128,7 +132,8 @@ def main() -> int:
             print(f"skip: {relative_path} (negative fixture)")
             continue
 
-        schema_name = FORMAT_TO_SCHEMA.get(data.get("format"))
+        format_name = data.get("format")
+        schema_name = FORMAT_TO_SCHEMA.get(format_name) if isinstance(format_name, str) else None
         if not schema_name:
             skipped += 1
             print(f"skip: {relative_path} (no mapped schema for format {data.get('format')!r})")

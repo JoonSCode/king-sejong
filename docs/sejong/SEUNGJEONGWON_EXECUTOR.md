@@ -81,6 +81,15 @@ The summary is a HUD only. It shows open todo count, current todo, latest
 attempt, blocker count, and next action. It does not complete the run or approve
 any gate.
 
+Dependency-wave execution may attach a validated Core fan-in receipt with
+`seungjeongwon_run.py add-fan-in --delegation-run <run.json> --receipt
+<fan-in.json>`. The command validates the delegation run and accepts the receipt
+only when its complete content exactly matches an embedded `passed` fan-in
+receipt. The Seungjeongwon run stores the paths in `delegation_fan_in_refs` and
+the backward-compatible optional `delegation_run_refs`, and also adds the Core
+run to `provenance.input_refs`. The HUD exposes both ref counts. This remains
+orchestration evidence only: it does not complete a todo or verify the outcome.
+
 When Codex consumer feedback is produced, keep the full ordered
 `visible_todo_events` in the `uigwe.codex-consumer-feedback/v0.2-draft`
 artifact. The Seungjeongwon run stores validated `execution_feedback_refs` to
