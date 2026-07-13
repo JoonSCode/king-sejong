@@ -180,6 +180,8 @@ def record_terminal(run: DelegationRun, request: TerminalReceiptRequest) -> Dele
         not request.worker_output_ref or not request.evidence_refs
     ):
         raise DelegationContractError("completed receipt requires worker output and evidence")
+    if request.terminal_status is TerminalStatus.COMPLETED and request.blocker is not None:
+        raise DelegationContractError("completed receipt cannot carry blocker")
     if request.terminal_status is not TerminalStatus.COMPLETED and not request.blocker:
         raise DelegationContractError("non-success receipt requires blocker disposition")
     receipt: JsonObject = {

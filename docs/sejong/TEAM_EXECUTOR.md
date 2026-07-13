@@ -10,7 +10,32 @@ It is designed for wrappers such as `$team` that launch separate Codex CLI or ex
 
 `TeamExecutor` is not the default Sejong executor. The default remains `Seungjeongwon`.
 
-When the active host runtime officially supports team or teammate messaging, use that native backend for direct worker messages and shared task state. TeamExecutor is the portable fallback and wrapper contract for runtimes that do not expose such a backend or when separate CLI processes are required.
+When the active host runtime supports bounded native agents, use that backend by
+default. TeamExecutor is the portable fallback and wrapper contract for
+capabilities that the native host cannot satisfy.
+
+The task-class delegation gate applies this matrix:
+
+| Requirement | Native host capability | Backend |
+| --- | --- | --- |
+| Bounded delegation, no fallback-only requirement | available | `codex_native` |
+| Bounded delegation | unavailable | `team_executor` |
+| Independent CLI or other separate process | any | `team_executor` |
+| Cross-session recovery through Sejong-owned state | any | `team_executor` |
+| Write isolation | native worktree isolation | `codex_native` |
+| Write isolation | shared workspace or unknown | `team_executor` |
+| Direct peer messaging | native messaging available | `codex_native` |
+| Direct peer messaging | unavailable or unknown | `team_executor` |
+
+When host-native capability is `unknown`, preserve the legacy task-shape score
+instead of claiming that native-first routing occurred. Explicit capability
+evidence is required to migrate the default safely.
+
+Native execution must not reproduce TeamExecutor mailbox, lease, workspace, or
+process-management state. It registers native workers in the shared delegation
+run and projects terminal host results into the common receipt contract. Use
+TeamExecutor when separate CLI processes, durable mailbox recovery, or explicit
+worktree leases are the desired capability rather than an implementation detail.
 
 ## Non-Goals
 

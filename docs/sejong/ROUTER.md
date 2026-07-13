@@ -265,7 +265,19 @@ Supported worker backends include:
 
 `$team` state belongs under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/`. It must use Sejong-owned state rooted at `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` rather than repo-local or tool-specific orchestration state. See [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) for the mailbox, tmux worker, and lease contract.
 
-Codex native subagents remain a valid backend for parent-mediated side tasks. Host-native team or teammate messaging is preferred when the runtime officially supports direct worker messages and the task genuinely needs peer challenge or shared task state. `$team` is the fallback and wrapper-friendly shape when the intended workers are independent CLI processes rather than host-managed calls.
+Backend selection is capability-aware. When bounded native agents are available
+and satisfy required isolation or messaging, choose `bounded_subagents` with
+backend `codex_native`. Choose `$team` / `TeamExecutor` when native agents are
+unavailable or the task requires independent CLI processes, cross-session
+recovery, direct messaging the native host cannot provide, or write isolation
+that the native host cannot guarantee. Unknown native capability preserves the
+legacy task-shape route; it is not evidence that native-first selection occurred.
+
+Use `docs/sejong/scripts/task_class_delegation_gate.py` to record the capability
+decision. Native workers then use `native_delegation_adapter.py` only to project
+terminal host results into the shared DelegationRun receipt. Do not build a second native mailbox, lease manager, process manager, or fan-in engine. See
+[DELEGATION_RUNTIME.md](DELEGATION_RUNTIME.md) and
+[TEAM_EXECUTOR.md](TEAM_EXECUTOR.md).
 
 All worker backends must carry the active King Sejong context when available, including the current court mode, route sequence, source-of-truth refs, pending gates, role, assigned scope, allowed outputs, forbidden claims, stop condition, and return format. Workers may exchange bounded challenge messages and report provisional consensus to the Sejong lead. Worker consensus is useful signal, but never gate approval, final synthesis, or final verification.
 

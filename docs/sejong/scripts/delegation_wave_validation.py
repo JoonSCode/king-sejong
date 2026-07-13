@@ -83,6 +83,8 @@ def _terminal_failures(run: DelegationRun, index: _RunIndex, receipt: JsonObject
         failures.append(f"terminal receipt blocker must be non-empty or null: {receipt_id}")
     if status is TerminalStatus.COMPLETED and not evidence_refs:
         failures.append(f"completed terminal receipt requires evidence: {receipt_id}")
+    if status is TerminalStatus.COMPLETED and blocker is not None:
+        failures.append(f"completed terminal receipt cannot carry blocker: {receipt_id}")
     if status is not None and status is not TerminalStatus.COMPLETED and not _is_text(blocker):
         failures.append(f"non-success terminal receipt requires blocker: {receipt_id}")
     return failures

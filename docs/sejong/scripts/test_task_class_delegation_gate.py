@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 
@@ -16,6 +17,17 @@ RUNNER = SEJONG_ROOT / "scripts" / "task_class_delegation_gate.py"
 sys.path.insert(0, str(SEJONG_ROOT / "scripts"))
 
 import task_class_delegation_gate as gate  # noqa: E402
+
+
+def broad_input() -> gate.DelegationInput:
+    return gate.DelegationInput(
+        task_class="implementation",
+        write_risk="medium",
+        evidence_breadth="broad",
+        code_coupling="bounded",
+        overhead_roi="high",
+        worker_scope_state="disjoint",
+    )
 
 
 class TaskClassDelegationGateTests(unittest.TestCase):
@@ -35,34 +47,140 @@ class TaskClassDelegationGateTests(unittest.TestCase):
         self.assertIn("implementation notes", result["allowed_outputs"])
 
     def test_broad_disjoint_high_roi_execution_uses_team_executor(self) -> None:
-        result = gate.evaluate(
-            gate.DelegationInput(
-                task_class="implementation",
-                write_risk="medium",
-                evidence_breadth="broad",
-                code_coupling="bounded",
-                overhead_roi="high",
-                worker_scope_state="disjoint",
-                uigwe_contract_state="handoff_ready",
-            )
-        )
+        result = gate.evaluate(replace(
+            broad_input(), uigwe_contract_state="handoff_ready",
+        ))
 
         self.assertEqual(result["selected_route"], "team_executor")
-        self.assertIn("durable mailbox or workflow-run evidence", result["required_evidence"])
+        self.assertIn(
+            "durable mailbox or workflow-run evidence", result["required_evidence"]
+        )
         self.assertIn("Uigwe contract refs preserved", result["required_evidence"])
         self.assertIn("majority-vote authority", result["forbidden_claims"])
+        self.assertEqual(result["selected_backend"], "team_executor")
+        self.assertEqual(result["fallback_reasons"], [])
+        self.assertIn("host_native_capability_unknown", result["capability_notes"])
+
+    def test_native_available_prefers_bounded_subagents_for_broad_execution(
+        self,
+    ) -> None:
+        result = gate.evaluate(replace(
+            broad_input(),
+            uigwe_contract_state="handoff_ready",
+            host_native_state="available",
+        ))
+
+        self.assertEqual(result["selected_route"], "bounded_subagents")
+        self.assertEqual(result["selected_backend"], "codex_native")
+        self.assertEqual(result["fallback_reasons"], [])
+        self.assertIn("native agent thread refs", result["required_evidence"])
+
+    def test_native_unavailable_uses_team_executor_fallback(self) -> None:
+        result = gate.evaluate(replace(
+            broad_input(), host_native_state="unavailable",
+        ))
+
+        self.assertEqual(result["selected_route"], "team_executor")
+        self.assertEqual(result["selected_backend"], "team_executor")
+        self.assertIn("host_native_unavailable", result["fallback_reasons"])
+
+    def test_independent_process_requirement_uses_team_executor(self) -> None:
+        result = gate.evaluate(replace(
+            broad_input(),
+            host_native_state="available",
+            requires_independent_process=True,
+        ))
+
+        self.assertEqual(result["selected_backend"], "team_executor")
+        self.assertIn("independent_process_required", result["fallback_reasons"])
+
+    def test_explicit_process_requirement_overrides_unknown_native_capability(
+        self,
+    ) -> None:
+        result = gate.evaluate(replace(
+            broad_input(),
+            task_class="validation_review",
+            write_risk="low",
+            evidence_breadth="moderate",
+            code_coupling="isolated",
+            overhead_roi="medium",
+            requires_independent_process=True,
+        ))
+
+        self.assertEqual(result["selected_backend"], "team_executor")
+        self.assertIn("independent_process_required", result["fallback_reasons"])
+
+    def test_cross_session_recovery_requirement_uses_team_executor(self) -> None:
+        result = gate.evaluate(replace(
+            broad_input(),
+            task_class="bundle_execution",
+            host_native_state="available",
+            requires_cross_session_recovery=True,
+        ))
+
+        self.assertEqual(result["selected_backend"], "team_executor")
+        self.assertIn("cross_session_recovery_required", result["fallback_reasons"])
+
+    def test_shared_workspace_native_host_cannot_satisfy_write_isolation(self) -> None:
+        result = gate.evaluate(replace(
+            broad_input(),
+            host_native_state="available",
+            host_native_write_isolation="shared_workspace",
+            requires_write_isolation=True,
+        ))
+
+        self.assertEqual(result["selected_backend"], "team_executor")
+        self.assertIn("native_write_isolation_unavailable", result["fallback_reasons"])
+
+    def test_native_worktree_isolation_satisfies_write_isolation_requirement(
+        self,
+    ) -> None:
+        result = gate.evaluate(replace(
+            broad_input(),
+            host_native_state="available",
+            host_native_write_isolation="worktree",
+            requires_write_isolation=True,
+        ))
+
+        self.assertEqual(result["selected_route"], "bounded_subagents")
+        self.assertEqual(result["selected_backend"], "codex_native")
+        self.assertEqual(result["fallback_reasons"], [])
+
+    def test_missing_native_peer_messaging_uses_team_executor(self) -> None:
+        result = gate.evaluate(replace(
+            broad_input(),
+            task_class="validation_review",
+            write_risk="low",
+            host_native_state="available",
+            host_native_direct_messaging="unavailable",
+            requires_peer_messaging=True,
+        ))
+
+        self.assertEqual(result["selected_backend"], "team_executor")
+        self.assertIn("native_peer_messaging_unavailable", result["fallback_reasons"])
+
+    def test_available_native_peer_messaging_keeps_native_backend(self) -> None:
+        result = gate.evaluate(replace(
+            broad_input(),
+            task_class="validation_review",
+            write_risk="low",
+            host_native_state="available",
+            host_native_direct_messaging="available",
+            requires_peer_messaging=True,
+        ))
+
+        self.assertEqual(result["selected_backend"], "codex_native")
+        self.assertEqual(result["fallback_reasons"], [])
 
     def test_moderate_independent_work_uses_bounded_subagents(self) -> None:
-        result = gate.evaluate(
-            gate.DelegationInput(
-                task_class="validation_review",
-                write_risk="low",
-                evidence_breadth="moderate",
-                code_coupling="isolated",
-                overhead_roi="medium",
-                worker_scope_state="disjoint",
-            )
-        )
+        result = gate.evaluate(replace(
+            broad_input(),
+            task_class="validation_review",
+            write_risk="low",
+            evidence_breadth="moderate",
+            code_coupling="isolated",
+            overhead_roi="medium",
+        ))
 
         self.assertEqual(result["selected_route"], "bounded_subagents")
         self.assertIn("bounded worker scope", result["required_evidence"])
@@ -84,20 +202,15 @@ class TaskClassDelegationGateTests(unittest.TestCase):
         self.assertIn("known/inferred/unknown separation", result["required_evidence"])
 
     def test_hard_gate_violation_forces_no_write_dry_run(self) -> None:
-        result = gate.evaluate(
-            gate.DelegationInput(
-                task_class="implementation",
-                write_risk="medium",
-                evidence_breadth="broad",
-                code_coupling="bounded",
-                overhead_roi="high",
-                worker_scope_state="disjoint",
-                worker_authority_policy="consensus_approval",
-            )
-        )
+        result = gate.evaluate(replace(
+            broad_input(),
+            worker_authority_policy="consensus_approval",
+        ))
 
         self.assertEqual(result["selected_route"], "no_write_dry_run")
-        self.assertIn("keeps_worker_outputs_evidence_only", result["hard_gate_failures"])
+        self.assertIn(
+            "keeps_worker_outputs_evidence_only", result["hard_gate_failures"]
+        )
         self.assertFalse(result["hard_gates"]["keeps_worker_outputs_evidence_only"])
         self.assertEqual(result["recommended_reentry_target"], "none")
 
@@ -114,7 +227,9 @@ class TaskClassDelegationGateTests(unittest.TestCase):
         )
 
         self.assertEqual(result["selected_route"], "no_write_dry_run")
-        self.assertIn("uigwe_contract_required_before_writes", result["hard_gate_failures"])
+        self.assertIn(
+            "uigwe_contract_required_before_writes", result["hard_gate_failures"]
+        )
         self.assertEqual(result["recommended_reentry_target"], "uigwe")
 
     def test_cli_reads_json_and_emits_stable_format(self) -> None:
@@ -140,7 +255,7 @@ class TaskClassDelegationGateTests(unittest.TestCase):
         report = json.loads(result.stdout)
         self.assertEqual(report["format"], gate.FORMAT)
         self.assertEqual(report["selected_route"], "team_executor")
-
+        self.assertEqual(report["selected_backend"], "team_executor")
 
 if __name__ == "__main__":
     unittest.main()

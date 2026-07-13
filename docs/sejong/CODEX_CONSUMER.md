@@ -96,7 +96,20 @@ This lane may include:
 
 The consumer should use the lightest lane that preserves execution safety.
 
-These lane names describe the default Codex subagent consumer. `$team` is an executor-level `TeamExecutor` backend, not a fourth default consumer lane. When `$team` is selected, use [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) for tmux worker state, mailbox, and lease rules, then emit ordinary execution feedback for completed, blocked, or invalidated actionable leaves.
+These lane names describe the default Codex subagent consumer. For a delegated
+lane, pass host capabilities and task requirements through the task-class
+delegation gate. `codex_native` is the eligible default when bounded native
+agents are available and satisfy the leaf's messaging and isolation needs.
+Record terminal native results through `native_delegation_adapter.py`, then use
+the ordinary DelegationRun fan-in gate.
+
+`$team` is an executor-level `TeamExecutor` backend, not a fourth default
+consumer lane. Select it when native agents are unavailable or the leaf needs an
+independent process, cross-session recovery, explicit worktree isolation absent
+from the native host, or direct peer messaging absent from the native host. Use
+[TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) for tmux worker state, mailbox, and lease
+rules, then emit ordinary execution feedback for completed, blocked, or
+invalidated actionable leaves.
 
 ## Dispatch Rules
 

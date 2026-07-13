@@ -34,6 +34,9 @@ The runner expands to the following local proof pack:
 python3 docs/sejong/scripts/test_king_sejong_hooks.py
 python3 docs/sejong/scripts/run_adversarial_confidence_pack.py
 python3 docs/sejong/scripts/test_sejong_context.py
+python3 docs/sejong/scripts/test_task_class_delegation_gate.py
+python3 docs/sejong/scripts/test_native_delegation_adapter.py
+python3 docs/sejong/scripts/test_delegation_run.py
 python3 docs/sejong/scripts/test_seungjeongwon_run.py
 python3 docs/sejong/scripts/test_sillok_trace.py
 SEJONG_HOME="$(mktemp -d)" python3 docs/sejong/scripts/test_king_sejong_e2e.py
@@ -72,6 +75,13 @@ tests. It mutates the surface rather than only importing unit helpers: bare
 `SEJONG_ACTIVE_CONTEXT` paths, interpreter-mediated protected writes, and
 TeamExecutor duplicate mailbox ids must all fail through the public CLI or hook
 surface.
+
+The delegation routing fixtures also prove that native capability is explicit:
+available native agents win for eligible bounded work, unavailable agents fall
+back to TeamExecutor, write-isolation and persistence requirements force the
+appropriate backend, and unknown capability preserves the legacy route. Native
+adapter fixtures prove that `codex-thread://` terminal receipts pass the shared
+fan-in contract without adding a second lifecycle manager.
 
 ## Tool Poisoning Boundary
 

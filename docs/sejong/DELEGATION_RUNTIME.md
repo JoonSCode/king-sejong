@@ -26,6 +26,14 @@ worker reference, bounded worker contract, output reference, status, and
 evidence. Native subagents and TeamExecutor workers use the same receipt shape.
 Worker receipts have `evidence_only` authority.
 
+For host-native Codex agents, `native_delegation_adapter.py` is a narrow receipt
+projection boundary. It verifies that the worker was registered with backend
+`native`, converts the host thread id to `codex-thread://<thread-id>`, and calls
+the same Core terminal-receipt operation. It does not spawn, resume, message,
+wait for, or close agents, and it does not create a second mailbox or fan-in
+engine. The host owns agent lifecycle; DelegationRun owns budgets, waves,
+receipts, and fan-in.
+
 Core computes fan-in. A wave passes only when every required receipt is
 `completed`. Missing receipts block fan-in, `timed_out` or `failed` receipts
 produce a failed fan-in, and `blocked` receipts produce a blocked fan-in. A
@@ -48,9 +56,9 @@ python3 docs/sejong/scripts/delegation_run.py register-worker <run.json> \
 python3 docs/sejong/scripts/delegation_run.py add-wave <run.json> \
   --wave-id discovery --worker-id planner
 python3 docs/sejong/scripts/delegation_run.py open-wave <run.json> --wave-id discovery
-python3 docs/sejong/scripts/delegation_run.py record-terminal <run.json> \
+python3 docs/sejong/scripts/native_delegation_adapter.py record-terminal <run.json> \
   --receipt-id receipt-planner --wave-id discovery --worker-id planner \
-  --backend-worker-ref host://planner --worker-contract-ref contract://planner \
+  --agent-thread-id thread-123 --worker-contract-ref contract://planner \
   --worker-output-ref output://planner --status completed --summary "planning complete" \
   --evidence-ref evidence://planning
 python3 docs/sejong/scripts/delegation_run.py fan-in <run.json> \
@@ -60,6 +68,10 @@ python3 docs/sejong/scripts/seungjeongwon_run.py add-fan-in \
   --path <seungjeongwon-run.json> --delegation-run <run.json> \
   --receipt discovery-fan-in.json
 ```
+
+TeamExecutor uses its own adapter path to supply the same receipt fields. Direct
+`delegation_run.py record-terminal` remains the backend-neutral compatibility
+surface, not a reason for native callers to invent host references manually.
 
 All mutations use a per-run lock and atomic state replacement. Runtime files
 belong under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` unless the user

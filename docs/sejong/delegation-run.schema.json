@@ -190,6 +190,16 @@
         "format", "receipt_type", "receipt_id", "run_id", "wave_id", "worker_id", "backend",
         "backend_worker_ref", "worker_contract_ref", "worker_output_ref", "terminal_status", "summary",
         "evidence_refs", "blocker", "authority", "created_at"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {"terminal_status": {"const": "completed"}},
+            "required": ["terminal_status"]
+          },
+          "then": {"properties": {"blocker": {"type": "null"}}},
+          "else": {"properties": {"blocker": {"$ref": "#/$defs/NonEmptyString"}}}
+        }
       ]
     },
     "FanInReceipt": {

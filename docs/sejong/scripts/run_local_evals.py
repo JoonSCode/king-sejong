@@ -59,6 +59,16 @@ def build_steps(*, write_scorecards: bool, include_install_verify: bool) -> list
             python_script("test_sejong_context.py"),
         ),
         EvalStep(
+            "task-class-delegation-gate-tests",
+            "Capability-aware native-first routing and TeamExecutor fallback selection",
+            python_script("test_task_class_delegation_gate.py"),
+        ),
+        EvalStep(
+            "native-delegation-adapter-tests",
+            "Native Codex terminal results project into shared delegation receipts",
+            python_script("test_native_delegation_adapter.py"),
+        ),
+        EvalStep(
             "delegation-run-tests",
             "Shared worker budgets, dependency waves, and terminal fan-in receipts",
             python_script("test_delegation_run.py"),

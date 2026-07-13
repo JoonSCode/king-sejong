@@ -16,6 +16,8 @@ class RunLocalEvalsTests(unittest.TestCase):
                 "hook-tests",
                 "adversarial-confidence-pack",
                 "context-tests",
+                "task-class-delegation-gate-tests",
+                "native-delegation-adapter-tests",
                 "delegation-run-tests",
                 "delegation-wave-correlation-tests",
                 "external-action-receipt-tests",
@@ -33,6 +35,8 @@ class RunLocalEvalsTests(unittest.TestCase):
         commands = [" ".join(step.command) for step in steps]
         self.assertTrue(any("test_king_sejong_hooks.py" in command for command in commands))
         self.assertTrue(any("run_adversarial_confidence_pack.py" in command for command in commands))
+        self.assertTrue(any("test_task_class_delegation_gate.py" in command for command in commands))
+        self.assertTrue(any("test_native_delegation_adapter.py" in command for command in commands))
         self.assertTrue(any("test_delegation_run.py" in command for command in commands))
         self.assertTrue(any("test_delegation_wave_validation.py" in command for command in commands))
         self.assertTrue(any("test_external_action_receipt.py" in command for command in commands))
