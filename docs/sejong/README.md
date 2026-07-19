@@ -99,6 +99,7 @@ For normal use:
 21. Read [OPTIONAL_ADAPTERS.md](OPTIONAL_ADAPTERS.md) before adding code-intel, specialist, custom-agent, marketplace, or remote-install adapters.
 22. Read [APP_SCOPED_RUNTIME_STRATEGY.md](APP_SCOPED_RUNTIME_STRATEGY.md) when hardening repo-scoped active context, Seungjeongwon pre-edit receipts, or app-style outcome workflows.
 23. Read [VALIDATION.md](VALIDATION.md) if you are changing Uigwe or Sejong behavior and need benchmark gates.
+24. Read [DISCORD_ORCHESTRATION.md](DISCORD_ORCHESTRATION.md) for the local Discord/Hermes control contract, fixed-model ticket runner, independent review, multi-Mac leases, and rollout boundary.
 
 ## Practical Usage
 

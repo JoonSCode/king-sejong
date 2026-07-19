@@ -1,0 +1,34 @@
+{
+  "format": "sejong.discord-control-event/v0.1-draft",
+  "event_id": "local-demo-event-1",
+  "idempotency_key": "local-demo:ticket-1",
+  "received_at": "2026-07-19T10:00:00Z",
+  "guild_id": "local-demo-guild",
+  "channel_id": "local-demo-channel",
+  "actor": {
+    "user_id": "local-demo-user",
+    "role_ids": ["ticket-operator"]
+  },
+  "command": {
+    "kind": "create_ticket",
+    "ticket": {
+      "ticket_id": "local-demo-ticket-1",
+      "objective": "Inspect the bounded documentation scope and produce a dry-run plan only.",
+      "target": {
+        "host_id": "local-demo-mac",
+        "repo_id": "king-sejong"
+      },
+      "task_class": "implementation",
+      "risk_class": "low",
+      "model": "gpt-5.4",
+      "sandbox": "workspace-write",
+      "timeout_seconds": 900,
+      "scope": {
+        "read_paths": ["docs/sejong"],
+        "write_paths": ["docs/sejong/DISCORD_ORCHESTRATION.md"]
+      },
+      "verification_requirements": ["git diff --check"],
+      "dry_run": true
+    }
+  }
+}

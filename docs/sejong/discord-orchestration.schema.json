@@ -1,0 +1,492 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/discord-orchestration.schema.json",
+  "title": "King Sejong Discord-first Orchestration Contracts Draft",
+  "description": "Additive local control, runner evidence, review, host recovery, and Core routing contracts. These artifacts do not grant completion authority.",
+  "oneOf": [
+    {"$ref": "#/$defs/ControlEvent"},
+    {"$ref": "#/$defs/ControlPolicy"},
+    {"$ref": "#/$defs/TargetRegistry"},
+    {"$ref": "#/$defs/IdempotencyState"},
+    {"$ref": "#/$defs/DryRunResult"},
+    {"$ref": "#/$defs/TicketRunReceipt"},
+    {"$ref": "#/$defs/EvidenceManifest"},
+    {"$ref": "#/$defs/CandidateHandoff"},
+    {"$ref": "#/$defs/ReviewDispatch"},
+    {"$ref": "#/$defs/ReviewReceipt"},
+    {"$ref": "#/$defs/HostState"},
+    {"$ref": "#/$defs/WriteLeases"},
+    {"$ref": "#/$defs/ModelRoute"},
+    {"$ref": "#/$defs/TicketEvidenceState"}
+  ],
+  "$defs": {
+    "NonEmptyString": {"type": "string", "minLength": 1, "maxLength": 8192},
+    "Sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "ModelToken": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "AbsolutePath": {"type": "string", "pattern": "^/", "minLength": 1},
+    "StringList": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/NonEmptyString"},
+      "uniqueItems": true
+    },
+    "Ticket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ticket_id", "objective", "target", "task_class", "risk_class", "model", "sandbox", "timeout_seconds", "scope", "verification_requirements", "dry_run"],
+      "properties": {
+        "ticket_id": {"$ref": "#/$defs/NonEmptyString"},
+        "objective": {"$ref": "#/$defs/NonEmptyString"},
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["host_id", "repo_id"],
+          "properties": {
+            "host_id": {"$ref": "#/$defs/NonEmptyString"},
+            "repo_id": {"$ref": "#/$defs/NonEmptyString"}
+          }
+        },
+        "task_class": {"$ref": "#/$defs/NonEmptyString"},
+        "risk_class": {"enum": ["low", "medium", "high"]},
+        "model": {"$ref": "#/$defs/ModelToken"},
+        "sandbox": {"enum": ["read-only", "workspace-write"]},
+        "timeout_seconds": {"type": "integer", "minimum": 1},
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["read_paths", "write_paths"],
+          "properties": {
+            "read_paths": {"$ref": "#/$defs/StringList"},
+            "write_paths": {"$ref": "#/$defs/StringList"}
+          }
+        },
+        "verification_requirements": {"$ref": "#/$defs/StringList"},
+        "dry_run": {"type": "boolean"}
+      }
+    },
+    "ControlEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "event_id", "idempotency_key", "received_at", "guild_id", "channel_id", "actor", "command"],
+      "properties": {
+        "format": {"const": "sejong.discord-control-event/v0.1-draft"},
+        "event_id": {"$ref": "#/$defs/NonEmptyString"},
+        "idempotency_key": {"$ref": "#/$defs/NonEmptyString"},
+        "received_at": {"type": "string", "format": "date-time"},
+        "guild_id": {"$ref": "#/$defs/NonEmptyString"},
+        "channel_id": {"$ref": "#/$defs/NonEmptyString"},
+        "actor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["user_id", "role_ids"],
+          "properties": {
+            "user_id": {"$ref": "#/$defs/NonEmptyString"},
+            "role_ids": {"$ref": "#/$defs/StringList"}
+          }
+        },
+        "command": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "ticket"],
+              "properties": {"kind": {"const": "create_ticket"}, "ticket": {"$ref": "#/$defs/Ticket"}}
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "ticket_id", "approval_ref"],
+              "properties": {"kind": {"const": "approve"}, "ticket_id": {"$ref": "#/$defs/NonEmptyString"}, "approval_ref": {"$ref": "#/$defs/NonEmptyString"}}
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "ticket_id", "reason"],
+              "properties": {"kind": {"const": "cancel"}, "ticket_id": {"$ref": "#/$defs/NonEmptyString"}, "reason": {"$ref": "#/$defs/NonEmptyString"}}
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "ticket_id"],
+              "properties": {"kind": {"const": "status"}, "ticket_id": {"$ref": "#/$defs/NonEmptyString"}}
+            }
+          ]
+        }
+      }
+    },
+    "ControlPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "allowed_guild_ids", "allowed_channel_ids", "allowed_user_ids", "required_role_ids"],
+      "properties": {
+        "format": {"const": "sejong.discord-control-policy/v0.1-draft"},
+        "allowed_guild_ids": {"$ref": "#/$defs/StringList"},
+        "allowed_channel_ids": {"$ref": "#/$defs/StringList"},
+        "allowed_user_ids": {"$ref": "#/$defs/StringList"},
+        "required_role_ids": {"$ref": "#/$defs/StringList"}
+      }
+    },
+    "TargetRegistry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "hosts"],
+      "properties": {
+        "format": {"const": "sejong.discord-target-registry/v0.1-draft"},
+        "hosts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["host_id", "enabled", "codex_binary", "repositories"],
+            "properties": {
+              "host_id": {"$ref": "#/$defs/NonEmptyString"},
+              "enabled": {"type": "boolean"},
+              "codex_binary": {"$ref": "#/$defs/AbsolutePath"},
+              "repositories": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["repo_id", "repo_root"],
+                  "properties": {
+                    "repo_id": {"$ref": "#/$defs/NonEmptyString"},
+                    "repo_root": {"$ref": "#/$defs/AbsolutePath"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "IdempotencyState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "records"],
+      "properties": {
+        "format": {"const": "sejong.discord-idempotency/v0.1-draft"},
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["event_id", "idempotency_key", "ticket_id"],
+            "properties": {
+              "event_id": {"$ref": "#/$defs/NonEmptyString"},
+              "idempotency_key": {"$ref": "#/$defs/NonEmptyString"},
+              "ticket_id": {"$ref": "#/$defs/NonEmptyString"}
+            }
+          }
+        }
+      }
+    },
+    "DryRunResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "ticket_id", "status", "process_invoked", "receipt_path", "idempotency_status"],
+      "properties": {
+        "format": {"const": "sejong.discord-ticket-dry-run/v0.1-draft"},
+        "ticket_id": {"$ref": "#/$defs/NonEmptyString"},
+        "status": {"const": "dry_run"},
+        "process_invoked": {"const": false},
+        "receipt_path": {"$ref": "#/$defs/AbsolutePath"},
+        "idempotency_status": {"const": "accepted"}
+      }
+    },
+    "TicketRunReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "ticket_id", "status", "completion_authority", "completion_eligible", "model", "sandbox", "prompt_sha256", "process", "result"],
+      "properties": {
+        "format": {"const": "sejong.codex-ticket-run-receipt/v0.1-draft"},
+        "ticket_id": {"$ref": "#/$defs/NonEmptyString"},
+        "status": {"enum": ["dry_run", "process_completed", "process_failed", "timed_out", "cancelled"]},
+        "completion_authority": {"const": "evidence_only"},
+        "completion_eligible": {"const": false},
+        "model": {"$ref": "#/$defs/NonEmptyString"},
+        "sandbox": {"enum": ["read-only", "workspace-write"]},
+        "prompt_sha256": {"$ref": "#/$defs/Sha256"},
+        "process": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["argv", "cwd", "timeout_seconds", "output_limit_bytes"],
+          "properties": {
+            "argv": {"$ref": "#/$defs/StringList"},
+            "cwd": {"$ref": "#/$defs/AbsolutePath"},
+            "timeout_seconds": {"type": "integer", "minimum": 1},
+            "output_limit_bytes": {"type": "integer", "minimum": 1, "maximum": 1048576}
+          }
+        },
+        "result": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["status", "exit_code", "stdout", "stderr", "truncated"],
+              "properties": {
+                "status": {"enum": ["completed", "failed", "timed_out", "cancelled"]},
+                "exit_code": {"type": ["integer", "null"]},
+                "stdout": {"type": "string"},
+                "stderr": {"type": "string"},
+                "truncated": {"type": "boolean"}
+              }
+            }
+          ]
+        }
+      }
+    },
+    "Artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "sha256", "size_bytes", "artifact_format", "producer", "verification_refs"],
+      "properties": {
+        "ref": {"$ref": "#/$defs/NonEmptyString"},
+        "sha256": {"$ref": "#/$defs/Sha256"},
+        "size_bytes": {"type": "integer", "minimum": 0},
+        "artifact_format": {"$ref": "#/$defs/NonEmptyString"},
+        "producer": {"$ref": "#/$defs/NonEmptyString"},
+        "verification_refs": {"$ref": "#/$defs/StringList"}
+      }
+    },
+    "EvidenceManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "manifest_id", "run_id", "ticket_id", "repo_root", "generated_at", "producer", "parent_event_refs", "commands", "artifacts"],
+      "properties": {
+        "format": {"const": "sejong.evidence-manifest/v0.1-draft"},
+        "manifest_id": {"$ref": "#/$defs/NonEmptyString"},
+        "run_id": {"$ref": "#/$defs/NonEmptyString"},
+        "ticket_id": {"$ref": "#/$defs/NonEmptyString"},
+        "repo_root": {"$ref": "#/$defs/AbsolutePath"},
+        "generated_at": {"type": "string", "format": "date-time"},
+        "producer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["surface", "model", "sandbox"],
+          "properties": {
+            "surface": {"$ref": "#/$defs/NonEmptyString"},
+            "model": {"$ref": "#/$defs/NonEmptyString"},
+            "sandbox": {"enum": ["read-only", "workspace-write"]}
+          }
+        },
+        "parent_event_refs": {"$ref": "#/$defs/StringList"},
+        "commands": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["argv", "exit_code", "output_ref"],
+            "properties": {
+              "argv": {"$ref": "#/$defs/StringList"},
+              "exit_code": {"type": "integer"},
+              "output_ref": {"$ref": "#/$defs/NonEmptyString"}
+            }
+          }
+        },
+        "artifacts": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/Artifact"}}
+      }
+    },
+    "CandidateHandoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "ticket_id", "producer_run_id", "authority", "completion_eligible", "workspace", "producer", "evidence_manifest_ref", "evidence_manifest_sha256", "unknowns", "verification_requirements", "next_run_constraints", "created_at", "candidate_sha256"],
+      "properties": {
+        "format": {"const": "sejong.codex-candidate-handoff/v0.1-draft"},
+        "ticket_id": {"$ref": "#/$defs/NonEmptyString"},
+        "producer_run_id": {"$ref": "#/$defs/NonEmptyString"},
+        "authority": {"const": "evidence_only"},
+        "completion_eligible": {"const": false},
+        "workspace": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "base_commit", "head_commit", "dirty_before", "dirty_after", "diff_sha256"],
+          "properties": {
+            "path": {"$ref": "#/$defs/AbsolutePath"},
+            "base_commit": {"type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"},
+            "head_commit": {"type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"},
+            "dirty_before": {"type": "boolean"},
+            "dirty_after": {"type": "boolean"},
+            "diff_sha256": {"$ref": "#/$defs/Sha256"}
+          }
+        },
+        "producer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["model", "sandbox"],
+          "properties": {"model": {"$ref": "#/$defs/NonEmptyString"}, "sandbox": {"enum": ["read-only", "workspace-write"]}}
+        },
+        "evidence_manifest_ref": {"$ref": "#/$defs/AbsolutePath"},
+        "evidence_manifest_sha256": {"$ref": "#/$defs/Sha256"},
+        "unknowns": {"$ref": "#/$defs/StringList"},
+        "verification_requirements": {"$ref": "#/$defs/StringList"},
+        "next_run_constraints": {"$ref": "#/$defs/StringList"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "candidate_sha256": {"$ref": "#/$defs/Sha256"}
+      }
+    },
+    "ReviewDispatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "ticket_id", "candidate_sha256", "producer_run_id", "producer_actor_id", "reviewer_run_id", "reviewer_actor_id", "reviewer_lane", "reviewer_model", "sandbox", "shadow", "write_paths", "canonical_state_write", "authority", "dispatch_sha256"],
+      "properties": {
+        "format": {"const": "sejong.candidate-review-dispatch/v0.1-draft"},
+        "ticket_id": {"$ref": "#/$defs/NonEmptyString"},
+        "candidate_sha256": {"$ref": "#/$defs/Sha256"},
+        "producer_run_id": {"$ref": "#/$defs/NonEmptyString"},
+        "producer_actor_id": {"$ref": "#/$defs/NonEmptyString"},
+        "reviewer_run_id": {"$ref": "#/$defs/NonEmptyString"},
+        "reviewer_actor_id": {"$ref": "#/$defs/NonEmptyString"},
+        "reviewer_lane": {"enum": ["sol", "antigravity"]},
+        "reviewer_model": {"$ref": "#/$defs/NonEmptyString"},
+        "sandbox": {"const": "read-only"},
+        "shadow": {"type": "boolean"},
+        "write_paths": {"type": "array", "maxItems": 0},
+        "canonical_state_write": {"const": false},
+        "authority": {"enum": ["approval_recommendation_only", "shadow_second_opinion_only"]},
+        "dispatch_sha256": {"$ref": "#/$defs/Sha256"}
+      }
+    },
+    "ReviewReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "ticket_id", "candidate_sha256", "producer_run_id", "producer_actor_id", "reviewer_run_id", "reviewer_actor_id", "reviewer_lane", "shadow", "verdict", "evidence_refs", "satisfied_requirements", "unknowns", "authority", "dispatch_sha256", "receipt_sha256"],
+      "properties": {
+        "format": {"const": "sejong.candidate-review-receipt/v0.1-draft"},
+        "ticket_id": {"$ref": "#/$defs/NonEmptyString"},
+        "candidate_sha256": {"$ref": "#/$defs/Sha256"},
+        "producer_run_id": {"$ref": "#/$defs/NonEmptyString"},
+        "producer_actor_id": {"$ref": "#/$defs/NonEmptyString"},
+        "reviewer_run_id": {"$ref": "#/$defs/NonEmptyString"},
+        "reviewer_actor_id": {"$ref": "#/$defs/NonEmptyString"},
+        "reviewer_lane": {"enum": ["sol", "antigravity"]},
+        "shadow": {"type": "boolean"},
+        "verdict": {"enum": ["approved", "changes_requested", "blocked"]},
+        "evidence_refs": {"$ref": "#/$defs/StringList"},
+        "satisfied_requirements": {"$ref": "#/$defs/StringList"},
+        "unknowns": {"$ref": "#/$defs/StringList"},
+        "authority": {"enum": ["approval_recommendation_only", "shadow_second_opinion_only"]},
+        "dispatch_sha256": {"$ref": "#/$defs/Sha256"},
+        "receipt_sha256": {"$ref": "#/$defs/Sha256"}
+      }
+    },
+    "HostState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "hosts"],
+      "properties": {
+        "format": {"const": "sejong.discord-host-state/v0.1-draft"},
+        "hosts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["host_id", "observed_at", "status", "codex_auth", "capabilities", "repo_paths"],
+            "properties": {
+              "host_id": {"$ref": "#/$defs/NonEmptyString"},
+              "observed_at": {"type": "string", "format": "date-time"},
+              "status": {"enum": ["connected", "disconnected", "unknown"]},
+              "codex_auth": {"enum": ["observed_ready", "observed_missing", "unknown"]},
+              "capabilities": {"$ref": "#/$defs/StringList"},
+              "repo_paths": {"type": "object", "additionalProperties": {"$ref": "#/$defs/AbsolutePath"}}
+            }
+          }
+        }
+      }
+    },
+    "WriteLeases": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "leases"],
+      "properties": {
+        "format": {"const": "sejong.discord-write-leases/v0.1-draft"},
+        "leases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["lease_id", "ticket_id", "host_id", "repo_id", "workspace", "acquired_at", "heartbeat_at", "expires_at", "status", "isolation_claim"],
+            "properties": {
+              "lease_id": {"$ref": "#/$defs/NonEmptyString"},
+              "ticket_id": {"$ref": "#/$defs/NonEmptyString"},
+              "host_id": {"$ref": "#/$defs/NonEmptyString"},
+              "repo_id": {"$ref": "#/$defs/NonEmptyString"},
+              "workspace": {"$ref": "#/$defs/AbsolutePath"},
+              "acquired_at": {"type": "string", "format": "date-time"},
+              "heartbeat_at": {"type": "string", "format": "date-time"},
+              "expires_at": {"type": "string", "format": "date-time"},
+              "status": {"enum": ["active", "released"]},
+              "isolation_claim": {"const": "edit_isolation_only"},
+              "released_at": {"type": "string", "format": "date-time"},
+              "recovery_evidence_ref": {"$ref": "#/$defs/NonEmptyString"}
+            }
+          }
+        }
+      }
+    },
+    "ModelRoute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "authority", "task_class", "risk_class", "verification_class", "requires_approval", "controller", "implementer", "reviewer", "shadow", "decision_sha256"],
+      "properties": {
+        "format": {"const": "sejong.discord-model-route/v0.1-draft"},
+        "authority": {"const": "core_routing"},
+        "task_class": {"$ref": "#/$defs/NonEmptyString"},
+        "risk_class": {"enum": ["low", "medium", "high"]},
+        "verification_class": {"$ref": "#/$defs/NonEmptyString"},
+        "requires_approval": {"type": "boolean"},
+        "controller": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["slot", "function", "can_mutate"],
+          "properties": {"slot": {"const": "terra"}, "function": {"const": "controller_router_only"}, "can_mutate": {"const": false}}
+        },
+        "implementer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["slot", "model", "sandbox", "model_immutable_per_run"],
+          "properties": {"slot": {"const": "luna"}, "model": {"$ref": "#/$defs/ModelToken"}, "sandbox": {"enum": ["read-only", "workspace-write"]}, "model_immutable_per_run": {"const": true}}
+        },
+        "reviewer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["slot", "model", "sandbox", "fresh_run_required"],
+          "properties": {"slot": {"const": "sol"}, "model": {"$ref": "#/$defs/ModelToken"}, "sandbox": {"const": "read-only"}, "fresh_run_required": {"const": true}}
+        },
+        "shadow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["slot", "model", "sandbox", "state", "canonical_authority"],
+          "properties": {"slot": {"const": "antigravity"}, "model": {"$ref": "#/$defs/ModelToken"}, "sandbox": {"const": "read-only"}, "state": {"const": "shadow"}, "canonical_authority": {"const": false}}
+        },
+        "decision_sha256": {"$ref": "#/$defs/Sha256"}
+      }
+    },
+    "TicketEvidenceState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "candidate_sha256", "state", "completion_eligible", "completion_authority", "review_state", "core_verification_ref"],
+      "properties": {
+        "format": {"const": "sejong.discord-ticket-evidence-state/v0.1-draft"},
+        "candidate_sha256": {"$ref": "#/$defs/Sha256"},
+        "state": {"enum": ["review_pending", "changes_requested", "blocked", "final_verification_pending", "verified"]},
+        "completion_eligible": {"type": "boolean"},
+        "completion_authority": {"const": "core_final_verification"},
+        "review_state": {"enum": ["review_pending", "review_approved", "changes_requested", "blocked"]},
+        "core_verification_ref": {"type": ["string", "null"], "minLength": 1}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"state": {"const": "verified"}}, "required": ["state"]},
+          "then": {
+            "properties": {
+              "completion_eligible": {"const": true},
+              "core_verification_ref": {"$ref": "#/$defs/NonEmptyString"}
+            }
+          },
+          "else": {"properties": {"completion_eligible": {"const": false}}}
+        }
+      ]
+    }
+  }
+}

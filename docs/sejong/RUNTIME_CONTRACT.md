@@ -42,6 +42,16 @@ It also covers workflow-run artifacts used to shadow Codex-migrated dynamic
 workflow, deep-research-style, ultracode-style, host-native team, or
 TeamExecutor backend candidates.
 
+Discord-first ticket state follows the same rule. Control idempotency, host
+heartbeats, cancellation markers, and cross-host write leases live under
+`${SEJONG_HOME}/state/discord/`; process receipts, evidence manifests, and
+candidate handoffs live under `${SEJONG_HOME}/runs/discord/<ticket-id>/`.
+Discord, Hermes, and Agent Company may project this state but cannot become an
+alternate route, gate, lease, receipt, or completion authority. The additive
+contract is documented in
+[DISCORD_ORCHESTRATION.md](DISCORD_ORCHESTRATION.md) and validated by
+[discord-orchestration.schema.json](discord-orchestration.schema.json).
+
 ## Active Context
 
 The active context checkpoint follows [king-sejong-context.schema.json](king-sejong-context.schema.json). It is the compact cross-hook checkpoint for:

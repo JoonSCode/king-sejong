@@ -38,6 +38,7 @@ SCHEMA_FILES = {
     "outcome_quality": SEJONG_ROOT / "outcome-quality.schema.json",
     "product_evidence": SEJONG_ROOT / "product-evidence.schema.json",
     "sillok_trace_event": SEJONG_ROOT / "sillok-trace-event.schema.json",
+    "discord_orchestration": SEJONG_ROOT / "discord-orchestration.schema.json",
 }
 
 FORMAT_TO_SCHEMA = {
@@ -78,6 +79,20 @@ FORMAT_TO_SCHEMA = {
     "sejong.product-evidence-result/v0.1-draft": "product_evidence",
     "sejong.product-evidence-judgment/v0.1-draft": "product_evidence",
     "sejong.sillok-trace-event/v0.1-draft": "sillok_trace_event",
+    "sejong.discord-control-event/v0.1-draft": "discord_orchestration",
+    "sejong.discord-control-policy/v0.1-draft": "discord_orchestration",
+    "sejong.discord-target-registry/v0.1-draft": "discord_orchestration",
+    "sejong.discord-idempotency/v0.1-draft": "discord_orchestration",
+    "sejong.discord-ticket-dry-run/v0.1-draft": "discord_orchestration",
+    "sejong.codex-ticket-run-receipt/v0.1-draft": "discord_orchestration",
+    "sejong.evidence-manifest/v0.1-draft": "discord_orchestration",
+    "sejong.codex-candidate-handoff/v0.1-draft": "discord_orchestration",
+    "sejong.candidate-review-dispatch/v0.1-draft": "discord_orchestration",
+    "sejong.candidate-review-receipt/v0.1-draft": "discord_orchestration",
+    "sejong.discord-host-state/v0.1-draft": "discord_orchestration",
+    "sejong.discord-write-leases/v0.1-draft": "discord_orchestration",
+    "sejong.discord-model-route/v0.1-draft": "discord_orchestration",
+    "sejong.discord-ticket-evidence-state/v0.1-draft": "discord_orchestration",
 }
 
 NEGATIVE_FIXTURE_PARTS = (

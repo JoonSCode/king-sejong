@@ -1,0 +1,9 @@
+{
+  "format": "sejong.discord-ticket-evidence-state/v0.1-draft",
+  "candidate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "state": "final_verification_pending",
+  "completion_eligible": false,
+  "completion_authority": "core_final_verification",
+  "review_state": "review_approved",
+  "core_verification_ref": null
+}

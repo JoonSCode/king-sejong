@@ -20,6 +20,15 @@ The court names are modes under a Sejong lead, not independent authorities. Work
 | `Sillok` | evidence and decision records | making new decisions without the lead route |
 | `Danjong` | rejected or retired option semantics | execution |
 | `TeamExecutor worker` | bounded mailbox message, evidence, perspective, implementation slice, verification observation | final synthesis, majority decision, gate approval, final verification |
+| `Terra@Hermes controller` | validated Discord transport coordination and application of a sealed Core route | code changes, a second route, approval, final verification |
+| `Luna Codex worker` | one bounded fixed-model ticket attempt and candidate evidence | self-review, model changes mid-run, completion |
+| `Sol reviewer` | fresh candidate-bound read-only review recommendation | implementation mutation or final completion |
+| `Antigravity shadow` | read-only second opinion and comparison metrics | sole approval, canonical mutation, automatic promotion |
+
+Agent Company may project these slots onto private Company roles only after a
+sealed Core route exists. It does not own Discord routing, model selection,
+leases, receipts, review verdicts, or completion. See
+[DISCORD_ORCHESTRATION.md](DISCORD_ORCHESTRATION.md).
 
 ## Default Flow
 

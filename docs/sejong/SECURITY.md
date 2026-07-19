@@ -69,6 +69,16 @@ before proceeding. Without approval, stop, summarize the risk, and ask the user.
   [SILLOK_TRACE.md](SILLOK_TRACE.md).
 - Treat evidence-manifest hashes as integrity evidence only. They do not prove
   sandboxing, permission safety, or untrusted-content sanitization.
+- Convert Discord events to closed schema-bound commands before routing. Reject
+  raw shell text, process argv, and command-composition escape hatches from the
+  inbound event; pass the ticket objective to Codex on standard input.
+- Treat Terra@Hermes as a controller transport, not a code worker. It cannot
+  weaken Core approval, scope, lease, review, or final-verification gates.
+- Record only `observed_ready`, `observed_missing`, or `unknown` for Codex auth
+  on a target host. Tokens, cookies, credentials, and account configuration do
+  not belong in heartbeat or lease state.
+- Keep Sol and Antigravity review runs read-only. Antigravity remains a shadow
+  second opinion and cannot be the only approver or mutate canonical state.
 - Treat TeamExecutor per-worker git worktrees as edit isolation only. They help
   separate tracked edits and untracked worker output, but they do not isolate
   processes, network, credentials, permissions, shell access, or host-level side

@@ -1,0 +1,7 @@
+{
+  "format": "sejong.discord-control-policy/v0.1-draft",
+  "allowed_guild_ids": ["local-demo-guild"],
+  "allowed_channel_ids": ["local-demo-channel"],
+  "allowed_user_ids": ["local-demo-user"],
+  "required_role_ids": ["ticket-operator"]
+}

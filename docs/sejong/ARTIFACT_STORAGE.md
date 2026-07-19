@@ -104,6 +104,14 @@ runtime artifacts. Do not describe a passing hash check as proof that tool
 execution was contained, permissions were safe, or untrusted content was
 sanitized.
 
+Discord ticket runtime artifacts use
+`${SEJONG_HOME}/runs/discord/<ticket-id>/`. The additive v0.1 surface may
+contain `ticket-run-receipt.json`, `evidence-manifest.json`, and
+`candidate-handoff.json`. Host observations, idempotency records, cancellation
+markers, and cross-host write leases stay under `${SEJONG_HOME}/state/discord/`.
+None of these files belongs in the target repository unless the user explicitly
+promotes a bounded artifact.
+
 Hooks may use the manifest at `Stop` or `PreCompact` time to detect broken or
 changed evidence refs when a workflow explicitly references it. A mismatch
 should trigger continuation or re-verification, not silent completion.

@@ -1,0 +1,16 @@
+{
+  "format": "sejong.discord-target-registry/v0.1-draft",
+  "hosts": [
+    {
+      "host_id": "local-demo-mac",
+      "enabled": true,
+      "codex_binary": "/usr/bin/false",
+      "repositories": [
+        {
+          "repo_id": "king-sejong",
+          "repo_root": "/tmp/king-sejong-discord-demo/repo"
+        }
+      ]
+    }
+  ]
+}

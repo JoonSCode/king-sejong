@@ -73,6 +73,13 @@ TeamExecutor uses its own adapter path to supply the same receipt fields. Direct
 `delegation_run.py record-terminal` remains the backend-neutral compatibility
 surface, not a reason for native callers to invent host references manually.
 
+Discord ticket execution uses this same TeamExecutor and DelegationRun path.
+The fixed-model process runner validates the existing worker, worktree, active
+scope leases, and open wave, then projects its bounded process receipt through
+`record_terminal_receipt`. It does not allocate a competing worker budget,
+lease, mailbox, or fan-in engine. Candidate handoff and independent review are
+later evidence gates; a completed worker receipt is never final verification.
+
 All mutations use a per-run lock and atomic state replacement. Runtime files
 belong under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` unless the user
 explicitly promotes an artifact.
