@@ -1388,9 +1388,9 @@ class KingSejongHookTests(unittest.TestCase):
     def test_precompact_blocks_invalid_seungjeongwon_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             run_path = Path(tmp) / "seungjeongwon-run.json"
-            invalid_run = seungjeongwon_run_fixture(status="completed")
+            invalid_run = seungjeongwon_run_fixture(status="active", todo_status="in_progress")
             invalid_run["run_id"] = "invalid-run"
-            invalid_run["verification_evidence"] = []
+            invalid_run["guardrail_thresholds"] = {}
             run_path.write_text(
                 json.dumps(invalid_run),
                 encoding="utf-8",
@@ -1442,13 +1442,49 @@ class KingSejongHookTests(unittest.TestCase):
                 / "active-run.seungjeongwon-checkpoint.json"
             )
             checkpoint = json.loads(checkpoint_path.read_text(encoding="utf-8"))
-        self.assertIn("seungjeongwon_checkpoints_created", output["hookSpecificOutput"]["additionalContext"])
+        self.assertEqual(output, {})
         self.assertEqual(checkpoint["format"], "sejong.seungjeongwon-checkpoint/v0.1-draft")
         self.assertEqual(checkpoint["context_id"], "ctx-checkpoint-test")
         self.assertEqual(checkpoint["objective_id"], "checkpoint-risk-closeout")
         self.assertEqual(checkpoint["source_run_path"], str(run_path.resolve()))
         self.assertEqual(checkpoint["provenance"]["created_by"], "seungjeongwon")
         self.assertIn(str(run_path.resolve()), checkpoint["provenance"]["input_refs"])
+
+    def test_precompact_skips_checkpoint_for_completed_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            run_path = tmp_path / "seungjeongwon-run.json"
+            run_data = seungjeongwon_run_fixture(status="completed")
+            run_data["repo_root"] = str(REPO_ROOT)
+            run_data["verification_evidence"] = []
+            run_path.write_text(json.dumps(run_data), encoding="utf-8")
+
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["repo_id"] = "repo-test"
+            context["run_id"] = "context-run"
+            context["repo_root"] = str(REPO_ROOT)
+            context["artifact_refs"] = [str(run_path)]
+            context_path = tmp_path / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+            sejong_home = tmp_path / "sejong-home"
+
+            output = run_hook(
+                "PreCompact",
+                {"hook_event_name": "PreCompact", "trigger": "auto", "cwd": str(REPO_ROOT)},
+                context_path=context_path,
+                sejong_home=sejong_home,
+            )
+
+            checkpoint_path = (
+                sejong_home
+                / "runs"
+                / "repo-test"
+                / "context-run"
+                / "completed-run.seungjeongwon-checkpoint.json"
+            )
+            checkpoint_exists = checkpoint_path.exists()
+        self.assertEqual(output, {})
+        self.assertFalse(checkpoint_exists)
 
     def test_precompact_allows_missing_implicit_active_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1556,9 +1592,16 @@ class KingSejongHookTests(unittest.TestCase):
                 {"hook_event_name": "PreCompact", "trigger": "auto", "cwd": str(REPO_ROOT)},
                 sejong_home=sejong_home,
             )
-        additional = output["hookSpecificOutput"]["additionalContext"]
-        self.assertIn("active_context_id=ctx-repo-continuation", additional)
-        self.assertIn("seungjeongwon_checkpoints_created", additional)
+            checkpoint_path = (
+                sejong_home
+                / "runs"
+                / "repo-test"
+                / "context-run"
+                / "active-run.seungjeongwon-checkpoint.json"
+            )
+            checkpoint_exists = checkpoint_path.exists()
+        self.assertEqual(output, {})
+        self.assertTrue(checkpoint_exists)
 
     def test_user_prompt_submit_missing_env_context_path_does_not_fall_back_to_repo_match(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1705,7 +1748,7 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertIn("missing explicit active context path", output["stopReason"])
         self.assertIn(str(missing_context_path), output["stopReason"])
 
-    def test_postcompact_injects_active_run_summary(self) -> None:
+    def test_session_start_compact_injects_active_run_summary(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             run_path = Path(tmp) / "seungjeongwon-run.json"
             run_path.write_text(
@@ -1718,14 +1761,21 @@ class KingSejongHookTests(unittest.TestCase):
             context_path.write_text(json.dumps(context), encoding="utf-8")
 
             output = run_hook(
-                "PostCompact",
-                {"hook_event_name": "PostCompact"},
+                "SessionStart",
+                {"hook_event_name": "SessionStart", "source": "compact"},
                 context_path=context_path,
             )
         additional = output["hookSpecificOutput"]["additionalContext"]
         self.assertIn("active_seungjeongwon_runs=active-run open_todos=1", additional)
         self.assertIn("current_todo=T1", additional)
         self.assertIn("next_action=continue_todo:T1", additional)
+
+    def test_postcompact_is_noop_when_invoked_by_legacy_configuration(self) -> None:
+        output = run_hook(
+            "PostCompact",
+            {"hook_event_name": "PostCompact", "trigger": "auto", "cwd": str(REPO_ROOT)},
+        )
+        self.assertEqual(output, {})
 
     def test_couple_investment_replay_blocks_write_until_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

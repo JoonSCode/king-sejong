@@ -575,15 +575,6 @@ type = "command"
 command = 'python3 "$escaped_script" PreCompact'
 timeout = 30
 statusMessage = "Checking King Sejong checkpoint before compaction"
-
-[[hooks.PostCompact]]
-matcher = "manual|auto"
-
-[[hooks.PostCompact.hooks]]
-type = "command"
-command = 'python3 "$escaped_script" PostCompact'
-timeout = 30
-statusMessage = "Restoring King Sejong context after compaction"
 # END King Sejong hooks
 EOF
 

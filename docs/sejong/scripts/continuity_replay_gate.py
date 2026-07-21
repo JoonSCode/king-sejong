@@ -22,9 +22,12 @@ def now_utc() -> str:
 
 
 def run_hook(event_name: str, context: Path, repo_root: Path) -> dict[str, Any]:
+    payload = {"hook_event_name": event_name, "cwd": str(repo_root)}
+    if event_name == "SessionStart":
+        payload["source"] = "compact"
     result = subprocess.run(
         [sys.executable, str(HOOK_SCRIPT), event_name, "--context", str(context)],
-        input=json.dumps({"hook_event_name": event_name, "cwd": str(repo_root)}),
+        input=json.dumps(payload),
         text=True,
         capture_output=True,
         cwd=str(repo_root),
@@ -96,8 +99,8 @@ def judge(args: argparse.Namespace) -> int:
     with tempfile.TemporaryDirectory() as tmp:
         materialized_context = materialize_context_refs(context, repo_root, Path(tmp))
         precompact = run_hook("PreCompact", materialized_context, repo_root)
-        postcompact = run_hook("PostCompact", materialized_context, repo_root)
-    additional = hook_additional_context(postcompact)
+        compact_session_start = run_hook("SessionStart", materialized_context, repo_root)
+    additional = hook_additional_context(compact_session_start)
 
     checks = [
         check_item(
@@ -106,9 +109,9 @@ def judge(args: argparse.Namespace) -> int:
             precompact.get("stopReason") or "valid continuity refs can compact",
         ),
         check_item(
-            "postcompact_injects_continuity_capsule_projection",
+            "compact_session_start_injects_continuity_capsule_projection",
             "continuity_capsule=" in additional,
-            "PostCompact additionalContext contains continuity capsule projection.",
+            "SessionStart(source=compact) additionalContext contains continuity capsule projection.",
         ),
         check_item(
             "projection_stays_under_budget",
@@ -156,7 +159,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Verify King Sejong continuity projection survives compaction.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    judge_parser = subparsers.add_parser("judge", help="Run PreCompact/PostCompact continuity replay checks.")
+    judge_parser = subparsers.add_parser(
+        "judge", help="Run PreCompact and compact SessionStart continuity replay checks."
+    )
     judge_parser.add_argument("--context", required=True)
     judge_parser.add_argument("--repo-root", default=".")
     judge_parser.add_argument("--require", action="append")

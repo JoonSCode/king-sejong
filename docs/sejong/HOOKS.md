@@ -99,6 +99,9 @@ Seungjeongwon execution run. See [seungjeongwon-run.schema.json](seungjeongwon-r
   run context under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs`
   when one exists.
 - Inject a compact King Sejong continuation summary.
+- Treat `source=compact` as the supported post-compaction reinjection path.
+  Include active Seungjeongwon run summaries and continuity capsule projections
+  through `hookSpecificOutput.additionalContext` on this event.
 
 `UserPromptSubmit`
 
@@ -203,20 +206,15 @@ the repository-scoped run directory. Hooks read the active pointer by default.
   path is missing.
 - Check that the active context checkpoint has the required fields before
   compaction.
-- Block compaction when a referenced ambiguity register, Seungjeongwon run, or
-  continuity capsule is broken or invalid.
-- For each valid referenced `sejong.seungjeongwon-run/v0.1-draft` artifact,
+- Block compaction when a referenced ambiguity register or continuity capsule
+  is broken or invalid. Block unreadable Seungjeongwon run refs and invalid
+  active Seungjeongwon runs.
+- For each valid referenced active `sejong.seungjeongwon-run/v0.1-draft` artifact,
   write a derived `sejong.seungjeongwon-checkpoint/v0.1-draft` artifact under
-  `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` and inject the checkpoint
-  refs into the compacted context.
-
-`PostCompact`
-
-- Re-inject the active context summary after compaction.
-- Include active Seungjeongwon run ids and open todo counts when readable run
-  artifacts are referenced by the active context.
-- Include continuity capsule projections when readable capsules are referenced
-  by the active context.
+  `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`.
+- Emit no success payload. Codex compact hook outputs do not accept
+  `hookSpecificOutput`; post-compaction context is injected by
+  `SessionStart(source=compact)` instead.
 
 ## Config
 
@@ -254,7 +252,7 @@ An explicit `--context` path or `SEJONG_ACTIVE_CONTEXT` path is not a hint; if
 it is missing, hooks surface `missing_explicit_active_context=true` instead of
 falling back to another repo-scoped context. If an implicit active context
 exists but no matching repo context is available, continuation events such as
-`UserPromptSubmit`, `SessionStart`, and `PostCompact` surface a compact
+`UserPromptSubmit` and `SessionStart` surface a compact
 `repo_mismatch=true` warning instead of silently applying the stale context.
 Other events remain quiet on mismatch unless a matching repo-scoped context is
 provided. Broken artifact refs inside the selected context remain explicit

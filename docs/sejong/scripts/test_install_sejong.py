@@ -117,6 +117,11 @@ class InstallSejongTests(unittest.TestCase):
             self.assertFalse(plugin_skill_path.exists())
             self.assertFalse(plugin_why_gate_skill_path.exists())
 
+            hooks = json.loads(hooks_path.read_text(encoding="utf-8"))["hooks"]
+            self.assertIn("PreCompact", hooks)
+            self.assertNotIn("PostCompact", hooks)
+            self.assertEqual(hooks["SessionStart"][0]["matcher"], "startup|resume|compact")
+
             marketplace = json.loads(marketplace_path.read_text(encoding="utf-8"))
             self.assertEqual(
                 marketplace["plugins"],
@@ -261,6 +266,8 @@ command = 'python3 "/old/king_sejong_hooks.py" Stop'
             config = (codex_home / "config.toml").read_text(encoding="utf-8")
             self.assertIn("# BEGIN King Sejong hooks", config)
             self.assertIn("king_sejong_hooks.py", config)
+            self.assertIn("[[hooks.PreCompact]]", config)
+            self.assertNotIn("[[hooks.PostCompact]]", config)
             self.assertNotIn('[plugins."king-sejong@king-sejong-local"]', config)
 
             verify = run_installer(

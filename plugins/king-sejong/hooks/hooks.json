@@ -105,18 +105,6 @@
           }
         ]
       }
-    ],
-    "PostCompact": [
-      {
-        "matcher": "manual|auto",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${PLUGIN_ROOT}/hooks/king-sejong-hook.py\" PostCompact",
-            "timeout": 30
-          }
-        ]
-      }
     ]
   }
 }

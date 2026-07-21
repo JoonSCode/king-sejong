@@ -27,7 +27,7 @@ def run_gate(args: list[str]) -> subprocess.CompletedProcess[str]:
 
 
 class ContinuityReplayGateTests(unittest.TestCase):
-    def test_replay_gate_proves_postcompact_working_set_projection(self) -> None:
+    def test_replay_gate_proves_compact_session_start_working_set_projection(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             context = json.loads(CONTEXT_EXAMPLE.read_text(encoding="utf-8"))
             capsule_path = Path(tmp) / "continuity-capsule.json"
@@ -64,6 +64,8 @@ class ContinuityReplayGateTests(unittest.TestCase):
         payload = json.loads(result.stdout)
         self.assertTrue(payload["passed"])
         self.assertLessEqual(payload["projection_chars"], 2500)
+        check_ids = {check["id"] for check in payload["checks"]}
+        self.assertIn("compact_session_start_injects_continuity_capsule_projection", check_ids)
 
     def test_replay_gate_materializes_context_local_capsule_refs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
