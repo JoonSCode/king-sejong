@@ -93,6 +93,10 @@ Do not add root-level repository files such as `AGENTS.md` to the managed instal
 - Prefer officially supported host team or teammate messaging when it exists and a bounded Jiphyeonjeon or JangYeongsil round needs peer challenge; otherwise use Sejong TeamExecutor mailbox state. Peer messages are worker evidence, not court-mode authority.
 - Keep TeamExecutor mailbox traffic on the versioned `send-message` / `receive-messages` envelope; raw mailbox appends are compatibility-only and must not become the primary worker contract.
 - Keep hook behavior test-first: add or update red fixtures before changing hook, active-context, or TeamExecutor authority behavior, then run the hook, TeamExecutor, and E2E guardrail tests.
+- Keep worker lifecycle and resource cleanup in Core/Seungjeongwon. Host-native
+  `codex-thread://` workers require exact resource leases and released cleanup
+  receipts before fan-in; do not move cleanup authority into Agent Company
+  roles, developer workers, advisory skills, or name-based process scans.
 - Keep Sillok/security behavior test-first: update trace schemas, examples, and `test_sillok_trace.py` when changing risk flags or approval rules.
 - When changing Sejong or Uigwe instruction surfaces, run `python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets`.
 - Validate JSON contracts and examples before claiming behavior changes are ready.

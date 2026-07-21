@@ -74,6 +74,13 @@ before proceeding. Without approval, stop, summarize the risk, and ask the user.
   processes, network, credentials, permissions, shell access, or host-level side
   effects. `team_executor.py check-sandbox-claims` is the deterministic guard
   for positive worktree-sandbox overclaims in TeamExecutor-facing docs.
+- Never use process names, broad `pkill`, a root Codex child scan, or another
+  session's process tree as worker cleanup authority. A host-native worker may
+  be released only through an exact host cleanup token/runtime-group identity,
+  or a Core-owned identity that includes enough data to reject PID reuse.
+- `SubagentStop` is a pre-teardown evidence hook, not a process reaper. Missing
+  exact ownership must produce audit-only evidence and a native-wave circuit
+  breaker instead of speculative termination.
 - Keep container-backed TeamExecutor execution as a shadow option until a
   separate approved design covers mounts, credentials, network policy, cleanup,
   tool availability, and host portability. The default local TeamExecutor path

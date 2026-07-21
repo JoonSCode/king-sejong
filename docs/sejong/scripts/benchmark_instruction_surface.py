@@ -620,6 +620,11 @@ def evaluate_bounded_parallelism() -> list[dict[str, Any]]:
         "forbidden authority claims",
         "return format",
         "stop condition",
+        "exact worker/runtime identity",
+        "active and terminal-but-unreleased leases",
+        "released cleanup receipt before fan-in",
+        "do not open native workers on audit-only ownership",
+        "kill processes by name",
     ]
     passed, missing = contains_all(combined, required)
     return [

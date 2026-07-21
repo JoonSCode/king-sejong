@@ -43,6 +43,7 @@
       "items": {
         "oneOf": [
           {"$ref": "#/$defs/WorkerReceipt"},
+          {"$ref": "https://kinno.dev/schemas/sejong/worker-cleanup-receipt.schema.json"},
           {"$ref": "#/$defs/FanInReceipt"}
         ]
       }
@@ -213,6 +214,7 @@
         "wave_id": {"$ref": "#/$defs/NonEmptyString"},
         "required_worker_ids": {"$ref": "#/$defs/StringList"},
         "terminal_receipt_ids": {"$ref": "#/$defs/StringList"},
+        "cleanup_receipt_ids": {"$ref": "#/$defs/StringList"},
         "aggregate_status": {"type": "string", "enum": ["passed", "failed", "blocked"]},
         "blocking_receipt_ids": {"$ref": "#/$defs/StringList"},
         "authority": {"const": "orchestration_evidence_only"},
@@ -220,7 +222,8 @@
       },
       "required": [
         "format", "receipt_type", "receipt_id", "run_id", "wave_id", "required_worker_ids",
-        "terminal_receipt_ids", "aggregate_status", "blocking_receipt_ids", "authority", "created_at"
+        "terminal_receipt_ids", "cleanup_receipt_ids", "aggregate_status", "blocking_receipt_ids",
+        "authority", "created_at"
       ]
     }
   }

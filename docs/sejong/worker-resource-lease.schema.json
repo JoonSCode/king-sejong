@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/worker-resource-lease.schema.json",
+  "title": "King Sejong Worker Resource Lease Schema Draft",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {"const": "sejong.worker-resource-lease/v0.1-draft"},
+    "lease_id": {"$ref": "#/$defs/NonEmptyString"},
+    "owner": {"$ref": "#/$defs/Owner"},
+    "cleanup_capability": {
+      "type": "string",
+      "enum": ["core_owned_exact", "host_owned_exact", "audit_only"]
+    },
+    "status": {"$ref": "#/$defs/LeaseStatus"},
+    "resources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/Resource"}
+    },
+    "proof_refs": {"$ref": "#/$defs/StringList"},
+    "blocker": {"$ref": "#/$defs/NullableString"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  },
+  "required": [
+    "format", "lease_id", "owner", "cleanup_capability", "status", "resources",
+    "proof_refs", "blocker", "created_at", "updated_at"
+  ],
+  "$defs": {
+    "NonEmptyString": {"type": "string", "minLength": 1},
+    "StringList": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/NonEmptyString"},
+      "uniqueItems": true
+    },
+    "NullableString": {
+      "oneOf": [{"$ref": "#/$defs/NonEmptyString"}, {"type": "null"}]
+    },
+    "LeaseStatus": {
+      "type": "string",
+      "enum": ["active", "releasing", "released", "preserved", "failed", "orphaned"]
+    },
+    "Owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "run_id": {"$ref": "#/$defs/NonEmptyString"},
+        "wave_id": {"$ref": "#/$defs/NonEmptyString"},
+        "worker_id": {"$ref": "#/$defs/NonEmptyString"},
+        "backend": {"$ref": "#/$defs/NonEmptyString"},
+        "backend_worker_ref": {"$ref": "#/$defs/NonEmptyString"}
+      },
+      "required": ["run_id", "wave_id", "worker_id", "backend", "backend_worker_ref"]
+    },
+    "Resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {"$ref": "#/$defs/NonEmptyString"},
+        "kind": {
+          "type": "string",
+          "enum": ["host_runtime_group", "process_group", "worktree", "temp_path", "simulator_app"]
+        },
+        "identity_ref": {"$ref": "#/$defs/NonEmptyString"},
+        "ownership_source": {
+          "type": "string",
+          "enum": ["sejong_created", "host_reported", "observed"]
+        },
+        "cleanup_policy": {
+          "type": "string",
+          "enum": ["automatic", "preserve_if_dirty", "manual"]
+        },
+        "status": {"$ref": "#/$defs/LeaseStatus"}
+      },
+      "required": [
+        "resource_id", "kind", "identity_ref", "ownership_source", "cleanup_policy", "status"
+      ]
+    }
+  }
+}

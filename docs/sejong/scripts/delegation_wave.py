@@ -4,6 +4,7 @@ from dataclasses import dataclass, replace
 from enum import StrEnum
 from typing import Final, NewType
 
+from delegation_cleanup import CleanupStatus, cleanup_required_worker_ids
 from delegation_run_model import (
     DelegationContractError,
     DelegationRun,
@@ -222,8 +223,20 @@ def fan_in(run: DelegationRun, wave_id: WaveId) -> tuple[DelegationRun, JsonObje
     missing = sorted(set(required) - received)
     if missing:
         raise DelegationContractError(f"missing terminal receipts: {missing}")
+    cleanup_receipts = [
+        receipt
+        for receipt in run.receipts
+        if receipt.get("receipt_type") == "worker_cleanup" and receipt.get("wave_id") == wave_id
+    ]
+    cleaned = {str(receipt.get("worker_id")) for receipt in cleanup_receipts}
+    cleanup_required = cleanup_required_worker_ids(receipts)
+    missing_cleanup = sorted(cleanup_required - cleaned)
+    if missing_cleanup:
+        raise DelegationContractError(f"missing cleanup receipts: {missing_cleanup}")
     statuses = {receipt.get("terminal_status") for receipt in receipts}
-    if statuses == {TerminalStatus.COMPLETED.value}:
+    cleanup_statuses = {receipt.get("cleanup_status") for receipt in cleanup_receipts}
+    cleanup_ready = not cleanup_required or cleanup_statuses == {CleanupStatus.RELEASED.value}
+    if statuses == {TerminalStatus.COMPLETED.value} and cleanup_ready:
         aggregate = WaveStatus.PASSED
     elif TerminalStatus.FAILED.value in statuses or TerminalStatus.TIMED_OUT.value in statuses:
         aggregate = WaveStatus.FAILED
@@ -235,6 +248,11 @@ def fan_in(run: DelegationRun, wave_id: WaveId) -> tuple[DelegationRun, JsonObje
         for receipt in receipts
         if receipt.get("terminal_status") != TerminalStatus.COMPLETED.value
     ]
+    blocking.extend(
+        str(receipt["receipt_id"])
+        for receipt in cleanup_receipts
+        if receipt.get("cleanup_status") != CleanupStatus.RELEASED.value
+    )
     fan_in_receipt: JsonObject = {
         "format": FAN_IN_RECEIPT_FORMAT,
         "receipt_type": "fan_in",
@@ -243,6 +261,7 @@ def fan_in(run: DelegationRun, wave_id: WaveId) -> tuple[DelegationRun, JsonObje
         "wave_id": wave_id,
         "required_worker_ids": list(required),
         "terminal_receipt_ids": [str(receipt["receipt_id"]) for receipt in receipts],
+        "cleanup_receipt_ids": [str(receipt["receipt_id"]) for receipt in cleanup_receipts],
         "aggregate_status": aggregate.value,
         "blocking_receipt_ids": blocking,
         "authority": FAN_IN_AUTHORITY,

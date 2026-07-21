@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/worker-cleanup-receipt.schema.json",
+  "title": "King Sejong Worker Cleanup Receipt Schema Draft",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {"const": "sejong.worker-cleanup-receipt/v0.1-draft"},
+    "receipt_type": {"const": "worker_cleanup"},
+    "receipt_id": {"$ref": "#/$defs/NonEmptyString"},
+    "run_id": {"$ref": "#/$defs/NonEmptyString"},
+    "wave_id": {"$ref": "#/$defs/NonEmptyString"},
+    "worker_id": {"$ref": "#/$defs/NonEmptyString"},
+    "backend": {"type": "string", "enum": ["native", "team_executor"]},
+    "backend_worker_ref": {"$ref": "#/$defs/NonEmptyString"},
+    "resource_lease_ref": {"$ref": "#/$defs/NonEmptyString"},
+    "resource_lease_id": {"$ref": "#/$defs/NonEmptyString"},
+    "cleanup_capability": {
+      "type": "string",
+      "enum": ["core_owned_exact", "host_owned_exact", "audit_only"]
+    },
+    "cleanup_status": {
+      "type": "string",
+      "enum": ["released", "preserved", "failed", "audit_only"]
+    },
+    "released_resource_ids": {"$ref": "#/$defs/StringList"},
+    "preserved_resource_ids": {"$ref": "#/$defs/StringList"},
+    "failed_resource_ids": {"$ref": "#/$defs/StringList"},
+    "proof_refs": {"$ref": "#/$defs/NonEmptyStringList"},
+    "blocker": {"$ref": "#/$defs/NullableString"},
+    "authority": {"const": "cleanup_evidence_only"},
+    "created_at": {"type": "string", "format": "date-time"}
+  },
+  "required": [
+    "format", "receipt_type", "receipt_id", "run_id", "wave_id", "worker_id", "backend",
+    "backend_worker_ref", "resource_lease_ref", "resource_lease_id", "cleanup_capability",
+    "cleanup_status", "released_resource_ids", "preserved_resource_ids", "failed_resource_ids",
+    "proof_refs", "blocker", "authority", "created_at"
+  ],
+  "$defs": {
+    "NonEmptyString": {"type": "string", "minLength": 1},
+    "StringList": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/NonEmptyString"},
+      "uniqueItems": true
+    },
+    "NonEmptyStringList": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/NonEmptyString"},
+      "uniqueItems": true
+    },
+    "NullableString": {
+      "oneOf": [{"$ref": "#/$defs/NonEmptyString"}, {"type": "null"}]
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"cleanup_status": {"const": "released"}}, "required": ["cleanup_status"]},
+      "then": {
+        "properties": {
+          "released_resource_ids": {"minItems": 1},
+          "preserved_resource_ids": {"maxItems": 0},
+          "failed_resource_ids": {"maxItems": 0},
+          "blocker": {"type": "null"}
+        }
+      },
+      "else": {"properties": {"blocker": {"$ref": "#/$defs/NonEmptyString"}}}
+    }
+  ]
+}

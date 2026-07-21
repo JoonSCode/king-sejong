@@ -201,6 +201,23 @@ same failure the gate was meant to prevent.
   reject claims of Uigwe gate approval, final synthesis, final verification, or
   majority-vote authority.
 
+### Worker Resource Cleanup Barrier
+
+- **Why:** Host-native workers may return output while their MCP, tool-server,
+  pipe, or runtime group remains alive. Repeated waves can exhaust the parent
+  Codex process even when every worker appears terminal.
+- **Prevents:** Passed fan-in, downstream native waves, and successful
+  Seungjeongwon completion without exact cleanup evidence.
+- **Owner:** Core and Seungjeongwon own lifecycle cleanup; workers only report
+  their exact backend identity and evidence.
+- **Force:** `hard` for workers identified by `codex-thread://`.
+- **Behavior:** `released` with `core_owned_exact` or `host_owned_exact` may
+  pass. Missing, `audit_only`, `preserved`, `failed`, or orphaned cleanup blocks.
+  Process names and broad process scans never establish cleanup authority.
+- **Verification:** A versioned worker resource lease, exact backend worker ref,
+  terminal lease state, proof refs, and a correlated cleanup receipt are
+  embedded into DelegationRun fan-in evidence.
+
 ### Jiphyeonjeon Scholar Sub-Research
 
 - **Why:** A Jiphyeonjeon scholar can make a stronger bounded argument when the
