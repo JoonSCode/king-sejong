@@ -34,9 +34,10 @@ Read only what is needed:
 9. When Codex todo tooling is available, publish actionable leaves as the visible execution board before implementation; append explicit redefinition todos and replacement todos when the execution shape changes instead of silently overwriting the board. When producing machine-readable execution feedback, mirror those visible board changes in `visible_todo_events`.
 10. Execute dependency-ready actionable work in the current Codex session when possible.
 11. Use parallel workers only when file scopes are independent and verification remains clear. `$team` workers require Sejong-owned state, mailbox evidence, and file leases.
-12. Preserve the approved goal, non-goals, success criteria, must-preserve behavior, and verification bar. Adjust tactics when implementation hypotheses are wrong, but return to Uigwe or human review when those guardrails are unstable.
-13. Verify before claiming completion.
-14. Return execution feedback:
+12. Preflight worker cleanup before using a host-native backend. Require an exact host identity plus supported release proof; otherwise execute locally or use a Core-owned backend. Register each opened native worker in a resource lease, count terminal-but-unreleased workers as live capacity, and do not fan in or open the next native wave until every lease has a released cleanup receipt. If cleanup fails or cannot be proved, stop spawning, preserve the blocker, and never substitute a process-name or broad child-tree kill.
+13. Preserve the approved goal, non-goals, success criteria, must-preserve behavior, and verification bar. Adjust tactics when implementation hypotheses are wrong, but return to Uigwe or human review when those guardrails are unstable.
+14. Verify before claiming completion.
+15. Return execution feedback:
    - completed, blocked, invalidated, or failed scope
    - files changed or artifacts produced
    - native goal id or `native_goal_unavailable` when relevant

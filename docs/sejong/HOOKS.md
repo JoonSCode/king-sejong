@@ -179,6 +179,10 @@ the repository-scoped run directory. Hooks read the active pointer by default.
   worker output can be treated as evidence.
 - Reject worker outputs that claim Uigwe gate approval, final synthesis, final
   verification, or majority-vote authority.
+- Treat the bounded brief as terminal output evidence, not cleanup evidence.
+  Host-native runtime teardown happens after the worker stops and must be
+  projected through a worker resource lease plus cleanup receipt. Do not kill
+  MCP or tool-server processes from this pre-teardown hook.
 
 `Stop`
 
@@ -190,6 +194,9 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 - Continue the turn when any referenced ambiguity register still has `open`
   ambiguity items or pending question obligations.
 - Continue the turn when any referenced Seungjeongwon run is active, broken, or invalid.
+- A referenced Seungjeongwon run backed by native delegation remains active
+  until every `codex-thread://` worker has a released cleanup receipt and fan-in
+  passes; terminal worker output alone cannot satisfy `Stop`.
 - Continue the turn when any referenced continuity capsule is broken or invalid.
 
 `PreCompact`

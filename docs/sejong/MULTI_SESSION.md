@@ -156,6 +156,17 @@ Cleanup is allowed only for external runtime artifacts under the Sejong artifact
 root. It must not delete repository-tracked files, managed install files, user
 configuration outside the managed King Sejong blocks, or promoted artifacts.
 
+Worker runtime ownership is recorded per run with one versioned lease per
+worker/runtime group. A lease carries the owning `run_id`, `wave_id`,
+`worker_id`, backend worker ref, cleanup capability, and exact resource
+identity. A cleanup receipt from one session or run cannot release or satisfy
+another run's worker.
+
+Automatic cleanup authority is limited to `sejong_created` or `host_reported`
+resources with exact identity. `observed` resources are audit-only. PID or
+process-name matches without a start-time/executable or host runtime-group token
+are diagnostic evidence, not termination authority.
+
 Cleanup must preserve:
 
 - the active run referenced by a valid active pointer or matching run context

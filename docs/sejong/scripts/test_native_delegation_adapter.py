@@ -12,6 +12,7 @@ from pathlib import Path
 SCRIPT_PATH = Path(__file__).resolve()
 ADAPTER = SCRIPT_PATH.with_name("native_delegation_adapter.py")
 DELEGATION_RUN = SCRIPT_PATH.with_name("delegation_run.py")
+LEASE_CLI = SCRIPT_PATH.with_name("worker_resource_lease.py")
 
 
 def run_script(script: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
@@ -88,14 +89,51 @@ def record_native(
     return run_script(*arguments)
 
 
+def record_native_cleanup(run_path: Path, lease_path: Path) -> subprocess.CompletedProcess[str]:
+    commands = (
+        (
+            LEASE_CLI, "create", str(lease_path),
+            "--lease-id", "lease-worker-a",
+            "--run-id", "native-adapter-test",
+            "--wave-id", "wave-1",
+            "--worker-id", "worker-a",
+            "--backend", "native",
+            "--backend-worker-ref", "codex-thread://thread-123",
+            "--cleanup-capability", "host_owned_exact",
+            "--resource-id", "runtime-worker-a",
+            "--resource-kind", "host_runtime_group",
+            "--identity-ref", "codex-thread://thread-123",
+            "--ownership-source", "host_reported",
+            "--cleanup-policy", "automatic",
+        ),
+        (LEASE_CLI, "transition", str(lease_path), "--status", "releasing"),
+        (
+            LEASE_CLI, "transition", str(lease_path), "--status", "released",
+            "--proof-ref", "host-cleanup://thread-123",
+        ),
+    )
+    for command in commands:
+        result = run_script(*command)
+        if result.returncode != 0:
+            return result
+    return run_script(
+        ADAPTER, "record-cleanup", str(run_path),
+        "--receipt-id", "cleanup-worker-a",
+        "--agent-thread-id", "thread-123",
+        "--worker-resource-lease", str(lease_path),
+    )
+
+
 class NativeDelegationAdapterTests(unittest.TestCase):
-    def test_native_terminal_receipt_passes_existing_fan_in(self) -> None:
+    def test_native_terminal_and_cleanup_receipts_pass_existing_fan_in(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             run_path = Path(tmp) / "delegation-run.json"
             fan_in_path = Path(tmp) / "fan-in.json"
+            lease_path = Path(tmp) / "lease.json"
             prepare_wave(run_path)
 
             recorded = record_native(run_path)
+            cleaned = record_native_cleanup(run_path, lease_path)
             joined = run_script(
                 DELEGATION_RUN,
                 "fan-in",
@@ -107,6 +145,7 @@ class NativeDelegationAdapterTests(unittest.TestCase):
             )
 
             self.assertEqual(recorded.returncode, 0, recorded.stderr)
+            self.assertEqual(cleaned.returncode, 0, cleaned.stderr)
             self.assertEqual(joined.returncode, 0, joined.stderr)
             payload = json.loads(run_path.read_text(encoding="utf-8"))
             terminal = next(
