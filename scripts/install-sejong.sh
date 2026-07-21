@@ -240,7 +240,7 @@ def path_key(value: str) -> str:
 config_path = Path(sys.argv[1])
 expected = path_key(sys.argv[2])
 text = config_path.read_text(encoding="utf-8")
-for candidate in re.findall(r'python3\s+"([^"]*king_sejong_hooks\.py)"', text):
+for candidate in re.findall(r'python3\s+"([^"]+)"', text):
     if path_key(candidate) == expected:
         raise SystemExit(0)
 raise SystemExit(1)
@@ -667,7 +667,7 @@ ensure_sejong_state_dir() {
 configure_user_hooks() {
   local codex_home=$1
   local config_file="$codex_home/config.toml"
-  local hook_script="$codex_home/skills/sejong/docs/scripts/king_sejong_hooks.py"
+  local hook_script="$codex_home/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION/hooks/king-sejong-hook.py"
 
   ensure_hooks_feature_enabled "$config_file"
   if [[ "$LEGACY_DIRECT_HOOKS" -eq 1 ]]; then
@@ -718,7 +718,7 @@ EOF
 verify_user_hooks_config() {
   local codex_home=$1
   local config_file="$codex_home/config.toml"
-  local hook_script="$codex_home/skills/sejong/docs/scripts/king_sejong_hooks.py"
+  local hook_script="$codex_home/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION/hooks/king-sejong-hook.py"
 
   if [[ ! -f "$config_file" ]]; then
     echo "missing Codex config: $config_file" >&2

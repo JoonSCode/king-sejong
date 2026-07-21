@@ -222,6 +222,9 @@ User-scope King Sejong install enables hooks through the local
 `king-sejong-local` Codex plugin by default. The plugin hook is a thin adapter
 that delegates to the canonical user-scope script under
 `${CODEX_HOME:-~/.codex}/skills/sejong/docs/scripts/king_sejong_hooks.py`.
+If Codex launches the adapter with Python older than 3.11, the adapter uses
+`uv` to run that canonical script with Python 3.11. Legacy-direct installation
+also registers the adapter so both modes follow the same runtime selection path.
 If that canonical script is missing, the adapter stays quiet for non-protected
 events but returns a non-zero error for protected lifecycle events such as
 `PreToolUse`, `PermissionRequest`, `Stop`, and `PreCompact`.

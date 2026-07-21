@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import os
 import json
+import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -185,6 +186,57 @@ class InstallSejongTests(unittest.TestCase):
         self.assertNotEqual(hook_result.returncode, 0)
         self.assertIn("missing King Sejong canonical hook script", hook_result.stderr)
 
+    def test_plugin_adapter_bootstraps_supported_python_from_system_interpreter(self) -> None:
+        system_python = Path("/usr/bin/python3")
+        if not system_python.exists():
+            self.skipTest("system Python is unavailable")
+        version = subprocess.run(
+            [str(system_python), "-c", "import sys; print(sys.version_info.major, sys.version_info.minor)"],
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        system_version = tuple(int(part) for part in version.stdout.split())
+        if system_version >= (3, 11):
+            self.skipTest("system Python already satisfies the canonical script runtime")
+        uv_path = shutil.which("uv")
+        if uv_path is None:
+            self.skipTest("uv is unavailable for the compatibility bootstrap")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            result = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            hook_runner_path = (
+                codex_home
+                / "plugins"
+                / "cache"
+                / "king-sejong-local"
+                / "king-sejong"
+                / "0.1.0"
+                / "hooks"
+                / "king-sejong-hook.py"
+            )
+
+            hook_result = subprocess.run(
+                [str(system_python), str(hook_runner_path), "SessionStart"],
+                input='{"source":"startup"}',
+                text=True,
+                capture_output=True,
+                env={
+                    **os.environ,
+                    "CODEX_HOME": str(codex_home),
+                    "PATH": os.pathsep.join((str(Path(uv_path).parent), "/usr/bin", "/bin")),
+                },
+                cwd=str(REPO_ROOT),
+            )
+
+        self.assertEqual(hook_result.returncode, 0, hook_result.stderr)
+        self.assertEqual(hook_result.stdout, "")
+
     def test_user_scope_install_does_not_mutate_existing_active_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             codex_home = Path(tmp)
@@ -265,7 +317,8 @@ command = 'python3 "/old/king_sejong_hooks.py" Stop'
 
             config = (codex_home / "config.toml").read_text(encoding="utf-8")
             self.assertIn("# BEGIN King Sejong hooks", config)
-            self.assertIn("king_sejong_hooks.py", config)
+            self.assertIn("king-sejong-hook.py", config)
+            self.assertNotIn("king_sejong_hooks.py", config)
             self.assertIn("[[hooks.PreCompact]]", config)
             self.assertNotIn("[[hooks.PostCompact]]", config)
             self.assertNotIn('[plugins."king-sejong@king-sejong-local"]', config)
