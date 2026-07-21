@@ -199,7 +199,7 @@ Goal:
 
 Changes:
 
-- Update hook dispatch so `UserPromptSubmit`, `SessionStart`, and `PostCompact`
+- Update hook dispatch so `UserPromptSubmit` and `SessionStart`
   surface a compact repo-mismatch warning when context exists but does not cover
   the current `cwd`.
 - Do not hard-deny ordinary writes on mismatch in this phase. The hook cannot
@@ -332,7 +332,8 @@ Changes:
 
 - Use existing `seungjeongwon-run` artifacts as the current-run authority.
 - Store the run artifact path in active context `artifact_refs`.
-- Extend `PreCompact` and `PostCompact` tests so context summary includes:
+- Extend `PreCompact` checkpoint validation and compact `SessionStart` summary
+  tests so the restored context summary includes:
   - current repo
   - current surface
   - pending gates
@@ -342,8 +343,8 @@ Changes:
 
 Verification:
 
-- PreCompact blocks broken or invalid run refs, as it does today.
-- PostCompact injects active run summary.
+- PreCompact blocks unreadable run refs and invalid active run refs.
+- `SessionStart(source=compact)` injects active run summary.
 - Replay test: "다음" after compaction still sees the active leaf and gate.
 
 Exit criteria:

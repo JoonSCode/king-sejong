@@ -72,7 +72,7 @@ Validate these claims in the separate worktree:
 - `record-decision` and `record-rejection` update structured capsule records
   without manual JSON editing.
 - The replay gate proves `PreCompact` allows a valid continuity state and
-  `PostCompact` injects the required working-set projection.
+  `SessionStart(source=compact)` injects the required working-set projection.
 - The installed user-scope docs layout can run the same replay gate. This is
   important because installed docs live under `skills/sejong/docs/`, not
   `docs/sejong/`.

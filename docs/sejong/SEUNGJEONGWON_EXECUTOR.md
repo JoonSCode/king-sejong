@@ -110,7 +110,7 @@ expected repo root, objective id, context id, or execution feedback refs.
 The checkpoint carries derived provenance with the source run path in
 `input_refs` and the run verification evidence in `verification_refs`.
 When hooks are enabled, `PreCompact` creates the same checkpoint automatically
-for every valid referenced Seungjeongwon run and stores it under
+for every valid referenced active Seungjeongwon run and stores it under
 `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` so compaction has fresh replay
 evidence without writing runtime state into the target repository.
 

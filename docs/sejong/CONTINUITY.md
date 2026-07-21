@@ -80,8 +80,8 @@ was last verified, but it cannot make stale verification current.
 
 When the active context references a valid continuity capsule:
 
-- `UserPromptSubmit`, `SessionStart`, and `PostCompact` inject the compact
-  projection.
+- `UserPromptSubmit` and `SessionStart` inject the compact projection.
+- `SessionStart(source=compact)` restores that projection after compaction.
 - `PreCompact` blocks compaction when a continuity capsule reference is broken or invalid.
 - `Stop` blocks completion when a referenced capsule is broken or invalid.
 
@@ -110,5 +110,6 @@ structured council or Uigwe decision changes.
 
 Use `continuity_replay_gate.py` before claiming this continuity path improves a
 long session. The replay gate checks that valid capsule refs can pass
-`PreCompact`, that `PostCompact` injects the required working-set projection, and
-that projection stays under the configured size budget.
+`PreCompact`, that `SessionStart(source=compact)` injects the required
+working-set projection, and that projection stays under the configured size
+budget.

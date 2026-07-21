@@ -798,7 +798,11 @@ def broken_ambiguity_register_refs(context: dict[str, Any]) -> list[str]:
     return broken_refs
 
 
-def load_seungjeongwon_run_entries(context: dict[str, Any]) -> tuple[list[tuple[Path, dict[str, Any]]], list[str], list[str]]:
+def load_seungjeongwon_run_entries(
+    context: dict[str, Any],
+    *,
+    active_only: bool = False,
+) -> tuple[list[tuple[Path, dict[str, Any]]], list[str], list[str]]:
     entries: list[tuple[Path, dict[str, Any]]] = []
     broken_refs: list[str] = []
     invalid_refs: list[str] = []
@@ -815,6 +819,8 @@ def load_seungjeongwon_run_entries(context: dict[str, Any]) -> tuple[list[tuple[
                 broken_refs.append(str(path))
             continue
         if data.get("format") != SEUNGJEONGWON_RUN_FORMAT:
+            continue
+        if active_only and data.get("status") != "active":
             continue
         failures = seungjeongwon_run_failures(data)
         if failures:
@@ -836,7 +842,7 @@ def checkpoint_path_for_run(context: dict[str, Any], run_path: Path, run_data: d
 
 
 def write_precompact_seungjeongwon_checkpoints(context: dict[str, Any]) -> tuple[list[str], list[str]]:
-    entries, broken_refs, invalid_refs = load_seungjeongwon_run_entries(context)
+    entries, broken_refs, invalid_refs = load_seungjeongwon_run_entries(context, active_only=True)
     failures = list(broken_refs) + list(invalid_refs)
     if failures:
         return [], failures
@@ -868,13 +874,13 @@ def active_seungjeongwon_run_summaries(context: dict[str, Any]) -> list[str]:
     return summaries
 
 
-def broken_seungjeongwon_run_refs(context: dict[str, Any]) -> list[str]:
-    _, broken_refs, _ = load_seungjeongwon_runs(context)
+def broken_seungjeongwon_run_refs(context: dict[str, Any], *, active_only: bool = False) -> list[str]:
+    _, broken_refs, _ = load_seungjeongwon_run_entries(context, active_only=active_only)
     return broken_refs
 
 
-def invalid_seungjeongwon_run_refs(context: dict[str, Any]) -> list[str]:
-    _, _, invalid_refs = load_seungjeongwon_runs(context)
+def invalid_seungjeongwon_run_refs(context: dict[str, Any], *, active_only: bool = False) -> list[str]:
+    _, _, invalid_refs = load_seungjeongwon_run_entries(context, active_only=active_only)
     return invalid_refs
 
 
@@ -1193,21 +1199,21 @@ def handle_precompact(context: dict[str, Any], *, allow_missing_context: bool = 
             "stopReason": "broken ambiguity register refs: " + ", ".join(broken_refs),
             "systemMessage": "King Sejong ambiguity register references must be readable before compaction.",
         }
-    broken_run_refs = broken_seungjeongwon_run_refs(context)
+    broken_run_refs = broken_seungjeongwon_run_refs(context, active_only=True)
     if broken_run_refs:
         return {
             "continue": False,
             "stopReason": "broken Seungjeongwon run refs: " + ", ".join(broken_run_refs),
             "systemMessage": "King Sejong Seungjeongwon run references must be readable before compaction.",
         }
-    invalid_run_refs = invalid_seungjeongwon_run_refs(context)
+    invalid_run_refs = invalid_seungjeongwon_run_refs(context, active_only=True)
     if invalid_run_refs:
         return {
             "continue": False,
             "stopReason": "invalid Seungjeongwon run refs: " + ", ".join(invalid_run_refs),
             "systemMessage": "King Sejong Seungjeongwon run artifacts must validate before compaction.",
         }
-    checkpoint_refs, checkpoint_failures = write_precompact_seungjeongwon_checkpoints(context)
+    _, checkpoint_failures = write_precompact_seungjeongwon_checkpoints(context)
     if checkpoint_failures:
         return {
             "continue": False,
@@ -1228,12 +1234,7 @@ def handle_precompact(context: dict[str, Any], *, allow_missing_context: bool = 
             "stopReason": "invalid continuity capsule refs: " + ", ".join(invalid_capsule_refs),
             "systemMessage": "King Sejong continuity capsule artifacts must validate before compaction.",
         }
-    output = hook_context("PreCompact", context_summary(context))
-    if checkpoint_refs:
-        output["hookSpecificOutput"]["additionalContext"] += (
-            " seungjeongwon_checkpoints_created=" + ",".join(checkpoint_refs) + "."
-        )
-    return output
+    return {}
 
 
 def handle_post_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
@@ -1265,7 +1266,7 @@ def dispatch(
                 "stopReason": f"missing explicit active context path: {context_path}",
                 "systemMessage": "King Sejong explicit active context checkpoint must exist before compaction.",
             }
-        if event_name in {"UserPromptSubmit", "SessionStart", "PostCompact"}:
+        if event_name in {"UserPromptSubmit", "SessionStart"}:
             return hook_context(
                 event_name,
                 "King Sejong active context missing_explicit_active_context=true; "
@@ -1279,12 +1280,12 @@ def dispatch(
     if context and not context_applies_to_cwd(context, payload):
         if event_name == "UserPromptSubmit" and is_explicit_exit(payload.get("prompt", "")):
             return {}
-        if event_name in {"UserPromptSubmit", "SessionStart", "PostCompact"}:
+        if event_name in {"UserPromptSubmit", "SessionStart"}:
             return hook_context(event_name, repo_mismatch_summary(context, payload))
         return {}
     if event_name == "UserPromptSubmit":
         return handle_user_prompt_submit(payload, context)
-    if event_name in {"SessionStart", "PostCompact"}:
+    if event_name == "SessionStart":
         return handle_session_context(event_name, context)
     if event_name == "SubagentStart":
         return handle_subagent_start(payload, context)
