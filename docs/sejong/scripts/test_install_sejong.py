@@ -233,9 +233,12 @@ class InstallSejongTests(unittest.TestCase):
                 },
                 cwd=str(REPO_ROOT),
             )
+            bytecode_cache = codex_home / "skills" / "sejong" / "docs" / "scripts" / "__pycache__"
+            cache_exists = bytecode_cache.exists()
 
         self.assertEqual(hook_result.returncode, 0, hook_result.stderr)
         self.assertEqual(hook_result.stdout, "")
+        self.assertFalse(cache_exists)
 
     def test_user_scope_install_does_not_mutate_existing_active_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

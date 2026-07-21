@@ -225,6 +225,8 @@ that delegates to the canonical user-scope script under
 If Codex launches the adapter with Python older than 3.11, the adapter uses
 `uv` to run that canonical script with Python 3.11. Legacy-direct installation
 also registers the adapter so both modes follow the same runtime selection path.
+The adapter disables Python bytecode writes so hook execution does not leave
+cache directories inside installer-managed paths.
 If that canonical script is missing, the adapter stays quiet for non-protected
 events but returns a non-zero error for protected lifecycle events such as
 `PreToolUse`, `PermissionRequest`, `Stop`, and `PreCompact`.

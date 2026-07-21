@@ -33,6 +33,7 @@ def main() -> int:
             return 127
         return 0
 
+    os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
     if sys.version_info >= REQUIRED_PYTHON:
         os.execv(sys.executable, [sys.executable, str(hook_script), event_name])
 
