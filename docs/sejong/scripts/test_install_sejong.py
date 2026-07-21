@@ -277,6 +277,35 @@ class InstallSejongTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(json.loads(context_path.read_text(encoding="utf-8")), original_context)
 
+    def test_user_scope_force_removes_stale_bytecode_cache(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            initial = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(initial.returncode, 0, initial.stderr)
+            stale_cache = (
+                codex_home
+                / "skills"
+                / "sejong"
+                / "docs"
+                / "scripts"
+                / "__pycache__"
+                / "stale.cpython-311.pyc"
+            )
+            stale_cache.parent.mkdir()
+            stale_cache.write_bytes(b"stale")
+
+            reinstalled = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+
+            cache_exists = stale_cache.parent.exists()
+        self.assertEqual(reinstalled.returncode, 0, reinstalled.stderr)
+        self.assertFalse(cache_exists)
+
     def test_user_scope_force_migrates_legacy_direct_hooks_to_plugin_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             codex_home = Path(tmp)

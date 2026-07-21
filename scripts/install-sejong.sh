@@ -1021,7 +1021,7 @@ copy_dir() {
   mkdir -p "$(dirname "$dest")"
 
   if command -v rsync >/dev/null 2>&1; then
-    rsync -a --delete \
+    rsync -a --delete --delete-excluded \
       --exclude '.DS_Store' \
       --exclude '__pycache__/' \
       "$src/" "$dest/"
