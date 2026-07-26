@@ -175,6 +175,62 @@ class SejongCleanupTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("outside Sejong runs root", result.stderr)
 
+    def test_finalize_reports_lifecycle_counts_and_missing_cleanup_proof(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            run_dir = make_run(sejong_home)
+            (run_dir / "work-events.jsonl").write_text(
+                "\n".join(
+                    [
+                        json.dumps({"format": "sejong.work-event/v0.1-draft", "run_id": "run-test"}),
+                        json.dumps({"format": "sejong.work-event/v0.1-draft", "run_id": "run-other"}),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (run_dir / "lesson-candidate.json").write_text(
+                json.dumps({"format": "sejong.lesson-candidate/v0.1-draft", "candidate_id": "candidate-test"}),
+                encoding="utf-8",
+            )
+            (run_dir / "worker-resource-lease.json").write_text(
+                json.dumps(
+                    {
+                        "format": "sejong.worker-resource-lease/v0.1-draft",
+                        "lease_id": "lease-test",
+                        "status": "released",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = run_cleanup(["finalize-run", str(run_dir), "--status", "success"], sejong_home=sejong_home)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            summary = json.loads((run_dir / "run-summary.json").read_text(encoding="utf-8"))
+            self.assertEqual(summary["lifecycle"]["event_count"], 2)
+            self.assertEqual(summary["lifecycle"]["lesson_candidate_count"], 1)
+            self.assertEqual(summary["lifecycle"]["cleanup_evidence"]["lease_count"], 1)
+            self.assertEqual(summary["lifecycle"]["cleanup_evidence"]["receipt_count"], 0)
+            self.assertFalse(summary["lifecycle"]["cleanup_evidence"]["proof_complete"])
+            self.assertEqual(summary["lifecycle"]["cleanup_evidence"]["gaps"], ["lease-test"])
+
+    def test_finalize_rejects_malformed_lifecycle_artifact_without_deleting_raw_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            run_dir = make_run(sejong_home)
+            (run_dir / "work-events.jsonl").write_text("{not-json}\n", encoding="utf-8")
+            (run_dir / "scratch.log").write_text("raw", encoding="utf-8")
+
+            result = run_cleanup(
+                ["finalize-run", str(run_dir), "--status", "success", "--execute"],
+                sejong_home=sejong_home,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("invalid lifecycle artifact", result.stderr)
+            self.assertTrue((run_dir / "scratch.log").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

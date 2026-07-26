@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# noqa: SIZE_OK — cohesive cleanup CLI with destructive-action safety gates
 from __future__ import annotations
 
 import argparse
@@ -9,6 +10,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from work_lifecycle_summary import build_lifecycle_summary
 
 
 SCRIPT_PATH = Path(__file__).resolve()
@@ -171,6 +174,7 @@ def build_run_summary(
 
     run_dir = resolve_under_runs(run_dir)
     repo_id, run_id = run_identity(run_dir)
+    lifecycle = build_lifecycle_summary(run_dir)
     active = is_active_run(run_dir)
     active_identity = active_context_matches_run_identity(run_dir)
     promoted = has_promoted_marker(run_dir, policy)
@@ -217,6 +221,7 @@ def build_run_summary(
         "run_dir": str(run_dir),
         "dry_run": not execute,
         "reason": reason,
+        "lifecycle": lifecycle,
         "policy": {
             "success_raw_ttl_days": policy["success_raw_ttl_days"],
             "failed_raw_ttl_days": policy["failed_raw_ttl_days"],

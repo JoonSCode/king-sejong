@@ -44,6 +44,8 @@ workflow-run.json
 route-decisions.jsonl
 execution-feedback.json
 execution-ledger.jsonl
+work-events.jsonl
+lesson-candidate.json
 sillok-record.jsonl
 ```
 
@@ -148,6 +150,7 @@ External nontracked artifacts include:
 - Seungjeongwon execution evidence snapshots
 - Seungjeongwon actionable decomposition notes and execution attempt ledgers
 - Seungjeongwon active run artifacts
+- sanitized work event ledgers and review-only lesson candidates
 - workflow-run shadow comparisons for Codex-migrated dynamic workflow,
   deep-research-style, or mocked backends
 - outcome-quality comparison artifacts
@@ -229,7 +232,8 @@ The default lifecycle is:
    execution, verification, and resume.
 2. At completion, write a compact `run-summary.json` and preserve compact
    evidence such as `sillok-record.jsonl`, `evidence-manifest.json`,
-   `execution-feedback.json`, and continuity or checkpoint files.
+   `execution-feedback.json`, `work-events.jsonl`, `lesson-candidate.json`, and
+   continuity or checkpoint files.
 3. For successful runs, delete raw research notes, temporary Uigwe packets,
    worker mailbox state, scratch logs, and unreviewed execution snapshots once
    the compact record exists.
@@ -259,3 +263,8 @@ are:
   runs per repository
 - sensitive raw evidence: compact or redact, then prune as soon as safely
   possible
+
+Work lifecycle artifacts follow [WORK_LIFECYCLE.md](WORK_LIFECYCLE.md). They
+must contain sanitized structured fields and source digests only. Raw
+transcripts, prompts, messages, secrets, and private absolute paths are never
+compact artifacts.
