@@ -19,7 +19,7 @@ SEJONG_ROOT = SCRIPT_PATH.parents[1]
 REPO_ROOT = SCRIPT_PATH.parents[3]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class EvalStep:
     step_id: str
     description: str
@@ -103,6 +103,11 @@ def build_steps(*, write_scorecards: bool, include_install_verify: bool) -> list
             "External Sejong run finalization, pruning, and active-run protection",
             python_script("test_sejong_cleanup.py"),
             temp_sejong_home=True,
+        ),
+        EvalStep(
+            "work-lifecycle-tests",
+            "Sanitized work events, repeated-run lessons, and private persistence",
+            ("uv", "run", str(SEJONG_ROOT / "scripts" / "test_work_lifecycle.py")),
         ),
         EvalStep(
             "e2e-tests",

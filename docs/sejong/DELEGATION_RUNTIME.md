@@ -63,6 +63,12 @@ or complete verification. Attachment requires both the receipt file and its
 validated delegation run. Seungjeongwon accepts only an exact, embedded,
 `passed` fan-in receipt and records the delegation run as provenance.
 
+At terminal finalization, Core may project worker resource leases and cleanup
+receipts into the compact work lifecycle summary described in
+[WORK_LIFECYCLE.md](WORK_LIFECYCLE.md). This projection reports counts and
+missing exact lease IDs only. It does not replace fan-in validation or upgrade
+cleanup evidence authority.
+
 ## CLI
 
 ```bash

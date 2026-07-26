@@ -40,6 +40,8 @@ SCHEMA_FILES = {
     "outcome_quality": SEJONG_ROOT / "outcome-quality.schema.json",
     "product_evidence": SEJONG_ROOT / "product-evidence.schema.json",
     "sillok_trace_event": SEJONG_ROOT / "sillok-trace-event.schema.json",
+    "work_event": SEJONG_ROOT / "work-event.schema.json",
+    "lesson_candidate": SEJONG_ROOT / "lesson-candidate.schema.json",
 }
 
 FORMAT_TO_SCHEMA = {
@@ -82,6 +84,8 @@ FORMAT_TO_SCHEMA = {
     "sejong.product-evidence-result/v0.1-draft": "product_evidence",
     "sejong.product-evidence-judgment/v0.1-draft": "product_evidence",
     "sejong.sillok-trace-event/v0.1-draft": "sillok_trace_event",
+    "sejong.work-event/v0.1-draft": "work_event",
+    "sejong.lesson-candidate/v0.1-draft": "lesson_candidate",
 }
 
 NEGATIVE_FIXTURE_PARTS = (
