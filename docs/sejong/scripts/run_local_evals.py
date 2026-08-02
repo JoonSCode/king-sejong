@@ -55,8 +55,24 @@ def build_steps(*, write_scorecards: bool, include_install_verify: bool) -> list
         ),
         EvalStep(
             "context-tests",
-            "Active context start, update, doctor, close, and repo matching",
+            "Durable Context start, update, doctor, close, and revision checks",
             python_script("test_sejong_context.py"),
+        ),
+        EvalStep(
+            "doctor-tests",
+            "Read-only Doctor diagnostics honor exact session binding and non-authoritative legacy state",
+            python_script("test_sejong_doctor.py"),
+            temp_sejong_home=True,
+        ),
+        EvalStep(
+            "session-binding-tests",
+            "Exact session binding, switch, tombstone, migration, and repository isolation",
+            python_script("test_session_binding_context.py"),
+        ),
+        EvalStep(
+            "multisession-hook-e2e",
+            "Actual-shaped multisession hook payloads and compact observations",
+            python_script("test_king_sejong_multisession_e2e.py"),
         ),
         EvalStep(
             "task-class-delegation-gate-tests",

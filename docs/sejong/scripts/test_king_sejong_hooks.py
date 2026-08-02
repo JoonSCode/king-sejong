@@ -213,7 +213,7 @@ class KingSejongHookTests(unittest.TestCase):
             )
         self.assertEqual(output, {})
 
-    def test_hook_selects_matching_repo_context_over_stale_active_pointer(self) -> None:
+    def test_unbound_hook_ignores_stale_pointer_and_matching_repo_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)
             active_context_path = sejong_home / "state" / "active-context.json"
@@ -245,11 +245,7 @@ class KingSejongHookTests(unittest.TestCase):
                 },
                 sejong_home=sejong_home,
             )
-        additional = output["hookSpecificOutput"]["additionalContext"]
-        self.assertIn("active_context_id=ctx-matching", additional)
-        self.assertIn("active_pointer_fallback=true", additional)
-        self.assertIn("stale_active_context_id=ctx-stale", additional)
-        self.assertNotIn("repo_mismatch=true", additional)
+        self.assertEqual(output, {})
 
     def test_env_explicit_context_repo_mismatch_does_not_fallback_to_matching_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -288,7 +284,7 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertNotIn("active_context_id=ctx-matching-run-should-not-be-used", additional)
         self.assertNotIn("active_pointer_fallback=true", additional)
 
-    def test_hook_reports_fallback_when_active_pointer_is_malformed(self) -> None:
+    def test_unbound_hook_ignores_malformed_pointer_and_matching_repo_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)
             active_context_path = sejong_home / "state" / "active-context.json"
@@ -313,12 +309,9 @@ class KingSejongHookTests(unittest.TestCase):
                 sejong_home=sejong_home,
             )
 
-        additional = output["hookSpecificOutput"]["additionalContext"]
-        self.assertIn("active_context_id=ctx-matching-after-malformed-pointer", additional)
-        self.assertIn("active_pointer_fallback=true", additional)
-        self.assertIn("stale_active_pointer_error=JSONDecodeError", additional)
+        self.assertEqual(output, {})
 
-    def test_hook_skips_invalid_matching_repo_context(self) -> None:
+    def test_unbound_hook_does_not_scan_valid_or_invalid_repo_contexts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)
             active_context_path = sejong_home / "state" / "active-context.json"
@@ -354,11 +347,9 @@ class KingSejongHookTests(unittest.TestCase):
                 },
                 sejong_home=sejong_home,
             )
-        additional = output["hookSpecificOutput"]["additionalContext"]
-        self.assertIn("active_context_id=ctx-valid", additional)
-        self.assertNotIn("active_context_id=ctx-invalid", additional)
+        self.assertEqual(output, {})
 
-    def test_hook_fallback_uses_semantic_freshness_and_compatible_objective(self) -> None:
+    def test_unbound_hook_does_not_rank_repo_contexts_by_freshness_or_objective(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)
             active_context_path = sejong_home / "state" / "active-context.json"
@@ -408,9 +399,7 @@ class KingSejongHookTests(unittest.TestCase):
                 },
                 sejong_home=sejong_home,
             )
-        additional = output["hookSpecificOutput"]["additionalContext"]
-        self.assertIn("active_context_id=ctx-compatible-semantic-newer", additional)
-        self.assertNotIn("active_context_id=ctx-incompatible-newer", additional)
+        self.assertEqual(output, {})
 
     def test_hook_ignores_completed_stale_active_pointer_without_obligations(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -440,7 +429,7 @@ class KingSejongHookTests(unittest.TestCase):
 
         self.assertEqual(output, {})
 
-    def test_hook_surfaces_stale_active_pointer_with_pending_obligation(self) -> None:
+    def test_unbound_hook_ignores_stale_pointer_even_with_pending_obligation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)
             active_context_path = sejong_home / "state" / "active-context.json"
@@ -462,9 +451,7 @@ class KingSejongHookTests(unittest.TestCase):
                 sejong_home=sejong_home,
             )
 
-        additional = output["hookSpecificOutput"]["additionalContext"]
-        self.assertIn("repo_mismatch=true", additional)
-        self.assertIn("active_context_id=ctx-pending-stale", additional)
+        self.assertEqual(output, {})
 
     def test_hook_does_not_restore_old_repo_context_only_because_refs_are_broken(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1507,8 +1494,7 @@ class KingSejongHookTests(unittest.TestCase):
                 {"hook_event_name": "PreCompact", "trigger": "auto", "cwd": str(REPO_ROOT)},
                 sejong_home=sejong_home,
             )
-        self.assertFalse(output["continue"])
-        self.assertIn("active context checkpoint could not be loaded", output["stopReason"])
+        self.assertEqual(output, {})
 
     def test_precompact_blocks_malformed_implicit_active_context_with_matching_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1531,9 +1517,7 @@ class KingSejongHookTests(unittest.TestCase):
                 sejong_home=sejong_home,
             )
 
-        self.assertEqual(output.get("continue"), False)
-        self.assertIn("active context checkpoint could not be loaded", output["stopReason"])
-        self.assertNotIn("active_pointer_fallback=true", json.dumps(output, sort_keys=True))
+        self.assertEqual(output, {})
 
     def test_precompact_blocks_non_object_implicit_active_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1547,8 +1531,7 @@ class KingSejongHookTests(unittest.TestCase):
                 {"hook_event_name": "PreCompact", "trigger": "auto", "cwd": str(REPO_ROOT)},
                 sejong_home=sejong_home,
             )
-        self.assertFalse(output["continue"])
-        self.assertIn("context JSON must be an object", output["stopReason"])
+        self.assertEqual(output, {})
 
     def test_precompact_ignores_mismatched_implicit_active_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1569,7 +1552,7 @@ class KingSejongHookTests(unittest.TestCase):
             )
         self.assertEqual(output, {})
 
-    def test_precompact_uses_matching_repo_context_without_active_pointer(self) -> None:
+    def test_unbound_precompact_does_not_scan_matching_repo_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)
             run_path = sejong_home / "runs" / "repo-test" / "context-run" / "seungjeongwon-run.json"
@@ -1601,7 +1584,7 @@ class KingSejongHookTests(unittest.TestCase):
             )
             checkpoint_exists = checkpoint_path.exists()
         self.assertEqual(output, {})
-        self.assertTrue(checkpoint_exists)
+        self.assertFalse(checkpoint_exists)
 
     def test_user_prompt_submit_missing_env_context_path_does_not_fall_back_to_repo_match(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

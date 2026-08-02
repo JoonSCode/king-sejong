@@ -28,6 +28,8 @@ JsonObject: TypeAlias = dict[str, JsonValue]
 
 class RuntimeLockClass(StrEnum):
     ACTIVE_POINTER = "active-pointer"
+    SESSION_BINDING = "session-binding"
+    REPO_INDEX = "repo-index"
     RUN_CONTEXT = "run-context"
     ARTIFACT_REF = "artifact-ref"
     TEAM_MAILBOX = "team-mailbox"

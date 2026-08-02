@@ -51,6 +51,15 @@ sillok-record.jsonl
 
 The context checkpoint should follow `docs/sejong/king-sejong-context.schema.json`. It is the shared runtime state for hooks, native subagents, TeamExecutor workers, Seungjeongwon execution feedback, and Sillok evidence refs.
 
+Hook selection authority is stored separately under
+`state/session-bindings/<binding-id>.json` and follows
+`docs/sejong/session-binding.schema.json`. A reconstructable discovery index is
+stored under `state/repo-index/` and follows `docs/sejong/repo-index.schema.json`.
+The index is for listing candidates and explicit resume only. Neither it nor
+legacy `state/active-context.json` may select the newest Context for implicit
+hook injection. Session binding and index cleanup must not delete the durable
+run Contexts they reference.
+
 Ambiguity registers should follow `docs/sejong/ambiguity-register.schema.json`.
 The active context should reference them through `artifact_refs` rather than
 duplicating the full clarification state.

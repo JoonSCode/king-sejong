@@ -1,6 +1,12 @@
 # App-Scoped Runtime Strategy
 
-**Status:** Draft strategy, first Seungjeongwon execution pass implemented
+**Status:** Historical strategy; Context authority is superseded by
+[MULTI_SESSION.md](MULTI_SESSION.md)
+
+The repo-latest fallback described in the original Phase 2 is retired. It must
+not be reintroduced: implicit hooks use only the exact Codex session binding,
+while Repo Index and the preserved legacy pointer are discovery and migration
+state without automatic injection authority.
 
 ## Execution Status
 
@@ -10,9 +16,8 @@ The first execution pass implements the low-overhead runtime hardening path:
   doctor repair guidance, and invalid-list-item regression tests.
 - Phase 1 repo mismatch visibility: implemented for continuation events with
   `repo_mismatch=true` context and explicit-exit preservation.
-- Phase 2 repo-scoped context selection: implemented by resolving the newest
-  valid matching run context from `${SEJONG_HOME}/runs` when the active pointer
-  is stale or missing.
+- Phase 2 repo-scoped context selection: retired and replaced by exact Codex
+  Session Binding plus a non-authoritative, reconstructable Repo Index.
 - Phase 3 Seungjeongwon receipt gate: implemented through the
   `seungjeongwon_receipt_required` pending gate for write-like actions,
   permission requests, and premature stop attempts. The residual manual-gate
@@ -219,13 +224,13 @@ Exit criteria:
 - The CoupleInvestmentApp mismatch would have been visible before the next app
   edit.
 
-### Phase 2: Repo-scoped context selection
+### Historical Phase 2: Repo-scoped context selection (superseded)
 
-Goal:
+Historical goal:
 
 - Avoid one global stale active pointer becoming the only runtime truth.
 
-Changes:
+These changes are retained only as decision history and must not be implemented:
 
 - Add a context resolver that can select the newest valid context whose
   `repo_root` contains the current `cwd`.

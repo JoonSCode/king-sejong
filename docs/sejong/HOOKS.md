@@ -17,10 +17,10 @@ python3 docs/sejong/scripts/king_sejong_hooks.py <event-name> --context <context
 Active context checkpoints can be created, updated, diagnosed, and closed with:
 
 ```bash
-python3 docs/sejong/scripts/sejong_context.py start --repo-root .
-python3 docs/sejong/scripts/sejong_context.py update --append-route seungjeongwon --add-pending-gate verification
-python3 docs/sejong/scripts/sejong_context.py doctor --repo-root .
-python3 docs/sejong/scripts/sejong_context.py close
+python3 docs/sejong/scripts/sejong_context.py start --repo-root . --session-id <codex-session-id>
+python3 docs/sejong/scripts/sejong_context.py update --session-id <codex-session-id> --append-route seungjeongwon --add-pending-gate verification
+python3 docs/sejong/scripts/sejong_context.py doctor --session-id <codex-session-id> --repo-root .
+python3 docs/sejong/scripts/sejong_context.py close --session-id <codex-session-id>
 ```
 
 Hook behavior is scoped by the why-based force levels in
@@ -35,6 +35,8 @@ The reference tests are:
 ```bash
 python3 docs/sejong/scripts/test_king_sejong_hooks.py
 python3 docs/sejong/scripts/test_sejong_context.py
+python3 docs/sejong/scripts/test_session_binding_context.py
+python3 docs/sejong/scripts/test_king_sejong_multisession_e2e.py
 SEJONG_HOME="$(mktemp -d)" python3 docs/sejong/scripts/test_king_sejong_e2e.py
 ```
 
@@ -94,10 +96,9 @@ Seungjeongwon execution run. See [seungjeongwon-run.schema.json](seungjeongwon-r
 
 `SessionStart`
 
-- Load recent active context for the repository when available.
-- If the active pointer is missing or stale, select the newest valid matching
-  run context under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs`
-  when one exists.
+- Load only the active Context bound to the exact payload `session_id`.
+- Stay quiet for a new, forked, side, unbound, completed, or closed session;
+  never select the newest repository Context.
 - Inject a compact King Sejong continuation summary.
 - Treat `source=compact` as the supported post-compaction reinjection path.
   Include active Seungjeongwon run summaries and continuity capsule projections
@@ -114,9 +115,10 @@ Seungjeongwon execution run. See [seungjeongwon-run.schema.json](seungjeongwon-r
   exists. The projection is model-visible working-set context, not the full
   capsule and not a gate approval.
 
-`sejong_context.py` writes the same checkpoint to both the active pointer under
-`${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json` and
-the repository-scoped run directory. Hooks read the active pointer by default.
+`sejong_context.py` stores the durable checkpoint in its run directory and
+publishes a separate binding for the exact hook payload `session_id`. Hooks read
+only that session binding for implicit continuation. Repo Index and the legacy
+`state/active-context.json` file have no automatic injection authority.
 
 `PreToolUse`
 
@@ -204,11 +206,10 @@ the repository-scoped run directory. Hooks read the active pointer by default.
 
 `PreCompact`
 
-- Do nothing when no active context or matching active repository
-  continuation exists; compaction should not be blocked by completed or closed
-  workflows from sibling sessions.
-- Block compaction when the active context pointer exists but cannot be read or
-  parsed.
+- Do nothing when the exact session has no bound active Context. Do not scan the
+  repository, Repo Index, or legacy pointer.
+- Fail closed when the exact session binding is malformed, schema-incomplete,
+  mismatched, lock-contended, or points to an unreadable or invalid Context.
 - Fail closed when an explicit `--context` path or `SEJONG_ACTIVE_CONTEXT`
   path is missing.
 - Check that the active context checkpoint has the required fields before
@@ -239,9 +240,38 @@ If that canonical script is missing, the adapter stays quiet for non-protected
 events but returns a non-zero error for protected lifecycle events such as
 `PreToolUse`, `PermissionRequest`, `Stop`, and `PreCompact`.
 The installer owns a marked King Sejong plugin block and sets
-`[features].hooks = true`. On macOS, installed hook path verification and
-active-context `repo_root` matching normalize path case so `/Users/Junsu` and
-`/Users/junsu` do not split the same workspace.
+`[features].hooks = true`. Exact repository identities resolve symlink aliases
+and Git common directories before hashing canonical filesystem bytes; they do
+not unconditionally case-fold distinct paths on case-sensitive macOS volumes.
+
+User-scope installation publishes a fail-closed maintenance generation before
+copying any authority-bearing runtime file. A stable per-`CODEX_HOME` installer
+lock serializes concurrent publishers. After read-only downgrade preflight, the
+installer captures a frozen managed-source snapshot, atomically publishes the
+maintenance hook, and records `state/install-transaction.json` as
+`in_progress`. Bulk docs copy excludes the canonical hook in both the rsync and
+fallback paths. All other managed content and configuration are verified from
+the snapshot before the staged canonical hook is atomically published. A final
+read-only verification precedes the atomic `complete` marker with runtime
+authority epoch `2` and the combined installed digest. The adapter permits
+automatic injection only when that marker is complete and the installed digest
+matches. An interrupted, missing, or drifted generation stays quiet for
+non-protected events and rejects protected lifecycle events. Rerunning the same
+installer is the recovery path.
+
+The process-crash guarantee begins at the atomic maintenance-hook commit. Hook
+processes that started before that commit cannot be retroactively stopped by a
+file replacement. From that commit until the final complete marker, a hook sees
+only maintenance or missing canonical authority, or a staged epoch-2 canonical
+whose adapter still rejects the `in_progress` generation.
+
+A supported rollback is a forced reinstall from a previously captured,
+verified epoch-2-compatible King Sejong source followed by `--verify`. A raw
+downgrade to a source predating the install-transaction adapter is not a safe
+rollback: that older code cannot validate the maintenance marker and may
+restore legacy active-pointer authority. Preserve such historical sources for
+forensics only; do not execute their user-scope installer over an epoch-2
+installation.
 
 Older installs may still have a marked direct hook block in
 `${CODEX_HOME:-~/.codex}/config.toml`. A normal user-scope reinstall removes
@@ -250,26 +280,26 @@ explicit `--legacy-direct-hooks` installer option keeps direct hooks as a
 fallback mode, but verification fails when direct hooks and plugin hooks are
 enabled together.
 
-Hooks are scoped by active context and repository-scoped run contexts. The
-reference hook script first reads
-`${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json`; if
-that implicit pointer is missing or stale for the current workspace, it scans
-`${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/runs/*/*/king-sejong-context.json`
-and selects the newest valid context whose `repo_root` contains the current
-`cwd`. When this safe fallback happens, continuation context includes
-`active_pointer_fallback=true` and, when known, the stale pointer id, stale repo
-root, or pointer load error. This warning is model-visible context only; it
-does not make the active pointer authoritative.
+Hooks are scoped by the payload `session_id`, with `turn_id` recorded as an
+opaque observation id. The reference hook hashes the host namespace and exact
+session id, validates the internal binding identity, and loads only its bound
+durable Context. New sessions, forks, and side conversations remain unbound
+until explicit resume or inherit. Missing bindings stay quiet. Unknown,
+malformed, mismatched, completed, and closed state fails closed without a
+repository-latest fallback.
+
+Repository fit uses exact identities. Git worktrees share the common Git
+directory identity, while nested and sibling Git repositories do not. Multiple
+repositories require an explicit Context identity list; a broad parent
+`repo_root` is not containment authority.
 
 An explicit `--context` path or `SEJONG_ACTIVE_CONTEXT` path is not a hint; if
 it is missing, hooks surface `missing_explicit_active_context=true` instead of
-falling back to another repo-scoped context. If an implicit active context
-exists but no matching repo context is available, continuation events such as
-`UserPromptSubmit` and `SessionStart` surface a compact
-`repo_mismatch=true` warning instead of silently applying the stale context.
-Other events remain quiet on mismatch unless a matching repo-scoped context is
-provided. Broken artifact refs inside the selected context remain explicit
-context obligations and fail closed for compaction and completion gates.
+falling back to another repo-scoped context. An implicitly bound Context used
+from a different exact repository stays quiet and exposes none of that Context.
+An explicit manual Context may surface a `repo_mismatch=true` diagnostic.
+Broken artifact refs inside the selected Context remain explicit obligations
+and fail closed for compaction and completion gates.
 
 A target repo or user profile can also wire the reference scripts manually:
 

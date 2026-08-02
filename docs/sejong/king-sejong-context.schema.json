@@ -18,6 +18,18 @@
     "repo_root": {
       "$ref": "#/$defs/NonEmptyString"
     },
+    "repo_identities": {
+      "description": "Exact Git common-directory or exact path identities authorized for this durable context.",
+      "$ref": "#/$defs/StringList"
+    },
+    "context_status": {
+      "type": "string",
+      "enum": ["active", "paused", "completed", "closed"]
+    },
+    "context_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
     "run_id": {
       "$ref": "#/$defs/NonEmptyString"
     },

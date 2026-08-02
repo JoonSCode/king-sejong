@@ -14,13 +14,28 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from sejong_paths import path_contains_or_equals, path_key, resolve_path
+from sejong_paths import declared_repo_identity, identity_path_digest, repo_identity, resolve_path
 from sejong_runtime_lock import (
     RuntimeLock,
     RuntimeLockClass,
+    RuntimeLockReleaseError,
     RuntimeLockRequest,
     RuntimeLockTimeout,
     acquire_runtime_lock,
+)
+from sejong_session_binding import (
+    BindingRevisionConflict,
+    DERIVED_STATE_WARNINGS_FIELD,
+    InvalidBinding,
+    StaleBindingObservation,
+    atomic_write_json,
+    bind_context,
+    load_binding,
+    migrate_legacy_pointer,
+    observe_binding,
+    resolve_bound_context,
+    unbind_session,
+    update_repo_index,
 )
 
 
@@ -58,7 +73,18 @@ REQUIRED_FIELDS = (
     "exit_conditions",
     "last_updated_at",
 )
+REQUIRED_STRING_FIELDS = (
+    "active_context_id",
+    "repo_id",
+    "repo_root",
+    "run_id",
+    "session_id",
+    "route_id",
+    "last_user_intent",
+    "last_updated_at",
+)
 LIST_FIELDS = (
+    "repo_identities",
     "route_sequence",
     "required_route_sequence",
     "pending_gates",
@@ -83,10 +109,8 @@ DEFAULT_EXIT_CONDITIONS = (
     "host_conversation_ends",
 )
 SEUNGJEONGWON_RECEIPT_GATE = "seungjeongwon_receipt_required"
-ACTIVE_POINTER_LOCK_NAME = "active-pointer"
 CONTEXT_LOCK_TIMEOUT_ENV = "SEJONG_CONTEXT_LOCK_TIMEOUT_SECONDS"
 DEFAULT_CONTEXT_LOCK_TIMEOUT_SECONDS = 2.0
-ACTIVE_POINTER_STALE_AFTER_SECONDS = 7.0 * 24.0 * 60.0 * 60.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,16 +135,10 @@ def sejong_root() -> Path:
     return codex_home / "sejong"
 
 
-def active_context_path() -> Path:
-    if os.environ.get("SEJONG_ACTIVE_CONTEXT"):
-        return Path(os.environ["SEJONG_ACTIVE_CONTEXT"]).expanduser()
-    return sejong_root() / "state" / "active-context.json"
-
-
 def repo_slug(repo_root: Path) -> str:
     repo_root = resolve_path(repo_root)
     safe_name = "".join(char if char.isalnum() or char in "-_" else "-" for char in repo_root.name).strip("-")
-    digest = hashlib.sha1(path_key(repo_root).encode("utf-8")).hexdigest()[:8]
+    digest = identity_path_digest(repo_root)[:8]
     return f"{safe_name or 'repo'}-{digest}"
 
 
@@ -133,8 +151,7 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    atomic_write_json(path, data)
 
 
 def context_lock_timeout_seconds() -> float:
@@ -169,27 +186,15 @@ def run_context_lock_name(context: dict[str, Any]) -> str:
     return f"run-context-{digest}"
 
 
-def acquire_active_pointer_lock(context: dict[str, Any], operation: str) -> RuntimeLock:
+def acquire_run_context_lock(
+    context: dict[str, Any],
+    operation: str,
+    *,
+    sejong_home: Path | None = None,
+) -> RuntimeLock:
     return acquire_runtime_lock(
         RuntimeLockRequest(
-            sejong_home=sejong_root(),
-            lock_name=ACTIVE_POINTER_LOCK_NAME,
-            lock_class=RuntimeLockClass.ACTIVE_POINTER,
-            owner_session_id=context_identity_value(context, "session_id", "unknown-session"),
-            owner_device_id=device_id(),
-            operation=operation,
-            owner_run_id=context_identity_value(context, "run_id", "") or None,
-            repo_id=context_identity_value(context, "repo_id", "") or None,
-            timeout_seconds=context_lock_timeout_seconds(),
-            stale_after_seconds=ACTIVE_POINTER_STALE_AFTER_SECONDS,
-        )
-    )
-
-
-def acquire_run_context_lock(context: dict[str, Any], operation: str) -> RuntimeLock:
-    return acquire_runtime_lock(
-        RuntimeLockRequest(
-            sejong_home=sejong_root(),
+            sejong_home=sejong_home or sejong_root(),
             lock_name=run_context_lock_name(context),
             lock_class=RuntimeLockClass.RUN_CONTEXT,
             owner_session_id=context_identity_value(context, "session_id", "unknown-session"),
@@ -267,15 +272,31 @@ def validate_context(context: dict[str, Any]) -> list[str]:
     for field in REQUIRED_FIELDS:
         if field not in context:
             failures.append(f"missing {field}")
+    for field in REQUIRED_STRING_FIELDS:
+        if field in context and (not isinstance(context[field], str) or not context[field]):
+            failures.append(f"{field} must be a non-empty string")
     if context.get("format") != FORMAT:
         failures.append("unexpected format")
-    if context.get("current_surface") not in SURFACES:
+    current_surface = context.get("current_surface")
+    if not isinstance(current_surface, str) or current_surface not in SURFACES:
         failures.append(f"invalid current_surface: {context.get('current_surface')}")
+    context_status = context.get("context_status", "active")
+    if not isinstance(context_status, str) or context_status not in {"active", "paused", "completed", "closed"}:
+        failures.append(f"invalid context_status: {context.get('context_status')}")
+    if "context_revision" in context and (
+        not isinstance(context["context_revision"], int)
+        or isinstance(context["context_revision"], bool)
+        or context["context_revision"] < 1
+    ):
+        failures.append("context_revision must be a positive integer")
     if "objective_id" in context and (not isinstance(context["objective_id"], str) or not context["objective_id"]):
         failures.append("objective_id must be a non-empty string")
     if "task_class" in context and (not isinstance(context["task_class"], str) or not context["task_class"]):
         failures.append("task_class must be a non-empty string")
-    if "projection_profile" in context and context["projection_profile"] not in PROJECTION_PROFILES:
+    if "projection_profile" in context and (
+        not isinstance(context["projection_profile"], str)
+        or context["projection_profile"] not in PROJECTION_PROFILES
+    ):
         failures.append(f"invalid projection_profile: {context['projection_profile']}")
     for field in LIST_FIELDS:
         if field in context and not isinstance(context[field], list):
@@ -287,34 +308,99 @@ def validate_context(context: dict[str, Any]) -> list[str]:
     return failures
 
 
-def context_run_path(context: dict[str, Any]) -> Path:
+def context_run_path(context: dict[str, Any], *, sejong_home: Path | None = None) -> Path:
     run_id = context["run_id"]
     repo_id = context["repo_id"]
-    return sejong_root() / "runs" / repo_id / run_id / "king-sejong-context.json"
+    return (sejong_home or sejong_root()) / "runs" / repo_id / run_id / "king-sejong-context.json"
 
 
-def save_context(context: dict[str, Any], *, update_active: bool = True, operation: str = "save context") -> Path:
+@dataclass(frozen=True, slots=True)
+class ContextRevisionConflict(Exception):
+    expected: int
+    actual: int
+
+    def __str__(self) -> str:
+        return f"context revision conflict: expected={self.expected}; actual={self.actual}"
+
+
+@dataclass(frozen=True, slots=True)
+class ContextIdentityConflict(Exception):
+    field: str
+    expected: Any
+    actual: Any
+
+    def __str__(self) -> str:
+        return (
+            "context identity conflict: "
+            f"field={self.field}; expected={self.expected!r}; actual={self.actual!r}"
+        )
+
+
+def save_context(
+    context: dict[str, Any],
+    *,
+    expected_context_revision: int | None = None,
+    operation: str = "save context",
+    sejong_home: Path | None = None,
+    update_repo_index_after_commit: bool = True,
+) -> Path:
+    if expected_context_revision is None:
+        raise ValueError("expected_context_revision is required")
+    if (
+        isinstance(expected_context_revision, bool)
+        or not isinstance(expected_context_revision, int)
+        or expected_context_revision < 0
+    ):
+        raise ValueError("expected_context_revision must be a non-negative integer")
+    runtime_root = sejong_home or sejong_root()
     locks: list[RuntimeLock] = []
     try:
-        if update_active:
-            locks.append(acquire_active_pointer_lock(context, operation))
-        locks.append(acquire_run_context_lock(context, operation))
-        context["last_updated_at"] = now_utc()
-        run_path = context_run_path(context)
-        write_json(run_path, context)
-        if update_active:
-            write_json(active_context_path(), context)
+        locks.append(acquire_run_context_lock(context, operation, sejong_home=runtime_root))
+        run_path = context_run_path(context, sejong_home=runtime_root)
+        actual_revision = 0
+        if run_path.exists():
+            existing = load_json(run_path)
+            for field in ("active_context_id", "repo_id", "run_id"):
+                if existing.get(field) != context.get(field):
+                    raise ContextIdentityConflict(field, existing.get(field), context.get(field))
+            actual_revision = int(existing.get("context_revision", 0))
+        if actual_revision != expected_context_revision:
+            raise ContextRevisionConflict(expected_context_revision, actual_revision)
+        updated = dict(context)
+        updated["context_revision"] = actual_revision + 1
+        updated["last_updated_at"] = now_utc()
+        write_json(run_path, updated)
+        context.clear()
+        context.update(updated)
+        if update_repo_index_after_commit:
+            try:
+                update_repo_index(runtime_root, context, run_path)
+            except (
+                InvalidBinding,
+                RuntimeLockReleaseError,
+                RuntimeLockTimeout,
+                KeyError,
+                OSError,
+                TypeError,
+                UnicodeError,
+                ValueError,
+            ) as error:
+                print(
+                    f"warning: repo index update failed after the Context commit: {type(error).__name__}: {error}",
+                    file=sys.stderr,
+                )
         return run_path
     finally:
         release_context_locks(locks)
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Manage King Sejong active context checkpoints.")
+    parser = argparse.ArgumentParser(description="Manage durable King Sejong Contexts and Codex session bindings.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    start = subparsers.add_parser("start", help="Create a new active King Sejong context.")
+    start = subparsers.add_parser("start", help="Create a durable Context and a new exact session binding.")
     start.add_argument("--repo-root", default=".")
+    start.add_argument("--additional-repo-root", action="append", dest="additional_repo_roots")
     start.add_argument("--repo-id")
     start.add_argument("--run-id")
     start.add_argument("--session-id")
@@ -337,8 +423,10 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--last-user-intent", default="King Sejong workflow started.")
     start.set_defaults(func=start_context)
 
-    update = subparsers.add_parser("update", help="Update the active King Sejong context.")
+    update = subparsers.add_parser("update", help="Update a durable King Sejong Context.")
     update.add_argument("--context")
+    update.add_argument("--session-id")
+    update.add_argument("--expect-context-revision", type=int)
     update.add_argument("--current-surface", choices=sorted(SURFACES))
     update.add_argument("--append-route", action="append", dest="append_routes")
     update.add_argument("--set-route-sequence", action="append", dest="set_route_sequence")
@@ -362,20 +450,64 @@ def build_parser() -> argparse.ArgumentParser:
     update.add_argument("--last-user-intent")
     update.set_defaults(func=update_context)
 
-    doctor = subparsers.add_parser("doctor", help="Validate the active King Sejong context.")
+    doctor = subparsers.add_parser("doctor", help="Validate a durable King Sejong Context.")
     doctor.add_argument("--context")
+    doctor.add_argument("--session-id")
     doctor.add_argument("--repo-root")
     doctor.set_defaults(func=doctor_context)
 
-    repair = subparsers.add_parser("repair", help="Repair simple active-context shape drift.")
+    repair = subparsers.add_parser("repair", help="Repair simple durable Context shape drift.")
     repair.add_argument("--context")
+    repair.add_argument("--session-id")
+    repair.add_argument("--expect-context-revision", type=int)
     repair.set_defaults(func=repair_context)
 
-    close = subparsers.add_parser("close", help="Archive and remove the active context pointer.")
+    close = subparsers.add_parser("close", help="Unbind the exact session and mark its Context closed.")
     close.add_argument("--context")
+    close.add_argument("--session-id", required=True)
+    close.add_argument("--turn-id")
+    close.add_argument("--expect-revision", required=True, type=int)
+
+    resume = subparsers.add_parser("resume", help="Explicitly bind a session to a durable context.")
+    resume.add_argument("--context", required=True)
+    resume.add_argument("--session-id", required=True)
+    resume.add_argument("--turn-id")
+    resume.add_argument("--host-namespace", default="codex")
+    resume.add_argument("--expect-revision", required=True, type=int)
+    resume.set_defaults(func=resume_context)
+
+    unbind = subparsers.add_parser("unbind", help="Replace a session binding with an unbound tombstone.")
+    unbind.add_argument("--session-id", required=True)
+    unbind.add_argument("--turn-id")
+    unbind.add_argument("--host-namespace", default="codex")
+    unbind.add_argument("--expect-revision", required=True, type=int)
+    unbind.set_defaults(func=unbind_context)
+
+    observe = subparsers.add_parser("observe", help=argparse.SUPPRESS)
+    observe.add_argument("--session-id", required=True)
+    observe.add_argument("--turn-id", required=True)
+    observe.add_argument("--host-namespace", default="codex")
+    observe.add_argument("--expect-context-id", required=True)
+    observe.add_argument("--expect-binding-epoch", required=True, type=int)
+    observe.set_defaults(func=observe_context_binding)
+
+    migrate = subparsers.add_parser(
+        "migrate-legacy",
+        help="Preserve the legacy active pointer as non-authoritative migration history.",
+    )
+    migrate.set_defaults(func=migrate_legacy_context)
     close.set_defaults(func=close_context)
 
     return parser
+
+
+def emit_binding_warnings(binding: dict[str, Any]) -> None:
+    warnings = binding.get(DERIVED_STATE_WARNINGS_FIELD)
+    if not isinstance(warnings, list):
+        return
+    for warning in warnings:
+        if isinstance(warning, str) and warning:
+            print(f"warning: {warning}", file=sys.stderr)
 
 
 def start_context(args: argparse.Namespace) -> int:
@@ -388,13 +520,18 @@ def start_context(args: argparse.Namespace) -> int:
         args.pending_gates or [],
         goal_bearing=args.goal_bearing,
     )
+    session_id = args.session_id or f"session-{run_id}"
+    repo_roots = [repo_root, *(resolve_path(path) for path in (args.additional_repo_roots or []))]
+    repo_identities = list(dict.fromkeys(repo_identity(path) for path in repo_roots))
     context = {
         "format": FORMAT,
         "active_context_id": f"ctx-{run_id}",
         "repo_id": repo_id,
         "repo_root": str(repo_root),
         "run_id": run_id,
-        "session_id": args.session_id or f"session-{run_id}",
+        "session_id": session_id,
+        "repo_identities": repo_identities,
+        "context_status": "active",
         "route_id": args.route_id or f"route-{run_id}",
         **({"objective_id": args.objective_id} if args.objective_id else {}),
         **({"objective_refs": args.objective_refs} if args.objective_refs else {}),
@@ -419,21 +556,35 @@ def start_context(args: argparse.Namespace) -> int:
         for failure in failures:
             print(f"failure: {failure}", file=sys.stderr)
         return 1
-    run_path = save_context(context, operation="start context")
-    print(f"active_context={active_context_path()}")
+    run_path = save_context(context, expected_context_revision=0, operation="start context")
+    binding = bind_context(sejong_root(), session_id, run_path, expected_revision=0)
+    emit_binding_warnings(binding)
     print(f"run_context={run_path}")
+    print(f"session_binding={binding['binding_id']}")
     return 0
 
 
-def load_context_argument(path: str | None) -> tuple[Path, dict[str, Any]]:
-    context_path = Path(path).expanduser() if path else active_context_path()
+def load_context_argument(path: str | None, session_id: str | None = None) -> tuple[Path, dict[str, Any]]:
+    if path:
+        context_path = Path(path).expanduser()
+    elif session_id:
+        context = resolve_bound_context(sejong_root(), session_id, observe=False)
+        if not context:
+            raise SystemExit(f"session has no active context binding: {session_id}")
+        context_path = context_run_path(context)
+        context.pop("_king_sejong_binding_epoch", None)
+        context.pop("_king_sejong_binding_revision", None)
+        return context_path, context
+    else:
+        raise SystemExit("explicit --context or --session-id is required; legacy active pointer is non-authoritative")
     if not context_path.exists():
         raise SystemExit(f"active context does not exist: {context_path}")
     return context_path, load_json(context_path)
 
 
 def update_context(args: argparse.Namespace) -> int:
-    _, context = load_context_argument(args.context)
+    _, context = load_context_argument(args.context, args.session_id)
+    loaded_revision = int(context.get("context_revision", 0))
     if args.current_surface:
         context["current_surface"] = args.current_surface
     if args.set_route_sequence:
@@ -482,21 +633,22 @@ def update_context(args: argparse.Namespace) -> int:
         for failure in failures:
             print(f"failure: {failure}", file=sys.stderr)
         return 1
-    run_path = save_context(context, operation="update context")
+    expected_revision = args.expect_context_revision if args.expect_context_revision is not None else loaded_revision
+    run_path = save_context(context, expected_context_revision=expected_revision, operation="update context")
     print(f"context updated: {run_path}")
     return 0
 
 
 def doctor_context(args: argparse.Namespace) -> int:
-    context_path, context = load_context_argument(args.context)
+    context_path, context = load_context_argument(args.context, args.session_id)
     failures = validate_context(context)
     if args.repo_root:
         repo_root = resolve_path(args.repo_root)
-        context_root = resolve_path(context.get("repo_root", ""))
-        if not path_contains_or_equals(repo_root, context_root):
+        identities = context.get("repo_identities") or [declared_repo_identity(context.get("repo_root", ""))]
+        if repo_identity(repo_root) not in identities:
             failures.append(
-                "context repo_root does not cover requested repo: "
-                f"{repo_root}; context_repo_root={context_root}"
+                "context repo identity does not match requested repo: "
+                f"{repo_root}; context_repo_identities={','.join(identities)}"
             )
     if failures:
         for failure in failures:
@@ -515,28 +667,104 @@ def doctor_context(args: argparse.Namespace) -> int:
 
 
 def repair_context(args: argparse.Namespace) -> int:
-    _, context = load_context_argument(args.context)
+    _, context = load_context_argument(args.context, args.session_id)
+    loaded_revision = int(context.get("context_revision", 0))
     repaired = normalize_context_string_lists(context)
     failures = validate_context(repaired)
     if failures:
         for failure in failures:
             print(f"failure: {failure}", file=sys.stderr)
         return 1
-    run_path = save_context(repaired, operation="repair context")
+    run_path_exists = context_run_path(repaired).exists()
+    expected_revision = (
+        args.expect_context_revision
+        if args.expect_context_revision is not None
+        else loaded_revision if run_path_exists else 0
+    )
+    run_path = save_context(repaired, expected_context_revision=expected_revision, operation="repair context")
     print(f"context repaired: {run_path}")
     return 0
 
 
 def close_context(args: argparse.Namespace) -> int:
-    context_path, context = load_context_argument(args.context)
-    active_lock = acquire_active_pointer_lock(context, "close context")
-    try:
-        save_context(context, update_active=False, operation="close context")
-        if context_path == active_context_path() and context_path.exists():
-            context_path.unlink()
-    finally:
-        active_lock.release()
+    context_path, context = load_context_argument(args.context, args.session_id)
+    failures = validate_context(context)
+    if failures:
+        raise InvalidBinding(f"invalid durable context: {context_path}: {', '.join(failures)}")
+    binding = load_binding(sejong_root(), args.session_id)
+    if (
+        not binding
+        or binding.get("state") != "bound"
+        or binding.get("active_context_id") != context.get("active_context_id")
+        or Path(str(binding.get("context_ref"))).expanduser().resolve() != context_path.expanduser().resolve()
+    ):
+        raise InvalidBinding(
+            f"session binding does not reference requested Context: session_id={args.session_id}; "
+            f"context={context_path}"
+        )
+    loaded_revision = int(context.get("context_revision", 0))
+    binding = unbind_session(
+        sejong_root(),
+        args.session_id,
+        turn_id=args.turn_id,
+        expected_revision=args.expect_revision,
+    )
+    emit_binding_warnings(binding)
+    context["context_status"] = "closed"
+    save_context(context, expected_context_revision=loaded_revision, operation="close context")
     print(f"context closed: {context['active_context_id']}")
+    return 0
+
+
+def resume_context(args: argparse.Namespace) -> int:
+    binding = bind_context(
+        sejong_root(),
+        args.session_id,
+        Path(args.context),
+        turn_id=args.turn_id,
+        namespace=args.host_namespace,
+        expected_revision=args.expect_revision,
+    )
+    emit_binding_warnings(binding)
+    print(f"context resumed: {binding['active_context_id']}")
+    print(f"binding_epoch={binding['binding_epoch']}")
+    print(f"binding_revision={binding['revision']}")
+    return 0
+
+
+def unbind_context(args: argparse.Namespace) -> int:
+    binding = unbind_session(
+        sejong_root(),
+        args.session_id,
+        turn_id=args.turn_id,
+        namespace=args.host_namespace,
+        expected_revision=args.expect_revision,
+    )
+    emit_binding_warnings(binding)
+    print(f"session unbound: {args.session_id}")
+    print(f"binding_epoch={binding['binding_epoch']}")
+    print(f"binding_revision={binding['revision']}")
+    return 0
+
+
+def observe_context_binding(args: argparse.Namespace) -> int:
+    binding = observe_binding(
+        sejong_root(),
+        args.session_id,
+        args.turn_id,
+        args.expect_context_id,
+        args.expect_binding_epoch,
+        namespace=args.host_namespace,
+    )
+    print(f"binding observed: {binding['active_context_id']}")
+    print(f"binding_revision={binding['revision']}")
+    return 0
+
+
+def migrate_legacy_context(args: argparse.Namespace) -> int:
+    path = migrate_legacy_pointer(sejong_root())
+    print(f"legacy migration recorded: {path}")
+    print("automatic_injection_authority=false")
     return 0
 
 
@@ -545,7 +773,16 @@ def main() -> int:
     args = parser.parse_args()
     try:
         return args.func(args)
-    except (InvalidContextLockTimeout, RuntimeLockTimeout) as error:
+    except (
+        BindingRevisionConflict,
+        ContextIdentityConflict,
+        ContextRevisionConflict,
+        InvalidBinding,
+        InvalidContextLockTimeout,
+        RuntimeLockReleaseError,
+        RuntimeLockTimeout,
+        StaleBindingObservation,
+    ) as error:
         print(f"failure: {error}", file=sys.stderr)
         return 1
 

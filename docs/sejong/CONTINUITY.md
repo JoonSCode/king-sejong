@@ -78,7 +78,8 @@ was last verified, but it cannot make stale verification current.
 
 ## Hook Behavior
 
-When the active context references a valid continuity capsule:
+When the exact Codex session binding resolves an active Context that references
+a valid continuity capsule:
 
 - `UserPromptSubmit` and `SessionStart` inject the compact projection.
 - `SessionStart(source=compact)` restores that projection after compaction.

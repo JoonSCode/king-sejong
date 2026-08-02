@@ -4,240 +4,185 @@
 
 ## Purpose
 
-King Sejong can be used from multiple Codex sessions, repositories, devices, and
-worker backends at the same time. This contract defines the generic public core
-rules for identifying sessions and runs, selecting active context safely, locking
-shared runtime state, handling stale pointers, and cleaning up runtime artifacts.
+King Sejong separates three kinds of state so concurrent Codex conversations do
+not inherit one another's work:
 
-The guiding rule is simple: the active pointer is a hint, and the run-scoped
-context is the source of truth for a King Sejong workflow.
+1. A durable Context is the run-scoped workflow record.
+2. A Codex Session Binding identifies the one foreground Context, or an explicit
+   unbound tombstone, for one host `session_id`.
+3. A Repo Index lists known Contexts for discovery and explicit resume. It never
+   selects a Context for a hook.
 
-## Identity Fields
-
-Use distinct ids for distinct ownership boundaries:
-
-- `session_id`: one host conversation or Codex process lifecycle. It changes
-  when the user starts a separate session, even if the objective and repository
-  are the same.
-- `run_id`: one King Sejong workflow run under the Sejong artifact root. It
-  groups active context, route decisions, evidence refs, continuity capsules,
-  Seungjeongwon runs, Sillok traces, and related runtime artifacts.
-- `repo_id`: a stable repository namespace used under the Sejong artifact root.
-  It should separate repositories without leaking unnecessary host detail. A
-  readable slug plus a short hash of the repository root is sufficient.
-- `device_id`: a stable local device namespace for diagnostics and lock owner
-  metadata. It should distinguish machines without becoming an account,
-  credential, or cross-device sync mechanism.
-
-`active_context_id`, `route_id`, objective ids, worker ids, message ids, and
-lease ids remain scoped to their existing contracts. They do not replace
-`session_id`, `run_id`, `repo_id`, or `device_id`.
+One repository may have many Contexts and many sessions at once. A session has
+at most one foreground Context.
 
 ## Runtime Layout
 
-Runtime state belongs under:
+All runtime state remains external under
+`${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}`:
 
 ```text
-${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}
+runs/<repo-id>/<run-id>/king-sejong-context.json
+state/session-bindings/<sha256(namespace NUL session-id)>.json
+state/session-bindings/history/<binding-id>/*.json
+state/repo-index/<repo-identity-hash>.json
+state/active-context.json                         # legacy record only
+state/legacy-active-context-migration.json        # migration receipt
 ```
 
-Repository-scoped runs live under:
+Run artifacts are durable. Session bindings and repo indexes are runtime state
+that can be reconstructed from durable artifacts and explicit user choices.
+Migration and installation must not delete existing runs.
 
-```text
-runs/<repo-id>/<timestamp>-<run-id>/
-```
+User-scope runtime authority is also generation-bound. During install,
+one stable installer lock owns publication and a frozen source snapshot fixes
+the generation bytes. `state/install-transaction.json` remains `in_progress`
+while non-canonical content is copied and verified; the canonical hook is
+excluded from bulk copy and published atomically only afterward. The complete
+marker is the authority commit and includes the epoch and digest. Hooks do not
+inject from an incomplete or digest-drifted generation. Installation recovery
+and rollback therefore use the current or a previously verified
+epoch-2-compatible installer; the supported path rejects a lower authority
+epoch before its first live mutation, while a pre-epoch-2 raw installer is
+unsupported because it cannot honor this guard.
 
-The run directory owns the authoritative workflow files for that run, such as
-`king-sejong-context.json`, `continuity-capsule.json`, `seungjeongwon-run.json`,
-route logs, execution evidence, and Sillok traces.
+## Session Binding Authority
 
-TeamExecutor coordination state remains under:
+Implicit hooks require a non-empty hook payload `session_id`. They resolve only
+the binding file whose full SHA-256 name is derived from the host namespace and
+that exact session id. The record's internal namespace, session id, binding id,
+required fields, timestamps, state, Context ref, and Context id must match.
+Missing or unbound sessions stay quiet. Malformed, unknown, mismatched, or
+temporarily lock-contended bindings fail closed and never trigger a repository
+scan or legacy-pointer fallback. Binding creation and resolution also revalidate
+the referenced durable Context field types and shape; a malformed active Context
+cannot inject or be resumed into another session.
 
-```text
-state/team/<run-id>/
-```
+`turn_id` is an opaque observation id. It is recorded for diagnostics and must
+not be lexically or numerically ordered.
 
-Team state is runtime evidence and coordination state. It is not the active
-context source of truth unless a run context explicitly references it.
+Bindings use two counters:
 
-## Active Pointer Semantics
+- `binding_epoch` changes only when explicit start, resume, switch, unbind, or
+  close changes the target or binding state.
+- `revision` changes for every atomic binding mutation, including hook
+  observations.
 
-The active pointer is the convenience file at:
+Explicit resume, switch, unbind, and close accept an expected revision and
+reject stale writers. Unbind writes a tombstone instead of deleting the file,
+so an older writer cannot resurrect a previous epoch. Hook resolution and its
+observation update occur under the same per-session lock. A stale observation
+whose expected Context id or epoch no longer matches is rejected.
 
-```text
-state/active-context.json
-```
+The atomic binding file replacement is the switch commit point. Pause history
+and Repo Index updates happen after that commit and are reconstructable; they do
+not override the binding if their secondary write fails. Such post-commit
+failures are reported as warnings while the bind, switch, unbind, or Context
+mutation remains successful and authoritative.
 
-It is a fast lookup hint for hook and session-start behavior. It is not an
-authority layer and is not proof that the pointed run is current.
+## Durable Context
 
-Every consumer must treat the run-scoped context as authoritative:
+The durable Context remains under the run directory and carries its own
+`context_revision`. Mutations use an independent run-context lock and expected
+revision check. The expected revision is mandatory for every create or mutation;
+`active_context_id`, `repo_id`, and `run_id` are immutable once the path exists.
+Legacy materialization uses this same stable sidecar lock and revision-zero
+create boundary, so it cannot replace a Context created concurrently. Binding
+compare-and-swap does not protect Context contents.
 
-1. Read the active pointer when it exists.
-2. Verify that the pointed context is readable and valid.
-3. Verify that the context matches the current repository, objective when known,
-   and expected workflow evidence.
-4. If the pointer is missing or stale, search repository-scoped run contexts for
-   the newest valid matching context.
-5. If a matching run context exists, use that run-scoped context and surface that
-   pointer fallback happened.
-6. If the active pointer points at a sibling repository or unrelated objective,
-   surface `repo_mismatch` or an equivalent warning and do not apply that
-   context as authority.
+`context_status` is one of `active`, `paused`, `completed`, or `closed`.
+Automatic injection is allowed only for `active`. Closing a Context records its
+terminal state and writes an unbound session tombstone; it does not delete the
+run artifact.
 
-An explicit context path is different from the active pointer. When a user or
-hook invocation supplies an explicit `--context` path or `SEJONG_ACTIVE_CONTEXT`,
-that path is the requested source. If it is missing or unreadable, report the
-explicit-context failure instead of falling back silently.
+The historical Context `session_id` field remains provenance and schema
+compatibility data. It is not hook-selection authority.
 
-## Stale Pointer Behavior
+## Exact Repository Identity
 
-A pointer is stale when any of these are true:
+Each Context records `repo_identities`, not a broad containment root. A Git
+identity is the SHA-256 identity of the repository common Git directory, so Git
+worktrees for the same repository match while a nested or sibling Git repository
+does not. Non-Git work uses an exact resolved path identity.
 
-- the pointed file is missing, unreadable, malformed, or schema-invalid
-- `repo_root` does not cover the current workspace
-- the objective, task class, route, or evidence basis no longer matches the
-  current work
-- referenced ambiguity registers, continuity capsules, Seungjeongwon run
-  artifacts, Sillok traces, or evidence manifests are broken
-- the pointer is older than a newer valid matching run context for the same
-  repository and active workflow class
+Multi-repository work is represented by an explicit list, created with repeated
+`--additional-repo-root` arguments. A parent directory does not authorize every
+repository beneath it. A bound Context used from a non-matching repository is
+not injected.
 
-Stale pointers are not fatal by themselves. Continuation events should prefer a
-newest valid matching run context when one exists. Completion, compaction,
-protected writes, and explicit context usage must fail closed when required
-referenced artifacts are broken or the explicit context cannot be trusted.
+## Explicit Operations
 
-## Lock Classes
+`sejong_context.py start` creates the durable Context and binds the supplied
+session. `resume` explicitly binds or switches a session to an active Context.
+`unbind` writes a tombstone. `close` requires the exact session id and expected
+binding revision, writes the tombstone as the authority commit, then marks the
+Context closed. `update`, `doctor`, and `repair` require either an explicit Context path
+or session id; they never infer authority from the legacy pointer.
 
-Shared runtime mutations must use file locks under:
+Forks, side conversations, and new sessions do not inherit a binding. A caller
+must explicitly resume or implement a separately approved inherit operation.
+Repo Index lookup is suitable for listing candidates for that explicit choice,
+not for automatic continuation.
 
-```text
-state/locks/
-```
+## Legacy Migration
 
-The lock record should include lock name, lock class, owner `session_id`,
-`run_id` when applicable, `repo_id` when applicable, `device_id`, process id
-when available, creation time, heartbeat or update time when supported, and a
-human-readable operation summary.
+`state/active-context.json` is non-authoritative. `migrate-legacy` preserves its
+exact bytes, copies a missing durable run Context when its metadata is usable,
+updates the reconstructable Repo Index, and writes a receipt containing the
+legacy SHA-256 and `automatic_injection_authority=false`. It creates no session
+binding. A malformed legacy file is still preserved and hashed. Unsafe
+`repo_id` or `run_id` path components are ignored rather than used as filesystem
+destinations, and malformed authority-bearing metadata is not materialized as
+derived Context or Repo Index state. The resolved destination must remain under
+the configured `runs/` root, and an existing destination is reused only when its
+Context, repository, and run identities match the legacy metadata. Both a new
+legacy copy and an existing destination must pass the durable Context runtime
+contract before either is indexed. Repo Index update failure is recorded as
+`repo_index_updated=false` and cannot prevent the migration receipt because the
+index is reconstructable and non-authoritative. Likewise, an unavailable runs
+destination records `context_materialized=false` while preserving the legacy
+bytes and receipt.
 
-Use these lock classes:
+The durable materialized copy is a new Context object, not a byte-for-byte
+alias of the legacy pointer: its first locked commit adds
+`context_revision=1` and a commit timestamp. The original legacy bytes and their
+SHA-256 remain unchanged in place.
 
-- `active-pointer`: guards writes to `state/active-context.json` and prevents
-  two sessions from racing to publish different active hints.
-- `run-context`: guards writes to a run's `king-sejong-context.json` and closely
-  related route or artifact refs.
-- `artifact-ref`: guards append or rewrite operations that update shared
-  evidence manifests, Sillok traces, continuity capsules, or execution feedback
-  refs for one run.
-- `team-mailbox`: guards TeamExecutor mailbox and round mutations. This aligns
-  with the existing per-run TeamExecutor mailbox lock.
-- `team-lease`: guards TeamExecutor lease acquisition and release when the lease
-  operation is not already covered by the mailbox critical section.
-- `cleanup`: guards destructive runtime cleanup and pruning so active runs,
-  dirty worker workspaces, and promoted artifacts cannot be deleted while
-  another session is still evaluating them.
-- `install-maintenance`: guards user-scope install, update, and verification
-  maintenance that mutates managed King Sejong install surfaces.
+Explicit `--context` or `SEJONG_ACTIVE_CONTEXT` remains a manual compatibility
+path. Missing explicit paths fail closed. This explicit path does not authorize
+repo-latest fallback.
 
-Lock acquisition should be bounded. A session that cannot acquire a required
-lock must report the owner metadata, lock class, waited duration, and next safe
-action. It must not pretend the mutation succeeded.
+## Atomicity and Locks
 
-Stale locks require conservative handling. A lock can be considered stale only
-when the owner process is gone or the lock age exceeds the documented stale
-threshold for that lock class. Breaking a stale lock should record the previous
-metadata and the reason. Cleanup must never break a lock for an active run only
-because it is inconvenient.
+Session binding, Repo Index, and durable Context mutations use bounded runtime
+locks under `state/locks/`. JSON publication uses a unique same-directory
+temporary file, file `fsync`, atomic replace, and parent-directory `fsync`.
+Lock classes include `session-binding`, `repo-index`, `run-context`,
+`artifact-ref`, `team-mailbox`, `team-lease`, `cleanup`, and
+`install-maintenance`. `active-pointer` remains only for legacy compatibility.
 
-## Cleanup Safety
+## Cleanup and Non-Goals
 
-Cleanup is allowed only for external runtime artifacts under the Sejong artifact
-root. It must not delete repository-tracked files, managed install files, user
-configuration outside the managed King Sejong blocks, or promoted artifacts.
+Cleanup may remove only eligible external runtime state and must preserve
+durable runs, explicit migration records, promoted artifacts, active or blocked
+execution evidence, and dirty worker workspaces. Binding and index reconstruction
+must never be implemented by deleting historical run JSON. Destructive cleanup
+uses exact active session bindings for run protection, fails closed on malformed
+binding state, and neither treats the legacy pointer as foreground authority nor
+deletes that preserved legacy record.
 
-Worker runtime ownership is recorded per run with one versioned lease per
-worker/runtime group. A lease carries the owning `run_id`, `wave_id`,
-`worker_id`, backend worker ref, cleanup capability, and exact resource
-identity. A cleanup receipt from one session or run cannot release or satisfy
-another run's worker.
+This contract does not make hooks a sandbox, add a network coordinator, sync
+private Codex state, replace Uigwe or Seungjeongwon authority, or make Repo Index
+recency an automatic selection rule.
 
-Automatic cleanup authority is limited to `sejong_created` or `host_reported`
-resources with exact identity. `observed` resources are audit-only. PID or
-process-name matches without a start-time/executable or host runtime-group token
-are diagnostic evidence, not termination authority.
+## Verification Bar
 
-Cleanup must preserve:
+Deterministic tests must cover same-repository two-session isolation, unbound
+new sessions, compact resume, explicit switch and handoff, exact nested-repo
+isolation, completed and closed Contexts, legacy migration, binding and Context
+revision conflicts, tombstone resurrection, and late old-hook observations.
+Canonical source, installed source, and actual-shaped `UserPromptSubmit` and
+`SessionStart` payloads must be exercised before release.
 
-- the active run referenced by a valid active pointer or matching run context
-- any run with active, invalid, or unresolved Seungjeongwon execution state
-- any run with open ambiguity, broken evidence refs, or blocked continuation
-- runs with promotion markers such as `promoted-artifacts.json` or
-  `.sejong-promoted`
-- dirty TeamExecutor worker workspaces until the lead inspects them
-- compact evidence needed for later review, such as Sillok records, evidence
-  manifests, continuity capsules, run summaries, and execution feedback
-
-Destructive cleanup should default to dry-run reporting. Execution requires an
-explicit cleanup action, a cleanup lock, and a report of deleted and retained
-paths with reasons.
-
-## Concurrent Session Rules
-
-Multiple sessions may work in the same repository when their run contexts,
-objective ids, and write scopes are distinct. They must not share mutable
-workflow state through the active pointer.
-
-For same-repository concurrent work:
-
-- every session must have its own `session_id`
-- every workflow run must have its own `run_id`
-- the active pointer may point at only one recent context and remains a hint
-- hooks must verify repo and objective fit before injecting context
-- protected writes must use route evidence and current verification evidence
-- worker mailbox output is evidence for the lead, not gate authority
-
-For cross-repository concurrent work:
-
-- repository-scoped run directories are separated by `repo_id`
-- a stale active pointer from a sibling repository must produce `repo_mismatch`
-  or equivalent context, not silent adoption
-- fallback selection must prefer newest valid contexts whose `repo_root`
-  contains the current workspace
-
-For cross-device work:
-
-- `device_id` appears in diagnostics, lock owner metadata, and reports
-- King Sejong core does not sync raw Codex state, credentials, sqlite stores,
-  caches, or unbounded session logs
-- a run remains authoritative because of its run-scoped context and evidence
-  refs, not because another device copied an active pointer
-
-## Non-Goals
-
-- This does not make the active pointer authoritative.
-- This does not introduce repo-local or tool-specific orchestration state as a
-  King Sejong dependency.
-- This does not replace Uigwe planning gates, Sejong lead synthesis, or
-  Seungjeongwon final verification.
-- This does not turn TeamExecutor workers, native subagents, or teammate
-  messages into gate approvers.
-- This does not add private profiles, personal workflows, app-specific policies,
-  credentials, or raw `~/.codex` sync to the public core install surface.
-- This does not require network coordination services for local multisession
-  safety.
-- This does not make cleanup a repair mechanism for broken runs. Broken refs
-  should be reported, blocked, or repaired explicitly before deletion.
-
-## Related Contracts
-
-- [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md) defines the external artifact root,
-  run directories, retention, and promotion rules.
-- [HOOKS.md](HOOKS.md) defines active context injection, stale pointer fallback,
-  explicit context behavior, repo mismatch warnings, and lifecycle gates.
-- [CONTINUITY.md](CONTINUITY.md) defines compact continuation state and
-  stale-state triggers.
-- [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) defines worker mailbox and lease state,
-  per-run locking, bounded worker authority, and cleanup of worker workspaces.
-- [SEUNGJEONGWON_EXECUTOR.md](SEUNGJEONGWON_EXECUTOR.md) defines execution run
-  artifacts, checkpoint behavior, and final verification ownership.
+See [HOOKS.md](HOOKS.md), [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md), and
+[CONTINUITY.md](CONTINUITY.md) for lifecycle projection and artifact rules.

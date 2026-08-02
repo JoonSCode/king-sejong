@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# noqa: SIZE_OK -- context CLI integration tests stay colocated for Phase 1 review traceability
 from __future__ import annotations
 
 import json
@@ -8,7 +7,6 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -16,6 +14,8 @@ SCRIPT_PATH = Path(__file__).resolve()
 SEJONG_ROOT = SCRIPT_PATH.parents[1]
 REPO_ROOT = SCRIPT_PATH.parents[3]
 CONTEXT_SCRIPT = SEJONG_ROOT / "scripts" / "sejong_context.py"
+sys.path.insert(0, str(CONTEXT_SCRIPT.parent))
+import sejong_context as context_module  # noqa: E402
 
 
 def run_context(
@@ -37,72 +37,57 @@ def run_context(
     )
 
 
-def write_active_pointer_lock(sejong_home: Path) -> None:
-    lock_path = sejong_home / "state" / "locks" / "active-pointer.lock"
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    lock_path.write_text(
-        json.dumps(
-            {
-                "format": "sejong.runtime-lock/v0.1-draft",
-                "lock_name": "active-pointer",
-                "lock_class": "active-pointer",
-                "owner_session_id": "session-owner",
-                "owner_run_id": "run-owner",
-                "owner_device_id": "device-owner",
-                "owner_process_id": os.getpid(),
-                "operation": "manual held active pointer",
-                "token": "held-token",
-                "created_at": timestamp,
-                "heartbeat_at": timestamp,
-            },
-            indent=2,
-            sort_keys=True,
-        )
-        + "\n",
-        encoding="utf-8",
+def start_context(sejong_home: Path, run_id: str, *extra: str, session_id: str = "session-test") -> Path:
+    result = run_context(
+        [
+            "start",
+            "--repo-root",
+            str(REPO_ROOT),
+            "--run-id",
+            run_id,
+            "--session-id",
+            session_id,
+            *extra,
+        ],
+        sejong_home=sejong_home,
     )
+    if result.returncode != 0:
+        raise AssertionError(result.stderr or result.stdout)
+    line = next(item for item in result.stdout.splitlines() if item.startswith("run_context="))
+    return Path(line.removeprefix("run_context="))
 
 
 class SejongContextTests(unittest.TestCase):
     def test_start_update_doctor_and_close_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)
-            start = run_context(
-                [
-                    "start",
-                    "--repo-root",
-                    str(REPO_ROOT),
-                    "--run-id",
-                    "ctx-test",
-                    "--current-surface",
-                    "jiphyeonjeon",
-                    "--required-route",
-                    "jiphyeonjeon",
-                    "--required-route",
-                    "uigwe",
-                    "--required-route",
-                    "seungjeongwon",
-                    "--protected-path",
-                    "docs/sejong/",
-                    "--last-user-intent",
-                    "test active context",
-                ],
-                sejong_home=sejong_home,
+            run_path = start_context(
+                sejong_home,
+                "ctx-test",
+                "--current-surface",
+                "jiphyeonjeon",
+                "--required-route",
+                "jiphyeonjeon",
+                "--required-route",
+                "uigwe",
+                "--required-route",
+                "seungjeongwon",
+                "--protected-path",
+                "docs/sejong/",
+                "--last-user-intent",
+                "test durable context",
             )
-            self.assertEqual(start.returncode, 0, start.stderr)
-            active_path = sejong_home / "state" / "active-context.json"
-            self.assertTrue(active_path.exists())
-
-            context = json.loads(active_path.read_text(encoding="utf-8"))
-            self.assertEqual(context["current_surface"], "jiphyeonjeon")
-            self.assertIn("docs/sejong/", context["protected_paths"])
-            run_context_path = sejong_home / "runs" / context["repo_id"] / "ctx-test" / "king-sejong-context.json"
-            self.assertTrue(run_context_path.exists())
+            self.assertFalse((sejong_home / "state" / "active-context.json").exists())
+            context = json.loads(run_path.read_text(encoding="utf-8"))
+            self.assertEqual(context["context_revision"], 1)
+            self.assertEqual(context["context_status"], "active")
+            self.assertEqual(len(context["repo_identities"]), 1)
 
             update = run_context(
                 [
                     "update",
+                    "--session-id",
+                    "session-test",
                     "--current-surface",
                     "seungjeongwon",
                     "--append-route",
@@ -117,324 +102,240 @@ class SejongContextTests(unittest.TestCase):
                 sejong_home=sejong_home,
             )
             self.assertEqual(update.returncode, 0, update.stderr)
-
-            updated = json.loads(active_path.read_text(encoding="utf-8"))
+            updated = json.loads(run_path.read_text(encoding="utf-8"))
+            self.assertEqual(updated["context_revision"], 2)
             self.assertEqual(updated["current_surface"], "seungjeongwon")
             self.assertEqual(updated["route_sequence"], ["jiphyeonjeon", "uigwe", "seungjeongwon"])
-            self.assertEqual(updated["pending_gates"], ["seungjeongwon_receipt_required", "verification"])
             self.assertEqual(updated["evidence_refs"], ["evidence.json"])
 
-            doctor = run_context(["doctor", "--repo-root", str(REPO_ROOT)], sejong_home=sejong_home)
+            doctor = run_context(
+                ["doctor", "--session-id", "session-test", "--repo-root", str(REPO_ROOT)],
+                sejong_home=sejong_home,
+            )
             self.assertEqual(doctor.returncode, 0, doctor.stderr)
-            self.assertIn("context ok", doctor.stdout)
 
-            close = run_context(["close"], sejong_home=sejong_home)
+            close = run_context(
+                ["close", "--session-id", "session-test", "--expect-revision", "1"],
+                sejong_home=sejong_home,
+            )
             self.assertEqual(close.returncode, 0, close.stderr)
-            self.assertFalse(active_path.exists())
-            self.assertTrue(run_context_path.exists())
+            closed = json.loads(run_path.read_text(encoding="utf-8"))
+            self.assertEqual(closed["context_status"], "closed")
+            bindings = list((sejong_home / "state" / "session-bindings").glob("*.json"))
+            self.assertEqual(json.loads(bindings[0].read_text(encoding="utf-8"))["state"], "unbound")
 
     def test_start_goal_bearing_adds_receipt_gate_and_required_route(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            sejong_home = Path(tmp)
-            start = run_context(
-                [
-                    "start",
-                    "--repo-root",
-                    str(REPO_ROOT),
-                    "--run-id",
-                    "goal-bearing",
-                    "--goal-bearing",
-                    "--last-user-intent",
-                    "implement app-quality workflow",
-                ],
-                sejong_home=sejong_home,
-            )
-            self.assertEqual(start.returncode, 0, start.stderr)
-            context = json.loads((sejong_home / "state" / "active-context.json").read_text(encoding="utf-8"))
+            path = start_context(Path(tmp), "goal-bearing", "--goal-bearing")
+            context = json.loads(path.read_text(encoding="utf-8"))
             self.assertEqual(context["required_route_sequence"], ["uigwe", "seungjeongwon"])
             self.assertEqual(context["pending_gates"], ["seungjeongwon_receipt_required"])
 
-    def test_start_rejects_held_active_pointer_lock(self) -> None:
+    def test_legacy_active_pointer_lock_does_not_control_new_binding(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)
-            write_active_pointer_lock(sejong_home)
-
-            start = run_context(
-                [
-                    "start",
-                    "--repo-root",
-                    str(REPO_ROOT),
-                    "--run-id",
-                    "locked-start",
-                    "--session-id",
-                    "session-contender",
-                    "--last-user-intent",
-                    "held pointer start",
-                ],
+            lock_path = sejong_home / "state" / "locks" / "active-pointer.lock"
+            lock_path.parent.mkdir(parents=True)
+            lock_path.write_text('{"legacy":true}', encoding="utf-8")
+            result = run_context(
+                ["start", "--repo-root", str(REPO_ROOT), "--run-id", "legacy-lock", "--session-id", "session-new"],
                 sejong_home=sejong_home,
             )
-
-            combined = start.stdout + start.stderr
-            self.assertNotEqual(start.returncode, 0, combined)
-            self.assertIn("active-pointer", combined)
-            self.assertIn("session-owner", combined)
-            self.assertFalse((sejong_home / "state" / "active-context.json").exists())
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(lock_path.read_text(encoding="utf-8"), '{"legacy":true}')
 
     def test_start_rejects_invalid_lock_timeout_env_without_traceback(self) -> None:
-        invalid_timeouts = ("not-a-number", "nan", "inf", "-1", "0")
-        for invalid_timeout in invalid_timeouts:
-            with self.subTest(invalid_timeout=invalid_timeout):
-                with tempfile.TemporaryDirectory() as tmp:
-                    sejong_home = Path(tmp)
-
-                    start = run_context(
-                        [
-                            "start",
-                            "--repo-root",
-                            str(REPO_ROOT),
-                            "--run-id",
-                            f"invalid-timeout-{invalid_timeout}",
-                            "--last-user-intent",
-                            "malformed timeout env",
-                        ],
-                        sejong_home=sejong_home,
-                        lock_timeout_seconds=invalid_timeout,
-                    )
-
-                    combined = start.stdout + start.stderr
-                    self.assertNotEqual(start.returncode, 0, combined)
-                    self.assertIn(
-                        f"failure: invalid SEJONG_CONTEXT_LOCK_TIMEOUT_SECONDS={invalid_timeout!r}",
-                        combined,
-                    )
-                    self.assertIn("expected a finite positive number of seconds", combined)
-                    self.assertNotIn("Traceback", combined)
-                    self.assertFalse((sejong_home / "state" / "active-context.json").exists())
-
-    def test_start_rejects_nan_lock_timeout_before_waiting_on_held_lock(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            sejong_home = Path(tmp)
-            write_active_pointer_lock(sejong_home)
-
-            try:
-                start = subprocess.run(
-                    [
-                        sys.executable,
-                        str(CONTEXT_SCRIPT),
-                        "start",
-                        "--repo-root",
-                        str(REPO_ROOT),
-                        "--run-id",
-                        "invalid-timeout-nan-held-lock",
-                        "--last-user-intent",
-                        "nan timeout held lock",
-                    ],
-                    text=True,
-                    capture_output=True,
-                    cwd=str(REPO_ROOT),
-                    env={
-                        **os.environ,
-                        "SEJONG_HOME": str(sejong_home),
-                        "SEJONG_CONTEXT_LOCK_TIMEOUT_SECONDS": "nan",
-                    },
-                    timeout=1.0,
+        for invalid_timeout in ("not-a-number", "nan", "inf", "-1", "0"):
+            with self.subTest(invalid_timeout=invalid_timeout), tempfile.TemporaryDirectory() as tmp:
+                result = run_context(
+                    ["start", "--repo-root", str(REPO_ROOT), "--run-id", "invalid-timeout"],
+                    sejong_home=Path(tmp),
+                    lock_timeout_seconds=invalid_timeout,
                 )
-            except subprocess.TimeoutExpired as error:
-                self.fail(f"context start hung with nan lock timeout: {error}")
+                combined = result.stdout + result.stderr
+                self.assertNotEqual(result.returncode, 0, combined)
+                self.assertIn("expected a finite positive number of seconds", combined)
+                self.assertNotIn("Traceback", combined)
 
-            combined = start.stdout + start.stderr
-            self.assertNotEqual(start.returncode, 0, combined)
-            self.assertIn("failure: invalid SEJONG_CONTEXT_LOCK_TIMEOUT_SECONDS='nan'", combined)
-            self.assertNotIn("Traceback", combined)
-            self.assertFalse((sejong_home / "state" / "active-context.json").exists())
+    def test_start_records_objective_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = start_context(
+                Path(tmp),
+                "objective-context",
+                "--objective-id",
+                "review-board",
+                "--objective-ref",
+                "artifacts/review-board.md",
+            )
+            context = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(context["objective_id"], "review-board")
+            self.assertEqual(context["objective_refs"], ["artifacts/review-board.md"])
 
-    def test_update_rejects_held_active_pointer_lock_without_corrupting_pointer(self) -> None:
+    def test_update_can_require_seungjeongwon_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)
-            start = run_context(
-                [
-                    "start",
-                    "--repo-root",
-                    str(REPO_ROOT),
-                    "--run-id",
-                    "locked-update",
-                    "--current-surface",
-                    "uigwe",
-                    "--last-user-intent",
-                    "held pointer update setup",
-                ],
+            path = start_context(sejong_home, "receipt-update")
+            result = run_context(
+                ["update", "--session-id", "session-test", "--require-seungjeongwon-receipt"],
                 sejong_home=sejong_home,
             )
-            self.assertEqual(start.returncode, 0, start.stderr)
-            active_path = sejong_home / "state" / "active-context.json"
-            before = json.loads(active_path.read_text(encoding="utf-8"))
-            write_active_pointer_lock(sejong_home)
-
-            update = run_context(["update", "--current-surface", "seungjeongwon"], sejong_home=sejong_home)
-
-            combined = update.stdout + update.stderr
-            self.assertNotEqual(update.returncode, 0, combined)
-            self.assertIn("active-pointer", combined)
-            self.assertIn("session-owner", combined)
-            after = json.loads(active_path.read_text(encoding="utf-8"))
-            self.assertEqual(after["current_surface"], before["current_surface"])
-
-    def test_close_rejects_held_active_pointer_lock_without_removing_pointer(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            sejong_home = Path(tmp)
-            start = run_context(
-                [
-                    "start",
-                    "--repo-root",
-                    str(REPO_ROOT),
-                    "--run-id",
-                    "locked-close",
-                    "--last-user-intent",
-                    "held pointer close setup",
-                ],
-                sejong_home=sejong_home,
-            )
-            self.assertEqual(start.returncode, 0, start.stderr)
-            active_path = sejong_home / "state" / "active-context.json"
-            before = json.loads(active_path.read_text(encoding="utf-8"))
-            write_active_pointer_lock(sejong_home)
-
-            close = run_context(["close"], sejong_home=sejong_home)
-
-            combined = close.stdout + close.stderr
-            self.assertNotEqual(close.returncode, 0, combined)
-            self.assertIn("active-pointer", combined)
-            self.assertIn("session-owner", combined)
-            after = json.loads(active_path.read_text(encoding="utf-8"))
-            self.assertEqual(after["active_context_id"], before["active_context_id"])
-
-    def test_start_records_objective_metadata_for_current_run_summary(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            sejong_home = Path(tmp)
-            start = run_context(
-                [
-                    "start",
-                    "--repo-root",
-                    str(REPO_ROOT),
-                    "--run-id",
-                    "objective-context",
-                    "--objective-id",
-                    "couple-investment-review-board",
-                    "--objective-ref",
-                    "artifacts/review-board-wedge.md",
-                    "--last-user-intent",
-                    "preserve app wedge",
-                ],
-                sejong_home=sejong_home,
-            )
-            self.assertEqual(start.returncode, 0, start.stderr)
-            context = json.loads((sejong_home / "state" / "active-context.json").read_text(encoding="utf-8"))
-            self.assertEqual(context["objective_id"], "couple-investment-review-board")
-            self.assertEqual(context["objective_refs"], ["artifacts/review-board-wedge.md"])
-
-    def test_update_can_require_seungjeongwon_receipt_without_manual_gate_name(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            sejong_home = Path(tmp)
-            start = run_context(
-                [
-                    "start",
-                    "--repo-root",
-                    str(REPO_ROOT),
-                    "--run-id",
-                    "receipt-update",
-                    "--last-user-intent",
-                    "continue app workflow",
-                ],
-                sejong_home=sejong_home,
-            )
-            self.assertEqual(start.returncode, 0, start.stderr)
-
-            update = run_context(["update", "--require-seungjeongwon-receipt"], sejong_home=sejong_home)
-            self.assertEqual(update.returncode, 0, update.stderr)
-
-            context = json.loads((sejong_home / "state" / "active-context.json").read_text(encoding="utf-8"))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            context = json.loads(path.read_text(encoding="utf-8"))
             self.assertIn("seungjeongwon", context["required_route_sequence"])
             self.assertIn("seungjeongwon_receipt_required", context["pending_gates"])
 
-    def test_doctor_reports_repair_command_for_invalid_list_items(self) -> None:
+    def test_context_revision_cas_rejects_stale_writer(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)
-            active_path = sejong_home / "state" / "active-context.json"
-            active_path.parent.mkdir(parents=True)
-            active_path.write_text(
-                json.dumps(
-                    {
-                        "format": "king-sejong.context/v0.1-draft",
-                        "active_context_id": "ctx-invalid",
-                        "repo_id": "repo",
-                        "repo_root": str(REPO_ROOT),
-                        "run_id": "run-invalid",
-                        "session_id": "session-invalid",
-                        "route_id": "route-invalid",
-                        "current_surface": "sejong",
-                        "route_sequence": ["sejong"],
-                        "required_route_sequence": [],
-                        "last_user_intent": "invalid context fixture",
-                        "pending_gates": [],
-                        "protected_paths": [],
-                        "allowed_direct_change_types": [],
-                        "evidence_refs": [{"ref": "user-approved-plugin-adapter-direction"}],
-                        "artifact_refs": [],
-                        "team_run_refs": [],
-                        "subagent_refs": [],
-                        "exit_conditions": ["host_conversation_ends"],
-                        "last_updated_at": "2026-06-01T00:00:00Z",
-                    }
-                ),
-                encoding="utf-8",
+            path = start_context(sejong_home, "context-cas")
+            first = run_context(
+                ["update", "--context", str(path), "--expect-context-revision", "1", "--last-user-intent", "first"],
+                sejong_home=sejong_home,
             )
+            stale = run_context(
+                ["update", "--context", str(path), "--expect-context-revision", "1", "--last-user-intent", "stale"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(first.returncode, 0, first.stderr)
+            self.assertNotEqual(stale.returncode, 0)
+            self.assertIn("context revision conflict", stale.stdout + stale.stderr)
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["last_user_intent"], "first")
 
-            doctor = run_context(["doctor", "--repo-root", str(REPO_ROOT)], sejong_home=sejong_home)
+    def test_save_context_rejects_missing_expected_revision(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            path = start_context(sejong_home, "context-cas-required")
+            context = json.loads(path.read_text(encoding="utf-8"))
+
+            with self.assertRaisesRegex(ValueError, "expected_context_revision is required"):
+                context_module.save_context(context, sejong_home=sejong_home)
+
+            persisted = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(persisted["context_revision"], 1)
+
+    def test_save_context_rejects_immutable_identity_change(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            path = start_context(sejong_home, "context-immutable-identity")
+            context = json.loads(path.read_text(encoding="utf-8"))
+            context["active_context_id"] = "ctx-replacement-must-not-commit"
+
+            with self.assertRaisesRegex(Exception, "context identity conflict"):
+                context_module.save_context(
+                    context,
+                    expected_context_revision=1,
+                    sejong_home=sejong_home,
+                    operation="immutable identity regression",
+                )
+
+            persisted = json.loads(path.read_text(encoding="utf-8"))
+            self.assertNotEqual(persisted["active_context_id"], "ctx-replacement-must-not-commit")
+            self.assertEqual(persisted["context_revision"], 1)
+
+    def test_two_process_context_cas_allows_exactly_one_writer(self) -> None:
+        # Given: two independent processes hold the same observed Context revision.
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            path = start_context(sejong_home, "context-process-race")
+            environment = {
+                **os.environ,
+                "SEJONG_HOME": str(sejong_home),
+                "SEJONG_CONTEXT_LOCK_TIMEOUT_SECONDS": "2.0",
+            }
+            commands = [
+                [
+                    sys.executable,
+                    str(CONTEXT_SCRIPT),
+                    "update",
+                    "--context",
+                    str(path),
+                    "--expect-context-revision",
+                    "1",
+                    "--last-user-intent",
+                    intent,
+                ]
+                for intent in ("process-writer-a", "process-writer-b")
+            ]
+
+            # When: both processes race through the stable per-Context sidecar lock.
+            processes = [
+                subprocess.Popen(
+                    command,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    cwd=str(REPO_ROOT),
+                    env=environment,
+                )
+                for command in commands
+            ]
+            results = [process.communicate(timeout=10) for process in processes]
+            returncodes = [process.returncode for process in processes]
+            context = json.loads(path.read_text(encoding="utf-8"))
+
+        # Then: one commit advances revision once and the stale contender receives CAS conflict.
+        self.assertEqual(sorted(returncodes), [0, 1])
+        failed_output = "".join(
+            stdout + stderr
+            for process, (stdout, stderr) in zip(processes, results, strict=True)
+            if process.returncode != 0
+        )
+        self.assertIn("context revision conflict", failed_output)
+        self.assertEqual(context["context_revision"], 2)
+        self.assertIn(context["last_user_intent"], {"process-writer-a", "process-writer-b"})
+
+    def test_context_commit_survives_reconstructable_repo_index_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            path = start_context(sejong_home, "context-index-failure")
+            repo_index_root = sejong_home / "state" / "repo-index"
+            for index_path in repo_index_root.glob("*"):
+                index_path.unlink()
+            repo_index_root.rmdir()
+            repo_index_root.write_text("not-a-directory", encoding="utf-8")
+
+            updated = run_context(
+                [
+                    "update",
+                    "--context",
+                    str(path),
+                    "--expect-context-revision",
+                    "1",
+                    "--last-user-intent",
+                    "committed despite derived index failure",
+                ],
+                sejong_home=sejong_home,
+            )
+            context = json.loads(path.read_text(encoding="utf-8"))
+
+        self.assertEqual(updated.returncode, 0, updated.stderr)
+        self.assertIn("repo index update failed after the Context commit", updated.stderr)
+        self.assertEqual(context["context_revision"], 2)
+        self.assertEqual(context["last_user_intent"], "committed despite derived index failure")
+
+    def test_doctor_and_repair_require_explicit_non_authoritative_legacy_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            fixture = json.loads(
+                (SEJONG_ROOT / "examples" / "king-sejong-context.example.json").read_text(encoding="utf-8")
+            )
+            fixture["evidence_refs"] = [{"ref": "approved-direction"}]
+            path = sejong_home / "state" / "active-context.json"
+            path.parent.mkdir(parents=True)
+            path.write_text(json.dumps(fixture), encoding="utf-8")
+
+            implicit = run_context(["doctor"], sejong_home=sejong_home)
+            self.assertNotEqual(implicit.returncode, 0)
+            self.assertIn("legacy active pointer is non-authoritative", implicit.stderr)
+
+            doctor = run_context(["doctor", "--context", str(path)], sejong_home=sejong_home)
             self.assertNotEqual(doctor.returncode, 0)
             self.assertIn("evidence_refs must contain only non-empty strings", doctor.stderr)
-            self.assertIn("repair suggestion:", doctor.stderr)
-            self.assertIn("sejong_context.py repair", doctor.stderr)
-
-    def test_repair_coerces_invalid_list_item_refs(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            sejong_home = Path(tmp)
-            active_path = sejong_home / "state" / "active-context.json"
-            active_path.parent.mkdir(parents=True)
-            active_path.write_text(
-                json.dumps(
-                    {
-                        "format": "king-sejong.context/v0.1-draft",
-                        "active_context_id": "ctx-invalid",
-                        "repo_id": "repo",
-                        "repo_root": str(REPO_ROOT),
-                        "run_id": "run-invalid",
-                        "session_id": "session-invalid",
-                        "route_id": "route-invalid",
-                        "current_surface": "sejong",
-                        "route_sequence": ["sejong"],
-                        "required_route_sequence": [],
-                        "last_user_intent": "invalid context fixture",
-                        "pending_gates": [],
-                        "protected_paths": [],
-                        "allowed_direct_change_types": [],
-                        "evidence_refs": [{"ref": "user-approved-plugin-adapter-direction"}],
-                        "artifact_refs": [],
-                        "team_run_refs": [],
-                        "subagent_refs": [],
-                        "exit_conditions": ["host_conversation_ends"],
-                        "last_updated_at": "2026-06-01T00:00:00Z",
-                    }
-                ),
-                encoding="utf-8",
-            )
-
-            repair = run_context(["repair"], sejong_home=sejong_home)
+            repair = run_context(["repair", "--context", str(path)], sejong_home=sejong_home)
             self.assertEqual(repair.returncode, 0, repair.stderr)
-            repaired = json.loads(active_path.read_text(encoding="utf-8"))
-            self.assertEqual(repaired["evidence_refs"], ["user-approved-plugin-adapter-direction"])
-
-            doctor = run_context(["doctor", "--repo-root", str(REPO_ROOT)], sejong_home=sejong_home)
-            self.assertEqual(doctor.returncode, 0, doctor.stderr)
+            run_path = sejong_home / "runs" / fixture["repo_id"] / fixture["run_id"] / "king-sejong-context.json"
+            repaired = json.loads(run_path.read_text(encoding="utf-8"))
+            self.assertEqual(repaired["evidence_refs"], ["approved-direction"])
 
 
 if __name__ == "__main__":

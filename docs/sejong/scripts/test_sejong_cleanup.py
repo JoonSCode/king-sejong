@@ -14,6 +14,7 @@ SCRIPT_PATH = Path(__file__).resolve()
 SEJONG_ROOT = SCRIPT_PATH.parents[1]
 REPO_ROOT = SCRIPT_PATH.parents[3]
 CLEANUP = SEJONG_ROOT / "scripts" / "sejong_cleanup.py"
+CONTEXT_SCRIPT = SEJONG_ROOT / "scripts" / "sejong_context.py"
 
 
 def run_cleanup(args: list[str], *, sejong_home: Path) -> subprocess.CompletedProcess[str]:
@@ -21,6 +22,19 @@ def run_cleanup(args: list[str], *, sejong_home: Path) -> subprocess.CompletedPr
     env["SEJONG_HOME"] = str(sejong_home)
     return subprocess.run(
         [sys.executable, str(CLEANUP), *args],
+        text=True,
+        capture_output=True,
+        cwd=str(REPO_ROOT),
+        env=env,
+    )
+
+
+def run_context(args: list[str], *, sejong_home: Path) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env["SEJONG_HOME"] = str(sejong_home)
+    env["SEJONG_CONTEXT_LOCK_TIMEOUT_SECONDS"] = "1.0"
+    return subprocess.run(
+        [sys.executable, str(CONTEXT_SCRIPT), *args],
         text=True,
         capture_output=True,
         cwd=str(REPO_ROOT),
@@ -106,7 +120,7 @@ class SejongCleanupTests(unittest.TestCase):
             self.assertTrue((run_dir / "run-summary.json").exists())
             self.assertFalse((run_dir / "execution-ledger.jsonl").exists())
 
-    def test_finalize_success_execute_closes_matching_active_context(self) -> None:
+    def test_finalize_success_execute_preserves_non_authoritative_legacy_pointer(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)
             run_dir = make_run(sejong_home, repo_id="repo-test", run_id="active-run")
@@ -120,11 +134,11 @@ class SejongCleanupTests(unittest.TestCase):
 
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertFalse((run_dir / "scratch.log").exists())
-            self.assertFalse((sejong_home / "state" / "active-context.json").exists())
+            self.assertTrue((sejong_home / "state" / "active-context.json").exists())
             summary = json.loads((run_dir / "run-summary.json").read_text(encoding="utf-8"))
-            self.assertTrue(summary["actions"]["closed_active_context"])
+            self.assertFalse(summary["actions"]["closed_active_context"])
 
-    def test_finalize_execute_refuses_active_artifact_ref_cleanup(self) -> None:
+    def test_finalize_execute_ignores_non_authoritative_legacy_artifact_refs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)
             run_dir = make_run(sejong_home, repo_id="repo-test", run_id="referenced-run")
@@ -141,9 +155,40 @@ class SejongCleanupTests(unittest.TestCase):
                 sejong_home=sejong_home,
             )
 
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse((run_dir / "scratch.log").exists())
+            self.assertTrue((sejong_home / "state" / "active-context.json").exists())
+            summary = json.loads((run_dir / "run-summary.json").read_text(encoding="utf-8"))
+            self.assertEqual(summary["actions"]["failures"], [])
+
+    def test_finalize_execute_refuses_exactly_bound_active_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            started = run_context(
+                [
+                    "start",
+                    "--repo-root",
+                    str(REPO_ROOT),
+                    "--repo-id",
+                    "repo-test",
+                    "--run-id",
+                    "bound-run",
+                    "--session-id",
+                    "session-bound",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(started.returncode, 0, started.stderr)
+            run_dir = sejong_home / "runs" / "repo-test" / "bound-run"
+            (run_dir / "scratch.log").write_text("raw", encoding="utf-8")
+
+            result = run_cleanup(
+                ["finalize-run", str(run_dir), "--status", "success", "--execute"],
+                sejong_home=sejong_home,
+            )
+
             self.assertNotEqual(result.returncode, 0)
             self.assertTrue((run_dir / "scratch.log").exists())
-            self.assertTrue((sejong_home / "state" / "active-context.json").exists())
             summary = json.loads((run_dir / "run-summary.json").read_text(encoding="utf-8"))
             self.assertIn("active run is protected from cleanup", summary["actions"]["failures"])
 
@@ -174,6 +219,36 @@ class SejongCleanupTests(unittest.TestCase):
 
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("outside Sejong runs root", result.stderr)
+
+    def test_prune_runs_uses_session_binding_protection_without_legacy_selector(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            run_dir = make_run(sejong_home)
+            (run_dir / "run-summary.json").write_text(
+                json.dumps({"status": "success"}),
+                encoding="utf-8",
+            )
+
+            result = run_cleanup(["prune-runs"], sejong_home=sejong_home)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual(report["format"], "sejong.cleanup-report/v0.1-draft")
+            self.assertEqual(len(report["results"]), 1)
+
+    def test_report_uses_session_binding_protection_without_legacy_selector(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            run_dir = make_run(sejong_home)
+            (run_dir / "scratch.log").write_text("raw", encoding="utf-8")
+
+            result = run_cleanup(["report"], sejong_home=sejong_home)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual(report["format"], "sejong.cleanup-inventory/v0.1-draft")
+            self.assertEqual(report["run_count"], 1)
+            self.assertFalse(report["runs"][0]["active"])
 
     def test_finalize_reports_lifecycle_counts_and_missing_cleanup_proof(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
