@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# noqa: SIZE_OK — cohesive cleanup CLI with destructive-action safety gates
 from __future__ import annotations
 
 import argparse
@@ -9,6 +10,10 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from sejong_runtime_lock import RuntimeLockReleaseError, RuntimeLockTimeout
+from sejong_session_binding import InvalidBinding, binding_path, load_binding, resolve_bound_context
+from work_lifecycle_summary import build_lifecycle_summary
 
 
 SCRIPT_PATH = Path(__file__).resolve()
@@ -57,20 +62,6 @@ def run_identity(run_dir: Path) -> tuple[str, str]:
     return relative.parts[0], relative.parts[1]
 
 
-def active_context() -> dict[str, Any] | None:
-    path = sejong_home() / "state" / "active-context.json"
-    if not path.exists():
-        return None
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return None
-
-
-def active_context_path() -> Path:
-    return sejong_home() / "state" / "active-context.json"
-
-
 def path_contains_or_equals(child: Path, root: Path) -> bool:
     try:
         child.resolve().relative_to(root.resolve())
@@ -79,38 +70,60 @@ def path_contains_or_equals(child: Path, root: Path) -> bool:
         return child.resolve() == root.resolve()
 
 
-def is_active_run(run_dir: Path) -> bool:
-    context = active_context()
-    if not context:
-        return False
+def bound_run_protection(run_dir: Path) -> tuple[bool, list[str]]:
+    binding_root = sejong_home() / "state" / "session-bindings"
+    failures: list[str] = []
+    protected = False
     repo_id, run_id = run_identity(run_dir)
-    if context.get("repo_id") == repo_id and context.get("run_id") == run_id:
-        return True
-    for ref in context.get("artifact_refs") or []:
-        ref_path = Path(ref).expanduser()
-        if not ref_path.is_absolute():
-            ref_path = sejong_home() / ref_path
-        if path_contains_or_equals(ref_path, run_dir):
-            return True
-    return False
-
-
-def active_context_matches_run_identity(run_dir: Path) -> bool:
-    context = active_context()
-    if not context:
-        return False
-    repo_id, run_id = run_identity(run_dir)
-    return context.get("repo_id") == repo_id and context.get("run_id") == run_id
-
-
-def close_active_context_pointer_for_run(run_dir: Path) -> bool:
-    if not active_context_matches_run_identity(run_dir):
-        return False
-    path = active_context_path()
-    if path.exists():
-        path.unlink()
-        return True
-    return False
+    for path in sorted(binding_root.glob("*.json")):
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(raw, dict):
+                raise InvalidBinding("session binding must be an object")
+            session_id = raw.get("session_id")
+            namespace = raw.get("host_namespace")
+            if not isinstance(session_id, str) or not session_id:
+                raise InvalidBinding("session binding has no session_id")
+            if not isinstance(namespace, str) or not namespace:
+                raise InvalidBinding("session binding has no host_namespace")
+            expected_path = binding_path(sejong_home(), session_id, namespace)
+            if path.resolve() != expected_path.resolve():
+                raise InvalidBinding("session binding path does not match its internal identity")
+            binding = load_binding(sejong_home(), session_id, namespace)
+            if not binding or binding.get("state") != "bound":
+                continue
+            context = resolve_bound_context(
+                sejong_home(),
+                session_id,
+                namespace=namespace,
+                observe=False,
+            )
+            if not context:
+                continue
+            if context.get("repo_id") == repo_id and context.get("run_id") == run_id:
+                protected = True
+                continue
+            for ref in context.get("artifact_refs") or []:
+                if not isinstance(ref, str) or not ref:
+                    continue
+                ref_path = Path(ref).expanduser()
+                if not ref_path.is_absolute():
+                    ref_path = sejong_home() / ref_path
+                if path_contains_or_equals(ref_path, run_dir):
+                    protected = True
+                    break
+        except (
+            InvalidBinding,
+            RuntimeLockReleaseError,
+            RuntimeLockTimeout,
+            json.JSONDecodeError,
+            OSError,
+            TypeError,
+            UnicodeError,
+            ValueError,
+        ) as error:
+            failures.append(f"{path}: {error}")
+    return protected, failures
 
 
 def has_promoted_marker(run_dir: Path, policy: dict[str, Any]) -> bool:
@@ -171,8 +184,8 @@ def build_run_summary(
 
     run_dir = resolve_under_runs(run_dir)
     repo_id, run_id = run_identity(run_dir)
-    active = is_active_run(run_dir)
-    active_identity = active_context_matches_run_identity(run_dir)
+    lifecycle = build_lifecycle_summary(run_dir)
+    active, binding_failures = bound_run_protection(run_dir)
     promoted = has_promoted_marker(run_dir, policy)
     kept, prunable = classify_children(run_dir, policy)
     prunable_sizes = {relative_to_run(run_dir, path): path_size(path) for path in prunable}
@@ -183,9 +196,9 @@ def build_run_summary(
     would_delete: list[str] = []
     retained: list[dict[str, str]] = []
 
-    close_active_context_after_success = destructive_requested and status == "success" and active_identity
-
-    if active and destructive_requested and not close_active_context_after_success:
+    if destructive_requested and binding_failures:
+        failures.append("session binding state is invalid: " + "; ".join(binding_failures))
+    if active and destructive_requested:
         failures.append("active run is protected from cleanup")
     if promoted and destructive_requested:
         failures.append("promoted run is protected from cleanup")
@@ -195,7 +208,7 @@ def build_run_summary(
         rel_path = relative_to_run(run_dir, path)
         if not allow_raw_prune:
             retained.append({"path": rel_path, "reason": "status retention window keeps raw artifacts"})
-        elif active and not close_active_context_after_success:
+        elif active:
             retained.append({"path": rel_path, "reason": "active run"})
         elif promoted:
             retained.append({"path": rel_path, "reason": "promoted run"})
@@ -217,6 +230,7 @@ def build_run_summary(
         "run_dir": str(run_dir),
         "dry_run": not execute,
         "reason": reason,
+        "lifecycle": lifecycle,
         "policy": {
             "success_raw_ttl_days": policy["success_raw_ttl_days"],
             "failed_raw_ttl_days": policy["failed_raw_ttl_days"],
@@ -233,9 +247,7 @@ def build_run_summary(
             "would_delete": would_delete,
             "retained": retained,
             "failures": failures,
-            "closed_active_context": close_active_context_pointer_for_run(run_dir)
-            if can_delete and close_active_context_after_success
-            else False,
+            "closed_active_context": False,
         },
         "bytes": {
             "deleted": sum(prunable_sizes[path] for path in deleted),
@@ -319,13 +331,25 @@ def prune_runs(args: argparse.Namespace) -> int:
         status = str(summary.get("status")) if summary else "unknown"
         repo_id, _ = run_identity(run_dir)
         repo_rank = newest_by_repo[repo_id].index(run_dir)
-        active = is_active_run(run_dir)
+        active, binding_failures = bound_run_protection(run_dir)
         promoted = has_promoted_marker(run_dir, policy)
         compact_expired = age_days(run_dir) >= policy["compact_ttl_days"]
         compact_over_limit = repo_rank >= policy["max_compact_runs_per_repo"]
 
         if status not in RUN_STATUSES:
             results.append({"run_dir": str(run_dir), "action": "skip", "reason": "missing or unsupported run-summary status"})
+            continue
+        if binding_failures:
+            results.append(
+                {
+                    "run_dir": str(run_dir),
+                    "action": "skip",
+                    "reason": "session binding state is invalid",
+                    "failures": binding_failures,
+                }
+            )
+            if args.execute:
+                failures += 1
             continue
         if active:
             results.append({"run_dir": str(run_dir), "action": "skip", "reason": "active run"})
@@ -368,20 +392,24 @@ def prune_runs(args: argparse.Namespace) -> int:
 def report_runs(args: argparse.Namespace) -> int:
     root = Path(args.runs_root).expanduser() if args.runs_root else runs_root()
     run_dirs = iter_run_dirs(root)
+    runs: list[dict[str, Any]] = []
+    for run_dir in run_dirs:
+        active, binding_failures = bound_run_protection(run_dir)
+        runs.append(
+            {
+                "path": str(run_dir),
+                "bytes": path_size(run_dir),
+                "active": active,
+                "binding_failures": binding_failures,
+                "summary_status": (read_summary(run_dir) or {}).get("status"),
+            }
+        )
     report = {
         "format": "sejong.cleanup-inventory/v0.1-draft",
         "generated_at": now_utc(),
         "runs_root": str(root),
         "run_count": len(run_dirs),
-        "runs": [
-            {
-                "path": str(run_dir),
-                "bytes": path_size(run_dir),
-                "active": is_active_run(run_dir),
-                "summary_status": (read_summary(run_dir) or {}).get("status"),
-            }
-            for run_dir in run_dirs
-        ],
+        "runs": runs,
     }
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0

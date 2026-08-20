@@ -7,16 +7,17 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from sejong_paths import path_contains_or_equals, resolve_path
 from bounded_worker_brief import validate_bounded_worker_brief
 from continuity_capsule import FORMAT as CONTINUITY_CAPSULE_FORMAT
 from continuity_capsule import capsule_failures, capsule_projection
-from seungjeongwon_run import checkpoint_failures, checkpoint_payload
+from sejong_paths import declared_repo_identity, repo_identity, resolve_path
+from sejong_runtime_lock import RuntimeLockReleaseError, RuntimeLockTimeout
+from sejong_session_binding import InvalidBinding, resolve_bound_context
 from seungjeongwon_run import RUN_FORMAT as SEUNGJEONGWON_RUN_FORMAT
+from seungjeongwon_run import checkpoint_failures, checkpoint_payload
 from seungjeongwon_run import format_run_summary as seungjeongwon_format_run_summary
 from seungjeongwon_run import run_failures as seungjeongwon_run_failures
 
@@ -43,22 +44,6 @@ REQUIRED_CONTEXT_FIELDS = (
     "last_updated_at",
 )
 CONTEXT_LOAD_ERROR_FIELD = "_king_sejong_context_load_error"
-CONTEXT_ACTIVE_POINTER_FALLBACK_FIELD = "_king_sejong_active_pointer_fallback"
-CONTEXT_STALE_ACTIVE_CONTEXT_ID_FIELD = "_king_sejong_stale_active_context_id"
-CONTEXT_STALE_ACTIVE_REPO_ROOT_FIELD = "_king_sejong_stale_active_repo_root"
-CONTEXT_STALE_ACTIVE_POINTER_ERROR_FIELD = "_king_sejong_stale_active_pointer_error"
-CONTEXT_LIST_FIELDS = (
-    "route_sequence",
-    "required_route_sequence",
-    "pending_gates",
-    "protected_paths",
-    "allowed_direct_change_types",
-    "evidence_refs",
-    "artifact_refs",
-    "team_run_refs",
-    "subagent_refs",
-    "exit_conditions",
-)
 
 EXIT_TERMS = (
     "exit sejong",
@@ -99,6 +84,7 @@ SEUNGJEONGWON_RECEIPT_GATE = "seungjeongwon_receipt_required"
 SEUNGJEONGWON_RECEIPT_FORMAT = "sejong.seungjeongwon-receipt/v0.1-draft"
 CONTEXT_ERROR_KEY = "_king_sejong_context_error"
 CONTEXT_ERROR_PATH_KEY = "_king_sejong_context_path"
+SESSION_BINDING_ERROR_KEY = "_king_sejong_session_binding_error"
 WRITE_LIKE_TOOL_NAMES = {
     "apply_patch",
     "edit",
@@ -167,137 +153,36 @@ def explicit_context_path_missing(path: Path) -> dict[str, Any]:
     }
 
 
-def context_path_is_explicit(path: str | None) -> bool:
-    return bool(path or os.environ.get("SEJONG_ACTIVE_CONTEXT"))
-
-
-def iter_run_context_paths() -> list[Path]:
-    runs_root = sejong_root() / "runs"
-    if not runs_root.exists():
-        return []
-    return list(runs_root.glob("*/*/king-sejong-context.json"))
-
-
-def context_is_well_formed(context: dict[str, Any]) -> bool:
-    if not context:
-        return False
-    if context.get("format") and context.get("format") != "king-sejong.context/v0.1-draft":
-        return False
-    if missing_context_fields(context):
-        return False
-    for field in CONTEXT_LIST_FIELDS:
-        value = context.get(field)
-        if not isinstance(value, list):
-            return False
-        if any(not isinstance(item, str) or not item for item in value):
-            return False
-    return True
-
-
-def parse_context_last_updated_at(context: dict[str, Any]) -> float:
-    value = context.get("last_updated_at")
-    if not isinstance(value, str):
-        return 0.0
-    try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
-        return 0.0
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc).timestamp()
-
-
-def context_compatibility_rank(context: dict[str, Any], reference_context: dict[str, Any] | None) -> int:
-    if not reference_context:
-        return 0
-    rank = 0
-    for field in ("objective_id", "task_class"):
-        reference_value = reference_context.get(field)
-        if not isinstance(reference_value, str) or not reference_value:
-            continue
-        context_value = context.get(field)
-        if context_value == reference_value:
-            rank += 1
-        elif isinstance(context_value, str) and context_value:
-            rank -= 1
-    return rank
-
-
-def newest_matching_repo_context(
-    payload: dict[str, Any],
-    reference_context: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    candidates: list[tuple[int, float, float, dict[str, Any]]] = []
-    for context_path in iter_run_context_paths():
-        context = load_context_file(context_path)
-        if not context_is_well_formed(context):
-            continue
-        if not context_has_active_continuation(context):
-            continue
-        if not context_applies_to_cwd(context, payload):
-            continue
-        try:
-            mtime = context_path.stat().st_mtime
-        except OSError:
-            mtime = 0
-        candidates.append(
-            (context_compatibility_rank(context, reference_context), parse_context_last_updated_at(context), mtime, context)
-        )
-    if not candidates:
-        return {}
-    candidates.sort(key=lambda item: (item[0], item[1], item[2]), reverse=True)
-    return candidates[0][3]
-
-
-def with_active_pointer_fallback(
-    context: dict[str, Any],
-    *,
-    stale_context: dict[str, Any] | None = None,
-    stale_error: str | None = None,
-) -> dict[str, Any]:
-    selected_context = dict(context)
-    selected_context[CONTEXT_ACTIVE_POINTER_FALLBACK_FIELD] = True
-    if stale_context:
-        selected_context[CONTEXT_STALE_ACTIVE_CONTEXT_ID_FIELD] = stale_context.get("active_context_id")
-        selected_context[CONTEXT_STALE_ACTIVE_REPO_ROOT_FIELD] = str(resolve_path(stale_context.get("repo_root", "")))
-    if stale_error:
-        selected_context[CONTEXT_STALE_ACTIVE_POINTER_ERROR_FIELD] = stale_error
-    return selected_context
-
-
 def load_context(
     path: str | None,
     payload: dict[str, Any] | None = None,
-    *,
-    allow_load_error_fallback: bool = True,
 ) -> dict[str, Any]:
-    context_path = resolve_context_path(path)
-    if not context_path.exists():
-        if context_path_is_explicit(path):
+    if context_path_is_explicit(path):
+        context_path = resolve_context_path(path)
+        if not context_path.exists():
             return explicit_context_path_missing(context_path)
-        if payload:
-            matching_context = newest_matching_repo_context(payload)
-            if matching_context:
-                return with_active_pointer_fallback(matching_context, stale_error="missing_active_pointer")
+        return load_context_file(context_path)
+    if not payload:
         return {}
-    active_context = load_context_file(context_path)
-    if context_load_failed(active_context):
-        if allow_load_error_fallback and not context_path_is_explicit(path) and payload:
-            matching_context = newest_matching_repo_context(payload)
-            if matching_context:
-                return with_active_pointer_fallback(
-                    matching_context,
-                    stale_error=str(active_context.get(CONTEXT_LOAD_ERROR_FIELD, "load_error")),
-                )
-        return active_context
-    if context_path_is_explicit(path) or not payload or context_applies_to_cwd(active_context, payload):
-        return active_context
-    matching_context = newest_matching_repo_context(payload, active_context)
-    if matching_context:
-        return with_active_pointer_fallback(matching_context, stale_context=active_context)
-    if context_has_active_continuation(active_context):
-        return active_context
-    return {}
+    session_id = payload.get("session_id")
+    if not isinstance(session_id, str) or not session_id:
+        return {}
+    turn_id = payload.get("turn_id")
+    namespace = payload.get("host_namespace") or "codex"
+    try:
+        return resolve_bound_context(
+            sejong_root(),
+            session_id,
+            turn_id=turn_id if isinstance(turn_id, str) and turn_id else None,
+            event_name=str(payload.get("hook_event_name") or ""),
+            namespace=str(namespace),
+        )
+    except (InvalidBinding, OSError, RuntimeLockReleaseError, RuntimeLockTimeout) as error:
+        return {
+            CONTEXT_LOAD_ERROR_FIELD: str(error),
+            SESSION_BINDING_ERROR_KEY: True,
+            "session_id": session_id,
+        }
 
 
 def sejong_root() -> Path:
@@ -365,18 +250,6 @@ def context_summary(context: dict[str, Any]) -> str:
             " uigwe_promotion_required=true; research or council output is not final; "
             "enter Uigwe or ask the user to convert the request to research-only."
         )
-    if context.get(CONTEXT_ACTIVE_POINTER_FALLBACK_FIELD):
-        summary += " active_pointer_fallback=true"
-        stale_context_id = context.get(CONTEXT_STALE_ACTIVE_CONTEXT_ID_FIELD)
-        if stale_context_id:
-            summary += f"; stale_active_context_id={stale_context_id}"
-        stale_repo_root = context.get(CONTEXT_STALE_ACTIVE_REPO_ROOT_FIELD)
-        if stale_repo_root:
-            summary += f"; stale_active_repo_root={stale_repo_root}"
-        stale_error = context.get(CONTEXT_STALE_ACTIVE_POINTER_ERROR_FIELD)
-        if stale_error:
-            summary += f"; stale_active_pointer_error={stale_error}"
-        summary += "."
     return summary
 
 
@@ -464,18 +337,10 @@ def context_applies_to_cwd(context: dict[str, Any], payload: dict[str, Any]) -> 
     if not repo_root:
         return True
     cwd = resolve_path(payload.get("cwd") or os.getcwd())
-    root = resolve_path(repo_root)
-    return path_contains_or_equals(cwd, root)
-
-
-def context_has_active_continuation(context: dict[str, Any]) -> bool:
-    if context.get("pending_gates"):
-        return True
-    if active_seungjeongwon_run_summaries(context):
-        return True
-    if open_ambiguity_total(context) or pending_question_obligation_total(context):
-        return True
-    return False
+    identities = context.get("repo_identities")
+    if not isinstance(identities, list) or not identities:
+        identities = [declared_repo_identity(repo_root)]
+    return repo_identity(cwd) in identities
 
 
 def repo_mismatch_summary(context: dict[str, Any], payload: dict[str, Any]) -> str:
@@ -798,7 +663,11 @@ def broken_ambiguity_register_refs(context: dict[str, Any]) -> list[str]:
     return broken_refs
 
 
-def load_seungjeongwon_run_entries(context: dict[str, Any]) -> tuple[list[tuple[Path, dict[str, Any]]], list[str], list[str]]:
+def load_seungjeongwon_run_entries(
+    context: dict[str, Any],
+    *,
+    active_only: bool = False,
+) -> tuple[list[tuple[Path, dict[str, Any]]], list[str], list[str]]:
     entries: list[tuple[Path, dict[str, Any]]] = []
     broken_refs: list[str] = []
     invalid_refs: list[str] = []
@@ -815,6 +684,8 @@ def load_seungjeongwon_run_entries(context: dict[str, Any]) -> tuple[list[tuple[
                 broken_refs.append(str(path))
             continue
         if data.get("format") != SEUNGJEONGWON_RUN_FORMAT:
+            continue
+        if active_only and data.get("status") != "active":
             continue
         failures = seungjeongwon_run_failures(data)
         if failures:
@@ -836,7 +707,7 @@ def checkpoint_path_for_run(context: dict[str, Any], run_path: Path, run_data: d
 
 
 def write_precompact_seungjeongwon_checkpoints(context: dict[str, Any]) -> tuple[list[str], list[str]]:
-    entries, broken_refs, invalid_refs = load_seungjeongwon_run_entries(context)
+    entries, broken_refs, invalid_refs = load_seungjeongwon_run_entries(context, active_only=True)
     failures = list(broken_refs) + list(invalid_refs)
     if failures:
         return [], failures
@@ -868,13 +739,13 @@ def active_seungjeongwon_run_summaries(context: dict[str, Any]) -> list[str]:
     return summaries
 
 
-def broken_seungjeongwon_run_refs(context: dict[str, Any]) -> list[str]:
-    _, broken_refs, _ = load_seungjeongwon_runs(context)
+def broken_seungjeongwon_run_refs(context: dict[str, Any], *, active_only: bool = False) -> list[str]:
+    _, broken_refs, _ = load_seungjeongwon_run_entries(context, active_only=active_only)
     return broken_refs
 
 
-def invalid_seungjeongwon_run_refs(context: dict[str, Any]) -> list[str]:
-    _, _, invalid_refs = load_seungjeongwon_runs(context)
+def invalid_seungjeongwon_run_refs(context: dict[str, Any], *, active_only: bool = False) -> list[str]:
+    _, _, invalid_refs = load_seungjeongwon_run_entries(context, active_only=active_only)
     return invalid_refs
 
 
@@ -1193,21 +1064,21 @@ def handle_precompact(context: dict[str, Any], *, allow_missing_context: bool = 
             "stopReason": "broken ambiguity register refs: " + ", ".join(broken_refs),
             "systemMessage": "King Sejong ambiguity register references must be readable before compaction.",
         }
-    broken_run_refs = broken_seungjeongwon_run_refs(context)
+    broken_run_refs = broken_seungjeongwon_run_refs(context, active_only=True)
     if broken_run_refs:
         return {
             "continue": False,
             "stopReason": "broken Seungjeongwon run refs: " + ", ".join(broken_run_refs),
             "systemMessage": "King Sejong Seungjeongwon run references must be readable before compaction.",
         }
-    invalid_run_refs = invalid_seungjeongwon_run_refs(context)
+    invalid_run_refs = invalid_seungjeongwon_run_refs(context, active_only=True)
     if invalid_run_refs:
         return {
             "continue": False,
             "stopReason": "invalid Seungjeongwon run refs: " + ", ".join(invalid_run_refs),
             "systemMessage": "King Sejong Seungjeongwon run artifacts must validate before compaction.",
         }
-    checkpoint_refs, checkpoint_failures = write_precompact_seungjeongwon_checkpoints(context)
+    _, checkpoint_failures = write_precompact_seungjeongwon_checkpoints(context)
     if checkpoint_failures:
         return {
             "continue": False,
@@ -1228,12 +1099,7 @@ def handle_precompact(context: dict[str, Any], *, allow_missing_context: bool = 
             "stopReason": "invalid continuity capsule refs: " + ", ".join(invalid_capsule_refs),
             "systemMessage": "King Sejong continuity capsule artifacts must validate before compaction.",
         }
-    output = hook_context("PreCompact", context_summary(context))
-    if checkpoint_refs:
-        output["hookSpecificOutput"]["additionalContext"] += (
-            " seungjeongwon_checkpoints_created=" + ",".join(checkpoint_refs) + "."
-        )
-    return output
+    return {}
 
 
 def handle_post_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
@@ -1265,7 +1131,7 @@ def dispatch(
                 "stopReason": f"missing explicit active context path: {context_path}",
                 "systemMessage": "King Sejong explicit active context checkpoint must exist before compaction.",
             }
-        if event_name in {"UserPromptSubmit", "SessionStart", "PostCompact"}:
+        if event_name in {"UserPromptSubmit", "SessionStart"}:
             return hook_context(
                 event_name,
                 "King Sejong active context missing_explicit_active_context=true; "
@@ -1275,16 +1141,28 @@ def dispatch(
     if context_load_failed(context):
         if event_name == "PreCompact":
             return handle_precompact(context, allow_missing_context=allow_missing_context)
+        if context.get(SESSION_BINDING_ERROR_KEY):
+            reason = "King Sejong session binding is invalid; repair or explicitly rebind before protected work."
+            if event_name == "PreToolUse":
+                return deny_pre_tool(reason)
+            if event_name == "PermissionRequest":
+                return deny_permission(reason)
+            if event_name == "Stop":
+                return {"decision": "block", "reason": reason}
+        return {}
+    if context and context.get("context_status", "active") != "active":
         return {}
     if context and not context_applies_to_cwd(context, payload):
         if event_name == "UserPromptSubmit" and is_explicit_exit(payload.get("prompt", "")):
             return {}
-        if event_name in {"UserPromptSubmit", "SessionStart", "PostCompact"}:
+        if "_king_sejong_binding_epoch" in context:
+            return {}
+        if event_name in {"UserPromptSubmit", "SessionStart"}:
             return hook_context(event_name, repo_mismatch_summary(context, payload))
         return {}
     if event_name == "UserPromptSubmit":
         return handle_user_prompt_submit(payload, context)
-    if event_name in {"SessionStart", "PostCompact"}:
+    if event_name == "SessionStart":
         return handle_session_context(event_name, context)
     if event_name == "SubagentStart":
         return handle_subagent_start(payload, context)
@@ -1308,11 +1186,7 @@ def dispatch(
 def main() -> int:
     args = parse_args()
     payload = load_stdin_json()
-    context = load_context(
-        args.context,
-        payload,
-        allow_load_error_fallback=args.event_name != "PreCompact",
-    )
+    context = load_context(args.context, payload)
     allow_missing_context = args.event_name == "PreCompact" and not context_path_is_explicit(args.context)
     return emit(dispatch(args.event_name, payload, context, allow_missing_context=allow_missing_context))
 

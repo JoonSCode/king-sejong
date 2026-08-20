@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+ORIGINAL_ARGS=("$@")
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -71,6 +73,10 @@ TARGET_REPO="."
 PLUGIN_MARKETPLACE="king-sejong-local"
 PLUGIN_NAME="king-sejong"
 PLUGIN_VERSION="0.1.0"
+RUNTIME_AUTHORITY_EPOCH=2
+INSTALL_SOURCE_ROOT=""
+USER_INSTALL_SOURCE_SNAPSHOT=""
+USER_INSTALL_STAGED_CANONICAL=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -241,7 +247,7 @@ def path_key(value: str) -> str:
 config_path = Path(sys.argv[1])
 expected = path_key(sys.argv[2])
 text = config_path.read_text(encoding="utf-8")
-for candidate in re.findall(r'python3\s+"([^"]*king_sejong_hooks\.py)"', text):
+for candidate in re.findall(r'python3\s+"([^"]+)"', text):
     if path_key(candidate) == expected:
         raise SystemExit(0)
 raise SystemExit(1)
@@ -250,10 +256,259 @@ PY
 
 SCRIPT_DIR=$(canonical_path "$(dirname "${BASH_SOURCE[0]}")")
 SOURCE_ROOT=$(canonical_path "$SCRIPT_DIR/..")
+INSTALL_SOURCE_ROOT="$SOURCE_ROOT"
 SOURCE_ONLY_PATHS=(
   "AGENTS.md"
 )
 CORE_IDENTITY_RELATIVE_PATH="state/core-install-identity.json"
+
+cleanup_user_install_staging() {
+  if [[ -n "$USER_INSTALL_STAGED_CANONICAL" && -f "$USER_INSTALL_STAGED_CANONICAL" ]]; then
+    rm -f -- "$USER_INSTALL_STAGED_CANONICAL"
+  fi
+  if [[ -n "$USER_INSTALL_SOURCE_SNAPSHOT" && -d "$USER_INSTALL_SOURCE_SNAPSHOT" ]]; then
+    case "$USER_INSTALL_SOURCE_SNAPSHOT" in
+      */sejong/state/install-staging/source.*)
+        rm -rf -- "$USER_INSTALL_SOURCE_SNAPSHOT"
+        ;;
+      *)
+        echo "refusing to remove unexpected install staging path: $USER_INSTALL_SOURCE_SNAPSHOT" >&2
+        ;;
+    esac
+  fi
+}
+
+trap cleanup_user_install_staging EXIT
+
+acquire_user_install_lock_and_reexec() {
+  local codex_home=$1
+  shift
+  local lock_path="$codex_home/sejong/state/locks/user-install.lock"
+
+  mkdir -p "$(dirname "$lock_path")"
+  python3 - "$lock_path" "${BASH_SOURCE[0]}" "$@" <<'PY'
+import fcntl
+import math
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+lock_path = Path(sys.argv[1])
+installer = sys.argv[2]
+installer_args = sys.argv[3:]
+raw_timeout = os.environ.get("SEJONG_INSTALL_LOCK_TIMEOUT_SECONDS", "5.0")
+try:
+    timeout_seconds = float(raw_timeout)
+except ValueError:
+    raise SystemExit(f"invalid SEJONG_INSTALL_LOCK_TIMEOUT_SECONDS={raw_timeout!r}")
+if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
+    raise SystemExit(f"invalid SEJONG_INSTALL_LOCK_TIMEOUT_SECONDS={raw_timeout!r}")
+
+started = time.monotonic()
+
+
+def publish_test_pid(environment_name, process_id):
+    configured = os.environ.get(environment_name)
+    if not configured:
+        return
+    target = Path(configured)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_name(f".{target.name}.{os.getpid()}.tmp")
+    temporary.write_text(f"{process_id}\n", encoding="utf-8")
+    os.replace(temporary, target)
+
+
+with lock_path.open("a+", encoding="utf-8") as handle:
+    while True:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            break
+        except BlockingIOError:
+            if time.monotonic() - started >= timeout_seconds:
+                raise SystemExit(
+                    f"timed out acquiring King Sejong user install lock: {lock_path}"
+                )
+            time.sleep(min(0.05, timeout_seconds))
+    publish_test_pid("SEJONG_INSTALL_TEST_LOCK_OWNER_PID_FILE", os.getpid())
+    environment = os.environ.copy()
+    environment["SEJONG_INSTALL_LOCK_HELD"] = "1"
+    environment["SEJONG_INSTALL_LOCK_FD"] = str(handle.fileno())
+    child = subprocess.Popen(
+        ["bash", installer, *installer_args],
+        env=environment,
+        pass_fds=(handle.fileno(),),
+    )
+    publish_test_pid("SEJONG_INSTALL_TEST_MUTATOR_PID_FILE", child.pid)
+    raise SystemExit(child.wait())
+PY
+}
+
+validate_inherited_user_install_lock() {
+  local codex_home=$1
+  local lock_path="$codex_home/sejong/state/locks/user-install.lock"
+  local lock_fd=${SEJONG_INSTALL_LOCK_FD:-}
+
+  python3 - "$lock_path" "$lock_fd" <<'PY'
+import fcntl
+import os
+import sys
+from pathlib import Path
+
+lock_path = Path(sys.argv[1])
+try:
+    lock_fd = int(sys.argv[2])
+    descriptor_stat = os.fstat(lock_fd)
+    path_stat = lock_path.stat()
+except (IndexError, OSError, TypeError, ValueError) as error:
+    raise SystemExit(f"invalid inherited King Sejong user install lock: {error}")
+if (descriptor_stat.st_dev, descriptor_stat.st_ino) != (path_stat.st_dev, path_stat.st_ino):
+    raise SystemExit("inherited King Sejong user install lock does not match the target path")
+try:
+    fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+except BlockingIOError:
+    raise SystemExit("inherited King Sejong user install descriptor does not own the lock")
+PY
+}
+
+reject_unsupported_authority_downgrade() {
+  local codex_home=$1
+  local transaction_path="$codex_home/sejong/state/install-transaction.json"
+
+  python3 - "$transaction_path" "$RUNTIME_AUTHORITY_EPOCH" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+transaction_path = Path(sys.argv[1])
+target_epoch = int(sys.argv[2])
+try:
+    transaction = json.loads(transaction_path.read_text(encoding="utf-8"))
+except FileNotFoundError:
+    raise SystemExit(0)
+except (json.JSONDecodeError, OSError, UnicodeError):
+    raise SystemExit("existing King Sejong install transaction is unreadable; no files were modified")
+if not isinstance(transaction, dict):
+    raise SystemExit("existing King Sejong install transaction is invalid; no files were modified")
+minimum_epoch = transaction.get(
+    "minimum_runtime_authority_epoch",
+    transaction.get("runtime_authority_epoch", 0),
+)
+runtime_epoch = transaction.get("runtime_authority_epoch", 0)
+if (
+    type(minimum_epoch) is not int
+    or minimum_epoch < 0
+    or type(runtime_epoch) is not int
+    or runtime_epoch < 0
+):
+    raise SystemExit("existing King Sejong runtime authority epoch is invalid; no files were modified")
+minimum_epoch = max(minimum_epoch, runtime_epoch)
+if minimum_epoch >= 2 and target_epoch < minimum_epoch:
+    raise SystemExit(
+        "Legacy-authority rollback is unsupported because V2 state exists. No files were modified."
+    )
+PY
+}
+
+create_user_install_source_snapshot() {
+  local codex_home=$1
+  local staging_root="$codex_home/sejong/state/install-staging"
+
+  mkdir -p "$staging_root"
+  USER_INSTALL_SOURCE_SNAPSHOT=$(mktemp -d "$staging_root/source.XXXXXX")
+  mkdir -p "$USER_INSTALL_SOURCE_SNAPSHOT/.agents/skills" "$USER_INSTALL_SOURCE_SNAPSHOT/docs" "$USER_INSTALL_SOURCE_SNAPSHOT/plugins"
+  cp -R "$SOURCE_ROOT/.agents/skills/." "$USER_INSTALL_SOURCE_SNAPSHOT/.agents/skills/"
+  cp -R "$SOURCE_ROOT/docs/sejong" "$USER_INSTALL_SOURCE_SNAPSHOT/docs/sejong"
+  cp -R "$SOURCE_ROOT/plugins/king-sejong" "$USER_INSTALL_SOURCE_SNAPSHOT/plugins/king-sejong"
+  find "$USER_INSTALL_SOURCE_SNAPSHOT" -type d -name __pycache__ -prune -exec rm -rf {} +
+  find "$USER_INSTALL_SOURCE_SNAPSHOT" -type f -name .DS_Store -delete
+  INSTALL_SOURCE_ROOT="$USER_INSTALL_SOURCE_SNAPSHOT"
+}
+
+wait_for_user_install_test_snapshot_release() {
+  local ready_path=${SEJONG_INSTALL_TEST_SNAPSHOT_READY_FILE:-}
+  local release_path=${SEJONG_INSTALL_TEST_SNAPSHOT_RELEASE_FILE:-}
+
+  if [[ -z "$ready_path" && -z "$release_path" ]]; then
+    return
+  fi
+  if [[ -z "$ready_path" || -z "$release_path" ]]; then
+    echo "both snapshot test barrier paths are required" >&2
+    exit 1
+  fi
+  python3 - "$ready_path" "$release_path" <<'PY'
+import os
+import sys
+import time
+from pathlib import Path
+
+ready_path = Path(sys.argv[1])
+release_path = Path(sys.argv[2])
+ready_path.parent.mkdir(parents=True, exist_ok=True)
+tmp_path = ready_path.with_name(f".{ready_path.name}.{os.getpid()}.tmp")
+tmp_path.write_text("snapshot-ready\n", encoding="utf-8")
+os.replace(tmp_path, ready_path)
+deadline = time.monotonic() + 10.0
+while not release_path.exists():
+    if time.monotonic() >= deadline:
+        raise SystemExit("timed out waiting for snapshot test release")
+    time.sleep(0.02)
+PY
+}
+
+wait_for_user_install_test_maintenance_release() {
+  local ready_path=${SEJONG_INSTALL_TEST_MAINTENANCE_READY_FILE:-}
+  local release_path=${SEJONG_INSTALL_TEST_MAINTENANCE_RELEASE_FILE:-}
+
+  if [[ -z "$ready_path" && -z "$release_path" ]]; then
+    return
+  fi
+  if [[ -z "$ready_path" || -z "$release_path" ]]; then
+    echo "both maintenance test barrier paths are required" >&2
+    exit 1
+  fi
+  python3 - "$ready_path" "$release_path" <<'PY'
+import os
+import sys
+import time
+from pathlib import Path
+
+ready_path = Path(sys.argv[1])
+release_path = Path(sys.argv[2])
+ready_path.parent.mkdir(parents=True, exist_ok=True)
+tmp_path = ready_path.with_name(f".{ready_path.name}.{os.getpid()}.tmp")
+tmp_path.write_text("maintenance-ready\n", encoding="utf-8")
+os.replace(tmp_path, ready_path)
+deadline = time.monotonic() + 15.0
+while not release_path.exists():
+    if time.monotonic() >= deadline:
+        raise SystemExit("timed out waiting for maintenance test release")
+    time.sleep(0.02)
+PY
+}
+
+atomic_publish_file() {
+  local tmp_file=$1
+  local target_file=$2
+
+  python3 - "$tmp_file" "$target_file" <<'PY'
+import os
+import sys
+from pathlib import Path
+
+tmp_path = Path(sys.argv[1])
+target_path = Path(sys.argv[2])
+with tmp_path.open("rb") as handle:
+    os.fsync(handle.fileno())
+os.replace(tmp_path, target_path)
+directory_fd = os.open(target_path.parent, os.O_RDONLY)
+try:
+    os.fsync(directory_fd)
+finally:
+    os.close(directory_fd)
+PY
+}
 
 print_codex_guidance_block() {
   cat <<'EOF'
@@ -282,22 +537,25 @@ EOF
 write_codex_guidance_block() {
   local codex_home=$1
   local agents_file="$codex_home/AGENTS.md"
+  local filtered_file
   local tmp_file
 
   mkdir -p "$codex_home"
   touch "$agents_file"
-  tmp_file=$(mktemp)
+  filtered_file=$(mktemp "${agents_file}.filtered.XXXXXX")
+  tmp_file=$(mktemp "${agents_file}.tmp.XXXXXX")
   awk '
     /^<!-- BEGIN King Sejong Codex Guidance -->$/ { skip = 1; next }
     /^<!-- END King Sejong Codex Guidance -->$/ { skip = 0; next }
     !skip { print }
-  ' "$agents_file" > "$tmp_file"
+  ' "$agents_file" > "$filtered_file"
   {
-    sed '/^[[:space:]]*$/N;/^\n$/D' "$tmp_file"
+    sed '/^[[:space:]]*$/N;/^\n$/D' "$filtered_file"
     echo
     print_codex_guidance_block
-  } > "$agents_file"
-  rm -f "$tmp_file"
+  } > "$tmp_file"
+  mv "$tmp_file" "$agents_file"
+  rm -f "$filtered_file"
 }
 
 require_source_git_repo() {
@@ -411,6 +669,18 @@ verify_tree_matches() {
   fi
 }
 
+verify_tree_matches_without_canonical_hook() {
+  local src=$1
+  local dest=$2
+  local label=$3
+
+  if ! diff -qr -x '.DS_Store' -x '__pycache__' -x 'king_sejong_hooks.py' "$src" "$dest" >/dev/null; then
+    echo "managed install differs from source before canonical publish: $label" >&2
+    diff -qr -x '.DS_Store' -x '__pycache__' -x 'king_sejong_hooks.py' "$src" "$dest" >&2 || true
+    return 1
+  fi
+}
+
 verify_rewritten_skill_matches() {
   local src=$1
   local dest=$2
@@ -446,28 +716,67 @@ core_identity_path() {
   echo "$runtime_root/$CORE_IDENTITY_RELATIVE_PATH"
 }
 
+core_identity_source_commit() {
+  if git -C "$SOURCE_ROOT" rev-parse HEAD >/dev/null 2>&1; then
+    git -C "$SOURCE_ROOT" rev-parse HEAD
+    return
+  fi
+  python3 - "$INSTALL_SOURCE_ROOT" "$INSTALL_SOURCE_ROOT/docs/sejong/scripts" <<'PY'
+import sys
+from pathlib import Path
+
+source_root = Path(sys.argv[1])
+sys.path.insert(0, sys.argv[2])
+from core_install_identity import SOURCE_MANAGED_SURFACES, snapshot_managed_surfaces
+
+print(snapshot_managed_surfaces(source_root, SOURCE_MANAGED_SURFACES)["managed_content_sha256"])
+PY
+}
+
+core_identity_source_tree_state() {
+  if ! git -C "$SOURCE_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "dirty"
+  elif source_tree_dirty; then
+    echo "dirty"
+  else
+    echo "clean"
+  fi
+}
+
 write_user_core_identity() {
   local codex_home=$1
   local identity_path
-  local identity_helper="$SOURCE_ROOT/docs/sejong/scripts/core_install_identity.py"
+  local identity_helper="$INSTALL_SOURCE_ROOT/docs/sejong/scripts/core_install_identity.py"
+  local source_commit
+  local source_tree_state
 
   identity_path=$(core_identity_path "$codex_home")
+  source_commit=$(core_identity_source_commit)
+  source_tree_state=$(core_identity_source_tree_state)
   python3 "$identity_helper" write \
-    --source-root "$SOURCE_ROOT" \
+    --source-root "$INSTALL_SOURCE_ROOT" \
     --installed-root "$codex_home" \
-    --output "$identity_path"
+    --output "$identity_path" \
+    --source-commit "$source_commit" \
+    --source-tree-state "$source_tree_state"
 }
 
 verify_user_core_identity() {
   local codex_home=$1
   local identity_path
-  local identity_helper="$SOURCE_ROOT/docs/sejong/scripts/core_install_identity.py"
+  local identity_helper="$INSTALL_SOURCE_ROOT/docs/sejong/scripts/core_install_identity.py"
+  local source_commit
+  local source_tree_state
 
   identity_path=$(core_identity_path "$codex_home")
+  source_commit=$(core_identity_source_commit)
+  source_tree_state=$(core_identity_source_tree_state)
   python3 "$identity_helper" verify \
     --identity "$identity_path" \
-    --source-root "$SOURCE_ROOT" \
-    --installed-root "$codex_home"
+    --source-root "$INSTALL_SOURCE_ROOT" \
+    --installed-root "$codex_home" \
+    --source-commit "$source_commit" \
+    --source-tree-state "$source_tree_state"
 }
 
 ensure_hooks_feature_enabled() {
@@ -476,7 +785,7 @@ ensure_hooks_feature_enabled() {
 
   mkdir -p "$(dirname "$config_file")"
   touch "$config_file"
-  tmp_file=$(mktemp)
+  tmp_file=$(mktemp "${config_file}.tmp.XXXXXX")
 
   awk '
     BEGIN {
@@ -530,7 +839,7 @@ append_managed_hooks_block() {
   local escaped_script
 
   escaped_script=${hook_script//\'/\'\\\'\'}
-  tmp_file=$(mktemp)
+  tmp_file=$(mktemp "${config_file}.tmp.XXXXXX")
 
   awk '
     /^# BEGIN King Sejong hooks$/ { skip = 1; next }
@@ -619,15 +928,6 @@ type = "command"
 command = 'python3 "$escaped_script" PreCompact'
 timeout = 30
 statusMessage = "Checking King Sejong checkpoint before compaction"
-
-[[hooks.PostCompact]]
-matcher = "manual|auto"
-
-[[hooks.PostCompact.hooks]]
-type = "command"
-command = 'python3 "$escaped_script" PostCompact'
-timeout = 30
-statusMessage = "Restoring King Sejong context after compaction"
 # END King Sejong hooks
 EOF
 
@@ -639,7 +939,7 @@ remove_managed_hooks_block() {
   local tmp_file
 
   [[ -f "$config_file" ]] || return 0
-  tmp_file=$(mktemp)
+  tmp_file=$(mktemp "${config_file}.tmp.XXXXXX")
 
   awk '
     /^# BEGIN King Sejong hooks$/ { skip = 1; next }
@@ -688,7 +988,7 @@ append_managed_plugin_block() {
 
   plugin_cache_root="$codex_home/plugins/cache/$PLUGIN_MARKETPLACE"
   timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  tmp_file=$(mktemp)
+  tmp_file=$(mktemp "${config_file}.tmp.XXXXXX")
 
   awk '
     /^# BEGIN King Sejong plugin$/ { skip = 1; next }
@@ -717,10 +1017,216 @@ ensure_sejong_state_dir() {
   mkdir -p "$codex_home/sejong/state"
 }
 
+runtime_authority_digest() {
+  python3 - "$INSTALL_SOURCE_ROOT" <<'PY'
+import hashlib
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+files = (
+    ("canonical-hook", root / "docs/sejong/scripts/king_sejong_hooks.py"),
+    ("context", root / "docs/sejong/scripts/sejong_context.py"),
+    ("session-binding", root / "docs/sejong/scripts/sejong_session_binding.py"),
+    ("paths", root / "docs/sejong/scripts/sejong_paths.py"),
+    ("runtime-lock", root / "docs/sejong/scripts/sejong_runtime_lock.py"),
+    ("plugin-runner", root / "plugins/king-sejong/hooks/king-sejong-hook.py"),
+    ("plugin-hooks", root / "plugins/king-sejong/hooks/hooks.json"),
+)
+digest = hashlib.sha256()
+for label, path in files:
+    digest.update(label.encode("utf-8"))
+    digest.update(b"\0")
+    digest.update(hashlib.sha256(path.read_bytes()).digest())
+print(digest.hexdigest())
+PY
+}
+
+managed_source_digest() {
+  python3 - "$INSTALL_SOURCE_ROOT" <<'PY'
+import hashlib
+import os
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+managed_roots = (
+    root / ".agents/skills/sejong",
+    root / ".agents/skills/jangyeongsil",
+    root / ".agents/skills/jiphyeonjeon",
+    root / ".agents/skills/uigwe",
+    root / ".agents/skills/seungjeongwon",
+    root / ".agents/skills/why-gate",
+    root / "docs/sejong",
+    root / "plugins/king-sejong",
+)
+digest = hashlib.sha256()
+for managed_root in managed_roots:
+    if not managed_root.is_dir():
+        raise SystemExit(f"missing managed source root: {managed_root}")
+    for path in sorted(managed_root.rglob("*"), key=lambda item: os.fsencode(str(item.relative_to(root)))):
+        relative = path.relative_to(root)
+        if "__pycache__" in relative.parts or path.name == ".DS_Store" or not path.is_file():
+            continue
+        digest.update(os.fsencode(str(relative)))
+        digest.update(b"\0")
+        digest.update(hashlib.sha256(path.read_bytes()).digest())
+print(digest.hexdigest())
+PY
+}
+
+source_canonical_digest() {
+  python3 - "$INSTALL_SOURCE_ROOT/docs/sejong/scripts/king_sejong_hooks.py" <<'PY'
+import hashlib
+import sys
+from pathlib import Path
+
+print(hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest())
+PY
+}
+
+write_install_transaction() {
+  local codex_home=$1
+  local status=$2
+  local authority_digest=${3:-}
+  local managed_digest=${4:-}
+  local transaction_path="$codex_home/sejong/state/install-transaction.json"
+  local tmp_file
+  local source_commit="unavailable"
+  local source_dirty=false
+  local timestamp
+
+  mkdir -p "$(dirname "$transaction_path")"
+  if [[ -z "$authority_digest" ]]; then
+    authority_digest=$(runtime_authority_digest)
+  fi
+  if [[ -z "$managed_digest" ]]; then
+    managed_digest=$(managed_source_digest)
+  fi
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  if git -C "$SOURCE_ROOT" rev-parse HEAD >/dev/null 2>&1; then
+    source_commit=$(git -C "$SOURCE_ROOT" rev-parse HEAD)
+    if [[ -n "$(git -C "$SOURCE_ROOT" status --porcelain)" ]]; then
+      source_dirty=true
+    fi
+  fi
+  tmp_file=$(mktemp "${transaction_path}.tmp.XXXXXX")
+  cat > "$tmp_file" <<EOF
+{
+  "format": "king-sejong.install-transaction/v0.1",
+  "status": "$status",
+  "runtime_authority_epoch": $RUNTIME_AUTHORITY_EPOCH,
+  "minimum_runtime_authority_epoch": $RUNTIME_AUTHORITY_EPOCH,
+  "runtime_authority_sha256": "$authority_digest",
+  "managed_source_sha256": "$managed_digest",
+  "source_commit": "$source_commit",
+  "source_dirty": $source_dirty,
+  "updated_at": "$timestamp"
+}
+EOF
+  chmod 0600 "$tmp_file"
+  atomic_publish_file "$tmp_file" "$transaction_path"
+}
+
+publish_user_install_maintenance_guard() {
+  local codex_home=$1
+  local authority_digest=$2
+  local managed_digest=$3
+  local hook_script="$codex_home/skills/sejong/docs/scripts/king_sejong_hooks.py"
+  local tmp_file
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "would publish fail-closed install maintenance hook: $hook_script"
+    return
+  fi
+  mkdir -p "$(dirname "$hook_script")"
+  tmp_file=$(mktemp "${hook_script}.maintenance.XXXXXX")
+  cat > "$tmp_file" <<'PY'
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import sys
+
+PROTECTED_EVENTS = {"PermissionRequest", "PreCompact", "PreToolUse", "Stop"}
+
+event_name = sys.argv[1] if len(sys.argv) > 1 else ""
+if event_name in PROTECTED_EVENTS:
+    print("King Sejong install maintenance is in progress", file=sys.stderr)
+    raise SystemExit(127)
+raise SystemExit(0)
+PY
+  chmod 0755 "$tmp_file"
+  atomic_publish_file "$tmp_file" "$hook_script"
+  write_install_transaction "$codex_home" "in_progress" "$authority_digest" "$managed_digest"
+  if [[ "${SEJONG_INSTALL_TEST_FAIL_AFTER_MAINTENANCE_GUARD:-0}" == "1" ]]; then
+    echo "injected failure after King Sejong install maintenance guard" >&2
+    exit 75
+  fi
+}
+
+maybe_fail_user_install_step() {
+  local step=$1
+
+  if [[ "${SEJONG_INSTALL_TEST_FAIL_AFTER_STEP:-}" == "$step" ]]; then
+    echo "injected failure after King Sejong user install step: $step" >&2
+    exit 75
+  fi
+}
+
+verify_install_transaction() {
+  local codex_home=$1
+  local transaction_path="$codex_home/sejong/state/install-transaction.json"
+  local expected_digest
+
+  expected_digest=$(runtime_authority_digest)
+  python3 - "$transaction_path" "$expected_digest" "$codex_home" <<'PY'
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+transaction_path = Path(sys.argv[1])
+expected_digest = sys.argv[2]
+codex_home = Path(sys.argv[3])
+try:
+    transaction = json.loads(transaction_path.read_text(encoding="utf-8"))
+except (FileNotFoundError, json.JSONDecodeError, OSError, UnicodeError) as error:
+    raise SystemExit(f"invalid King Sejong install transaction: {error}")
+if transaction.get("format") != "king-sejong.install-transaction/v0.1":
+    raise SystemExit("King Sejong install transaction format mismatch")
+if (
+    transaction.get("status") != "complete"
+    or transaction.get("runtime_authority_epoch") != 2
+    or transaction.get("minimum_runtime_authority_epoch") != 2
+):
+    raise SystemExit("King Sejong install transaction is not complete")
+if transaction.get("runtime_authority_sha256") != expected_digest:
+    raise SystemExit("King Sejong source and transaction authority digests differ")
+scripts = codex_home / "skills/sejong/docs/scripts"
+plugin = codex_home / "plugins/cache/king-sejong-local/king-sejong/0.1.0/hooks"
+files = (
+    ("canonical-hook", scripts / "king_sejong_hooks.py"),
+    ("context", scripts / "sejong_context.py"),
+    ("session-binding", scripts / "sejong_session_binding.py"),
+    ("paths", scripts / "sejong_paths.py"),
+    ("runtime-lock", scripts / "sejong_runtime_lock.py"),
+    ("plugin-runner", plugin / "king-sejong-hook.py"),
+    ("plugin-hooks", plugin / "hooks.json"),
+)
+digest = hashlib.sha256()
+for label, path in files:
+    digest.update(label.encode("utf-8"))
+    digest.update(b"\0")
+    digest.update(hashlib.sha256(path.read_bytes()).digest())
+if digest.hexdigest() != expected_digest:
+    raise SystemExit("King Sejong installed runtime authority digest mismatch")
+PY
+}
+
 configure_user_hooks() {
   local codex_home=$1
   local config_file="$codex_home/config.toml"
-  local hook_script="$codex_home/skills/sejong/docs/scripts/king_sejong_hooks.py"
+  local hook_script="$codex_home/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION/hooks/king-sejong-hook.py"
 
   ensure_hooks_feature_enabled "$config_file"
   if [[ "$LEGACY_DIRECT_HOOKS" -eq 1 ]]; then
@@ -742,6 +1248,7 @@ configure_user_plugin() {
 write_user_plugin_marketplace_manifest() {
   local codex_home=$1
   local marketplace_file="$codex_home/plugins/cache/$PLUGIN_MARKETPLACE/.agents/plugins/marketplace.json"
+  local tmp_file
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
     echo "would install: $marketplace_file"
@@ -749,7 +1256,8 @@ write_user_plugin_marketplace_manifest() {
   fi
 
   mkdir -p "$(dirname "$marketplace_file")"
-  cat > "$marketplace_file" <<EOF
+  tmp_file=$(mktemp "${marketplace_file}.tmp.XXXXXX")
+  cat > "$tmp_file" <<EOF
 {
   "name": "$PLUGIN_MARKETPLACE",
   "interface": {
@@ -766,12 +1274,13 @@ write_user_plugin_marketplace_manifest() {
   ]
 }
 EOF
+  mv "$tmp_file" "$marketplace_file"
 }
 
 verify_user_hooks_config() {
   local codex_home=$1
   local config_file="$codex_home/config.toml"
-  local hook_script="$codex_home/skills/sejong/docs/scripts/king_sejong_hooks.py"
+  local hook_script="$codex_home/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION/hooks/king-sejong-hook.py"
 
   if [[ ! -f "$config_file" ]]; then
     echo "missing Codex config: $config_file" >&2
@@ -871,14 +1380,21 @@ verify_repo_install() {
     "docs/sejong/SECURITY.md"
     "docs/sejong/SILLOK_TRACE.md"
     "docs/sejong/DELEGATION_RUNTIME.md"
+    "docs/sejong/WORK_LIFECYCLE.md"
     "docs/sejong/king-sejong-context.schema.json"
+    "docs/sejong/session-binding.schema.json"
+    "docs/sejong/repo-index.schema.json"
     "docs/sejong/delegation-run.schema.json"
+    "docs/sejong/worker-resource-lease.schema.json"
+    "docs/sejong/worker-cleanup-receipt.schema.json"
+    "docs/sejong/core-install-identity.schema.json"
     "docs/sejong/external-action-receipt.schema.json"
     "docs/sejong/seungjeongwon-run.schema.json"
     "docs/sejong/outcome-quality.schema.json"
     "docs/sejong/product-evidence.schema.json"
     "docs/sejong/sillok-trace-event.schema.json"
-    "docs/sejong/core-install-identity.schema.json"
+    "docs/sejong/work-event.schema.json"
+    "docs/sejong/lesson-candidate.schema.json"
     "docs/sejong/PROMPT_OVERLAYS.md"
     "docs/sejong/PROTOCOL.md"
     "docs/sejong/SEUNGJEONGWON_EXECUTOR.md"
@@ -887,18 +1403,29 @@ verify_repo_install() {
     "docs/sejong/scripts/king_sejong_hooks.py"
     "docs/sejong/scripts/sejong_integrated_quality_gate.py"
     "docs/sejong/scripts/seungjeongwon_run.py"
+    "docs/sejong/scripts/delegation_cleanup.py"
+    "docs/sejong/scripts/delegation_receipt_validation.py"
+    "docs/sejong/scripts/worker_resource_lease.py"
+    "docs/sejong/scripts/worker_resource_model.py"
+    "docs/sejong/scripts/worker_resource_validation.py"
     "docs/sejong/scripts/outcome_quality_evaluator.py"
     "docs/sejong/scripts/product_evidence_gate.py"
     "docs/sejong/scripts/sejong_context.py"
+    "docs/sejong/scripts/sejong_session_binding.py"
+    "docs/sejong/scripts/sejong_paths.py"
+    "docs/sejong/scripts/sejong_runtime_lock.py"
     "docs/sejong/scripts/sillok_trace.py"
     "docs/sejong/scripts/delegation_run.py"
     "docs/sejong/scripts/delegation_run_model.py"
     "docs/sejong/scripts/delegation_wave.py"
     "docs/sejong/scripts/delegation_wave_validation.py"
+    "docs/sejong/scripts/core_install_identity.py"
     "docs/sejong/scripts/external_action_contract.py"
     "docs/sejong/scripts/external_action_storage.py"
     "docs/sejong/scripts/external_action_receipt.py"
-    "docs/sejong/scripts/core_install_identity.py"
+    "docs/sejong/scripts/work_lifecycle.py"
+    "docs/sejong/scripts/work_lifecycle_model.py"
+    "docs/sejong/scripts/work_lifecycle_summary.py"
     "docs/sejong/scripts/test_king_sejong_hooks.py"
     "docs/sejong/scripts/test_sejong_integrated_quality_gate.py"
     "docs/sejong/scripts/test_seungjeongwon_run.py"
@@ -907,12 +1434,16 @@ verify_repo_install() {
     "docs/sejong/scripts/test_install_sejong.py"
     "docs/sejong/scripts/test_king_sejong_e2e.py"
     "docs/sejong/scripts/test_sejong_context.py"
+    "docs/sejong/scripts/test_sejong_doctor.py"
+    "docs/sejong/scripts/test_session_binding_context.py"
+    "docs/sejong/scripts/test_king_sejong_multisession_e2e.py"
     "docs/sejong/scripts/test_sillok_trace.py"
     "docs/sejong/scripts/test_delegation_run.py"
     "docs/sejong/scripts/test_delegation_wave_validation.py"
-    "docs/sejong/scripts/test_external_action_receipt.py"
     "docs/sejong/scripts/test_core_install_identity.py"
+    "docs/sejong/scripts/test_external_action_receipt.py"
     "docs/sejong/scripts/test_team_executor.py"
+    "docs/sejong/scripts/test_work_lifecycle.py"
     "docs/sejong/scripts/team_executor.py"
     "docs/sejong/scripts/validate_json_contracts.py"
   )
@@ -950,6 +1481,8 @@ verify_repo_install() {
 
 verify_user_install() {
   local root=$1
+  local verification_mode=${2:-complete}
+  local source_root=$INSTALL_SOURCE_ROOT
   local missing=0
   local drift=0
   local required_paths=(
@@ -966,14 +1499,21 @@ verify_user_install() {
     "skills/sejong/docs/SECURITY.md"
     "skills/sejong/docs/SILLOK_TRACE.md"
     "skills/sejong/docs/DELEGATION_RUNTIME.md"
+    "skills/sejong/docs/WORK_LIFECYCLE.md"
     "skills/sejong/docs/king-sejong-context.schema.json"
+    "skills/sejong/docs/session-binding.schema.json"
+    "skills/sejong/docs/repo-index.schema.json"
     "skills/sejong/docs/delegation-run.schema.json"
+    "skills/sejong/docs/worker-resource-lease.schema.json"
+    "skills/sejong/docs/worker-cleanup-receipt.schema.json"
+    "skills/sejong/docs/core-install-identity.schema.json"
     "skills/sejong/docs/external-action-receipt.schema.json"
     "skills/sejong/docs/seungjeongwon-run.schema.json"
     "skills/sejong/docs/outcome-quality.schema.json"
     "skills/sejong/docs/product-evidence.schema.json"
     "skills/sejong/docs/sillok-trace-event.schema.json"
-    "skills/sejong/docs/core-install-identity.schema.json"
+    "skills/sejong/docs/work-event.schema.json"
+    "skills/sejong/docs/lesson-candidate.schema.json"
     "skills/sejong/docs/PROMPT_OVERLAYS.md"
     "skills/sejong/docs/PROTOCOL.md"
     "skills/sejong/docs/SEUNGJEONGWON_EXECUTOR.md"
@@ -982,18 +1522,29 @@ verify_user_install() {
     "skills/sejong/docs/scripts/king_sejong_hooks.py"
     "skills/sejong/docs/scripts/sejong_integrated_quality_gate.py"
     "skills/sejong/docs/scripts/seungjeongwon_run.py"
+    "skills/sejong/docs/scripts/delegation_cleanup.py"
+    "skills/sejong/docs/scripts/delegation_receipt_validation.py"
+    "skills/sejong/docs/scripts/worker_resource_lease.py"
+    "skills/sejong/docs/scripts/worker_resource_model.py"
+    "skills/sejong/docs/scripts/worker_resource_validation.py"
     "skills/sejong/docs/scripts/outcome_quality_evaluator.py"
     "skills/sejong/docs/scripts/product_evidence_gate.py"
     "skills/sejong/docs/scripts/sejong_context.py"
+    "skills/sejong/docs/scripts/sejong_session_binding.py"
+    "skills/sejong/docs/scripts/sejong_paths.py"
+    "skills/sejong/docs/scripts/sejong_runtime_lock.py"
     "skills/sejong/docs/scripts/sillok_trace.py"
     "skills/sejong/docs/scripts/delegation_run.py"
     "skills/sejong/docs/scripts/delegation_run_model.py"
     "skills/sejong/docs/scripts/delegation_wave.py"
     "skills/sejong/docs/scripts/delegation_wave_validation.py"
+    "skills/sejong/docs/scripts/core_install_identity.py"
     "skills/sejong/docs/scripts/external_action_contract.py"
     "skills/sejong/docs/scripts/external_action_storage.py"
     "skills/sejong/docs/scripts/external_action_receipt.py"
-    "skills/sejong/docs/scripts/core_install_identity.py"
+    "skills/sejong/docs/scripts/work_lifecycle.py"
+    "skills/sejong/docs/scripts/work_lifecycle_model.py"
+    "skills/sejong/docs/scripts/work_lifecycle_summary.py"
     "skills/sejong/docs/scripts/test_king_sejong_hooks.py"
     "skills/sejong/docs/scripts/test_sejong_integrated_quality_gate.py"
     "skills/sejong/docs/scripts/test_seungjeongwon_run.py"
@@ -1002,12 +1553,16 @@ verify_user_install() {
     "skills/sejong/docs/scripts/test_install_sejong.py"
     "skills/sejong/docs/scripts/test_king_sejong_e2e.py"
     "skills/sejong/docs/scripts/test_sejong_context.py"
+    "skills/sejong/docs/scripts/test_sejong_doctor.py"
+    "skills/sejong/docs/scripts/test_session_binding_context.py"
+    "skills/sejong/docs/scripts/test_king_sejong_multisession_e2e.py"
     "skills/sejong/docs/scripts/test_sillok_trace.py"
     "skills/sejong/docs/scripts/test_delegation_run.py"
     "skills/sejong/docs/scripts/test_delegation_wave_validation.py"
-    "skills/sejong/docs/scripts/test_external_action_receipt.py"
     "skills/sejong/docs/scripts/test_core_install_identity.py"
+    "skills/sejong/docs/scripts/test_external_action_receipt.py"
     "skills/sejong/docs/scripts/test_team_executor.py"
+    "skills/sejong/docs/scripts/test_work_lifecycle.py"
     "skills/sejong/docs/scripts/team_executor.py"
     "skills/sejong/docs/scripts/validate_json_contracts.py"
     "skills/uigwe/SKILL.md"
@@ -1016,6 +1571,9 @@ verify_user_install() {
   )
 
   for path in "${required_paths[@]}"; do
+    if [[ "$verification_mode" == "pre-publish" && "$path" == "skills/sejong/docs/scripts/king_sejong_hooks.py" ]]; then
+      continue
+    fi
     if [[ ! -e "$root/$path" ]]; then
       echo "missing: $path" >&2
       missing=1
@@ -1029,25 +1587,31 @@ verify_user_install() {
 
   verify_source_only_paths_not_installed "$root/skills"
 
-  verify_rewritten_skill_matches "$SOURCE_ROOT/.agents/skills/sejong/SKILL.md" "$root/skills/sejong/SKILL.md" "docs/" "skills/sejong/SKILL.md" || drift=1
-  verify_rewritten_skill_matches "$SOURCE_ROOT/.agents/skills/jangyeongsil/SKILL.md" "$root/skills/jangyeongsil/SKILL.md" "../sejong/docs/" "skills/jangyeongsil/SKILL.md" || drift=1
-  verify_rewritten_skill_matches "$SOURCE_ROOT/.agents/skills/jiphyeonjeon/SKILL.md" "$root/skills/jiphyeonjeon/SKILL.md" "../sejong/docs/" "skills/jiphyeonjeon/SKILL.md" || drift=1
-  verify_rewritten_skill_matches "$SOURCE_ROOT/.agents/skills/uigwe/SKILL.md" "$root/skills/uigwe/SKILL.md" "../sejong/docs/" "skills/uigwe/SKILL.md" || drift=1
-  verify_rewritten_skill_matches "$SOURCE_ROOT/.agents/skills/seungjeongwon/SKILL.md" "$root/skills/seungjeongwon/SKILL.md" "../sejong/docs/" "skills/seungjeongwon/SKILL.md" || drift=1
-  verify_tree_matches "$SOURCE_ROOT/.agents/skills/sejong/agents" "$root/skills/sejong/agents" "skills/sejong/agents/" || drift=1
-  verify_tree_matches "$SOURCE_ROOT/.agents/skills/jangyeongsil/agents" "$root/skills/jangyeongsil/agents" "skills/jangyeongsil/agents/" || drift=1
-  verify_tree_matches "$SOURCE_ROOT/.agents/skills/jiphyeonjeon/agents" "$root/skills/jiphyeonjeon/agents" "skills/jiphyeonjeon/agents/" || drift=1
-  verify_tree_matches "$SOURCE_ROOT/.agents/skills/uigwe/agents" "$root/skills/uigwe/agents" "skills/uigwe/agents/" || drift=1
-  verify_tree_matches "$SOURCE_ROOT/.agents/skills/seungjeongwon/agents" "$root/skills/seungjeongwon/agents" "skills/seungjeongwon/agents/" || drift=1
-  verify_tree_matches "$SOURCE_ROOT/.agents/skills/why-gate" "$root/skills/why-gate" "skills/why-gate/" || drift=1
-  verify_tree_matches "$SOURCE_ROOT/docs/sejong" "$root/skills/sejong/docs" "skills/sejong/docs/" || drift=1
-  verify_tree_matches "$SOURCE_ROOT/plugins/king-sejong" "$root/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION" "plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION/" || drift=1
+  verify_rewritten_skill_matches "$source_root/.agents/skills/sejong/SKILL.md" "$root/skills/sejong/SKILL.md" "docs/" "skills/sejong/SKILL.md" || drift=1
+  verify_rewritten_skill_matches "$source_root/.agents/skills/jangyeongsil/SKILL.md" "$root/skills/jangyeongsil/SKILL.md" "../sejong/docs/" "skills/jangyeongsil/SKILL.md" || drift=1
+  verify_rewritten_skill_matches "$source_root/.agents/skills/jiphyeonjeon/SKILL.md" "$root/skills/jiphyeonjeon/SKILL.md" "../sejong/docs/" "skills/jiphyeonjeon/SKILL.md" || drift=1
+  verify_rewritten_skill_matches "$source_root/.agents/skills/uigwe/SKILL.md" "$root/skills/uigwe/SKILL.md" "../sejong/docs/" "skills/uigwe/SKILL.md" || drift=1
+  verify_rewritten_skill_matches "$source_root/.agents/skills/seungjeongwon/SKILL.md" "$root/skills/seungjeongwon/SKILL.md" "../sejong/docs/" "skills/seungjeongwon/SKILL.md" || drift=1
+  verify_tree_matches "$source_root/.agents/skills/sejong/agents" "$root/skills/sejong/agents" "skills/sejong/agents/" || drift=1
+  verify_tree_matches "$source_root/.agents/skills/jangyeongsil/agents" "$root/skills/jangyeongsil/agents" "skills/jangyeongsil/agents/" || drift=1
+  verify_tree_matches "$source_root/.agents/skills/jiphyeonjeon/agents" "$root/skills/jiphyeonjeon/agents" "skills/jiphyeonjeon/agents/" || drift=1
+  verify_tree_matches "$source_root/.agents/skills/uigwe/agents" "$root/skills/uigwe/agents" "skills/uigwe/agents/" || drift=1
+  verify_tree_matches "$source_root/.agents/skills/seungjeongwon/agents" "$root/skills/seungjeongwon/agents" "skills/seungjeongwon/agents/" || drift=1
+  verify_tree_matches "$source_root/.agents/skills/why-gate" "$root/skills/why-gate" "skills/why-gate/" || drift=1
+  if [[ "$verification_mode" == "pre-publish" ]]; then
+    verify_tree_matches_without_canonical_hook "$source_root/docs/sejong" "$root/skills/sejong/docs" "skills/sejong/docs/" || drift=1
+  else
+    verify_tree_matches "$source_root/docs/sejong" "$root/skills/sejong/docs" "skills/sejong/docs/" || drift=1
+  fi
+  verify_tree_matches "$source_root/plugins/king-sejong" "$root/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION" "plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION/" || drift=1
   verify_user_hooks_config "$root" || drift=1
   if [[ "$LEGACY_DIRECT_HOOKS" -eq 0 ]]; then
     verify_user_plugin_adapter "$root" || drift=1
   fi
   verify_user_codex_guidance "$root" || drift=1
-  verify_user_core_identity "$root" || drift=1
+  if [[ "$verification_mode" != "pre-publish" ]]; then
+    verify_user_core_identity "$root" || drift=1
+  fi
 
   if [[ "$drift" -ne 0 ]]; then
     echo "King Sejong user install verification failed: managed content is stale or modified in $root" >&2
@@ -1081,7 +1645,7 @@ copy_dir() {
   mkdir -p "$(dirname "$dest")"
 
   if command -v rsync >/dev/null 2>&1; then
-    rsync -a --delete \
+    rsync -a --delete --delete-excluded \
       --exclude '.DS_Store' \
       --exclude '__pycache__/' \
       "$src/" "$dest/"
@@ -1089,6 +1653,118 @@ copy_dir() {
     rm -rf "$dest"
     cp -R "$src" "$dest"
   fi
+}
+
+ensure_user_install_destinations_available() {
+  local codex_home=$1
+  local managed_paths=(
+    "$codex_home/skills/sejong"
+    "$codex_home/skills/jangyeongsil"
+    "$codex_home/skills/jiphyeonjeon"
+    "$codex_home/skills/uigwe"
+    "$codex_home/skills/seungjeongwon"
+    "$codex_home/skills/why-gate"
+    "$codex_home/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION"
+  )
+
+  if [[ "$FORCE" -eq 1 ]]; then
+    return
+  fi
+  for managed_path in "${managed_paths[@]}"; do
+    if [[ -e "$managed_path" ]]; then
+      echo "destination already exists: $managed_path" >&2
+      echo "rerun with --force to replace the managed install path" >&2
+      exit 1
+    fi
+  done
+}
+
+stage_user_install_canonical() {
+  local codex_home=$1
+  local expected_digest=$2
+  local staging_root="$codex_home/sejong/state/install-staging"
+  local actual_digest
+
+  mkdir -p "$staging_root"
+  USER_INSTALL_STAGED_CANONICAL=$(mktemp "$staging_root/king_sejong_hooks.py.XXXXXX")
+  cp "$INSTALL_SOURCE_ROOT/docs/sejong/scripts/king_sejong_hooks.py" "$USER_INSTALL_STAGED_CANONICAL"
+  chmod 0755 "$USER_INSTALL_STAGED_CANONICAL"
+  actual_digest=$(python3 - "$USER_INSTALL_STAGED_CANONICAL" <<'PY'
+import hashlib
+import sys
+from pathlib import Path
+
+print(hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest())
+PY
+)
+  if [[ "$actual_digest" != "$expected_digest" ]]; then
+    echo "staged canonical hook digest differs from the frozen source snapshot" >&2
+    exit 1
+  fi
+}
+
+copy_user_docs_without_canonical_hook() {
+  local src=$1
+  local dest=$2
+  local parent
+  local staged_docs
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "would install without publishing canonical hook: $dest"
+    return
+  fi
+  parent=$(dirname "$dest")
+  mkdir -p "$parent"
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -a --delete \
+      --exclude '.DS_Store' \
+      --exclude '__pycache__/' \
+      --exclude 'scripts/king_sejong_hooks.py' \
+      "$src/" "$dest/"
+    return
+  fi
+
+  staged_docs=$(mktemp -d "$parent/.sejong-docs.XXXXXX")
+  cp -R "$src/." "$staged_docs/"
+  rm -f "$staged_docs/scripts/king_sejong_hooks.py"
+  mkdir -p "$staged_docs/scripts"
+  if [[ -f "$dest/scripts/king_sejong_hooks.py" ]]; then
+    cp "$dest/scripts/king_sejong_hooks.py" "$staged_docs/scripts/king_sejong_hooks.py"
+  fi
+  rm -rf "$dest"
+  mv "$staged_docs" "$dest"
+}
+
+publish_user_install_canonical() {
+  local codex_home=$1
+  local expected_digest=$2
+  local target="$codex_home/skills/sejong/docs/scripts/king_sejong_hooks.py"
+  local tmp_file
+  local actual_digest
+
+  if [[ -z "$USER_INSTALL_STAGED_CANONICAL" || ! -f "$USER_INSTALL_STAGED_CANONICAL" ]]; then
+    echo "missing staged canonical hook for final publish" >&2
+    exit 1
+  fi
+  actual_digest=$(python3 - "$USER_INSTALL_STAGED_CANONICAL" <<'PY'
+import hashlib
+import sys
+from pathlib import Path
+
+print(hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest())
+PY
+)
+  if [[ "$actual_digest" != "$expected_digest" ]]; then
+    echo "staged canonical hook changed before final publish" >&2
+    exit 1
+  fi
+  mkdir -p "$(dirname "$target")"
+  tmp_file=$(mktemp "${target}.publish.XXXXXX")
+  cp "$USER_INSTALL_STAGED_CANONICAL" "$tmp_file"
+  chmod 0755 "$tmp_file"
+  atomic_publish_file "$tmp_file" "$target"
+  rm -f -- "$USER_INSTALL_STAGED_CANONICAL"
+  USER_INSTALL_STAGED_CANONICAL=""
 }
 
 rewrite_skill_doc_paths() {
@@ -1176,24 +1852,52 @@ install_user_scope() {
   local codex_home=${CODEX_HOME:-$HOME/.codex}
   local skill_root="$codex_home/skills"
   local managed_guidance_block=""
+  local authority_digest
+  local managed_digest
+  local canonical_digest
   local identity_path
 
   codex_home=$(canonical_path "$codex_home")
   skill_root="$codex_home/skills"
 
+  if [[ "${SEJONG_INSTALL_LOCK_HELD:-0}" == "1" ]]; then
+    validate_inherited_user_install_lock "$codex_home"
+  fi
+
   if [[ "$VERIFY_ONLY" -eq 1 ]]; then
     verify_user_install "$codex_home"
+    verify_install_transaction "$codex_home"
     exit 0
   fi
 
-  copy_dir "$SOURCE_ROOT/.agents/skills/sejong" "$skill_root/sejong"
-  copy_dir "$SOURCE_ROOT/.agents/skills/jangyeongsil" "$skill_root/jangyeongsil"
-  copy_dir "$SOURCE_ROOT/.agents/skills/jiphyeonjeon" "$skill_root/jiphyeonjeon"
-  copy_dir "$SOURCE_ROOT/.agents/skills/uigwe" "$skill_root/uigwe"
-  copy_dir "$SOURCE_ROOT/.agents/skills/seungjeongwon" "$skill_root/seungjeongwon"
-  copy_dir "$SOURCE_ROOT/.agents/skills/why-gate" "$skill_root/why-gate"
-  copy_dir "$SOURCE_ROOT/docs/sejong" "$skill_root/sejong/docs"
-  copy_dir "$SOURCE_ROOT/plugins/king-sejong" "$codex_home/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION"
+  ensure_user_install_destinations_available "$codex_home"
+  reject_unsupported_authority_downgrade "$codex_home"
+  if [[ "$DRY_RUN" -eq 0 ]]; then
+    create_user_install_source_snapshot "$codex_home"
+    wait_for_user_install_test_snapshot_release
+  fi
+  authority_digest=$(runtime_authority_digest)
+  managed_digest=$(managed_source_digest)
+  canonical_digest=$(source_canonical_digest)
+  if [[ "$DRY_RUN" -eq 0 ]]; then
+    stage_user_install_canonical "$codex_home" "$canonical_digest"
+  fi
+
+  publish_user_install_maintenance_guard "$codex_home" "$authority_digest" "$managed_digest"
+  wait_for_user_install_test_maintenance_release
+  maybe_fail_user_install_step "maintenance"
+
+  copy_dir "$INSTALL_SOURCE_ROOT/.agents/skills/sejong" "$skill_root/sejong"
+  copy_dir "$INSTALL_SOURCE_ROOT/.agents/skills/jangyeongsil" "$skill_root/jangyeongsil"
+  copy_dir "$INSTALL_SOURCE_ROOT/.agents/skills/jiphyeonjeon" "$skill_root/jiphyeonjeon"
+  copy_dir "$INSTALL_SOURCE_ROOT/.agents/skills/uigwe" "$skill_root/uigwe"
+  copy_dir "$INSTALL_SOURCE_ROOT/.agents/skills/seungjeongwon" "$skill_root/seungjeongwon"
+  copy_dir "$INSTALL_SOURCE_ROOT/.agents/skills/why-gate" "$skill_root/why-gate"
+  maybe_fail_user_install_step "skills"
+  copy_user_docs_without_canonical_hook "$INSTALL_SOURCE_ROOT/docs/sejong" "$skill_root/sejong/docs"
+  maybe_fail_user_install_step "docs"
+  copy_dir "$INSTALL_SOURCE_ROOT/plugins/king-sejong" "$codex_home/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION"
+  maybe_fail_user_install_step "plugin"
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
     identity_path=$(core_identity_path "$codex_home")
@@ -1218,9 +1922,16 @@ install_user_scope() {
 Managed guidance:
   $codex_home/AGENTS.md"
   fi
+  maybe_fail_user_install_step "config"
 
+  verify_user_install "$codex_home" "pre-publish"
+  maybe_fail_user_install_step "verified"
+  publish_user_install_canonical "$codex_home" "$canonical_digest"
+  maybe_fail_user_install_step "canonical"
   write_user_core_identity "$codex_home"
   verify_user_install "$codex_home"
+  write_install_transaction "$codex_home" "complete" "$authority_digest" "$managed_digest"
+  verify_install_transaction "$codex_home"
   identity_path=$(core_identity_path "$codex_home")
 
   cat <<EOF
@@ -1259,7 +1970,7 @@ if [[ "$UPDATE_CHECK" -eq 1 ]]; then
   exit 0
 fi
 
-if [[ "$AUTO_UPDATE" -eq 1 ]]; then
+if [[ "$AUTO_UPDATE" -eq 1 && "${SEJONG_INSTALL_LOCK_HELD:-0}" != "1" ]]; then
   auto_update_source
 fi
 
@@ -1273,6 +1984,15 @@ case "$SCOPE" in
     install_repo_scope "$TARGET_REPO"
     ;;
   user)
+    if [[ "$VERIFY_ONLY" -eq 0 && "$DRY_RUN" -eq 0 && "${SEJONG_INSTALL_LOCK_HELD:-0}" != "1" ]]; then
+      user_codex_home=$(canonical_path "${CODEX_HOME:-$HOME/.codex}")
+      if acquire_user_install_lock_and_reexec "$user_codex_home" "${ORIGINAL_ARGS[@]}"; then
+        exit 0
+      else
+        user_install_lock_status=$?
+        exit "$user_install_lock_status"
+      fi
+    fi
     install_user_scope
     ;;
   *)

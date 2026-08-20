@@ -68,7 +68,7 @@ def fan_in_receipt_fixture(*, status: str = "passed") -> JsonObject:
         "run_id": "delegation-run-1",
         "wave_id": "wave-1",
         "required_worker_ids": ["worker-a"],
-        "terminal_receipt_ids": ["receipt-worker-a"],
+        "terminal_receipt_ids": ["receipt-worker-a"], "cleanup_receipt_ids": [],
         "aggregate_status": status,
         "blocking_receipt_ids": [] if status == "passed" else ["receipt-worker-a"],
         "authority": "orchestration_evidence_only",

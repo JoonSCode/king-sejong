@@ -10,6 +10,8 @@ from pathlib import Path
 from types import ModuleType
 from typing import TypeAlias
 
+from sejong_cleanup import bound_run_protection
+from sejong_context import validate_context
 from sejong_runtime_lock import DEFAULT_STALE_AFTER_SECONDS, read_lock_record, stale_lock_reason, value_as_str
 
 
@@ -88,7 +90,12 @@ def active_run_summaries(contexts: list[tuple[Path, JsonObject]]) -> list[str]:
     hooks = load_hook_module()
     summaries: list[str] = []
     for _, context in contexts:
-        if hooks.context_is_well_formed(context) and hooks.context_has_active_continuation(context):
+        if not validate_context(context) and context.get("context_status", "active") == "active" and (
+            context.get("pending_gates")
+            or hooks.active_seungjeongwon_run_summaries(context)
+            or hooks.open_ambiguity_total(context)
+            or hooks.pending_question_obligation_total(context)
+        ):
             summaries.append(context_label(context))
     return summaries
 
@@ -100,33 +107,18 @@ def active_runs_check(contexts: list[tuple[Path, JsonObject]]) -> Check:
     return Check("multisession-active-runs", "ok", "no active runtime runs found")
 
 
-def active_pointer_staleness_check(root: Path, repo_root: Path, contexts: list[tuple[Path, JsonObject]]) -> Check:
-    hooks = load_hook_module()
+def active_pointer_staleness_check(root: Path, _repo_root: Path, _contexts: list[tuple[Path, JsonObject]]) -> Check:
     active_path = root / "state" / "active-context.json"
     active_context, error = read_json_object(active_path)
     if active_context is None:
         status = "ok" if error == "missing" else "warn"
-        return Check("active-pointer-staleness", status, f"active pointer {error}: {active_path}")
-    payload = {"cwd": str(repo_root)}
-    matching = [
-        context
-        for _, context in contexts
-        if hooks.context_is_well_formed(context)
-        and hooks.context_has_active_continuation(context)
-        and hooks.context_applies_to_cwd(context, payload)
-    ]
-    pointer_matches_repo = hooks.context_applies_to_cwd(active_context, payload)
-    if matching:
-        newest_context = hooks.newest_matching_repo_context(payload, active_context)
-        if newest_context.get("active_context_id") != active_context.get("active_context_id"):
-            return Check(
-                "active-pointer-staleness",
-                "warn",
-                f"active pointer {context_label(active_context)} is stale; newest matching run is {context_label(newest_context)}",
-            )
-    if not pointer_matches_repo:
-        return Check("active-pointer-staleness", "warn", f"active pointer does not match repo: {context_label(active_context)}")
-    return Check("active-pointer-staleness", "ok", f"active pointer matches repo: {context_label(active_context)}")
+        return Check("active-pointer-staleness", status, f"legacy active pointer {error}: {active_path}")
+    return Check(
+        "active-pointer-staleness",
+        "warn",
+        "legacy active pointer is preserved but non-authoritative: "
+        f"{context_label(active_context)}; automatic_injection_authority=false",
+    )
 
 
 def broken_ref_check(repo_root: Path, contexts: list[tuple[Path, JsonObject]]) -> Check:
@@ -190,10 +182,23 @@ def runtime_lock_check(root: Path) -> Check:
 
 
 def cleanup_dry_run_check(contexts: list[tuple[Path, JsonObject]]) -> Check:
-    retained = active_run_summaries(contexts)
+    retained: list[str] = []
+    binding_failures: list[str] = []
+    for context_path, context in contexts:
+        protected, failures = bound_run_protection(context_path.parent)
+        if protected:
+            retained.append(context_label(context))
+        binding_failures.extend(failures)
+    if binding_failures:
+        return Check(
+            "runtime-cleanup-dry-run",
+            "warn",
+            "destructive cleanup would fail closed on invalid session binding state: "
+            + "; ".join(binding_failures),
+        )
     if retained:
-        return Check("runtime-cleanup-dry-run", "ok", "would retain active runs: " + "; ".join(retained))
-    return Check("runtime-cleanup-dry-run", "ok", "no active runs require cleanup retention")
+        return Check("runtime-cleanup-dry-run", "ok", "would retain exactly bound active runs: " + "; ".join(retained))
+    return Check("runtime-cleanup-dry-run", "ok", "no exactly bound active runs require cleanup retention")
 
 
 def install_drift_check(repo_root: Path) -> Check:

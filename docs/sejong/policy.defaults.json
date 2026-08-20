@@ -187,7 +187,9 @@
           "execution-feedback.json",
           "king-sejong-context.json",
           "continuity-capsule.json",
-          "seungjeongwon-checkpoint.json"
+          "seungjeongwon-checkpoint.json",
+          "work-events.jsonl",
+          "lesson-candidate.json"
         ],
         "promoted_marker_names": [
           "promoted-artifacts.json",

@@ -40,3 +40,8 @@ For substantial decisions, Jiphyeonjeon may use a bounded council:
 6. The lead synthesizes the final recommendation, rejected options, risks, confidence, and next surface.
 
 When official peer/team messaging is available in the host runtime, use it for bounded teammate messages and shared task state. Otherwise use `$team` / TeamExecutor mailbox messages. Peer messages are allowed only inside a bounded round and never become approval, final synthesis, or verification by themselves.
+
+Apply Sejong's worker cleanup preflight before selecting a native council
+backend. If the host cannot provide exact release evidence, keep the council in
+the lead session or use a Core-owned backend instead of opening audit-only native
+workers.

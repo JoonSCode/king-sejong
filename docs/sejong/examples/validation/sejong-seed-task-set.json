@@ -1415,7 +1415,7 @@
         "losing route sequence"
       ],
       "grading_notes": [
-        "A hook-backed environment should expose this through PreCompact/PostCompact fixtures."
+        "A hook-backed environment should expose this through PreCompact and SessionStart(source=compact) fixtures."
       ],
       "guardrail_expectations": {
         "exit_conditions": [

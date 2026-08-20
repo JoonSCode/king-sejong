@@ -148,7 +148,7 @@ class SejongDoctorTests(unittest.TestCase):
         self.assertEqual(checks["git-status"]["status"], "warn")
         self.assertIn("trusted King Sejong source tree", str(checks["git-status"]["detail"]))
 
-    def test_doctor_reports_runtime_cleanup_dry_run_and_active_runs(self) -> None:
+    def test_doctor_separates_durable_active_runs_from_exact_cleanup_binding_protection(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)
             active_context = context_payload("ctx-active-run", REPO_ROOT, "active-run")
@@ -166,9 +166,9 @@ class SejongDoctorTests(unittest.TestCase):
         self.assertEqual(checks["multisession-active-runs"]["status"], "warn")
         self.assertIn("active-run", str(checks["multisession-active-runs"]["detail"]))
         self.assertEqual(checks["runtime-cleanup-dry-run"]["status"], "ok")
-        self.assertIn("active-run", str(checks["runtime-cleanup-dry-run"]["detail"]))
+        self.assertIn("no exactly bound active runs", str(checks["runtime-cleanup-dry-run"]["detail"]))
 
-    def test_doctor_reports_stale_pointer_and_broken_refs(self) -> None:
+    def test_doctor_reports_non_authoritative_legacy_pointer_and_broken_refs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sejong_home = Path(tmp)
             stale_context = context_payload("ctx-stale", REPO_ROOT / "sibling", "stale-run")
@@ -187,6 +187,10 @@ class SejongDoctorTests(unittest.TestCase):
         checks = checks_by_name(payload)
         self.assertEqual(checks["active-pointer-staleness"]["status"], "warn")
         self.assertIn("ctx-stale", str(checks["active-pointer-staleness"]["detail"]))
+        self.assertIn(
+            "automatic_injection_authority=false",
+            str(checks["active-pointer-staleness"]["detail"]),
+        )
         self.assertEqual(checks["runtime-broken-refs"]["status"], "fail")
         self.assertIn("missing-seungjeongwon-run.json", str(checks["runtime-broken-refs"]["detail"]))
 

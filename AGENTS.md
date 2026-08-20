@@ -16,7 +16,7 @@ The stable shape is:
 - `Uigwe` is the formal planning protocol when a direction needs gates, packets, decomposition, or promotion-ready artifacts.
 - `Seungjeongwon` is the default execution and verification path for clear tasks.
 - `TeamExecutor` is an optional backend for `$team` wrappers that coordinate separate CLI workers in `tmux` panes through Sejong-owned state, mailbox, and lease files.
-- Hook guardrails are Codex-native lifecycle checks that inject active King Sejong context, guard protected self-modification paths, and keep subagent or `$team` output bounded. They must not be treated as a complete sandbox. User-scope install uses the marked King Sejong plugin block in `${CODEX_HOME:-~/.codex}/config.toml` as the canonical hook source; the old marked direct hook block is legacy fallback only and must not be enabled alongside the plugin hook.
+- Hook guardrails are Codex-native lifecycle checks that inject only the durable Context bound to the exact Codex `session_id`, guard protected self-modification paths, and keep subagent or `$team` output bounded. Repo Index and legacy `state/active-context.json` never grant automatic injection authority. They must not be treated as a complete sandbox. User-scope install uses the marked King Sejong plugin block in `${CODEX_HOME:-~/.codex}/config.toml` as the canonical hook source; the old marked direct hook block is legacy fallback only and must not be enabled alongside the plugin hook.
 
 Keep installed skills thin and keep durable behavior in `docs/sejong/`. Keep this file focused on source-repo maintenance direction for future development sessions, not product-facing explanation.
 
@@ -93,6 +93,10 @@ Do not add root-level repository files such as `AGENTS.md` to the managed instal
 - Prefer officially supported host team or teammate messaging when it exists and a bounded Jiphyeonjeon or JangYeongsil round needs peer challenge; otherwise use Sejong TeamExecutor mailbox state. Peer messages are worker evidence, not court-mode authority.
 - Keep TeamExecutor mailbox traffic on the versioned `send-message` / `receive-messages` envelope; raw mailbox appends are compatibility-only and must not become the primary worker contract.
 - Keep hook behavior test-first: add or update red fixtures before changing hook, active-context, or TeamExecutor authority behavior, then run the hook, TeamExecutor, and E2E guardrail tests.
+- Keep worker lifecycle and resource cleanup in Core/Seungjeongwon. Host-native
+  `codex-thread://` workers require exact resource leases and released cleanup
+  receipts before fan-in; do not move cleanup authority into Agent Company
+  roles, developer workers, advisory skills, or name-based process scans.
 - Keep Sillok/security behavior test-first: update trace schemas, examples, and `test_sillok_trace.py` when changing risk flags or approval rules.
 - When changing Sejong or Uigwe instruction surfaces, run `python3 docs/sejong/scripts/benchmark_instruction_surface.py --write --require-targets`.
 - Validate JSON contracts and examples before claiming behavior changes are ready.

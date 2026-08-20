@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/work-event.schema.json",
+  "title": "King Sejong Sanitized Work Event Schema Draft",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {"const": "sejong.work-event/v0.1-draft"},
+    "event_id": {"$ref": "#/$defs/NonEmptyString"},
+    "occurred_at": {"type": "string", "format": "date-time"},
+    "run_id": {"$ref": "#/$defs/NonEmptyString"},
+    "repo_id": {"$ref": "#/$defs/NonEmptyString"},
+    "task_class": {"$ref": "#/$defs/NonEmptyString"},
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "user_intervention",
+        "assistant_error_candidate",
+        "tool_environment_failure",
+        "project_defect",
+        "preference_change",
+        "cleanup_outcome"
+      ]
+    },
+    "epistemic_status": {"type": "string", "enum": ["known", "inferred", "unknown"]},
+    "pattern_key": {"$ref": "#/$defs/NonEmptyString"},
+    "summary": {"$ref": "#/$defs/SanitizedString"},
+    "response": {"$ref": "#/$defs/SanitizedString"},
+    "outcome": {"$ref": "#/$defs/SanitizedString"},
+    "source_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/SourceRef"}
+    },
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "privacy": {"$ref": "#/$defs/Privacy"}
+  },
+  "required": [
+    "format",
+    "event_id",
+    "occurred_at",
+    "run_id",
+    "repo_id",
+    "task_class",
+    "event_type",
+    "epistemic_status",
+    "pattern_key",
+    "summary",
+    "response",
+    "outcome",
+    "source_refs",
+    "confidence",
+    "privacy"
+  ],
+  "$defs": {
+    "NonEmptyString": {"type": "string", "minLength": 1},
+    "SanitizedString": {
+      "type": "string",
+      "minLength": 1,
+      "allOf": [
+        {"not": {"pattern": "(?:/Users/|/home/|[A-Za-z]:\\\\\\\\Users\\\\\\\\)"}},
+        {"not": {"pattern": "(?:sk-[A-Za-z0-9_-]{12,}|ghp_[A-Za-z0-9]{12,}|[Aa][Pp][Ii][_-]?[Kk][Ee][Yy][ ]*[:=])"}}
+      ]
+    },
+    "Sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "SourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 1,
+          "allOf": [
+            {"not": {"pattern": "^(?:/|~|[A-Za-z]:\\\\\\\\)"}},
+            {"not": {"pattern": "(?:sk-[A-Za-z0-9_-]{12,}|ghp_[A-Za-z0-9]{12,}|[Aa][Pp][Ii][_-]?[Kk][Ee][Yy][ ]*[:=])"}}
+          ]
+        },
+        "sha256": {"$ref": "#/$defs/Sha256"}
+      },
+      "required": ["ref", "sha256"]
+    },
+    "Privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "raw_evidence_copied": {"const": false},
+        "contains_secret": {"const": false},
+        "contains_private_absolute_path": {"const": false}
+      },
+      "required": [
+        "raw_evidence_copied",
+        "contains_secret",
+        "contains_private_absolute_path"
+      ]
+    }
+  }
+}

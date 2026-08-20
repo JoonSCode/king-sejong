@@ -10,6 +10,7 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
+from sejong_context import validate_context
 from sejong_doctor_runtime import Check, load_hook_module, multisession_checks, sejong_home
 
 
@@ -130,8 +131,16 @@ def git_check(repo_root: Path) -> list[Check]:
 
 
 def active_context_check(context_path: Path | None) -> list[Check]:
+    if context_path is None:
+        return [
+            Check(
+                "active-context",
+                "ok",
+                "no explicit Context requested; exact session bindings are authoritative and the legacy pointer was not read",
+            )
+        ]
     hooks = load_hook_module()
-    resolved_path = context_path or hooks.resolve_context_path(None)
+    resolved_path = context_path
     if not resolved_path.exists():
         return [
             Check(
@@ -145,11 +154,9 @@ def active_context_check(context_path: Path | None) -> list[Check]:
         context = json.loads(resolved_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as exc:
         return [Check("active-context", "fail", f"active context is unreadable: {exc}")]
-    missing = hooks.missing_context_fields(context)
-    if missing:
-        return [Check("active-context", "fail", "active context missing fields: " + ", ".join(missing))]
-    if not hooks.context_is_well_formed(context):
-        return [Check("active-context", "fail", "active context is not well formed")]
+    failures = validate_context(context)
+    if failures:
+        return [Check("active-context", "fail", "active context is not well formed: " + ", ".join(failures))]
     active_runs = hooks.active_seungjeongwon_run_summaries(context)
     if active_runs:
         return [Check("active-context", "warn", "active Seungjeongwon runs: " + "; ".join(active_runs))]

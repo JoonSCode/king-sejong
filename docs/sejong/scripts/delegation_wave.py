@@ -4,6 +4,7 @@ from dataclasses import dataclass, replace
 from enum import StrEnum
 from typing import Final, NewType
 
+from delegation_cleanup import CleanupStatus, cleanup_required_worker_ids
 from delegation_run_model import (
     DelegationContractError,
     DelegationRun,
@@ -20,12 +21,9 @@ from delegation_run_model import (
 WaveId = NewType("WaveId", str)
 ReceiptId = NewType("ReceiptId", str)
 WORKER_RECEIPT_FORMAT: Final = "sejong.delegation-worker-receipt/v0.1-draft"
-WORKER_CLEANUP_RECEIPT_FORMAT: Final = "sejong.worker-cleanup-receipt/v0.1-draft"
 FAN_IN_RECEIPT_FORMAT: Final = "sejong.delegation-fan-in-receipt/v0.1-draft"
 EVIDENCE_AUTHORITY: Final = "evidence_only"
-CLEANUP_EVIDENCE_AUTHORITY: Final = "cleanup_evidence_only"
 FAN_IN_AUTHORITY: Final = "orchestration_evidence_only"
-CLEANUP_CAPABILITY: Final = "host_owned_exact"
 
 
 class WaveStatus(StrEnum):
@@ -41,13 +39,6 @@ class TerminalStatus(StrEnum):
     FAILED = "failed"
     TIMED_OUT = "timed_out"
     BLOCKED = "blocked"
-
-
-class CleanupStatus(StrEnum):
-    RELEASED = "released"
-    PRESERVED = "preserved"
-    FAILED = "failed"
-    AUDIT_ONLY = "audit_only"
 
 
 @dataclass(frozen=True, slots=True)
@@ -237,18 +228,18 @@ def fan_in(run: DelegationRun, wave_id: WaveId) -> tuple[DelegationRun, JsonObje
         for receipt in run.receipts
         if receipt.get("receipt_type") == "worker_cleanup" and receipt.get("wave_id") == wave_id
     ]
+    cleaned = {str(receipt.get("worker_id")) for receipt in cleanup_receipts}
+    cleanup_required = cleanup_required_worker_ids(receipts)
+    missing_cleanup = sorted(cleanup_required - cleaned)
+    if missing_cleanup:
+        raise DelegationContractError(f"missing cleanup receipts: {missing_cleanup}")
     statuses = {receipt.get("terminal_status") for receipt in receipts}
     cleanup_statuses = {receipt.get("cleanup_status") for receipt in cleanup_receipts}
-    if (
-        TerminalStatus.FAILED.value in statuses
-        or TerminalStatus.TIMED_OUT.value in statuses
-        or CleanupStatus.FAILED.value in cleanup_statuses
-    ):
-        aggregate = WaveStatus.FAILED
-    elif statuses == {TerminalStatus.COMPLETED.value} and cleanup_statuses.issubset(
-        {CleanupStatus.RELEASED.value}
-    ):
+    cleanup_ready = not cleanup_required or cleanup_statuses == {CleanupStatus.RELEASED.value}
+    if statuses == {TerminalStatus.COMPLETED.value} and cleanup_ready:
         aggregate = WaveStatus.PASSED
+    elif TerminalStatus.FAILED.value in statuses or TerminalStatus.TIMED_OUT.value in statuses:
+        aggregate = WaveStatus.FAILED
     else:
         aggregate = WaveStatus.BLOCKED
     fan_in_id = ReceiptId(f"fan-in-{wave_id}")
@@ -270,15 +261,12 @@ def fan_in(run: DelegationRun, wave_id: WaveId) -> tuple[DelegationRun, JsonObje
         "wave_id": wave_id,
         "required_worker_ids": list(required),
         "terminal_receipt_ids": [str(receipt["receipt_id"]) for receipt in receipts],
+        "cleanup_receipt_ids": [str(receipt["receipt_id"]) for receipt in cleanup_receipts],
         "aggregate_status": aggregate.value,
         "blocking_receipt_ids": blocking,
         "authority": FAN_IN_AUTHORITY,
         "created_at": now_utc(),
     }
-    if cleanup_receipts:
-        fan_in_receipt["cleanup_receipt_ids"] = [
-            str(receipt["receipt_id"]) for receipt in cleanup_receipts
-        ]
     updated = dict(wave)
     updated["status"] = aggregate.value
     updated["closed_at"] = now_utc()

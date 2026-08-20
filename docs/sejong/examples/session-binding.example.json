@@ -1,0 +1,18 @@
+{
+  "format": "king-sejong.session-binding/v0.1",
+  "binding_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "host_namespace": "codex",
+  "session_id": "example-session",
+  "state": "bound",
+  "context_ref": "/Users/example/.codex/sejong/runs/example/run/king-sejong-context.json",
+  "active_context_id": "ctx-example",
+  "binding_epoch": 1,
+  "revision": 2,
+  "last_observation": {
+    "turn_id": "turn-example",
+    "event_name": "UserPromptSubmit",
+    "observed_at": "2026-08-02T08:00:00Z"
+  },
+  "created_at": "2026-08-02T07:59:00Z",
+  "updated_at": "2026-08-02T08:00:00Z"
+}

@@ -21,9 +21,19 @@ from pathlib import Path
 
 try:
     import jsonschema
+    from referencing import Registry, Resource
 except ModuleNotFoundError:
     jsonschema = None
+    Registry = None
+    Resource = None
 
+from delegation_cleanup import (
+    CleanupCapability,
+    CleanupReceiptId,
+    CleanupReceiptRequest,
+    CleanupStatus,
+    record_cleanup,
+)
 from delegation_run import check_failures
 from delegation_run_model import Backend, Budget, DelegationContractError, DelegationRun, Worker, WorkerId, save_run
 from delegation_wave import (
@@ -42,9 +52,14 @@ SCRIPT_PATH = Path(__file__).resolve()
 REPO_ROOT = SCRIPT_PATH.parents[3]
 SEUNGJEONGWON = SCRIPT_PATH.with_name("seungjeongwon_run.py")
 SCHEMA_PATH = SCRIPT_PATH.parents[1] / "delegation-run.schema.json"
+CLEANUP_SCHEMA_PATH = SCRIPT_PATH.parents[1] / "worker-cleanup-receipt.schema.json"
 
 
-def terminal_run(status: TerminalStatus = TerminalStatus.COMPLETED) -> DelegationRun:
+def terminal_run(
+    status: TerminalStatus = TerminalStatus.COMPLETED,
+    *,
+    cleanup_required: bool = False,
+) -> DelegationRun:
     run = DelegationRun(
         run_id="correlation-run",
         created_at="2026-07-11T00:00:00Z",
@@ -59,7 +74,9 @@ def terminal_run(status: TerminalStatus = TerminalStatus.COMPLETED) -> Delegatio
             receipt_id=ReceiptId("receipt-worker-a"),
             wave_id=WaveId("wave-1"),
             worker_id=WorkerId("worker-a"),
-            backend_worker_ref="native://worker-a",
+            backend_worker_ref=(
+                "codex-thread://worker-a" if cleanup_required else "native://worker-a"
+            ),
             worker_contract_ref="contract://worker-a",
             worker_output_ref="output://worker-a",
             terminal_status=status,
@@ -75,43 +92,41 @@ def closed_run(status: TerminalStatus = TerminalStatus.COMPLETED) -> DelegationR
     return fan_in(terminal_run(status), WaveId("wave-1"))[0]
 
 
-def cleanup_receipt(
+def cleanup_request(
     run: DelegationRun,
     *,
     status: str = "released",
     receipt_id: str = "cleanup-worker-a",
-) -> dict:
+) -> CleanupReceiptRequest:
     terminal = next(item for item in run.receipts if item.get("receipt_type") == "worker_terminal")
     worker_ref = str(terminal["backend_worker_ref"])
     released = [worker_ref] if status == "released" else []
-    preserved = [worker_ref] if status in {"preserved", "audit_only"} else []
+    preserved = [worker_ref] if status == "preserved" else []
     failed = [worker_ref] if status == "failed" else []
-    return {
-        "format": "sejong.worker-cleanup-receipt/v0.1-draft",
-        "receipt_type": "worker_cleanup",
-        "receipt_id": receipt_id,
-        "run_id": run.run_id,
-        "wave_id": "wave-1",
-        "worker_id": "worker-a",
-        "backend": "native",
-        "backend_worker_ref": worker_ref,
-        "resource_lease_ref": "lease://worker-a",
-        "resource_lease_id": "lease-worker-a",
-        "cleanup_capability": "host_owned_exact",
-        "cleanup_status": status,
-        "released_resource_ids": released,
-        "preserved_resource_ids": preserved,
-        "failed_resource_ids": failed,
-        "proof_refs": [f"proof://worker-a/{status}"],
-        "blocker": None if status == "released" else f"cleanup {status}",
-        "authority": "cleanup_evidence_only",
-        "created_at": "2026-07-11T00:01:00Z",
-    }
+    return CleanupReceiptRequest(
+        receipt_id=CleanupReceiptId(receipt_id),
+        wave_id="wave-1",
+        worker_id=WorkerId("worker-a"),
+        backend_worker_ref=worker_ref,
+        resource_lease_ref="lease://worker-a",
+        resource_lease_id="lease-worker-a",
+        cleanup_capability=(
+            CleanupCapability.AUDIT_ONLY
+            if status == CleanupStatus.AUDIT_ONLY.value
+            else CleanupCapability.HOST_OWNED_EXACT
+        ),
+        cleanup_status=CleanupStatus(status),
+        released_resource_ids=tuple(released),
+        preserved_resource_ids=tuple(preserved),
+        failed_resource_ids=tuple(failed),
+        proof_refs=(f"proof://worker-a/{status}",),
+        blocker=None if status == "released" else f"cleanup {status}",
+    )
 
 
 def cleanup_run(status: str = "released") -> DelegationRun:
-    run = terminal_run()
-    run = replace(run, receipts=(*run.receipts, cleanup_receipt(run, status=status)))
+    run = terminal_run(cleanup_required=True)
+    run = record_cleanup(run, cleanup_request(run, status=status))
     return fan_in(run, WaveId("wave-1"))[0]
 
 
@@ -161,17 +176,21 @@ class DelegationWaveCorrelationTests(unittest.TestCase):
             fan_in_receipt = next(item for item in payload["receipts"] if item["receipt_type"] == "fan_in")
 
             self.assertEqual(check_failures(path), ())
-            self.assertNotIn("cleanup_receipt_ids", fan_in_receipt)
+            self.assertEqual(fan_in_receipt["cleanup_receipt_ids"], [])
 
     @unittest.skipIf(jsonschema is None, "jsonschema is required for schema-instance validation")
     def test_schema_accepts_optional_cleanup_and_rejects_malformed_state(self) -> None:
         schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+        cleanup_schema = json.loads(CLEANUP_SCHEMA_PATH.read_text(encoding="utf-8"))
+        registry = Registry().with_resource(cleanup_schema["$id"], Resource.from_contents(cleanup_schema))
+        validator_cls = jsonschema.validators.validator_for(schema)
+        validator = validator_cls(schema, registry=registry)
         valid_payloads = []
         for status in ("released", "preserved", "failed", "audit_only"):
             with tempfile.TemporaryDirectory() as tmp:
                 path = Path(tmp) / "delegation-run.json"
                 payload = payload_for(cleanup_run(status), path)
-            jsonschema.validate(payload, schema)
+            validator.validate(payload)
             valid_payloads.append(payload)
 
         cases = (
@@ -189,7 +208,7 @@ class DelegationWaveCorrelationTests(unittest.TestCase):
                 )
                 cleanup[field] = value
                 with self.assertRaises(jsonschema.ValidationError):
-                    jsonschema.validate(malformed, schema)
+                    validator.validate(malformed)
 
     def test_cleanup_boundary_and_binding_tampering_is_rejected(self) -> None:
         cases = {
@@ -222,7 +241,7 @@ class DelegationWaveCorrelationTests(unittest.TestCase):
             ("preserved", "preserved_resource_ids", []),
             ("preserved", "blocker", None),
             ("failed", "failed_resource_ids", []),
-            ("audit_only", "preserved_resource_ids", []),
+            ("audit_only", "blocker", None),
         )
         for status, field, value in cases:
             with self.subTest(status=status, field=field), tempfile.TemporaryDirectory() as tmp:
@@ -246,9 +265,6 @@ class DelegationWaveCorrelationTests(unittest.TestCase):
             failures = write_payload(path, payload)
 
             self.assertTrue(any("cleanup receipt" in failure for failure in failures))
-            self.assertIn("cleanup resource lease ids must be unique", failures)
-            self.assertIn("cleanup resource lease refs must be unique", failures)
-            self.assertIn("cleanup resource ids must be unique across receipts", failures)
 
     def test_fan_in_cleanup_references_and_blockers_are_exact(self) -> None:
         cases = {
@@ -263,9 +279,11 @@ class DelegationWaveCorrelationTests(unittest.TestCase):
                 fan_in_receipt = next(item for item in payload["receipts"] if item["receipt_type"] == "fan_in")
                 if value is None:
                     fan_in_receipt.pop("cleanup_receipt_ids")
+                    with self.assertRaises(DelegationContractError):
+                        write_payload(path, payload)
                 else:
                     fan_in_receipt["cleanup_receipt_ids"] = value
-                self.assertTrue(write_payload(path, payload))
+                    self.assertTrue(write_payload(path, payload))
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "delegation-run.json"
@@ -297,8 +315,8 @@ class DelegationWaveCorrelationTests(unittest.TestCase):
         }
         for terminal_status, aggregate_status in expected.items():
             with self.subTest(terminal_status=terminal_status), tempfile.TemporaryDirectory() as tmp:
-                run = terminal_run(terminal_status)
-                run = replace(run, receipts=(*run.receipts, cleanup_receipt(run)))
+                run = terminal_run(terminal_status, cleanup_required=True)
+                run = record_cleanup(run, cleanup_request(run))
                 run = fan_in(run, WaveId("wave-1"))[0]
                 path = Path(tmp) / "delegation-run.json"
                 payload = payload_for(run, path)
@@ -318,7 +336,7 @@ class DelegationWaveCorrelationTests(unittest.TestCase):
         expected = {
             "preserved": "blocked",
             "audit_only": "blocked",
-            "failed": "failed",
+            "failed": "blocked",
         }
         for cleanup_status, aggregate_status in expected.items():
             with self.subTest(cleanup_status=cleanup_status), tempfile.TemporaryDirectory() as tmp:

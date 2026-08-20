@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/session-binding.schema.json",
+  "title": "King Sejong Codex Session Binding",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {"const": "king-sejong.session-binding/v0.1"},
+    "binding_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "host_namespace": {"type": "string", "minLength": 1},
+    "session_id": {"type": "string", "minLength": 1},
+    "state": {"enum": ["bound", "unbound"]},
+    "context_ref": {"type": ["string", "null"]},
+    "active_context_id": {"type": ["string", "null"]},
+    "binding_epoch": {"type": "integer", "minimum": 1},
+    "revision": {"type": "integer", "minimum": 1},
+    "last_observation": {
+      "type": ["object", "null"],
+      "properties": {
+        "turn_id": {"type": ["string", "null"]},
+        "event_name": {"type": ["string", "null"]},
+        "observed_at": {"type": "string", "format": "date-time"}
+      },
+      "required": ["turn_id", "observed_at"],
+      "additionalProperties": false
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  },
+  "required": [
+    "format", "binding_id", "host_namespace", "session_id", "state",
+    "context_ref", "active_context_id", "binding_epoch", "revision",
+    "last_observation", "created_at", "updated_at"
+  ],
+  "allOf": [
+    {
+      "if": {"properties": {"state": {"const": "bound"}}},
+      "then": {
+        "properties": {
+          "context_ref": {"type": "string", "minLength": 1},
+          "active_context_id": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"state": {"const": "unbound"}}},
+      "then": {
+        "properties": {
+          "context_ref": {"type": "null"},
+          "active_context_id": {"type": "null"}
+        }
+      }
+    }
+  ]
+}

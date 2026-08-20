@@ -26,22 +26,20 @@ worker reference, bounded worker contract, output reference, status, and
 evidence. Native subagents and TeamExecutor workers use the same receipt shape.
 Worker receipts have `evidence_only` authority.
 
-A worker may also have one strict `worker_cleanup` receipt after terminal
-evidence exists. Cleanup receipts bind the same run, wave, worker, backend, and
-backend worker reference; identify one unique resource lease; and record one of
-`released`, `preserved`, `failed`, or `audit_only` with status-consistent
-resource sets, proof refs, and blocker disposition. Their authority is always
-`cleanup_evidence_only`. The validator observes cleanup evidence but never
-executes cleanup or manages a process.
+Host-native Codex workers also require a `sejong.worker-resource-lease/v0.1-draft`
+for their exact runtime group and a correlated
+`sejong.worker-cleanup-receipt/v0.1-draft`. Terminal output alone does not close
+their wave. Core rejects fan-in while a `codex-thread://` worker lacks cleanup
+evidence, and only a `released` cleanup backed by `core_owned_exact` or
+`host_owned_exact` capability can contribute to a passed fan-in. `preserved`,
+`failed`, `orphaned`, and `audit_only` evidence blocks success and therefore
+prevents another dependency wave from opening.
 
-Cleanup is optional for backward compatibility. A run with no cleanup receipts
-keeps the existing terminal and fan-in contract. When cleanup evidence is
-present, fan-in includes `cleanup_receipt_ids` that exactly cover the supplied
-receipts. `released` evidence permits the terminal-derived result to stand;
-`preserved` or `audit_only` can only downgrade wave readiness to `blocked`, and
-`failed` can only downgrade it to `failed`. Cleanup never changes a terminal
-status, replaces a missing terminal receipt, makes a failed terminal pass, or
-acts as completion, gate, synthesis, or final-verification authority.
+Backend selection performs this cleanup check before spawn. If the host does
+not expose an exact runtime identity and supported release proof, the
+host-native backend is unavailable for that run; the lead continues locally or
+selects a Core-owned backend. Sejong does not create audit-only native workers
+and hope to clean them up afterward.
 
 For host-native Codex agents, `native_delegation_adapter.py` is a narrow receipt
 projection boundary. It verifies that the worker was registered with backend
@@ -49,19 +47,27 @@ projection boundary. It verifies that the worker was registered with backend
 the same Core terminal-receipt operation. It does not spawn, resume, message,
 wait for, or close agents, and it does not create a second mailbox or fan-in
 engine. The host owns agent lifecycle; DelegationRun owns budgets, waves,
-receipts, and fan-in.
+receipts, the cleanup barrier, and fan-in. King Sejong never infers ownership
+from process names or kills a host process from `SubagentStop`; the host must
+provide an exact thread or runtime-group identity and cleanup proof.
 
-Core computes fan-in. A wave passes only when every required terminal receipt
-is `completed` and every supplied cleanup receipt is `released`. Missing
-terminal receipts block fan-in, `timed_out` or `failed` terminals produce a
-failed fan-in, and `blocked` terminals produce a blocked fan-in. A failed or
-blocked fan-in cannot unlock a downstream wave.
+Core computes fan-in. A wave passes only when every terminal receipt is
+`completed` and every required host-native cleanup receipt is `released`.
+Missing receipts block fan-in, `timed_out` or `failed` terminal receipts produce
+a failed fan-in, and unresolved cleanup or `blocked` terminal receipts produce
+a blocked fan-in. A failed or blocked fan-in cannot unlock a downstream wave.
 
 Fan-in receipts have `orchestration_evidence_only` authority. They can be
 attached to a Seungjeongwon run, but cannot approve Uigwe, synthesize a decision,
 or complete verification. Attachment requires both the receipt file and its
 validated delegation run. Seungjeongwon accepts only an exact, embedded,
 `passed` fan-in receipt and records the delegation run as provenance.
+
+At terminal finalization, Core may project worker resource leases and cleanup
+receipts into the compact work lifecycle summary described in
+[WORK_LIFECYCLE.md](WORK_LIFECYCLE.md). This projection reports counts and
+missing exact lease IDs only. It does not replace fan-in validation or upgrade
+cleanup evidence authority.
 
 ## CLI
 
@@ -79,6 +85,19 @@ python3 docs/sejong/scripts/native_delegation_adapter.py record-terminal <run.js
   --agent-thread-id thread-123 --worker-contract-ref contract://planner \
   --worker-output-ref output://planner --status completed --summary "planning complete" \
   --evidence-ref evidence://planning
+python3 docs/sejong/scripts/worker_resource_lease.py create <lease.json> \
+  --lease-id lease-planner --run-id example --wave-id discovery --worker-id planner \
+  --backend native --backend-worker-ref codex-thread://thread-123 \
+  --cleanup-capability host_owned_exact --resource-id runtime-planner \
+  --resource-kind host_runtime_group --identity-ref codex-thread://thread-123 \
+  --ownership-source host_reported --cleanup-policy automatic
+python3 docs/sejong/scripts/worker_resource_lease.py transition <lease.json> --status releasing
+# The host performs exact thread/runtime teardown and returns a proof reference.
+python3 docs/sejong/scripts/worker_resource_lease.py transition <lease.json> \
+  --status released --proof-ref host-cleanup://thread-123
+python3 docs/sejong/scripts/native_delegation_adapter.py record-cleanup <run.json> \
+  --receipt-id cleanup-planner --agent-thread-id thread-123 \
+  --worker-resource-lease <lease.json>
 python3 docs/sejong/scripts/delegation_run.py fan-in <run.json> \
   --wave-id discovery --output discovery-fan-in.json
 python3 docs/sejong/scripts/delegation_run.py check <run.json>
@@ -90,13 +109,9 @@ python3 docs/sejong/scripts/seungjeongwon_run.py add-fan-in \
 TeamExecutor uses its own adapter path to supply the same receipt fields. Direct
 `delegation_run.py record-terminal` remains the backend-neutral compatibility
 surface, not a reason for native callers to invent host references manually.
-
-Discord ticket execution uses this same TeamExecutor and DelegationRun path.
-The fixed-model process runner validates the existing worker, worktree, active
-scope leases, and open wave, then projects its bounded process receipt through
-`record_terminal_receipt`. It does not allocate a competing worker budget,
-lease, mailbox, or fan-in engine. Candidate handoff and independent review are
-later evidence gates; a completed worker receipt is never final verification.
+When the host cannot supply exact ownership or teardown proof, record an
+`audit_only` or failed cleanup disposition and stop opening native waves; do not
+substitute a name-based process scan.
 
 All mutations use a per-run lock and atomic state replacement. Runtime files
 belong under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` unless the user

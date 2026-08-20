@@ -490,6 +490,9 @@
         "TeamExecutor mailbox messages use the sejong.team-mailbox-message/v0.1-draft envelope",
         "new mailbox integrations use send-message and receive-messages rather than raw JSONL appends",
         "team_executor.py can initialize and check TeamExecutor run state",
+        "host-native worker selection requires exact runtime identity and supported release proof before spawn",
+        "active and terminal-but-unreleased native leases both consume concurrency capacity",
+        "native fan-in and later waves require released cleanup receipts",
         "Jiphyeonjeon scholar-scoped research lanes are tied to explicit research questions and shared evidence",
         "scholar-scoped helper lanes cannot approve Uigwe gates or claim final synthesis",
         "Uigwe supports only preflight parallelism before gates"
@@ -499,6 +502,8 @@
         "private scholar evidence hoarding",
         "unbounded recursive scholar sub-councils",
         "always-on worker swarming",
+        "opening audit-only native workers without a supported release path",
+        "using process names or broad child-tree scans as cleanup authority",
         "depending on repo-local or tool-specific orchestration state for King Sejong"
       ],
       "grading_notes": [
@@ -539,7 +544,7 @@
         "TaskCreated, TaskCompleted, and TeammateIdle keep official team events inside Sejong authority bounds when the host supports them",
         "Stop continues when pending gates remain",
         "Do not infer a receipt gate from required_route_sequence alone; seungjeongwon_receipt_required records an explicit unfinished execution obligation",
-        "PreCompact and PostCompact preserve checkpoint context"
+        "PreCompact validates active continuity and SessionStart(source=compact) restores checkpoint context"
       ],
       "forbidden_behavior": [
         "claiming hooks are a complete sandbox boundary",

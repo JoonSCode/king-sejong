@@ -16,6 +16,9 @@ class RunLocalEvalsTests(unittest.TestCase):
                 "hook-tests",
                 "adversarial-confidence-pack",
                 "context-tests",
+                "doctor-tests",
+                "session-binding-tests",
+                "multisession-hook-e2e",
                 "task-class-delegation-gate-tests",
                 "native-delegation-adapter-tests",
                 "delegation-run-tests",
@@ -25,6 +28,7 @@ class RunLocalEvalsTests(unittest.TestCase):
                 "seungjeongwon-run-tests",
                 "sillok-trace-tests",
                 "cleanup-tests",
+                "work-lifecycle-tests",
                 "e2e-tests",
                 "sejong-surface-benchmark",
                 "instruction-surface-benchmark",
@@ -35,12 +39,16 @@ class RunLocalEvalsTests(unittest.TestCase):
         commands = [" ".join(step.command) for step in steps]
         self.assertTrue(any("test_king_sejong_hooks.py" in command for command in commands))
         self.assertTrue(any("run_adversarial_confidence_pack.py" in command for command in commands))
+        self.assertTrue(any("test_sejong_doctor.py" in command for command in commands))
+        self.assertTrue(any("test_session_binding_context.py" in command for command in commands))
+        self.assertTrue(any("test_king_sejong_multisession_e2e.py" in command for command in commands))
         self.assertTrue(any("test_task_class_delegation_gate.py" in command for command in commands))
         self.assertTrue(any("test_native_delegation_adapter.py" in command for command in commands))
         self.assertTrue(any("test_delegation_run.py" in command for command in commands))
         self.assertTrue(any("test_delegation_wave_validation.py" in command for command in commands))
         self.assertTrue(any("test_external_action_receipt.py" in command for command in commands))
         self.assertTrue(any("test_team_executor.py" in command for command in commands))
+        self.assertTrue(any("test_work_lifecycle.py" in command for command in commands))
         self.assertTrue(any("benchmark_sejong_surface.py --require-targets" in command for command in commands))
         self.assertTrue(any("benchmark_instruction_surface.py --require-targets" in command for command in commands))
         self.assertTrue(any("validate_json_contracts.py" in command for command in commands))

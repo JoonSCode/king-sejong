@@ -34,6 +34,10 @@ JangYeongsil does not approve Uigwe gates, finalize packets, choose designs by v
 
 Use Codex native subagents, host-native team support, or `$team` / TeamExecutor only when evidence scopes are independent. Each worker must have a distinct source, subsystem, history window, or experiment, plus an explicit stop condition and allowed output.
 
+Apply Sejong's worker cleanup preflight before selecting a native backend. If the
+host cannot provide exact release evidence, keep the lane local or use a
+Core-owned backend instead of opening an audit-only native worker.
+
 When official peer/team messaging is available in the host runtime, it may be used for bounded evidence questions and objections. Otherwise use the Sejong TeamExecutor mailbox. Either way, messages are evidence for the Sejong lead, not approval or final verification.
 
 For deep-research profile work, decompose the question into independent

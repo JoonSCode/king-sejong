@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import os
 import json
+import fcntl
+import os
+import signal
+import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -14,12 +18,19 @@ REPO_ROOT = SCRIPT_PATH.parents[3]
 INSTALLER = REPO_ROOT / "scripts" / "install-sejong.sh"
 
 
-def run_installer(args: list[str], *, codex_home: Path | None = None) -> subprocess.CompletedProcess[str]:
+def run_installer(
+    args: list[str],
+    *,
+    codex_home: Path | None = None,
+    extra_env: dict[str, str] | None = None,
+    installer: Path = INSTALLER,
+) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     if codex_home is not None:
         env["CODEX_HOME"] = str(codex_home)
+    env.update(extra_env or {})
     return subprocess.run(
-        ["bash", str(INSTALLER), *args],
+        ["bash", str(installer), *args],
         text=True,
         capture_output=True,
         cwd=str(REPO_ROOT),
@@ -117,6 +128,11 @@ class InstallSejongTests(unittest.TestCase):
             self.assertFalse(plugin_skill_path.exists())
             self.assertFalse(plugin_why_gate_skill_path.exists())
 
+            hooks = json.loads(hooks_path.read_text(encoding="utf-8"))["hooks"]
+            self.assertIn("PreCompact", hooks)
+            self.assertNotIn("PostCompact", hooks)
+            self.assertEqual(hooks["SessionStart"][0]["matcher"], "startup|resume|compact")
+
             marketplace = json.loads(marketplace_path.read_text(encoding="utf-8"))
             self.assertEqual(
                 marketplace["plugins"],
@@ -146,6 +162,428 @@ class InstallSejongTests(unittest.TestCase):
             )
             self.assertEqual(hook_result.returncode, 0, hook_result.stderr)
             self.assertEqual(hook_result.stdout.strip(), "")
+
+    def test_interrupted_user_install_publishes_fail_closed_maintenance_generation_first(self) -> None:
+        # Given: an installed generation whose live canonical hook could inject legacy context.
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            initial = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(initial.returncode, 0, initial.stderr)
+            plugin_root = (
+                codex_home
+                / "plugins"
+                / "cache"
+                / "king-sejong-local"
+                / "king-sejong"
+                / "0.1.0"
+            )
+            hook_runner_path = plugin_root / "hooks" / "king-sejong-hook.py"
+            canonical_hook_path = codex_home / "skills" / "sejong" / "docs" / "scripts" / "king_sejong_hooks.py"
+            canonical_hook_path.write_text(
+                "#!/usr/bin/env python3\nprint('LEGACY-CONTEXT-SHOULD-NOT-INJECT')\n",
+                encoding="utf-8",
+            )
+
+            # When: installation stops immediately after its first authority mutation.
+            interrupted = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+                extra_env={"SEJONG_INSTALL_TEST_FAIL_AFTER_MAINTENANCE_GUARD": "1"},
+            )
+            transaction_path = codex_home / "sejong" / "state" / "install-transaction.json"
+            transaction = json.loads(transaction_path.read_text(encoding="utf-8"))
+            hook_result = subprocess.run(
+                ["python3", str(hook_runner_path), "UserPromptSubmit"],
+                input='{"session_id":"unbound-after-interrupt","turn_id":"turn-interrupt"}',
+                text=True,
+                capture_output=True,
+                env={**os.environ, "CODEX_HOME": str(codex_home), "PLUGIN_ROOT": str(plugin_root)},
+                cwd=str(REPO_ROOT),
+            )
+
+            # Then: the interrupted generation is quiet, and a normal rerun repairs it idempotently.
+            self.assertNotEqual(interrupted.returncode, 0)
+            self.assertEqual(transaction["status"], "in_progress")
+            self.assertEqual(transaction["runtime_authority_epoch"], 2)
+            self.assertEqual(hook_result.returncode, 0, hook_result.stderr)
+            self.assertEqual(hook_result.stdout, "")
+            self.assertNotIn("LEGACY-CONTEXT-SHOULD-NOT-INJECT", hook_result.stdout)
+
+            recovered = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+            recovered_transaction = json.loads(transaction_path.read_text(encoding="utf-8"))
+            self.assertEqual(recovered.returncode, 0, recovered.stderr)
+            self.assertEqual(recovered_transaction["status"], "complete")
+
+    def test_user_install_crash_matrix_keeps_unbound_prompt_quiet_and_recovers(self) -> None:
+        # Given: a complete V2 generation is installed before each deterministic crash point.
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            initial = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(initial.returncode, 0, initial.stderr)
+
+            for step in ("maintenance", "skills", "docs", "plugin", "config", "verified", "canonical"):
+                with self.subTest(step=step):
+                    interrupted = run_installer(
+                        ["--scope", "user", "--force", "--codex-guidance", "none"],
+                        codex_home=codex_home,
+                        extra_env={"SEJONG_INSTALL_TEST_FAIL_AFTER_STEP": step},
+                    )
+                    plugin_root = (
+                        codex_home
+                        / "plugins"
+                        / "cache"
+                        / "king-sejong-local"
+                        / "king-sejong"
+                        / "0.1.0"
+                    )
+                    hook_runner_path = plugin_root / "hooks" / "king-sejong-hook.py"
+                    hook_result = subprocess.run(
+                        ["python3", str(hook_runner_path), "UserPromptSubmit"],
+                        input=json.dumps(
+                            {
+                                "session_id": f"unbound-after-{step}",
+                                "turn_id": f"turn-after-{step}",
+                            }
+                        ),
+                        text=True,
+                        capture_output=True,
+                        env={**os.environ, "CODEX_HOME": str(codex_home), "PLUGIN_ROOT": str(plugin_root)},
+                        cwd=str(REPO_ROOT),
+                    )
+                    start_result = subprocess.run(
+                        ["python3", str(hook_runner_path), "SessionStart"],
+                        input=json.dumps(
+                            {
+                                "session_id": f"unbound-start-after-{step}",
+                                "turn_id": f"turn-start-after-{step}",
+                                "source": "startup",
+                            }
+                        ),
+                        text=True,
+                        capture_output=True,
+                        env={**os.environ, "CODEX_HOME": str(codex_home), "PLUGIN_ROOT": str(plugin_root)},
+                        cwd=str(REPO_ROOT),
+                    )
+
+                    self.assertNotEqual(interrupted.returncode, 0)
+                    self.assertEqual(hook_result.returncode, 0, hook_result.stderr)
+                    self.assertEqual(hook_result.stdout, "")
+                    self.assertEqual(start_result.returncode, 0, start_result.stderr)
+                    self.assertEqual(start_result.stdout, "")
+                    canonical_hook_path = codex_home / "skills/sejong/docs/scripts/king_sejong_hooks.py"
+                    if step != "canonical" and canonical_hook_path.exists():
+                        self.assertIn("install maintenance is in progress", canonical_hook_path.read_text(encoding="utf-8"))
+
+                    recovered = run_installer(
+                        ["--scope", "user", "--force", "--codex-guidance", "none"],
+                        codex_home=codex_home,
+                    )
+                    self.assertEqual(recovered.returncode, 0, recovered.stderr)
+
+    def test_user_install_uses_stable_exclusive_installer_lock_before_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            installed = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(installed.returncode, 0, installed.stderr)
+            canonical_hook_path = codex_home / "skills/sejong/docs/scripts/king_sejong_hooks.py"
+            transaction_path = codex_home / "sejong/state/install-transaction.json"
+            canonical_before = canonical_hook_path.read_bytes()
+            transaction_before = transaction_path.read_bytes()
+            lock_path = codex_home / "sejong/state/locks/user-install.lock"
+            lock_path.parent.mkdir(parents=True, exist_ok=True)
+
+            with lock_path.open("a+") as held_lock:
+                fcntl.flock(held_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                contender = run_installer(
+                    ["--scope", "user", "--force", "--codex-guidance", "none"],
+                    codex_home=codex_home,
+                    extra_env={"SEJONG_INSTALL_LOCK_TIMEOUT_SECONDS": "0.1"},
+                )
+
+            self.assertNotEqual(contender.returncode, 0)
+            self.assertIn("user install lock", contender.stderr)
+            self.assertEqual(canonical_hook_path.read_bytes(), canonical_before)
+            self.assertEqual(transaction_path.read_bytes(), transaction_before)
+
+            forged_bypass = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+                extra_env={"SEJONG_INSTALL_LOCK_HELD": "1"},
+            )
+            self.assertNotEqual(forged_bypass.returncode, 0)
+            self.assertIn("invalid inherited King Sejong user install lock", forged_bypass.stderr)
+            self.assertEqual(canonical_hook_path.read_bytes(), canonical_before)
+            self.assertEqual(transaction_path.read_bytes(), transaction_before)
+
+    def test_epoch_two_install_rejects_supported_authority_downgrade_before_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            temp_root = Path(tmp)
+            codex_home = temp_root / "codex"
+            installed = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(installed.returncode, 0, installed.stderr)
+            canonical_hook_path = codex_home / "skills/sejong/docs/scripts/king_sejong_hooks.py"
+            transaction_path = codex_home / "sejong/state/install-transaction.json"
+            legacy_path = codex_home / "sejong/state/active-context.json"
+            legacy_bytes = b'{"preserved":"legacy bytes"}\n'
+            legacy_path.write_bytes(legacy_bytes)
+            canonical_before = canonical_hook_path.read_bytes()
+            transaction_before = transaction_path.read_bytes()
+
+            downgrade_source = temp_root / "downgrade-source"
+            shutil.copytree(
+                REPO_ROOT,
+                downgrade_source,
+                ignore=shutil.ignore_patterns(".git", "__pycache__", ".DS_Store"),
+            )
+            downgrade_installer = downgrade_source / "scripts/install-sejong.sh"
+            installer_text = downgrade_installer.read_text(encoding="utf-8")
+            self.assertIn("RUNTIME_AUTHORITY_EPOCH=2", installer_text)
+            downgrade_installer.write_text(
+                installer_text.replace("RUNTIME_AUTHORITY_EPOCH=2", "RUNTIME_AUTHORITY_EPOCH=1", 1),
+                encoding="utf-8",
+            )
+
+            rejected = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+                installer=downgrade_installer,
+            )
+
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("Legacy-authority rollback is unsupported", rejected.stderr)
+            self.assertEqual(canonical_hook_path.read_bytes(), canonical_before)
+            self.assertEqual(transaction_path.read_bytes(), transaction_before)
+            self.assertEqual(legacy_path.read_bytes(), legacy_bytes)
+
+    def test_user_install_uses_frozen_source_snapshot_when_worktree_changes_mid_install(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            temp_root = Path(tmp)
+            source_root = temp_root / "source"
+            codex_home = temp_root / "codex"
+            ready_path = temp_root / "snapshot.ready"
+            release_path = temp_root / "snapshot.release"
+            shutil.copytree(
+                REPO_ROOT,
+                source_root,
+                ignore=shutil.ignore_patterns(".git", "__pycache__", ".DS_Store"),
+            )
+            source_canonical = source_root / "docs/sejong/scripts/king_sejong_hooks.py"
+            canonical_snapshot = source_canonical.read_bytes()
+            environment = {
+                **os.environ,
+                "CODEX_HOME": str(codex_home),
+                "SEJONG_INSTALL_TEST_SNAPSHOT_READY_FILE": str(ready_path),
+                "SEJONG_INSTALL_TEST_SNAPSHOT_RELEASE_FILE": str(release_path),
+            }
+            process = subprocess.Popen(
+                [
+                    "bash",
+                    str(source_root / "scripts/install-sejong.sh"),
+                    "--scope",
+                    "user",
+                    "--force",
+                    "--codex-guidance",
+                    "none",
+                ],
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=str(source_root),
+                env=environment,
+            )
+            deadline = time.monotonic() + 10.0
+            while not ready_path.exists() and time.monotonic() < deadline:
+                time.sleep(0.02)
+            self.assertTrue(ready_path.exists(), "installer did not publish the source snapshot barrier")
+
+            source_canonical.write_bytes(canonical_snapshot + b"\n# mutation after frozen snapshot\n")
+            release_path.write_text("release\n", encoding="utf-8")
+            stdout, stderr = process.communicate(timeout=20)
+
+            self.assertEqual(process.returncode, 0, stderr or stdout)
+            installed_canonical = codex_home / "skills/sejong/docs/scripts/king_sejong_hooks.py"
+            self.assertEqual(installed_canonical.read_bytes(), canonical_snapshot)
+            transaction = json.loads(
+                (codex_home / "sejong/state/install-transaction.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(transaction["status"], "complete")
+
+    def test_mutating_child_retains_installer_lock_after_outer_owner_is_killed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            temp_root = Path(tmp)
+            source_a = temp_root / "source-a"
+            source_b = temp_root / "source-b"
+            codex_home = temp_root / "codex"
+            maintenance_ready = temp_root / "maintenance.ready"
+            maintenance_release = temp_root / "maintenance.release"
+            owner_pid_path = temp_root / "lock-owner.pid"
+            mutator_pid_path = temp_root / "mutator.pid"
+            for source in (source_a, source_b):
+                shutil.copytree(
+                    REPO_ROOT,
+                    source,
+                    ignore=shutil.ignore_patterns(".git", "__pycache__", ".DS_Store"),
+                )
+            canonical_a = (source_a / "docs/sejong/scripts/king_sejong_hooks.py").read_bytes()
+            canonical_b_path = source_b / "docs/sejong/scripts/king_sejong_hooks.py"
+            canonical_b = canonical_b_path.read_bytes() + b"\n# distinct outer-death generation B\n"
+            canonical_b_path.write_bytes(canonical_b)
+            first_environment = {
+                **os.environ,
+                "CODEX_HOME": str(codex_home),
+                "SEJONG_INSTALL_TEST_MAINTENANCE_READY_FILE": str(maintenance_ready),
+                "SEJONG_INSTALL_TEST_MAINTENANCE_RELEASE_FILE": str(maintenance_release),
+                "SEJONG_INSTALL_TEST_LOCK_OWNER_PID_FILE": str(owner_pid_path),
+                "SEJONG_INSTALL_TEST_MUTATOR_PID_FILE": str(mutator_pid_path),
+            }
+            outer = subprocess.Popen(
+                [
+                    "bash",
+                    str(source_a / "scripts/install-sejong.sh"),
+                    "--scope",
+                    "user",
+                    "--force",
+                    "--codex-guidance",
+                    "none",
+                ],
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=str(source_a),
+                env=first_environment,
+            )
+            owner_pid = 0
+            mutator_pid = 0
+            try:
+                deadline = time.monotonic() + 12.0
+                required = (maintenance_ready, owner_pid_path, mutator_pid_path)
+                while not all(path.exists() for path in required) and time.monotonic() < deadline:
+                    time.sleep(0.02)
+                self.assertTrue(all(path.exists() for path in required), "first installer did not reach maintenance barrier")
+                owner_pid = int(owner_pid_path.read_text(encoding="utf-8").strip())
+                mutator_pid = int(mutator_pid_path.read_text(encoding="utf-8").strip())
+                self.assertNotEqual(owner_pid, mutator_pid)
+                os.kill(owner_pid, signal.SIGKILL)
+                time.sleep(0.1)
+                os.kill(mutator_pid, 0)
+
+                blocked = run_installer(
+                    ["--scope", "user", "--force", "--codex-guidance", "none"],
+                    codex_home=codex_home,
+                    installer=source_b / "scripts/install-sejong.sh",
+                    extra_env={"SEJONG_INSTALL_LOCK_TIMEOUT_SECONDS": "0.2"},
+                )
+                self.assertNotEqual(blocked.returncode, 0)
+                self.assertIn("user install lock", blocked.stderr)
+                in_progress = json.loads(
+                    (codex_home / "sejong/state/install-transaction.json").read_text(encoding="utf-8")
+                )
+                self.assertEqual(in_progress["status"], "in_progress")
+
+                maintenance_release.write_text("release\n", encoding="utf-8")
+                outer.communicate(timeout=20)
+                completion_deadline = time.monotonic() + 10.0
+                while time.monotonic() < completion_deadline:
+                    transaction_path = codex_home / "sejong/state/install-transaction.json"
+                    if transaction_path.exists():
+                        transaction = json.loads(transaction_path.read_text(encoding="utf-8"))
+                        if transaction.get("status") == "complete":
+                            break
+                    time.sleep(0.05)
+                else:
+                    self.fail("orphaned mutator did not complete generation A")
+                installed_canonical = codex_home / "skills/sejong/docs/scripts/king_sejong_hooks.py"
+                self.assertEqual(installed_canonical.read_bytes(), canonical_a)
+
+                second = run_installer(
+                    ["--scope", "user", "--force", "--codex-guidance", "none"],
+                    codex_home=codex_home,
+                    installer=source_b / "scripts/install-sejong.sh",
+                )
+                verified = run_installer(
+                    ["--scope", "user", "--verify", "--codex-guidance", "none"],
+                    codex_home=codex_home,
+                    installer=source_b / "scripts/install-sejong.sh",
+                )
+                self.assertEqual(second.returncode, 0, second.stderr)
+                self.assertEqual(verified.returncode, 0, verified.stderr)
+                self.assertEqual(installed_canonical.read_bytes(), canonical_b)
+            finally:
+                maintenance_release.write_text("release\n", encoding="utf-8")
+                if outer.poll() is None:
+                    try:
+                        outer.communicate(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        outer.kill()
+                        outer.communicate(timeout=5)
+                if mutator_pid:
+                    try:
+                        os.kill(mutator_pid, 0)
+                    except ProcessLookupError:
+                        pass
+                    else:
+                        os.kill(mutator_pid, signal.SIGKILL)
+
+    def test_plugin_adapter_fails_closed_when_installed_authority_digest_drifts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            installed = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(installed.returncode, 0, installed.stderr)
+            plugin_root = (
+                codex_home
+                / "plugins"
+                / "cache"
+                / "king-sejong-local"
+                / "king-sejong"
+                / "0.1.0"
+            )
+            hook_runner_path = plugin_root / "hooks" / "king-sejong-hook.py"
+            canonical_hook_path = codex_home / "skills" / "sejong" / "docs" / "scripts" / "king_sejong_hooks.py"
+            canonical_hook_path.write_text(
+                canonical_hook_path.read_text(encoding="utf-8") + "\n# deterministic digest drift\n",
+                encoding="utf-8",
+            )
+            env = {**os.environ, "CODEX_HOME": str(codex_home), "PLUGIN_ROOT": str(plugin_root)}
+
+            prompt_result = subprocess.run(
+                ["python3", str(hook_runner_path), "UserPromptSubmit"],
+                input='{"session_id":"unbound-drift","turn_id":"turn-drift"}',
+                text=True,
+                capture_output=True,
+                env=env,
+                cwd=str(REPO_ROOT),
+            )
+            protected_result = subprocess.run(
+                ["python3", str(hook_runner_path), "PreToolUse"],
+                input='{"session_id":"unbound-drift","turn_id":"turn-drift"}',
+                text=True,
+                capture_output=True,
+                env=env,
+                cwd=str(REPO_ROOT),
+            )
+
+            self.assertEqual(prompt_result.returncode, 0, prompt_result.stderr)
+            self.assertEqual(prompt_result.stdout, "")
+            self.assertEqual(protected_result.returncode, 127)
+            self.assertIn("runtime authority digest mismatch", protected_result.stderr)
 
     def test_plugin_adapter_surfaces_missing_canonical_hook_for_protected_event(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -179,6 +617,60 @@ class InstallSejongTests(unittest.TestCase):
 
         self.assertNotEqual(hook_result.returncode, 0)
         self.assertIn("missing King Sejong canonical hook script", hook_result.stderr)
+
+    def test_plugin_adapter_bootstraps_supported_python_from_system_interpreter(self) -> None:
+        system_python = Path("/usr/bin/python3")
+        if not system_python.exists():
+            self.skipTest("system Python is unavailable")
+        version = subprocess.run(
+            [str(system_python), "-c", "import sys; print(sys.version_info.major, sys.version_info.minor)"],
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        system_version = tuple(int(part) for part in version.stdout.split())
+        if system_version >= (3, 11):
+            self.skipTest("system Python already satisfies the canonical script runtime")
+        uv_path = shutil.which("uv")
+        if uv_path is None:
+            self.skipTest("uv is unavailable for the compatibility bootstrap")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            result = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            hook_runner_path = (
+                codex_home
+                / "plugins"
+                / "cache"
+                / "king-sejong-local"
+                / "king-sejong"
+                / "0.1.0"
+                / "hooks"
+                / "king-sejong-hook.py"
+            )
+
+            hook_result = subprocess.run(
+                [str(system_python), str(hook_runner_path), "SessionStart"],
+                input='{"source":"startup"}',
+                text=True,
+                capture_output=True,
+                env={
+                    **os.environ,
+                    "CODEX_HOME": str(codex_home),
+                    "PATH": os.pathsep.join((str(Path(uv_path).parent), "/usr/bin", "/bin")),
+                },
+                cwd=str(REPO_ROOT),
+            )
+            bytecode_cache = codex_home / "skills" / "sejong" / "docs" / "scripts" / "__pycache__"
+            cache_exists = bytecode_cache.exists()
+
+        self.assertEqual(hook_result.returncode, 0, hook_result.stderr)
+        self.assertEqual(hook_result.stdout, "")
+        self.assertFalse(cache_exists)
 
     def test_user_scope_install_does_not_mutate_existing_active_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -216,6 +708,35 @@ class InstallSejongTests(unittest.TestCase):
 
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(json.loads(context_path.read_text(encoding="utf-8")), original_context)
+
+    def test_user_scope_force_removes_stale_bytecode_cache(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            initial = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+            self.assertEqual(initial.returncode, 0, initial.stderr)
+            stale_cache = (
+                codex_home
+                / "skills"
+                / "sejong"
+                / "docs"
+                / "scripts"
+                / "__pycache__"
+                / "stale.cpython-311.pyc"
+            )
+            stale_cache.parent.mkdir()
+            stale_cache.write_bytes(b"stale")
+
+            reinstalled = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+            )
+
+            cache_exists = stale_cache.parent.exists()
+        self.assertEqual(reinstalled.returncode, 0, reinstalled.stderr)
+        self.assertFalse(cache_exists)
 
     def test_user_scope_force_migrates_legacy_direct_hooks_to_plugin_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -260,7 +781,10 @@ command = 'python3 "/old/king_sejong_hooks.py" Stop'
 
             config = (codex_home / "config.toml").read_text(encoding="utf-8")
             self.assertIn("# BEGIN King Sejong hooks", config)
-            self.assertIn("king_sejong_hooks.py", config)
+            self.assertIn("king-sejong-hook.py", config)
+            self.assertNotIn("king_sejong_hooks.py", config)
+            self.assertIn("[[hooks.PreCompact]]", config)
+            self.assertNotIn("[[hooks.PostCompact]]", config)
             self.assertNotIn('[plugins."king-sejong@king-sejong-local"]', config)
 
             verify = run_installer(

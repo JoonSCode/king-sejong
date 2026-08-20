@@ -38,7 +38,15 @@ User scope under `${CODEX_HOME:-~/.codex}/skills`:
 
 In user scope, this docs tree is installed under `skills/sejong/docs/`, and the installed skill files are rewritten to load contracts from that user-scope docs copy.
 
-User-scope install also copies the Codex plugin adapter to `${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/`, manages the King Sejong hook and plugin blocks in `${CODEX_HOME:-~/.codex}/config.toml`, sets `[features].hooks = true`, and creates `${CODEX_HOME:-~/.codex}/sejong/state/` if it does not already exist. It does not create or mutate `${CODEX_HOME:-~/.codex}/sejong/state/active-context.json`; active workflow context is created by Sejong workflow commands. The managed blocks are marked and idempotent, so rerunning the installer replaces only King Sejong's sections.
+User-scope install also copies the Codex plugin adapter to `${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/`, manages the King Sejong hook and plugin blocks in `${CODEX_HOME:-~/.codex}/config.toml`, sets `[features].hooks = true`, and creates `${CODEX_HOME:-~/.codex}/sejong/state/` if it does not already exist. It does not create, delete, or grant authority to `${CODEX_HOME:-~/.codex}/sejong/state/active-context.json`; workflow commands create durable run Contexts and exact session bindings. The managed blocks are marked and idempotent, so rerunning the installer replaces only King Sejong's sections.
+
+User-scope runtime publication is generation-guarded: the adapter injects only
+after the serialized installer copies from a frozen snapshot, separately
+publishes the canonical hook, and marks an epoch-2 authority digest complete. A
+rerun repairs an interrupted generation. Rollback must likewise reinstall a
+previously verified epoch-2-compatible source; the supported installer rejects
+lower authority epochs before mutation, and raw downgrade to a legacy-authority
+installer is unsupported.
 
 After copying a user-scope install, the installer atomically writes
 `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/core-install-identity.json`.
@@ -49,6 +57,10 @@ the generation time, so identical provenance and installed bytes retain the
 same compatibility key across reinstalls. `--verify --scope user` checks the
 artifact against both the current source and installed managed surfaces and
 fails on missing, malformed, source-drifted, or installed-tampered state.
+When the installer is run from a source archive without Git metadata, it uses
+the frozen managed-source digest as the 64-character source revision and marks
+the tree `dirty`; this stays deterministic without claiming a clean Git
+checkout or allowing an archive install to impersonate one.
 
 This identity is provenance and compatibility evidence only. Its
 `authority: provenance_only` declaration does not route work, approve a gate,
@@ -70,18 +82,12 @@ The skill files stay short by design. They load the detailed contracts from the 
 ## Multisession Runtime Core
 
 King Sejong runtime state is built for multiple Codex sessions, repositories,
-devices, and worker backends. The active pointer at
-`${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/active-context.json` is a
-convenience hint, not the authority for a workflow. The authoritative record is
-the run-scoped `king-sejong-context.json` under the matching repository run
-directory.
-
-Hooks and tools must verify that an active context fits the current repository
-and objective before using it. If the pointer is missing or stale, they may
-select the newest valid matching run context and report that fallback. Explicit
-context paths such as `--context` or `SEJONG_ACTIVE_CONTEXT` are different: if
-an explicit context is missing, unreadable, or broken, the caller should surface
-that failure instead of silently falling back.
+devices, and worker backends. Durable run Context, Codex Session Binding, and
+reconstructable Repo Index are separate. Implicit hooks resolve only the exact
+payload `session_id`; neither the legacy active pointer nor the newest Context
+in a repository can select work for a new session. Explicit context paths such
+as `--context` or `SEJONG_ACTIVE_CONTEXT` remain manual compatibility inputs and
+fail closed instead of falling back.
 
 Shared runtime writes use bounded file locks under the Sejong runtime state
 root. Lock owner metadata includes session, run, repository, device, process,
@@ -99,7 +105,7 @@ For normal use:
 5. Read [PROTOCOL.md](PROTOCOL.md) to understand Uigwe's planning model.
 6. Read [WRAPPER.md](WRAPPER.md) if you want machine-consumable packet flow.
 7. Read [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md) to understand where research, planning, runtime, and evidence artifacts are stored.
-8. Read [MULTI_SESSION.md](MULTI_SESSION.md) to understand session, run, repository, device, active pointer, lock, stale-state, and cleanup semantics.
+8. Read [MULTI_SESSION.md](MULTI_SESSION.md) to understand durable Context, exact session binding, Repo Index, repository identity, lock, migration, and cleanup semantics.
 9. Read [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md) if you want repo-local role prompt overlays.
 10. Read [HOOKS.md](HOOKS.md) if you want deterministic Codex lifecycle guardrails.
 11. Read [SECURITY.md](SECURITY.md) and [SILLOK_TRACE.md](SILLOK_TRACE.md) if a workflow mixes private data, untrusted content, external actions, or durable evidence records.
@@ -158,9 +164,9 @@ python3 docs/sejong/scripts/sejong_doctor.py
 ```
 
 The doctor is read-only by default. In addition to source, dependency, hook, git,
-and active-context checks, it reports multisession active runs, stale active
-pointers, broken runtime refs, runtime lock owner metadata, cleanup dry-run
-retention, and user-scope install drift.
+and explicitly selected durable-Context checks, it reports multisession active
+runs, preserved non-authoritative legacy pointers, broken runtime refs, runtime
+lock owner metadata, cleanup dry-run retention, and user-scope install drift.
 
 Use the repo-context candidate helper when a durable lesson should be considered
 without immediately editing tracked instructions:

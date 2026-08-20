@@ -60,3 +60,13 @@ When a live Sejong or Uigwe clarification uses an ambiguity register, do not adv
 For parallel Jiphyeonjeon, use bounded briefs from advocate, critic, specialist, operator, or risk-review lenses over the same evidence bundle; do not use worker or subagent agreement as evidence or approval. Substantial Jiphyeonjeon work may use host-native team messaging when the runtime officially supports it, otherwise `$team` mailbox-mediated challenge rounds. The lead Sejong agent opens and closes rounds and owns synthesis. Research, discussion, and planning may overlap only as bounded preflight work: JangYeongsil evidence lanes may run while Uigwe prepares readiness checks, and Jiphyeonjeon option review may run while Uigwe inventories artifacts, but Uigwe gates and final packets remain lead/user-owned.
 
 Codex native subagents, host-native team/teammate support, and `$team` tmux workers are different backends. Prefer official host-native team messaging when the current runtime exposes it and the task needs peer challenge. Use Codex native subagents for parent-mediated side tasks. For `$team`, use Sejong state under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/` instead of repo-local or tool-specific orchestration state. Before starting workers, write a role assignment with current court mode, route context, source-of-truth refs, worker role, assigned scope, allowed outputs, verification expectation, stop condition, and forbidden claims. When using Codex native subagents, `.codex/prompts/{role}.md` is an optional repo-local overlay. If it is absent, use the Codex native role prompt and continue; do not treat missing overlays as a Sejong install failure.
+
+Worker lifecycle rule: before selecting a host-native backend, confirm that the
+host exposes an exact worker/runtime identity and a supported release or teardown
+operation with proof. If it does not, keep the work in the lead session or use a
+Core-owned backend; do not open native workers on audit-only ownership. For every
+native worker that is opened, register its exact resource lease as soon as the
+host returns the identity, count active and terminal-but-unreleased leases against
+the concurrency budget, and require a released cleanup receipt before fan-in or
+another native wave. Missing cleanup proof is a blocker, not a reason to scan or
+kill processes by name.

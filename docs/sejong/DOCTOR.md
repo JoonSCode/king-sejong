@@ -9,7 +9,7 @@ surfaces. It reports problems; it does not repair, update, install, uninstall,
 or mutate Codex config.
 
 Use it when install verification fails, hooks behave unexpectedly, schema
-validation cannot run, active context looks stale, or a user wants a quick
+validation cannot run, a Context or session binding looks unhealthy, or a user wants a quick
 environment check before release work.
 
 ## Usage
@@ -26,11 +26,14 @@ Machine-readable output:
 python3 docs/sejong/scripts/sejong_doctor.py --json
 ```
 
-Check a specific active context:
+Check a specific durable Context explicitly:
 
 ```bash
-python3 docs/sejong/scripts/sejong_doctor.py --context ~/.codex/sejong/state/active-context.json
+python3 docs/sejong/scripts/sejong_doctor.py --context ~/.codex/sejong/runs/<repo-id>/<run-id>/king-sejong-context.json
 ```
+
+Without `--context`, the doctor does not treat `state/active-context.json` as a
+foreground Context. It scans durable runs and runtime state only for diagnostics.
 
 For tests or hermetic CI that should not depend on local Python packages:
 
@@ -46,13 +49,13 @@ The doctor currently checks:
 - plugin adapter JSON readability
 - Python modules required by JSON schema validation
 - git dirty state
-- active context shape and active Seungjeongwon run HUD
+- explicitly selected durable Context shape and active Seungjeongwon run HUD
 - `multisession-active-runs`: warns when Sejong runtime run contexts still
   have active continuations, so cleanup and completion claims can account for
   live work.
-- `active-pointer-staleness`: warns when the implicit active context pointer
-  is missing, unreadable, off-repo, or older than another active matching run
-  context.
+- `active-pointer-staleness`: audits the preserved legacy pointer for migration
+  and cleanup diagnostics only. Its freshness never grants hook injection
+  authority and a newer matching run is never auto-selected.
 - `runtime-broken-refs`: fails for broken or invalid ambiguity-register,
   Seungjeongwon-run, or continuity-capsule refs that apply to the checked repo;
   off-repo broken refs are reported as warnings.
@@ -76,7 +79,7 @@ uv run --with jsonschema --with referencing python3 docs/sejong/scripts/validate
 ## Exit Status
 
 Exit code `0` means no failing checks. Warnings may still appear for expected
-runtime state such as no active context or a dirty source checkout.
+runtime state such as a preserved legacy pointer or a dirty source checkout.
 
 Exit code `1` means at least one failing check needs action before claiming the
 environment is healthy.

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/lesson-candidate.schema.json",
+  "title": "King Sejong Lesson Candidate Schema Draft",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {"const": "sejong.lesson-candidate/v0.1-draft"},
+    "candidate_id": {"$ref": "#/$defs/NonEmptyString"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "pattern_key": {"$ref": "#/$defs/NonEmptyString"},
+    "event_refs": {"$ref": "#/$defs/UniqueStringList"},
+    "source_digests": {
+      "type": "array",
+      "minItems": 2,
+      "items": {"$ref": "#/$defs/Sha256"}
+    },
+    "independent_run_ids": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/NonEmptyString"}
+    },
+    "occurrence_count": {"type": "integer", "minimum": 2},
+    "recommended_response": {"$ref": "#/$defs/NonEmptyString"},
+    "verification": {"const": "manual_review_required"},
+    "status": {"const": "candidate"},
+    "activation_authority": {"const": "none"},
+    "source_evidence_policy": {"const": "structured_sanitized_refs_only"}
+  },
+  "required": [
+    "format",
+    "candidate_id",
+    "generated_at",
+    "pattern_key",
+    "event_refs",
+    "source_digests",
+    "independent_run_ids",
+    "occurrence_count",
+    "recommended_response",
+    "verification",
+    "status",
+    "activation_authority",
+    "source_evidence_policy"
+  ],
+  "$defs": {
+    "NonEmptyString": {"type": "string", "minLength": 1},
+    "Sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "UniqueStringList": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/NonEmptyString"}
+    }
+  }
+}
