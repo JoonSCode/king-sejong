@@ -40,6 +40,23 @@ In user scope, this docs tree is installed under `skills/sejong/docs/`, and the 
 
 User-scope install also copies the Codex plugin adapter to `${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/`, manages the King Sejong hook and plugin blocks in `${CODEX_HOME:-~/.codex}/config.toml`, sets `[features].hooks = true`, and creates `${CODEX_HOME:-~/.codex}/sejong/state/` if it does not already exist. It does not create or mutate `${CODEX_HOME:-~/.codex}/sejong/state/active-context.json`; active workflow context is created by Sejong workflow commands. The managed blocks are marked and idempotent, so rerunning the installer replaces only King Sejong's sections.
 
+After copying a user-scope install, the installer atomically writes
+`${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/core-install-identity.json`.
+The `sejong.core-install-identity/v0.1` artifact records the source commit and
+tree state, canonical source and installed managed-surface SHA-256 digests, a
+generation time, and a stable `identity_sha256`. The stable identity excludes
+the generation time, so identical provenance and installed bytes retain the
+same compatibility key across reinstalls. `--verify --scope user` checks the
+artifact against both the current source and installed managed surfaces and
+fails on missing, malformed, source-drifted, or installed-tampered state.
+
+This identity is provenance and compatibility evidence only. Its
+`authority: provenance_only` declaration does not route work, approve a gate,
+execute a worker, or award verification. Mutable user-owned files such as the
+surrounding `config.toml` and `AGENTS.md` content remain covered by the
+installer's existing marked-block checks rather than by the immutable managed
+surface digest.
+
 The plugin adapter is a hook-metadata surface. It does not expose duplicate plugin-scoped skills and does not replace the installer-owned skills, docs, runtime state directory, or verification contracts.
 
 `why-gate` is distributed as an installer-owned user-scope skill, not as a plugin-scoped skill. It supports compact rationale checkpoints for code review, planning, product analysis, retrospectives, and agent self-audit while the Sejong router remains the authority for workflow routing.
@@ -243,6 +260,7 @@ python3 docs/sejong/scripts/test_seungjeongwon_run.py
 python3 docs/sejong/scripts/test_outcome_quality_evaluator.py
 python3 docs/sejong/scripts/test_team_executor.py
 python3 docs/sejong/scripts/test_sillok_trace.py
+python3 docs/sejong/scripts/test_core_install_identity.py
 SEJONG_HOME="$(mktemp -d)" python3 docs/sejong/scripts/test_king_sejong_e2e.py
 python3 docs/sejong/scripts/project_summary.py docs/sejong/examples/greenfield-full-flow --write
 python3 docs/sejong/scripts/team_executor.py check <team-run-dir>

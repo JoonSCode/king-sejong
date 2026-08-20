@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kinno.dev/schemas/sejong/core-install-identity.schema.json",
+  "title": "King Sejong Installed Core Identity",
+  "description": "Provenance-only identity for the King Sejong bytes installed in Codex user scope. It grants no routing, approval, execution, or verification authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "sejong.core-install-identity/v0.1"
+    },
+    "contract_version": {
+      "const": "0.1.0"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "$ref": "#/$defs/SourceIdentity"
+    },
+    "installed": {
+      "$ref": "#/$defs/ManagedIdentity"
+    },
+    "identity_sha256": {
+      "$ref": "#/$defs/Sha256"
+    },
+    "verification_evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/VerificationEvidence"
+      },
+      "minItems": 2,
+      "uniqueItems": true
+    },
+    "authority": {
+      "const": "provenance_only"
+    },
+    "authority_exclusions": {
+      "type": "array",
+      "prefixItems": [
+        {"const": "routing"},
+        {"const": "approval"},
+        {"const": "execution"},
+        {"const": "verification"}
+      ],
+      "items": false,
+      "minItems": 4,
+      "maxItems": 4
+    }
+  },
+  "required": [
+    "format",
+    "contract_version",
+    "generated_at",
+    "source",
+    "installed",
+    "identity_sha256",
+    "verification_evidence",
+    "authority",
+    "authority_exclusions"
+  ],
+  "$defs": {
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "RelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!\\.\\.$)(?!\\.\\./)(?!.*\\/\\.\\.\\/)(?!.*\\/\\.\\.$).+"
+    },
+    "SurfaceDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "relative_path": {
+          "$ref": "#/$defs/RelativePath"
+        },
+        "sha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      },
+      "required": [
+        "relative_path",
+        "sha256"
+      ]
+    },
+    "ManagedIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "managed_content_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "surfaces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SurfaceDigest"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "managed_content_sha256",
+        "surfaces"
+      ]
+    },
+    "SourceIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "commit": {
+          "type": "string",
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+        },
+        "tree_state": {
+          "type": "string",
+          "enum": [
+            "clean",
+            "dirty"
+          ]
+        },
+        "managed_content_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "surfaces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SurfaceDigest"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "commit",
+        "tree_state",
+        "managed_content_sha256",
+        "surfaces"
+      ]
+    },
+    "VerificationEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "check": {
+          "type": "string",
+          "enum": [
+            "source_managed_content_hashed",
+            "installed_managed_content_hashed"
+          ]
+        },
+        "status": {
+          "const": "passed"
+        }
+      },
+      "required": [
+        "check",
+        "status"
+      ]
+    }
+  }
+}

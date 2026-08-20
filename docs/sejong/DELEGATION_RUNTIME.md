@@ -26,6 +26,23 @@ worker reference, bounded worker contract, output reference, status, and
 evidence. Native subagents and TeamExecutor workers use the same receipt shape.
 Worker receipts have `evidence_only` authority.
 
+A worker may also have one strict `worker_cleanup` receipt after terminal
+evidence exists. Cleanup receipts bind the same run, wave, worker, backend, and
+backend worker reference; identify one unique resource lease; and record one of
+`released`, `preserved`, `failed`, or `audit_only` with status-consistent
+resource sets, proof refs, and blocker disposition. Their authority is always
+`cleanup_evidence_only`. The validator observes cleanup evidence but never
+executes cleanup or manages a process.
+
+Cleanup is optional for backward compatibility. A run with no cleanup receipts
+keeps the existing terminal and fan-in contract. When cleanup evidence is
+present, fan-in includes `cleanup_receipt_ids` that exactly cover the supplied
+receipts. `released` evidence permits the terminal-derived result to stand;
+`preserved` or `audit_only` can only downgrade wave readiness to `blocked`, and
+`failed` can only downgrade it to `failed`. Cleanup never changes a terminal
+status, replaces a missing terminal receipt, makes a failed terminal pass, or
+acts as completion, gate, synthesis, or final-verification authority.
+
 For host-native Codex agents, `native_delegation_adapter.py` is a narrow receipt
 projection boundary. It verifies that the worker was registered with backend
 `native`, converts the host thread id to `codex-thread://<thread-id>`, and calls
@@ -34,10 +51,11 @@ wait for, or close agents, and it does not create a second mailbox or fan-in
 engine. The host owns agent lifecycle; DelegationRun owns budgets, waves,
 receipts, and fan-in.
 
-Core computes fan-in. A wave passes only when every required receipt is
-`completed`. Missing receipts block fan-in, `timed_out` or `failed` receipts
-produce a failed fan-in, and `blocked` receipts produce a blocked fan-in. A
-failed or blocked fan-in cannot unlock a downstream wave.
+Core computes fan-in. A wave passes only when every required terminal receipt
+is `completed` and every supplied cleanup receipt is `released`. Missing
+terminal receipts block fan-in, `timed_out` or `failed` terminals produce a
+failed fan-in, and `blocked` terminals produce a blocked fan-in. A failed or
+blocked fan-in cannot unlock a downstream wave.
 
 Fan-in receipts have `orchestration_evidence_only` authority. They can be
 attached to a Seungjeongwon run, but cannot approve Uigwe, synthesize a decision,

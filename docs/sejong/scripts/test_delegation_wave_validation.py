@@ -15,8 +15,14 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
+
+try:
+    import jsonschema
+except ModuleNotFoundError:
+    jsonschema = None
 
 from delegation_run import check_failures
 from delegation_run_model import Backend, Budget, DelegationContractError, DelegationRun, Worker, WorkerId, save_run
@@ -35,9 +41,10 @@ from delegation_wave import (
 SCRIPT_PATH = Path(__file__).resolve()
 REPO_ROOT = SCRIPT_PATH.parents[3]
 SEUNGJEONGWON = SCRIPT_PATH.with_name("seungjeongwon_run.py")
+SCHEMA_PATH = SCRIPT_PATH.parents[1] / "delegation-run.schema.json"
 
 
-def closed_run(status: TerminalStatus = TerminalStatus.COMPLETED) -> DelegationRun:
+def terminal_run(status: TerminalStatus = TerminalStatus.COMPLETED) -> DelegationRun:
     run = DelegationRun(
         run_id="correlation-run",
         created_at="2026-07-11T00:00:00Z",
@@ -61,6 +68,50 @@ def closed_run(status: TerminalStatus = TerminalStatus.COMPLETED) -> DelegationR
             blocker=None if status is TerminalStatus.COMPLETED else f"{status.value} disposition",
         ),
     )
+    return run
+
+
+def closed_run(status: TerminalStatus = TerminalStatus.COMPLETED) -> DelegationRun:
+    return fan_in(terminal_run(status), WaveId("wave-1"))[0]
+
+
+def cleanup_receipt(
+    run: DelegationRun,
+    *,
+    status: str = "released",
+    receipt_id: str = "cleanup-worker-a",
+) -> dict:
+    terminal = next(item for item in run.receipts if item.get("receipt_type") == "worker_terminal")
+    worker_ref = str(terminal["backend_worker_ref"])
+    released = [worker_ref] if status == "released" else []
+    preserved = [worker_ref] if status in {"preserved", "audit_only"} else []
+    failed = [worker_ref] if status == "failed" else []
+    return {
+        "format": "sejong.worker-cleanup-receipt/v0.1-draft",
+        "receipt_type": "worker_cleanup",
+        "receipt_id": receipt_id,
+        "run_id": run.run_id,
+        "wave_id": "wave-1",
+        "worker_id": "worker-a",
+        "backend": "native",
+        "backend_worker_ref": worker_ref,
+        "resource_lease_ref": "lease://worker-a",
+        "resource_lease_id": "lease-worker-a",
+        "cleanup_capability": "host_owned_exact",
+        "cleanup_status": status,
+        "released_resource_ids": released,
+        "preserved_resource_ids": preserved,
+        "failed_resource_ids": failed,
+        "proof_refs": [f"proof://worker-a/{status}"],
+        "blocker": None if status == "released" else f"cleanup {status}",
+        "authority": "cleanup_evidence_only",
+        "created_at": "2026-07-11T00:01:00Z",
+    }
+
+
+def cleanup_run(status: str = "released") -> DelegationRun:
+    run = terminal_run()
+    run = replace(run, receipts=(*run.receipts, cleanup_receipt(run, status=status)))
     return fan_in(run, WaveId("wave-1"))[0]
 
 
@@ -84,6 +135,203 @@ def run_seungjeongwon(arguments: list[str]) -> subprocess.CompletedProcess[str]:
 
 
 class DelegationWaveCorrelationTests(unittest.TestCase):
+    def test_optional_released_cleanup_is_linked_and_valid(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "delegation-run.json"
+            run = cleanup_run()
+            payload = payload_for(run, path)
+            fan_in_receipt = next(item for item in payload["receipts"] if item["receipt_type"] == "fan_in")
+            cleanup = next(item for item in payload["receipts"] if item["receipt_type"] == "worker_cleanup")
+
+            self.assertEqual(check_failures(path), ())
+            self.assertEqual(cleanup["authority"], "cleanup_evidence_only")
+            self.assertEqual(fan_in_receipt["authority"], "orchestration_evidence_only")
+            self.assertEqual(fan_in_receipt["cleanup_receipt_ids"], ["cleanup-worker-a"])
+            self.assertEqual(fan_in_receipt["aggregate_status"], "passed")
+            self.assertEqual(fan_in_receipt["blocking_receipt_ids"], [])
+            self.assertEqual(
+                next(item for item in payload["receipts"] if item["receipt_type"] == "worker_terminal")["terminal_status"],
+                "completed",
+            )
+
+    def test_cleanup_free_legacy_run_remains_valid_and_unchanged(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "delegation-run.json"
+            payload = payload_for(closed_run(), path)
+            fan_in_receipt = next(item for item in payload["receipts"] if item["receipt_type"] == "fan_in")
+
+            self.assertEqual(check_failures(path), ())
+            self.assertNotIn("cleanup_receipt_ids", fan_in_receipt)
+
+    @unittest.skipIf(jsonschema is None, "jsonschema is required for schema-instance validation")
+    def test_schema_accepts_optional_cleanup_and_rejects_malformed_state(self) -> None:
+        schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+        valid_payloads = []
+        for status in ("released", "preserved", "failed", "audit_only"):
+            with tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp) / "delegation-run.json"
+                payload = payload_for(cleanup_run(status), path)
+            jsonschema.validate(payload, schema)
+            valid_payloads.append(payload)
+
+        cases = (
+            ("authority", "final_authority"),
+            ("cleanup_status", "completed"),
+            ("released_resource_ids", []),
+            ("proof_refs", []),
+            ("blocker", "unexpected blocker"),
+        )
+        for field, value in cases:
+            with self.subTest(field=field):
+                malformed = deepcopy(valid_payloads[0])
+                cleanup = next(
+                    item for item in malformed["receipts"] if item["receipt_type"] == "worker_cleanup"
+                )
+                cleanup[field] = value
+                with self.assertRaises(jsonschema.ValidationError):
+                    jsonschema.validate(malformed, schema)
+
+    def test_cleanup_boundary_and_binding_tampering_is_rejected(self) -> None:
+        cases = {
+            "format": ("format", "wrong-format"),
+            "authority": ("authority", "final_authority"),
+            "run": ("run_id", "other-run"),
+            "wave": ("wave_id", "unknown-wave"),
+            "worker": ("worker_id", "unknown-worker"),
+            "backend": ("backend", "team_executor"),
+            "backend_ref": ("backend_worker_ref", "native://other-worker"),
+            "lease_ref": ("resource_lease_ref", ""),
+            "lease_id": ("resource_lease_id", ""),
+            "capability": ("cleanup_capability", "process_manager"),
+            "status": ("cleanup_status", "completed"),
+        }
+        for name, (field, value) in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp) / "delegation-run.json"
+                payload = payload_for(cleanup_run(), path)
+                cleanup = next(item for item in payload["receipts"] if item["receipt_type"] == "worker_cleanup")
+                cleanup[field] = value
+                self.assertTrue(write_payload(path, payload))
+
+    def test_cleanup_status_resource_proof_and_blocker_rules_are_enforced(self) -> None:
+        cases = (
+            ("released", "released_resource_ids", []),
+            ("released", "preserved_resource_ids", ["native://worker-a"]),
+            ("released", "proof_refs", []),
+            ("released", "blocker", "unexpected blocker"),
+            ("preserved", "preserved_resource_ids", []),
+            ("preserved", "blocker", None),
+            ("failed", "failed_resource_ids", []),
+            ("audit_only", "preserved_resource_ids", []),
+        )
+        for status, field, value in cases:
+            with self.subTest(status=status, field=field), tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp) / "delegation-run.json"
+                payload = payload_for(cleanup_run(status), path)
+                cleanup = next(item for item in payload["receipts"] if item["receipt_type"] == "worker_cleanup")
+                cleanup[field] = value
+                self.assertTrue(write_payload(path, payload))
+
+    def test_duplicate_cleanup_and_resource_lease_are_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "delegation-run.json"
+            payload = payload_for(cleanup_run(), path)
+            cleanup = next(item for item in payload["receipts"] if item["receipt_type"] == "worker_cleanup")
+            duplicate = deepcopy(cleanup)
+            duplicate["receipt_id"] = "cleanup-worker-a-duplicate"
+            payload["receipts"].insert(-1, duplicate)
+            fan_in_receipt = next(item for item in payload["receipts"] if item["receipt_type"] == "fan_in")
+            fan_in_receipt["cleanup_receipt_ids"].append(duplicate["receipt_id"])
+
+            failures = write_payload(path, payload)
+
+            self.assertTrue(any("cleanup receipt" in failure for failure in failures))
+            self.assertIn("cleanup resource lease ids must be unique", failures)
+            self.assertIn("cleanup resource lease refs must be unique", failures)
+            self.assertIn("cleanup resource ids must be unique across receipts", failures)
+
+    def test_fan_in_cleanup_references_and_blockers_are_exact(self) -> None:
+        cases = {
+            "missing": None,
+            "unknown": ["cleanup-unknown"],
+            "duplicate": ["cleanup-worker-a", "cleanup-worker-a"],
+        }
+        for name, value in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp) / "delegation-run.json"
+                payload = payload_for(cleanup_run(), path)
+                fan_in_receipt = next(item for item in payload["receipts"] if item["receipt_type"] == "fan_in")
+                if value is None:
+                    fan_in_receipt.pop("cleanup_receipt_ids")
+                else:
+                    fan_in_receipt["cleanup_receipt_ids"] = value
+                self.assertTrue(write_payload(path, payload))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "delegation-run.json"
+            payload = payload_for(cleanup_run("preserved"), path)
+            fan_in_receipt = next(item for item in payload["receipts"] if item["receipt_type"] == "fan_in")
+            fan_in_receipt["blocking_receipt_ids"] = []
+            self.assertTrue(write_payload(path, payload))
+
+    def test_cleanup_cannot_substitute_for_terminal_completion(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "delegation-run.json"
+            payload = payload_for(cleanup_run(), path)
+            payload["receipts"] = [
+                item for item in payload["receipts"] if item["receipt_type"] != "worker_terminal"
+            ]
+            fan_in_receipt = next(item for item in payload["receipts"] if item["receipt_type"] == "fan_in")
+            fan_in_receipt["terminal_receipt_ids"] = []
+
+            failures = write_payload(path, payload)
+
+            self.assertTrue(failures)
+            self.assertTrue(any("terminal" in failure for failure in failures))
+
+    def test_released_cleanup_cannot_upgrade_nonpassed_terminal(self) -> None:
+        expected = {
+            TerminalStatus.FAILED: "failed",
+            TerminalStatus.TIMED_OUT: "failed",
+            TerminalStatus.BLOCKED: "blocked",
+        }
+        for terminal_status, aggregate_status in expected.items():
+            with self.subTest(terminal_status=terminal_status), tempfile.TemporaryDirectory() as tmp:
+                run = terminal_run(terminal_status)
+                run = replace(run, receipts=(*run.receipts, cleanup_receipt(run)))
+                run = fan_in(run, WaveId("wave-1"))[0]
+                path = Path(tmp) / "delegation-run.json"
+                payload = payload_for(run, path)
+                fan_in_receipt = next(
+                    item for item in payload["receipts"] if item["receipt_type"] == "fan_in"
+                )
+                terminal = next(
+                    item for item in payload["receipts"] if item["receipt_type"] == "worker_terminal"
+                )
+
+                self.assertEqual(check_failures(path), ())
+                self.assertEqual(terminal["terminal_status"], terminal_status.value)
+                self.assertEqual(fan_in_receipt["aggregate_status"], aggregate_status)
+                self.assertEqual(fan_in_receipt["blocking_receipt_ids"], ["receipt-worker-a"])
+
+    def test_nonreleased_cleanup_blocks_or_fails_without_rewriting_terminal_status(self) -> None:
+        expected = {
+            "preserved": "blocked",
+            "audit_only": "blocked",
+            "failed": "failed",
+        }
+        for cleanup_status, aggregate_status in expected.items():
+            with self.subTest(cleanup_status=cleanup_status), tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp) / "delegation-run.json"
+                payload = payload_for(cleanup_run(cleanup_status), path)
+                fan_in_receipt = next(item for item in payload["receipts"] if item["receipt_type"] == "fan_in")
+                terminal = next(item for item in payload["receipts"] if item["receipt_type"] == "worker_terminal")
+
+                self.assertEqual(check_failures(path), ())
+                self.assertEqual(fan_in_receipt["aggregate_status"], aggregate_status)
+                self.assertEqual(fan_in_receipt["blocking_receipt_ids"], ["cleanup-worker-a"])
+                self.assertEqual(terminal["terminal_status"], "completed")
+
     def test_generated_terminal_aggregates_are_valid(self) -> None:
         # Given/When/Then: every aggregate generated by Core passes persisted validation.
         for status in (TerminalStatus.COMPLETED, TerminalStatus.FAILED, TerminalStatus.BLOCKED):

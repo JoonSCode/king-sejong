@@ -43,6 +43,7 @@ Installs:
     ${CODEX_HOME:-~/.codex}/plugins/cache/king-sejong-local/king-sejong/0.1.0/
     ${CODEX_HOME:-~/.codex}/config.toml managed King Sejong plugin block
     ${CODEX_HOME:-~/.codex}/sejong/state/
+    ${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/core-install-identity.json
 
 Source-only:
   AGENTS.md is maintainer guidance for this source repository and is never installed.
@@ -252,6 +253,7 @@ SOURCE_ROOT=$(canonical_path "$SCRIPT_DIR/..")
 SOURCE_ONLY_PATHS=(
   "AGENTS.md"
 )
+CORE_IDENTITY_RELATIVE_PATH="state/core-install-identity.json"
 
 print_codex_guidance_block() {
   cat <<'EOF'
@@ -424,6 +426,48 @@ verify_rewritten_skill_matches() {
     return 1
   fi
   rm -f "$tmp_file"
+}
+
+core_identity_runtime_root() {
+  local codex_home=$1
+
+  if [[ -n "${SEJONG_HOME:-}" ]]; then
+    canonical_path "$SEJONG_HOME"
+  else
+    canonical_path "$codex_home/sejong"
+  fi
+}
+
+core_identity_path() {
+  local codex_home=$1
+  local runtime_root
+
+  runtime_root=$(core_identity_runtime_root "$codex_home")
+  echo "$runtime_root/$CORE_IDENTITY_RELATIVE_PATH"
+}
+
+write_user_core_identity() {
+  local codex_home=$1
+  local identity_path
+  local identity_helper="$SOURCE_ROOT/docs/sejong/scripts/core_install_identity.py"
+
+  identity_path=$(core_identity_path "$codex_home")
+  python3 "$identity_helper" write \
+    --source-root "$SOURCE_ROOT" \
+    --installed-root "$codex_home" \
+    --output "$identity_path"
+}
+
+verify_user_core_identity() {
+  local codex_home=$1
+  local identity_path
+  local identity_helper="$SOURCE_ROOT/docs/sejong/scripts/core_install_identity.py"
+
+  identity_path=$(core_identity_path "$codex_home")
+  python3 "$identity_helper" verify \
+    --identity "$identity_path" \
+    --source-root "$SOURCE_ROOT" \
+    --installed-root "$codex_home"
 }
 
 ensure_hooks_feature_enabled() {
@@ -834,6 +878,7 @@ verify_repo_install() {
     "docs/sejong/outcome-quality.schema.json"
     "docs/sejong/product-evidence.schema.json"
     "docs/sejong/sillok-trace-event.schema.json"
+    "docs/sejong/core-install-identity.schema.json"
     "docs/sejong/PROMPT_OVERLAYS.md"
     "docs/sejong/PROTOCOL.md"
     "docs/sejong/SEUNGJEONGWON_EXECUTOR.md"
@@ -853,6 +898,7 @@ verify_repo_install() {
     "docs/sejong/scripts/external_action_contract.py"
     "docs/sejong/scripts/external_action_storage.py"
     "docs/sejong/scripts/external_action_receipt.py"
+    "docs/sejong/scripts/core_install_identity.py"
     "docs/sejong/scripts/test_king_sejong_hooks.py"
     "docs/sejong/scripts/test_sejong_integrated_quality_gate.py"
     "docs/sejong/scripts/test_seungjeongwon_run.py"
@@ -865,6 +911,7 @@ verify_repo_install() {
     "docs/sejong/scripts/test_delegation_run.py"
     "docs/sejong/scripts/test_delegation_wave_validation.py"
     "docs/sejong/scripts/test_external_action_receipt.py"
+    "docs/sejong/scripts/test_core_install_identity.py"
     "docs/sejong/scripts/test_team_executor.py"
     "docs/sejong/scripts/team_executor.py"
     "docs/sejong/scripts/validate_json_contracts.py"
@@ -926,6 +973,7 @@ verify_user_install() {
     "skills/sejong/docs/outcome-quality.schema.json"
     "skills/sejong/docs/product-evidence.schema.json"
     "skills/sejong/docs/sillok-trace-event.schema.json"
+    "skills/sejong/docs/core-install-identity.schema.json"
     "skills/sejong/docs/PROMPT_OVERLAYS.md"
     "skills/sejong/docs/PROTOCOL.md"
     "skills/sejong/docs/SEUNGJEONGWON_EXECUTOR.md"
@@ -945,6 +993,7 @@ verify_user_install() {
     "skills/sejong/docs/scripts/external_action_contract.py"
     "skills/sejong/docs/scripts/external_action_storage.py"
     "skills/sejong/docs/scripts/external_action_receipt.py"
+    "skills/sejong/docs/scripts/core_install_identity.py"
     "skills/sejong/docs/scripts/test_king_sejong_hooks.py"
     "skills/sejong/docs/scripts/test_sejong_integrated_quality_gate.py"
     "skills/sejong/docs/scripts/test_seungjeongwon_run.py"
@@ -957,6 +1006,7 @@ verify_user_install() {
     "skills/sejong/docs/scripts/test_delegation_run.py"
     "skills/sejong/docs/scripts/test_delegation_wave_validation.py"
     "skills/sejong/docs/scripts/test_external_action_receipt.py"
+    "skills/sejong/docs/scripts/test_core_install_identity.py"
     "skills/sejong/docs/scripts/test_team_executor.py"
     "skills/sejong/docs/scripts/team_executor.py"
     "skills/sejong/docs/scripts/validate_json_contracts.py"
@@ -997,6 +1047,7 @@ verify_user_install() {
     verify_user_plugin_adapter "$root" || drift=1
   fi
   verify_user_codex_guidance "$root" || drift=1
+  verify_user_core_identity "$root" || drift=1
 
   if [[ "$drift" -ne 0 ]]; then
     echo "King Sejong user install verification failed: managed content is stale or modified in $root" >&2
@@ -1125,6 +1176,7 @@ install_user_scope() {
   local codex_home=${CODEX_HOME:-$HOME/.codex}
   local skill_root="$codex_home/skills"
   local managed_guidance_block=""
+  local identity_path
 
   codex_home=$(canonical_path "$codex_home")
   skill_root="$codex_home/skills"
@@ -1144,7 +1196,9 @@ install_user_scope() {
   copy_dir "$SOURCE_ROOT/plugins/king-sejong" "$codex_home/plugins/cache/$PLUGIN_MARKETPLACE/$PLUGIN_NAME/$PLUGIN_VERSION"
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
+    identity_path=$(core_identity_path "$codex_home")
     echo "would rewrite repo-local doc paths for user-scope skill layout"
+    echo "would write Core install identity: $identity_path"
     echo "Dry run complete. No files were copied."
     exit 0
   fi
@@ -1165,7 +1219,9 @@ Managed guidance:
   $codex_home/AGENTS.md"
   fi
 
+  write_user_core_identity "$codex_home"
   verify_user_install "$codex_home"
+  identity_path=$(core_identity_path "$codex_home")
 
   cat <<EOF
 Installed King Sejong into Codex user scope:
@@ -1184,6 +1240,9 @@ Managed hooks:
   $codex_home/config.toml
   $codex_home/sejong/state/
 $managed_guidance_block
+
+Installed Core identity:
+  $identity_path
 
 Invoke from any Codex workspace with:
   \$sejong <broad request>

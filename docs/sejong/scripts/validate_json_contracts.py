@@ -39,6 +39,7 @@ SCHEMA_FILES = {
     "product_evidence": SEJONG_ROOT / "product-evidence.schema.json",
     "sillok_trace_event": SEJONG_ROOT / "sillok-trace-event.schema.json",
     "discord_orchestration": SEJONG_ROOT / "discord-orchestration.schema.json",
+    "core_install_identity": SEJONG_ROOT / "core-install-identity.schema.json",
 }
 
 FORMAT_TO_SCHEMA = {
@@ -93,6 +94,7 @@ FORMAT_TO_SCHEMA = {
     "sejong.discord-write-leases/v0.1-draft": "discord_orchestration",
     "sejong.discord-model-route/v0.1-draft": "discord_orchestration",
     "sejong.discord-ticket-evidence-state/v0.1-draft": "discord_orchestration",
+    "sejong.core-install-identity/v0.1": "core_install_identity",
 }
 
 NEGATIVE_FIXTURE_PARTS = (

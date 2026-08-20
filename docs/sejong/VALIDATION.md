@@ -95,6 +95,48 @@ python3 docs/sejong/scripts/validate_bundle.py docs/sejong/examples/greenfield-f
 python3 docs/sejong/scripts/validate_bundle.py docs/sejong/examples/brownfield-decompose-only
 ```
 
+### Phase 1B: Installed Core Identity
+
+Run the focused identity and isolated user-scope installer matrix whenever the
+installed managed surface or installer changes:
+
+```bash
+python3 docs/sejong/scripts/test_core_install_identity.py
+uv run --with jsonschema python3 docs/sejong/scripts/test_core_install_identity.py
+```
+
+The first command has no third-party runtime dependency. The second also checks
+`core-install-identity.schema.json` with a Draft 2020-12 validator. Both
+installer scenarios set temporary `CODEX_HOME` and `SEJONG_HOME` roots; do not
+use the real user installation as a smoke fixture.
+
+Required outcomes are deterministic `compatible`, `missing`, `malformed`,
+`source_drift`, and `installed_tampered` classifications. Generation timestamps
+may differ, while `identity_sha256` must stay equal for identical source and
+installed managed bytes. A passing identity check proves provenance and content
+compatibility only; it does not grant routing, approval, execution, or final
+verification authority.
+
+### Phase 1C: Optional Worker Cleanup Receipts
+
+Run the cleanup schema, semantic-correlation, fan-in, and legacy-compatibility
+matrix whenever DelegationRun receipts or wave validation changes:
+
+```bash
+uv run --with jsonschema python3 docs/sejong/scripts/test_delegation_wave_validation.py
+python3 docs/sejong/scripts/test_delegation_run.py
+uv run --with jsonschema python3 docs/sejong/scripts/validate_json_contracts.py
+```
+
+The focused matrix must accept cleanup-free legacy runs and valid optional
+`worker_cleanup` receipts, while rejecting malformed authority, run/wave/worker,
+backend worker, lease, status/resource, proof/blocker, duplicate, and fan-in
+correlation. It must also prove that cleanup remains
+`cleanup_evidence_only`: cleanup cannot replace required terminal evidence,
+rewrite a terminal status, make a failed terminal pass, or award final
+verification. Nonreleased cleanup may only downgrade fan-in readiness and must
+remain visible through exact cleanup and blocking receipt ids.
+
 ### Phase 2: Instruction-Surface Guardrail Benchmark
 
 Run this when changing `.agents/skills`, router docs, README guidance, live-session rules, or validation docs:

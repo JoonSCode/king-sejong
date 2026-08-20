@@ -43,6 +43,7 @@
       "items": {
         "oneOf": [
           {"$ref": "#/$defs/WorkerReceipt"},
+          {"$ref": "#/$defs/WorkerCleanupReceipt"},
           {"$ref": "#/$defs/FanInReceipt"}
         ]
       }
@@ -71,6 +72,12 @@
       "type": "array",
       "items": {"$ref": "#/$defs/NonEmptyString"},
       "uniqueItems": true
+    },
+    "NonEmptyStringList": {
+      "allOf": [
+        {"$ref": "#/$defs/StringList"},
+        {"minItems": 1}
+      ]
     },
     "NullableString": {
       "oneOf": [
@@ -202,6 +209,85 @@
         }
       ]
     },
+    "WorkerCleanupReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {"const": "sejong.worker-cleanup-receipt/v0.1-draft"},
+        "receipt_type": {"const": "worker_cleanup"},
+        "receipt_id": {"$ref": "#/$defs/NonEmptyString"},
+        "run_id": {"$ref": "#/$defs/NonEmptyString"},
+        "wave_id": {"$ref": "#/$defs/NonEmptyString"},
+        "worker_id": {"$ref": "#/$defs/NonEmptyString"},
+        "backend": {"type": "string", "enum": ["native", "team_executor"]},
+        "backend_worker_ref": {"$ref": "#/$defs/NonEmptyString"},
+        "resource_lease_ref": {"$ref": "#/$defs/NonEmptyString"},
+        "resource_lease_id": {"$ref": "#/$defs/NonEmptyString"},
+        "cleanup_capability": {"const": "host_owned_exact"},
+        "cleanup_status": {
+          "type": "string",
+          "enum": ["released", "preserved", "failed", "audit_only"]
+        },
+        "released_resource_ids": {"$ref": "#/$defs/StringList"},
+        "preserved_resource_ids": {"$ref": "#/$defs/StringList"},
+        "failed_resource_ids": {"$ref": "#/$defs/StringList"},
+        "proof_refs": {"$ref": "#/$defs/NonEmptyStringList"},
+        "blocker": {"$ref": "#/$defs/NullableString"},
+        "authority": {"const": "cleanup_evidence_only"},
+        "created_at": {"type": "string", "format": "date-time"}
+      },
+      "required": [
+        "format", "receipt_type", "receipt_id", "run_id", "wave_id", "worker_id",
+        "backend", "backend_worker_ref", "resource_lease_ref", "resource_lease_id",
+        "cleanup_capability", "cleanup_status", "released_resource_ids",
+        "preserved_resource_ids", "failed_resource_ids", "proof_refs", "blocker",
+        "authority", "created_at"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {"cleanup_status": {"const": "released"}},
+            "required": ["cleanup_status"]
+          },
+          "then": {
+            "properties": {
+              "released_resource_ids": {"minItems": 1},
+              "preserved_resource_ids": {"maxItems": 0},
+              "failed_resource_ids": {"maxItems": 0},
+              "blocker": {"type": "null"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"cleanup_status": {"enum": ["preserved", "audit_only"]}},
+            "required": ["cleanup_status"]
+          },
+          "then": {
+            "properties": {
+              "released_resource_ids": {"maxItems": 0},
+              "preserved_resource_ids": {"minItems": 1},
+              "failed_resource_ids": {"maxItems": 0},
+              "blocker": {"$ref": "#/$defs/NonEmptyString"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"cleanup_status": {"const": "failed"}},
+            "required": ["cleanup_status"]
+          },
+          "then": {
+            "properties": {
+              "released_resource_ids": {"maxItems": 0},
+              "preserved_resource_ids": {"maxItems": 0},
+              "failed_resource_ids": {"minItems": 1},
+              "blocker": {"$ref": "#/$defs/NonEmptyString"}
+            }
+          }
+        }
+      ]
+    },
     "FanInReceipt": {
       "type": "object",
       "additionalProperties": false,
@@ -213,6 +299,7 @@
         "wave_id": {"$ref": "#/$defs/NonEmptyString"},
         "required_worker_ids": {"$ref": "#/$defs/StringList"},
         "terminal_receipt_ids": {"$ref": "#/$defs/StringList"},
+        "cleanup_receipt_ids": {"$ref": "#/$defs/StringList"},
         "aggregate_status": {"type": "string", "enum": ["passed", "failed", "blocked"]},
         "blocking_receipt_ids": {"$ref": "#/$defs/StringList"},
         "authority": {"const": "orchestration_evidence_only"},
