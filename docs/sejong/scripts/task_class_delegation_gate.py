@@ -18,6 +18,7 @@ from delegation_route_contract import (
     OVERHEAD_ROIS,
     SEUNGJEONGWON_GUARDRAIL_STATES,
     TASK_CLASSES,
+    TEAM_EXECUTOR_HEALTH_STATES,
     UIGWE_STATES,
     WORKER_AUTHORITY_POLICIES,
     WORKER_SCOPE_STATES,
@@ -26,6 +27,7 @@ from delegation_route_contract import (
     DelegationInput,
 )
 from delegation_route_policy import evaluate
+from team_executor_runtime import fingerprint_team_executor
 
 
 FORMAT = POLICY_FORMAT
@@ -87,6 +89,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         choices=sorted(NATIVE_WRITE_ISOLATIONS),
         default="unknown",
     )
+    parser.add_argument(
+        "--team-executor-health",
+        choices=sorted({"auto", *TEAM_EXECUTOR_HEALTH_STATES}),
+        default="auto",
+    )
     parser.add_argument("--requires-independent-process", action="store_true")
     parser.add_argument("--requires-cross-session-recovery", action="store_true")
     parser.add_argument("--requires-write-isolation", action="store_true")
@@ -104,6 +111,12 @@ def input_from_args(args: argparse.Namespace) -> DelegationInput:
         payload = json.loads(raw)
         if not isinstance(payload, dict):
             raise ValueError("--from-json payload must be an object")
+        team_executor_health = payload.get(
+            "team_executor_health", args.team_executor_health
+        )
+        if team_executor_health == "auto":
+            team_executor_health = fingerprint_team_executor().health
+        payload["team_executor_health"] = team_executor_health
         return DelegationInput(**payload)
     if not args.task_class:
         raise ValueError("--task-class is required unless --from-json is used")
@@ -123,6 +136,11 @@ def input_from_args(args: argparse.Namespace) -> DelegationInput:
         host_native_state=args.host_native_state,
         host_native_direct_messaging=args.host_native_direct_messaging,
         host_native_write_isolation=args.host_native_write_isolation,
+        team_executor_health=(
+            fingerprint_team_executor().health
+            if args.team_executor_health == "auto"
+            else args.team_executor_health
+        ),
         requires_independent_process=args.requires_independent_process,
         requires_cross_session_recovery=args.requires_cross_session_recovery,
         requires_write_isolation=args.requires_write_isolation,

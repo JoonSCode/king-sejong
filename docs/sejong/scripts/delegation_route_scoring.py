@@ -7,6 +7,7 @@ from delegation_route_contract import (
     hard_gate_failures,
     requires_worker_backend,
 )
+from team_executor_runtime import HEALTHY
 
 
 def route_scores(case: DelegationInput) -> dict[str, int]:
@@ -119,6 +120,8 @@ def adjusted_scores(case: DelegationInput) -> dict[str, int]:
         scores["bounded_subagents"] = -1
         scores["research_fanout"] = -1
     elif case.host_native_state == "available":
+        scores["team_executor"] = -1
+    if case.team_executor_health != HEALTHY:
         scores["team_executor"] = -1
     return scores
 

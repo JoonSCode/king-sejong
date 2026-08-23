@@ -36,6 +36,7 @@ from delegation_run import (
 )
 from delegation_run_model import load_run as load_delegation_run
 from sejong_paths import resolve_path
+from team_executor_runtime import HEALTHY, fingerprint_team_executor
 
 
 TEAM_FORMAT = "sejong.team/v0.1-draft"
@@ -621,13 +622,21 @@ def shell_with_worker_env(env_values: dict[str, str], command: str, prompt_file:
     return f"{worker_env} {command}"
 
 
-def tmux_session_exists(session: str) -> bool:
-    result = subprocess.run(["tmux", "has-session", "-t", session], text=True, capture_output=True)
+def tmux_session_exists(session: str, executable: str = "tmux") -> bool:
+    result = subprocess.run(
+        [executable, "has-session", "-t", session],
+        text=True,
+        capture_output=True,
+    )
     return result.returncode == 0
 
 
-def kill_tmux_session(session: str) -> None:
-    subprocess.run(["tmux", "kill-session", "-t", session], text=True, capture_output=True)
+def kill_tmux_session(session: str, executable: str = "tmux") -> None:
+    subprocess.run(
+        [executable, "kill-session", "-t", session],
+        text=True,
+        capture_output=True,
+    )
 
 
 def live_smoke_script(path: Path) -> None:
@@ -1710,6 +1719,20 @@ def cleanup_workspaces(args: argparse.Namespace) -> int:
     return 0
 
 
+def preflight(_: argparse.Namespace) -> int:
+    result = fingerprint_team_executor()
+    print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
+    return 0 if result.health == HEALTHY else 1
+
+
+def require_healthy_team_executor() -> str:
+    result = fingerprint_team_executor()
+    if result.health != HEALTHY or result.executable is None:
+        evidence = json.dumps(result.to_dict(), sort_keys=True)
+        raise SystemExit(f"TeamExecutor preflight blocked: {evidence}")
+    return result.executable
+
+
 def smoke_live_launch(args: argparse.Namespace) -> int:
     run_dir = require_run_dir(Path(args.run_dir))
     team = load_team(run_dir)
@@ -1717,12 +1740,25 @@ def smoke_live_launch(args: argparse.Namespace) -> int:
     if worker is None:
         raise SystemExit(f"unknown worker: {args.worker_id}")
 
-    if shutil.which("tmux") is None:
-        print(json.dumps({"format": "sejong.team-live-smoke/v0.1-draft", "status": "skipped", "reason": "tmux unavailable"}, indent=2, sort_keys=True))
+    runtime = fingerprint_team_executor()
+    if runtime.health != HEALTHY or runtime.executable is None:
+        print(
+            json.dumps(
+                {
+                    "format": "sejong.team-live-smoke/v0.1-draft",
+                    "status": "skipped",
+                    "reason": "tmux unavailable",
+                    "preflight": runtime.to_dict(),
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
         return 0
+    tmux_executable = runtime.executable
 
     session = args.session or f"sejong-smoke-{team['run_id']}-{args.worker_id}-{os.getpid()}"
-    if tmux_session_exists(session):
+    if tmux_session_exists(session, tmux_executable):
         raise SystemExit(f"tmux smoke session already exists: {session}")
 
     prompt_file = run_dir / str(worker.get("prompt_path") or "")
@@ -1754,7 +1790,7 @@ def smoke_live_launch(args: argparse.Namespace) -> int:
     command = f"{shlex.quote(sys.executable)} {shlex.quote(str(script_path))} {shlex.quote(str(evidence_path))}"
     shell_command = shell_with_worker_env(env_values, command, prompt_file if worker.get("prompt_path") else None)
     result = subprocess.run(
-        ["tmux", "new-session", "-d", "-s", session, "-c", worker_cwd, shell_command],
+        [tmux_executable, "new-session", "-d", "-s", session, "-c", worker_cwd, shell_command],
         text=True,
         capture_output=True,
     )
@@ -1764,25 +1800,25 @@ def smoke_live_launch(args: argparse.Namespace) -> int:
 
     deadline = time.monotonic() + args.timeout_seconds
     while time.monotonic() < deadline:
-        if evidence_path.exists() and not tmux_session_exists(session):
+        if evidence_path.exists() and not tmux_session_exists(session, tmux_executable):
             break
-        if evidence_path.exists() and tmux_session_exists(session):
+        if evidence_path.exists() and tmux_session_exists(session, tmux_executable):
             time.sleep(0.1)
             continue
-        if not tmux_session_exists(session):
+        if not tmux_session_exists(session, tmux_executable):
             break
         time.sleep(0.1)
 
-    session_remaining = tmux_session_exists(session)
+    session_remaining = tmux_session_exists(session, tmux_executable)
     if session_remaining:
-        kill_tmux_session(session)
+        kill_tmux_session(session, tmux_executable)
         print(
             json.dumps(
                 {
                     "format": "sejong.team-live-smoke/v0.1-draft",
                     "status": "failed",
                     "session": session,
-                    "session_remaining": tmux_session_exists(session),
+                    "session_remaining": tmux_session_exists(session, tmux_executable),
                     "evidence_path": str(evidence_path),
                     "reason": "tmux smoke session did not exit before timeout",
                 },
@@ -1886,6 +1922,7 @@ def launch(args: argparse.Namespace) -> int:
         raise SystemExit(f"commands reference unknown workers: {sorted(unknown)}")
     if not commands:
         raise SystemExit("at least one --worker-command worker_id=command is required")
+    tmux_executable = require_healthy_team_executor()
     delegation_path = delegation_run_path(team)
     delegation_worker_ids = tuple(DelegationWorkerId(worker_id) for worker_id in commands)
     if delegation_path is not None:
@@ -1918,10 +1955,31 @@ def launch(args: argparse.Namespace) -> int:
         )
         shell_command = shell_with_worker_env(env_values, command, prompt_file if worker.get("prompt_path") else None)
         if index == 0:
-            tmux_commands.append(["tmux", "new-session", "-d", "-s", session, "-c", worker_cwd, shell_command])
+            tmux_commands.append(
+                [
+                    tmux_executable,
+                    "new-session",
+                    "-d",
+                    "-s",
+                    session,
+                    "-c",
+                    worker_cwd,
+                    shell_command,
+                ]
+            )
         else:
-            tmux_commands.append(["tmux", "split-window", "-t", session, "-c", worker_cwd, shell_command])
-    tmux_commands.append(["tmux", "select-layout", "-t", session, "tiled"])
+            tmux_commands.append(
+                [
+                    tmux_executable,
+                    "split-window",
+                    "-t",
+                    session,
+                    "-c",
+                    worker_cwd,
+                    shell_command,
+                ]
+            )
+    tmux_commands.append([tmux_executable, "select-layout", "-t", session, "tiled"])
 
     if args.dry_run:
         for command in tmux_commands:
@@ -1943,7 +2001,7 @@ def launch(args: argparse.Namespace) -> int:
                 rollback_failure = str(rollback_error)
         try:
             subprocess.run(
-                ["tmux", "kill-session", "-t", session],
+                [tmux_executable, "kill-session", "-t", session],
                 check=False,
                 capture_output=True,
                 text=True,
@@ -1963,6 +2021,11 @@ def launch(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Manage Sejong TeamExecutor state and tmux worker launch metadata.")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    preflight_parser = subparsers.add_parser(
+        "preflight", help="Fingerprint the required tmux runtime"
+    )
+    preflight_parser.set_defaults(func=preflight)
 
     init = subparsers.add_parser("init", help="Create a TeamExecutor run directory")
     init.add_argument("--run-id")

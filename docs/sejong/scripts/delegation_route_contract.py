@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
+from team_executor_runtime import TEAM_EXECUTOR_HEALTH_STATES
+
 
 FORMAT: Final = "sejong.task-class-delegation-gate/v0.1-draft"
 TASK_CLASSES = {
@@ -72,6 +74,7 @@ class DelegationInput:
     host_native_state: str = "unknown"
     host_native_direct_messaging: str = "unknown"
     host_native_write_isolation: str = "unknown"
+    team_executor_health: str = "unknown"
     requires_independent_process: bool = False
     requires_cross_session_recovery: bool = False
     requires_write_isolation: bool = False
@@ -115,6 +118,11 @@ def validate_input(case: DelegationInput) -> None:
             "host_native_write_isolation",
             case.host_native_write_isolation,
             NATIVE_WRITE_ISOLATIONS,
+        ),
+        (
+            "team_executor_health",
+            case.team_executor_health,
+            TEAM_EXECUTOR_HEALTH_STATES,
         ),
     )
     for name, value, choices in fields:

@@ -22,16 +22,24 @@ class TaskClassDelegationBoundaryTests(unittest.TestCase):
     def test_explicit_backend_requirements_override_simple_direct_scores(self) -> None:
         cases = (
             gate.DelegationInput(
-                task_class="simple_lookup", requires_independent_process=True,
+                task_class="simple_lookup",
+                team_executor_health="healthy",
+                requires_independent_process=True,
             ),
             gate.DelegationInput(
-                task_class="simple_lookup", requires_cross_session_recovery=True,
+                task_class="simple_lookup",
+                team_executor_health="healthy",
+                requires_cross_session_recovery=True,
             ),
             gate.DelegationInput(
-                task_class="simple_lookup", requires_write_isolation=True,
+                task_class="simple_lookup",
+                team_executor_health="healthy",
+                requires_write_isolation=True,
             ),
             gate.DelegationInput(
-                task_class="simple_lookup", requires_peer_messaging=True,
+                task_class="simple_lookup",
+                team_executor_health="healthy",
+                requires_peer_messaging=True,
             ),
         )
         for case in cases:
@@ -84,6 +92,17 @@ class TaskClassDelegationBoundaryTests(unittest.TestCase):
 
             self.assertEqual(result["selected_route"], "no_write_dry_run")
             self.assertIn("worker_scope_unsafe", result["hard_gate_failures"])
+
+    def test_unknown_team_executor_health_fails_closed_for_required_backend(self) -> None:
+        result = gate.evaluate(gate.DelegationInput(
+            task_class="simple_lookup",
+            host_native_state="unavailable",
+            requires_independent_process=True,
+        ))
+
+        self.assertEqual(result["selected_route"], "no_write_dry_run")
+        self.assertEqual(result["selected_backend"], "none")
+        self.assertIn("team_executor_health_unknown", result["capability_notes"])
 
     def test_json_requires_flags_reject_non_boolean_values(self) -> None:
         invalid = {

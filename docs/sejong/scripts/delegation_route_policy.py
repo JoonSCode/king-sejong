@@ -9,9 +9,11 @@ from delegation_route_contract import (
     fallback_reasons,
     hard_gate_failures,
     hard_gates,
+    requires_worker_backend,
     validate_input,
 )
 from delegation_route_scoring import adjusted_scores, select_route
+from team_executor_runtime import HEALTHY
 
 
 def selected_backend(route: str) -> str:
@@ -32,6 +34,7 @@ def required_evidence(route: str, backend: str, case: DelegationInput) -> list[s
         evidence += ["native agent thread refs", "terminal delegation receipts"]
     if backend == "team_executor":
         evidence += [
+            "healthy TeamExecutor preflight receipt",
             "disjoint file leases or equivalent scope proof",
             "durable mailbox or workflow-run evidence",
         ]
@@ -54,6 +57,12 @@ def _reentry_target(route: str, case: DelegationInput) -> str:
     if case.uigwe_contract_state in {"required_missing", "unstable"}:
         return "uigwe"
     if case.seungjeongwon_guardrail_state in {"weak", "blocked"}:
+        return "seungjeongwon"
+    if (
+        route == "no_write_dry_run"
+        and requires_worker_backend(case)
+        and case.team_executor_health != HEALTHY
+    ):
         return "seungjeongwon"
     return "jangyeongsil" if route == "research_fanout" else "none"
 
@@ -105,16 +114,17 @@ def evaluate(case: DelegationInput) -> dict[str, object]:
             2,
         )
     )
-    capability_notes = (
-        ["host_native_capability_unknown"]
-        if case.host_native_state == "unknown"
-        else []
-    )
+    capability_notes: list[str] = []
+    if case.host_native_state == "unknown":
+        capability_notes.append("host_native_capability_unknown")
+    if case.team_executor_health != HEALTHY:
+        capability_notes.append(f"team_executor_health_{case.team_executor_health}")
     return {
         "format": FORMAT,
         "selected_route": route,
         "selected_backend": backend,
         "fallback_reasons": fallback_reasons(case),
+        "backend_health": {"team_executor": case.team_executor_health},
         "capability_notes": capability_notes,
         "confidence": confidence,
         "hard_gates": hard_gates(case),

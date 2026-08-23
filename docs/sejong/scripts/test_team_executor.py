@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -48,6 +49,38 @@ def run_team_command(
     )
 
 
+def fake_tmux_env(
+    root: Path,
+    *,
+    version_exit: int = 0,
+    launch_exit: int = 0,
+) -> dict[str, str]:
+    fake_bin = root / "fake-tmux-bin"
+    fake_bin.mkdir(parents=True, exist_ok=True)
+    fake_tmux = fake_bin / "tmux"
+    fake_tmux.write_text(
+        "#!/bin/sh\n"
+        "if [ \"$1\" = \"-V\" ]; then\n"
+        "  echo 'tmux 3.5a'\n"
+        f"  exit {version_exit}\n"
+        "fi\n"
+        f"exit {launch_exit}\n",
+        encoding="utf-8",
+    )
+    fake_tmux.chmod(0o755)
+    return {"PATH": f"{fake_bin}:{os.environ.get('PATH', '')}"}
+
+
+def env_without_tmux(root: Path) -> dict[str, str]:
+    isolated_bin = root / "isolated-bin"
+    isolated_bin.mkdir(parents=True, exist_ok=True)
+    git = shutil.which("git")
+    if git is None:
+        raise RuntimeError("git is required for TeamExecutor tests")
+    (isolated_bin / "git").symlink_to(git)
+    return {"PATH": str(isolated_bin)}
+
+
 def init_delegation_run(path: Path, *, total: int, concurrency: int, rounds: int = 2) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [
@@ -83,6 +116,104 @@ def init_git_repo(path: Path) -> None:
 
 
 class TeamExecutorAuthorityTests(unittest.TestCase):
+    def test_preflight_reports_stable_health_states(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            missing_bin = root / "missing-bin"
+            missing_bin.mkdir()
+            undetected = run_team_command(
+                ["preflight"],
+                sejong_home=root / "sejong",
+                env_overrides={"PATH": str(missing_bin)},
+            )
+            unhealthy = run_team_command(
+                ["preflight"],
+                sejong_home=root / "sejong",
+                env_overrides=fake_tmux_env(root / "unhealthy", version_exit=42),
+            )
+            healthy = run_team_command(
+                ["preflight"],
+                sejong_home=root / "sejong",
+                env_overrides=fake_tmux_env(root / "healthy"),
+            )
+
+        self.assertEqual(undetected.returncode, 1, undetected.stderr)
+        self.assertEqual(unhealthy.returncode, 1, unhealthy.stderr)
+        self.assertEqual(healthy.returncode, 0, healthy.stderr)
+        reports = tuple(
+            json.loads(result.stdout)
+            for result in (undetected, unhealthy, healthy)
+        )
+        self.assertEqual(
+            [report["health"] for report in reports],
+            ["undetected", "unhealthy", "healthy"],
+        )
+        for report in reports:
+            self.assertEqual(
+                report["format"],
+                "sejong.team-executor-preflight/v0.1-draft",
+            )
+            self.assertEqual(report["backend"], "team_executor")
+            self.assertEqual(
+                set(report),
+                {"format", "backend", "health", "executable", "version", "reason"},
+            )
+        self.assertIsNone(reports[0]["executable"])
+        self.assertEqual(reports[2]["version"], "tmux 3.5a")
+
+    def test_launch_preflight_blocks_before_delegation_or_workspace_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo_root = root / "repo"
+            init_git_repo(repo_root)
+            sejong_home = root / "sejong"
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(
+                init_delegation_run(
+                    delegation_path,
+                    total=1,
+                    concurrency=1,
+                ).returncode,
+                0,
+            )
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "preflight-mutation-boundary",
+                    "--repo-root",
+                    str(repo_root),
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--delegation-run",
+                    str(delegation_path),
+                    "--worker",
+                    "writer:executor:bounded implementation",
+                    "--worker-write-scope",
+                    "writer=docs/example.md",
+                    "--command",
+                    "writer=echo ready",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            run_dir = sejong_home / "state" / "team" / "preflight-mutation-boundary"
+            worker_state_path = run_dir / "workers" / "writer" / "state.json"
+            delegation_before = delegation_path.read_bytes()
+            worker_state_before = worker_state_path.read_bytes()
+            result = run_team_command(
+                ["launch", str(run_dir), "--isolate-write-workers"],
+                sejong_home=sejong_home,
+                env_overrides=env_without_tmux(root),
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("TeamExecutor preflight blocked", result.stderr)
+            self.assertIn('"health": "undetected"', result.stderr)
+            self.assertEqual(delegation_path.read_bytes(), delegation_before)
+            self.assertEqual(worker_state_path.read_bytes(), worker_state_before)
+            self.assertFalse((run_dir / "workspaces" / "writer").exists())
+
     def test_valid_context_fixture_passes(self) -> None:
         result = run_check("valid-context")
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -569,7 +700,11 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             self.assertEqual(init.returncode, 0, init.stderr)
             run_dir = sejong_home / "state" / "team" / "launch-context"
 
-            result = run_team_command(["launch", str(run_dir), "--dry-run"], sejong_home=sejong_home)
+            result = run_team_command(
+                ["launch", str(run_dir), "--dry-run"],
+                sejong_home=sejong_home,
+                env_overrides=fake_tmux_env(sejong_home),
+            )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("SEJONG_CURRENT_SURFACE=uigwe", result.stdout)
             self.assertIn("SEJONG_WORKER_ROLE=readiness-checker", result.stdout)
@@ -663,7 +798,11 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             self.assertEqual(init.returncode, 0, init.stderr)
             run_dir = sejong_home / "state" / "team" / "launch-prompt"
 
-            result = run_team_command(["launch", str(run_dir), "--dry-run"], sejong_home=sejong_home)
+            result = run_team_command(
+                ["launch", str(run_dir), "--dry-run"],
+                sejong_home=sejong_home,
+                env_overrides=fake_tmux_env(sejong_home),
+            )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("SEJONG_CURRENT_SURFACE=jiphyeonjeon", result.stdout)
             self.assertIn("SEJONG_WORKER_ROLE=critic", result.stdout)
@@ -756,7 +895,11 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             state = json.loads((run_dir / "workers" / "writer" / "state.json").read_text(encoding="utf-8"))
             workspace = state["isolation"]["workspace_path"]
 
-            result = run_team_command(["launch", str(run_dir), "--dry-run"], sejong_home=sejong_home)
+            result = run_team_command(
+                ["launch", str(run_dir), "--dry-run"],
+                sejong_home=sejong_home,
+                env_overrides=fake_tmux_env(sejong_home),
+            )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn(f"-c {workspace}", result.stdout)
             self.assertIn("SEJONG_WORKER_ISOLATION_BACKEND=worktree", result.stdout)
@@ -789,7 +932,11 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             self.assertEqual(init.returncode, 0, init.stderr)
             run_dir = sejong_home / "state" / "team" / "read-only-no-worktree"
 
-            result = run_team_command(["launch", str(run_dir), "--dry-run", "--isolate-write-workers"], sejong_home=sejong_home)
+            result = run_team_command(
+                ["launch", str(run_dir), "--dry-run", "--isolate-write-workers"],
+                sejong_home=sejong_home,
+                env_overrides=fake_tmux_env(sejong_home),
+            )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn(f"-c {repo_root.resolve()}", result.stdout)
             self.assertIn("SEJONG_WORKER_ISOLATION_BACKEND=none", result.stdout)
@@ -822,7 +969,11 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             self.assertEqual(init.returncode, 0, init.stderr)
             run_dir = sejong_home / "state" / "team" / "worktree-failure"
 
-            result = run_team_command(["launch", str(run_dir), "--isolate-write-workers"], sejong_home=sejong_home)
+            result = run_team_command(
+                ["launch", str(run_dir), "--isolate-write-workers"],
+                sejong_home=sejong_home,
+                env_overrides=fake_tmux_env(sejong_home),
+            )
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("failed to create worker worktree", result.stderr)
 
@@ -1095,7 +1246,11 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             run_dir = root / "sejong" / "state" / "team" / "launch-overflow"
 
             # When: TeamExecutor dry-runs both workers in one launch batch.
-            result = run_team_command(["launch", str(run_dir), "--dry-run"], sejong_home=root / "sejong")
+            result = run_team_command(
+                ["launch", str(run_dir), "--dry-run"],
+                sejong_home=root / "sejong",
+                env_overrides=fake_tmux_env(root),
+            )
 
             # Then: the shared concurrency budget rejects the launch before tmux planning.
             self.assertNotEqual(result.returncode, 0)
@@ -1454,18 +1609,13 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
                 sejong_home=sejong_home,
             )
             self.assertEqual(initialized.returncode, 0, initialized.stderr)
-            fake_bin = root / "bin"
-            fake_bin.mkdir()
-            fake_tmux = fake_bin / "tmux"
-            fake_tmux.write_text("#!/bin/sh\nexit 42\n", encoding="utf-8")
-            fake_tmux.chmod(0o755)
             run_dir = sejong_home / "state" / "team" / "launch-failure"
 
             # When: the process launch fails after reservation.
             result = run_team_command(
                 ["launch", str(run_dir)],
                 sejong_home=sejong_home,
-                env_overrides={"PATH": f"{fake_bin}:{os.environ.get('PATH', '')}"},
+                env_overrides=fake_tmux_env(root, launch_exit=42),
             )
 
             # Then: the delegation worker returns to registered instead of staying launched.
@@ -1515,7 +1665,11 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             run_dir = root / "sejong" / "state" / "team" / "wave-gated"
 
             # When: TeamExecutor attempts its normal direct launch path.
-            result = run_team_command(["launch", str(run_dir), "--dry-run"], sejong_home=root / "sejong")
+            result = run_team_command(
+                ["launch", str(run_dir), "--dry-run"],
+                sejong_home=root / "sejong",
+                env_overrides=fake_tmux_env(root),
+            )
 
             # Then: Core requires open-wave and leaves the worker registered.
             self.assertNotEqual(result.returncode, 0)

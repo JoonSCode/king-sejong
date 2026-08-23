@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -27,6 +28,7 @@ def broad_input() -> gate.DelegationInput:
         code_coupling="bounded",
         overhead_roi="high",
         worker_scope_state="disjoint",
+        team_executor_health="healthy",
     )
 
 
@@ -83,6 +85,31 @@ class TaskClassDelegationGateTests(unittest.TestCase):
         self.assertEqual(result["selected_route"], "team_executor")
         self.assertEqual(result["selected_backend"], "team_executor")
         self.assertIn("host_native_unavailable", result["fallback_reasons"])
+
+    def test_undetected_team_executor_falls_back_for_optional_work(self) -> None:
+        result = gate.evaluate(replace(
+            broad_input(),
+            host_native_state="unavailable",
+            team_executor_health="undetected",
+        ))
+
+        self.assertEqual(result["selected_route"], "direct_execution")
+        self.assertEqual(result["selected_backend"], "current_session")
+        self.assertEqual(result["backend_health"]["team_executor"], "undetected")
+        self.assertIn("team_executor_health_undetected", result["capability_notes"])
+
+    def test_unhealthy_team_executor_blocks_required_worker_capability(self) -> None:
+        result = gate.evaluate(replace(
+            broad_input(),
+            host_native_state="unavailable",
+            team_executor_health="unhealthy",
+            requires_independent_process=True,
+        ))
+
+        self.assertEqual(result["selected_route"], "no_write_dry_run")
+        self.assertEqual(result["selected_backend"], "none")
+        self.assertEqual(result["recommended_reentry_target"], "seungjeongwon")
+        self.assertIn("team_executor_health_unhealthy", result["capability_notes"])
 
     def test_independent_process_requirement_uses_team_executor(self) -> None:
         result = gate.evaluate(replace(
@@ -240,6 +267,7 @@ class TaskClassDelegationGateTests(unittest.TestCase):
             "code_coupling": "bounded",
             "overhead_roi": "high",
             "worker_scope_state": "disjoint",
+            "team_executor_health": "healthy",
         }
         with tempfile.TemporaryDirectory() as tmp:
             input_path = Path(tmp) / "task.json"
@@ -256,6 +284,35 @@ class TaskClassDelegationGateTests(unittest.TestCase):
         self.assertEqual(report["format"], gate.FORMAT)
         self.assertEqual(report["selected_route"], "team_executor")
         self.assertEqual(report["selected_backend"], "team_executor")
+
+    def test_cli_auto_fingerprint_excludes_undetected_team_executor(self) -> None:
+        payload = {
+            "task_class": "implementation",
+            "write_risk": "medium",
+            "evidence_breadth": "broad",
+            "code_coupling": "bounded",
+            "overhead_roi": "high",
+            "worker_scope_state": "disjoint",
+            "host_native_state": "unavailable",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            input_path = root / "task.json"
+            input_path.write_text(json.dumps(payload), encoding="utf-8")
+            missing_bin = root / "missing-bin"
+            missing_bin.mkdir()
+            result = subprocess.run(
+                [sys.executable, str(RUNNER), "--from-json", str(input_path)],
+                text=True,
+                capture_output=True,
+                cwd=str(REPO_ROOT),
+                env={**os.environ, "PATH": str(missing_bin)},
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["selected_route"], "direct_execution")
+        self.assertEqual(report["backend_health"]["team_executor"], "undetected")
 
 if __name__ == "__main__":
     unittest.main()

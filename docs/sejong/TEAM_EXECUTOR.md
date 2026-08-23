@@ -14,22 +14,28 @@ When the active host runtime supports bounded native agents, use that backend by
 default. TeamExecutor is the portable fallback and wrapper contract for
 capabilities that the native host cannot satisfy.
 
-The task-class delegation gate applies this matrix:
+The task-class delegation gate applies this matrix after a TeamExecutor runtime
+fingerprint:
 
-| Requirement | Native host capability | Backend |
-| --- | --- | --- |
-| Bounded delegation, no fallback-only requirement | available | `codex_native` |
-| Bounded delegation | unavailable | `team_executor` |
-| Independent CLI or other separate process | any | `team_executor` |
-| Cross-session recovery through Sejong-owned state | any | `team_executor` |
-| Write isolation | native worktree isolation | `codex_native` |
-| Write isolation | shared workspace or unknown | `team_executor` |
-| Direct peer messaging | native messaging available | `codex_native` |
-| Direct peer messaging | unavailable or unknown | `team_executor` |
+| Requirement | Native host capability | TeamExecutor health | Backend |
+| --- | --- | --- | --- |
+| Bounded delegation, no fallback-only requirement | available | any | `codex_native` |
+| Bounded delegation | unavailable | `healthy` | `team_executor` |
+| Bounded delegation | unavailable | non-healthy | `current_session` when valid |
+| Independent CLI or other separate process | insufficient | `healthy` | `team_executor` |
+| Independent CLI or other separate process | insufficient | non-healthy | `no_write_dry_run` |
+| Cross-session recovery through Sejong-owned state | insufficient | `healthy` | `team_executor` |
+| Cross-session recovery through Sejong-owned state | insufficient | non-healthy | `no_write_dry_run` |
+| Write isolation | native worktree isolation | any | `codex_native` |
+| Write isolation | shared workspace or unknown | `healthy` | `team_executor` |
+| Direct peer messaging | native messaging available | any | `codex_native` |
+| Direct peer messaging | unavailable or unknown | `healthy` | `team_executor` |
 
-When host-native capability is `unknown`, preserve the legacy task-shape score
-instead of claiming that native-first routing occurred. Explicit capability
-evidence is required to migrate the default safely.
+When host-native capability is `unknown`, preserve task-shape scoring among
+feasible routes instead of claiming that native-first routing occurred.
+TeamExecutor is never feasible on task shape alone: its health must be
+`healthy`. Pure policy callers must supply that evidence explicitly; the
+task-class gate CLI fingerprints the live runtime when the input omits it.
 
 Native execution must not reproduce TeamExecutor mailbox, lease, workspace, or
 process-management state. It registers native workers in the shared delegation
@@ -185,6 +191,18 @@ python3 docs/sejong/scripts/team_executor.py init \
 
 The helper manages Sejong-owned state, mailbox messages, rounds, leases, and optional tmux launch commands. It is a coordination helper for wrappers such as `$team`; it is not a replacement for the lead Sejong agent.
 
+Before selection or launch, fingerprint the backend with:
+
+```bash
+python3 docs/sejong/scripts/team_executor.py preflight
+```
+
+The command emits `sejong.team-executor-preflight/v0.1-draft` JSON. Its health
+is one of `healthy`, `undetected`, or `unhealthy`; the evidence also records the
+resolved executable, version output, and reason. `launch`, including
+`--dry-run`, consumes the same fingerprint before Core delegation reservation
+or worktree preparation. It never installs or configures tmux.
+
 When a caller supplies `--delegation-run <run.json>`, TeamExecutor registers its
 workers against the shared Core budget and checks the same concurrency limit
 before launch. Team state stores `delegation_run_ref` and `budget_ref`; these are
@@ -215,6 +233,7 @@ python3 docs/sejong/scripts/team_executor.py acquire-lease <run-dir> --worker-id
 python3 docs/sejong/scripts/team_executor.py check <run-dir>
 python3 docs/sejong/scripts/team_executor.py prepare-workspaces <run-dir>
 python3 docs/sejong/scripts/team_executor.py cleanup-workspaces <run-dir>
+python3 docs/sejong/scripts/team_executor.py preflight
 python3 docs/sejong/scripts/team_executor.py launch <run-dir> --worker-command 'critic=codex ...' --dry-run
 python3 docs/sejong/scripts/team_executor.py smoke-live-launch <run-dir> --worker-id implementer --isolate-write-workers
 python3 docs/sejong/scripts/team_executor.py check-sandbox-claims docs/sejong/TEAM_EXECUTOR.md docs/sejong/SECURITY.md
