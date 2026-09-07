@@ -563,9 +563,9 @@ Record the result with:
 
 Do not claim full executor readiness from a limited dry run. Use it to expose whether handoff leaves decompose into actionable leaves and whether the execution attempt ledger produces useful evidence.
 
-### Phase 5B: Implicit Native Goal Handoff Comparison
+### Phase 5B: Authorized Native Goal Handoff Comparison
 
-Compare the current non-goal-backed Seungjeongwon handoff against `implicit native goal handoff` before promoting goal-backed execution as the default for a workflow class.
+Compare the current non-goal-backed Seungjeongwon handoff against authorized native goal handoff only when the current host permits that comparison. A quality result cannot expand goal-creation authorization. The legacy instruction fixture id is retained for compatibility; it now checks host-conditional authorization.
 
 Baseline:
 
@@ -576,13 +576,13 @@ Baseline:
 Candidate:
 
 - Uigwe produces the same handoff-ready bundle.
-- Seungjeongwon creates or attaches a native goal automatically at execution entry when the host supports it.
+- Seungjeongwon creates or attaches a native goal only when explicitly requested and permitted by the current host tool contract. Without that authorization, the candidate continues execution without creating a goal.
 - The native goal carries only the broad objective, completion criteria, verification evidence requirements, blocker policy, and Uigwe re-entry triggers.
 - Seungjeongwon still owns todo verification, subtodo decomposition, redefinition events, attempt ledger entries, verification, and execution feedback.
 
 Score both runs on:
 
-- `goal_activation_accuracy`: native goals are created for handoff-ready outcome-completion work and not created for research-only, advice-only, plan-only, open-ambiguity, or Sejong-direct work
+- `goal_activation_accuracy`: native goals require host-permitted authorization and a handoff-ready outcome contract; they are not inferred from ordinary implementation requests or created for research-only, advice-only, plan-only, open-ambiguity, or Sejong-direct work
 - `goal_payload_quality`: the goal captures the approved objective and completion bar without embedding the executor todo tree
 - `adaptive_todo_preservation`: Seungjeongwon still performs todo verification, decomposition, visible board updates, and redefinition/replacement events
 - `outcome_result_quality`: the candidate's final answer, chosen experiments, implementation patch, or action split is better than the baseline against the same acceptance criteria
@@ -604,7 +604,7 @@ The comparison must judge the resulting work product, not only route intent or g
 - user-owned action quality
 - verification or measurement plan quality
 - cost, turns, and tool-call overhead
-- final recommendation: promote, reject, or keep shadowing implicit native goal handoff for that task class
+- final recommendation: promote, reject, or keep shadowing authorized native goal handoff for that task class
 
 The comparison itself should be run through Seungjeongwon's verification decomposition loop. First list the perspectives needed to judge the result, then define how each perspective will be checked, verify whether those checks are sufficient, split weak perspectives, and only then score the paired outputs.
 

@@ -1249,6 +1249,45 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertEqual(output["decision"], "block")
         self.assertIn("seungjeongwon_receipt_required", output["reason"])
 
+    def test_optional_questions_do_not_block_approved_work_or_completion(self) -> None:
+        for status in ("open", "pending", "answered"):
+            for blocking in (False, True):
+                with self.subTest(status=status, blocking=blocking), tempfile.TemporaryDirectory() as tmp:
+                    register = json.loads(
+                        (SEJONG_ROOT / "examples" / "ambiguity-register.example.json").read_text(encoding="utf-8")
+                    )
+                    register["readiness_percent"] = 100
+                    register["blocking_count"] = int(blocking)
+                    register["ambiguities"] = [register["ambiguities"][0]]
+                    register["ambiguities"][0].update(status=status, blocking=blocking)
+                    ambiguity_path = Path(tmp) / "ambiguity-register.json"
+                    ambiguity_path.write_text(json.dumps(register), encoding="utf-8")
+                    context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+                    context.update(
+                        current_surface="uigwe",
+                        route_sequence=["sejong", "uigwe"],
+                        required_route_sequence=[],
+                        pending_gates=[],
+                        artifact_refs=[str(ambiguity_path)],
+                    )
+                    context_path = Path(tmp) / "context.json"
+                    context_path.write_text(json.dumps(context), encoding="utf-8")
+                    write = run_hook(
+                        "PreToolUse",
+                        {
+                            "tool_name": "apply_patch",
+                            "tool_input": {"command": "*** Begin Patch\n*** Update File: README.md\n@@\n-old\n+new\n*** End Patch\n"},
+                        },
+                        context_path=context_path,
+                    )
+                    stop = run_hook(
+                        "Stop",
+                        {"stop_hook_active": False, "last_assistant_message": "Verified the approved scope."},
+                        context_path=context_path,
+                    )
+                    self.assertEqual(write.get("hookSpecificOutput", {}).get("permissionDecision") == "deny", blocking)
+                    self.assertEqual(stop.get("decision") == "block", blocking)
+
     def test_stop_continues_when_ambiguity_register_has_open_items(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             ambiguity_path = Path(tmp) / "ambiguity-register.json"

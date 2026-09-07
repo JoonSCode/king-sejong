@@ -31,24 +31,18 @@ Sejong's formal planning surface is `uigwe`.
 
 ## Live Session Contract
 
-In a live chat with a human user, Uigwe is an interactive protocol.
+Use interactive planning when the user asks for it or when a missing decision materially changes the result. Higher-priority instructions, host tool conditions, and the user's explicit scope and prior approvals take precedence over this skill's general procedure.
 
-Mandatory rules:
+- Reuse decisions from the current conversation and approved artifacts with evidence refs. Do not ask the user to approve the same decision again; mark an already answered requirement resolved, not waived.
+- Do not silently complete `deep-interview` or `brainstorming` from one ambiguous brief. Ask targeted clarification questions in small batches when intent, scope, authority, material design, or acceptance criteria are missing.
+- For material design choices, show credible options, trade-offs, a recommended default, and a free-response path before a required approval. Use only input tools permitted in the current mode; continue independent approved work while a required answer is pending. Silence is not an answer or approval.
+- Do not generate a packet until its required boundaries are clear. Routine implementation choices may use a stated assumption; optional preferences must not stop approved independent work.
+- Preserve approval stages explicitly requested by the user. Do not mark an approval gate as `waived` in a live session unless the user explicitly says to skip approval. Explicitly label offline evaluation assumptions and waivers.
+- Set `blocking=true` only for intent, scope, authority, material design, acceptance criteria, or an explicitly requested approval. Optional preferences use `blocking=false`.
+- When an ambiguity register is active, advance only when required-stage readiness is `100%` and every blocking `open`, `pending`, or `answered` item is resolved or explicitly waived. Readiness measures required decisions; optional preferences alone must not lower it.
+- Intent Clarification and Design Exploration remain active while their required boundaries are incomplete. Do not replace a real missing approval with a readiness score.
 
-- Do not silently complete `deep-interview` or `brainstorming` from one ambiguous brief.
-- Ask targeted clarification questions in small batches and wait for the user's answers before advancing the stage.
-- Do not generate an `Intent Packet` until intent, scope, non-goals, decision boundaries, constraints, and acceptance criteria are explicit enough to summarize back to the user.
-- Do not generate a `Design Packet` until the design-stage ambiguities have been discussed with the user when they materially affect architecture, trade-offs, or validation.
-- For material design choices, show credible options, trade-offs, a recommended default, and a free-response path before asking for approval.
-- Do not mark an approval gate as `waived` in a live session unless the user explicitly says to skip approval.
-- Offline artifact generation and other non-interactive evaluation contexts must be labeled explicitly. Only those contexts may auto-fill assumptions and waive approval gates by default.
-- When an ambiguity register is active, do not advance the live stage until readiness is `100%` and there are no `open` ambiguity items, unless the user explicitly waives the remaining ambiguity.
-- Each live Uigwe stage must remain active until that stage reaches `100%` readiness or the user explicitly asks to skip or proceed despite the remaining ambiguity.
-- Intent Clarification must not advance to Design Exploration while intent readiness is below `100%` in a live clarification loop.
-- Design Exploration must not advance to Executor Handoff Contract while design readiness is below `100%` in a live clarification loop.
-- Treat `open`, `pending`, and `answered` ambiguity-register items as blocking question obligations until they are resolved or explicitly waived.
-
-These live-session rules override the general default to make reasonable assumptions and continue autonomously.
+For a clear approved implementation, connect the existing scope and acceptance criteria to a compact execution contract. Do not add a new interview or formal packet bundle unless the work needs one or the user requested that planning workflow.
 
 ## User-Facing Stage Language
 
@@ -65,7 +59,7 @@ Stage meanings should be explained like this:
 - `1단계: 기획 명확화` = clarify what to build, why now, scope, non-goals, constraints, and success criteria
 - `2단계: 설계 명확화` = clarify how to solve it, what alternatives exist, and what trade-offs matter
 - `3단계: 실행 계약화` = turn the chosen design into a bounded Seungjeongwon handoff contract, dependencies, verification bar, and re-entry triggers
-- Handoff-ready outcome-completion bundles implicitly hand off to goal-backed Seungjeongwon execution when host-native goal support is available; Uigwe prepares the broad objective and guardrails, while Seungjeongwon owns adaptive todo decomposition.
+- Handoff-ready outcome-completion bundles hand off to Seungjeongwon. Use native goal backing only when the current host tool conditions are met; an ordinary outcome request does not itself authorize goal creation. Seungjeongwon owns adaptive todo decomposition either way.
 - Plan-mode-style clarification is allowed as live UX, but approved Uigwe packets and the Seungjeongwon handoff contract remain the durable source of truth.
 - When host-native structured choice UI is available, Uigwe may map the same recommended options and free-response path into that UI.
 - The ambiguity register remains the durable source of truth; the host UI is only a presentation adapter.
@@ -134,7 +128,7 @@ Read only what is needed, in this order:
 ## Do Not Use When
 
 - The task is only a small exact command, simple answer, or obvious non-behavioral correction where planning would be performative
-- The user explicitly wants research-only, advice-only, plan-only, or no-execution output
+- The user wants research or advice without formal planning artifacts
 - The user only wants a lightweight opinion or quick comparison without artifact generation
 
 ## Inputs
@@ -283,7 +277,7 @@ Stop and surface a blocker when:
 - a required boundary decision is missing
 - decomposition cannot produce handoff leaves without guessing
 
-In a live session, unresolved ambiguity is a reason to ask the user and pause the stage, not a reason to auto-complete the stage with hidden assumptions.
+In a live session, a required unresolved decision is a reason to ask the user and pause dependent work. Continue independent approved work; optional preferences do not block it.
 
 Recommended escalation targets:
 

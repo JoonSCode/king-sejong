@@ -110,7 +110,7 @@ Seungjeongwon execution run. See [seungjeongwon-run.schema.json](seungjeongwon-r
 - Add model-visible context with the active context id, route id, repo root,
   objective id, task class, projection profile, current surface, route sequence,
   pending gates, objective refs, and last user intent.
-- Inject a compact ambiguity register summary when a referenced register exists, including readiness, open ambiguity count, pending question obligation count, and next required user action.
+- Inject a compact ambiguity register summary when a referenced register exists, including readiness, blocking open ambiguity count, pending question obligation count, and next required user action. Optional preferences do not block completion; required-stage readiness excludes optional preferences.
 - Inject a compact continuity capsule projection when a referenced capsule
   exists. The projection is model-visible working-set context, not the full
   capsule and not a gate approval.

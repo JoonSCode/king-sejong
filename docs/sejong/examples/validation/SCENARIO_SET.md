@@ -64,5 +64,5 @@
 - `continuity-compaction-pending-gate`: compaction preserves pending gates
 - `continuity-ambiguity-register-open-item`: open ambiguity-register items block completion until answered or waived
 - `chain-research-plan-execute-record`: end-to-end chain records evidence
-- `chain-tagback-growth-goal-backed`: TagBack growth strategy chains evidence, planning, implicit native goal handoff, executable Codex tasks, and user-owned actions
+- `chain-tagback-growth-goal-backed`: TagBack growth strategy chains evidence, planning, authorized native goal handoff, executable Codex tasks, and user-owned actions
 - `efficiency-direct-overhead-budget`: direct task token overhead stays bounded

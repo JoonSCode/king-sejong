@@ -55,11 +55,11 @@ The native default is:
 - verify in Codex
 - report execution feedback directly
 
-For a handoff-ready Uigwe bundle whose original request asks for an outcome to be completed, Seungjeongwon should attach execution to a host-native goal automatically when that surface is available. The user does not need to type `/goal` separately after Uigwe has produced the execution contract.
+For a handoff-ready Uigwe bundle, use native goal backing only when the current host tool conditions are met. Tool availability and an ordinary implementation request do not authorize goal creation. If the host requires an explicit goal request, require that request from the user or applicable higher-priority instructions; otherwise continue the normal execution and verification loop without a goal.
 
 Native goal backing is a runtime persistence aid, not the execution plan. The goal should contain the approved objective, completion criteria, verification evidence requirements, blocker policy, and Uigwe re-entry triggers. Seungjeongwon keeps the detailed todo list, replacements, redefinitions, attempt hypotheses, and verification steps in the visible execution board and execution feedback.
 
-Do not activate a native goal for research-only, advice-only, plan-only, open-ambiguity, non-handoff-ready, or tiny Sejong-direct maintenance work. If the host lacks native goal support, continue with the normal Seungjeongwon loop and record that native goal support was unavailable when structured execution feedback is produced.
+Do not activate a native goal for research-only, advice-only, plan-only, open-ambiguity, non-handoff-ready, or tiny Sejong-direct maintenance work. Use a token budget only when explicitly requested. Record the actual reason for unused goal backing in existing feedback fields; lack of authorization is not proof that the tool is absent. Existing `native_goal_unavailable` receipts may describe a host limitation accurately without adding a new enum.
 
 For long-running or compaction-sensitive work, Seungjeongwon should also maintain a `sejong.seungjeongwon-run/v0.1-draft` artifact. The artifact records the approved goal, success criteria, verification methods, active todos, attempt ledger, verification evidence, execution feedback refs, blockers, and Uigwe re-entry requests. Hooks can block `Stop` and `PreCompact` when this artifact is active or invalid.
 
@@ -137,7 +137,7 @@ For a Uigwe bundle:
 - bundle directory or `wrapper.result.json`
 - selected handoff leaf ids, or all handoff leaves by default
 - optional git policy from the user or repo rules
-- optional native goal id, or enough Uigwe handoff data to create an implicit native goal when the host supports it
+- optional native goal id, or an explicit authorized goal request and sufficient Uigwe handoff data when the current host permits creation
 
 For direct action:
 
@@ -192,7 +192,7 @@ An actionable leaf must have:
 
 Seungjeongwon may split, merge, reorder, or locally reshape todos while preserving the Uigwe contract. It must not broaden scope, weaken the verification bar, remove must-preserve behavior, or redefine success to make a todo pass.
 
-When native goal backing is active, the same loop remains authoritative. Failed verification should update the visible board or attempt ledger before any goal status changes. Mark the native goal complete only after the Uigwe success criteria are satisfied with fresh verification evidence. Mark it blocked only when blocker evidence shows no meaningful local progress is possible without user input, external state change, or Uigwe re-entry.
+When native goal backing is active, the same loop remains authoritative. Failed verification should update the visible board or attempt ledger before any goal status changes. Mark the native goal complete only after the Uigwe success criteria are satisfied with fresh verification evidence. Mark it blocked only after the current tool contract's repeated-blocker threshold is met and evidence shows no meaningful local progress is possible without user input, external state change, or Uigwe re-entry.
 
 If the 4-6 loop keeps failing because the todo is too broad, dependency order is wrong, or the first implementation hypothesis was weak, Seungjeongwon continues local decomposition. If the handoff leaf itself is wrong, it recommends Uigwe `local_reexploration`. If the chosen design is wrong, it recommends `brainstorming`. If the goal, non-goals, success criteria, or must-preserve behavior are incomplete or contradicted, it recommends `deep_interview` or `human_review`.
 
@@ -247,7 +247,7 @@ verification goal
 -> add, replace, or close perspectives
 ```
 
-For paired comparisons, such as baseline execution versus implicit native goal handoff, Seungjeongwon must compare the resulting work products against the same acceptance criteria. Do not promote a candidate only because the route, goal activation, or visible board behavior worked. Promote it only when the final result is better enough to justify the overhead, or keep it shadowed when evidence is inconclusive.
+For paired comparisons, such as baseline execution versus authorized native goal handoff, Seungjeongwon must compare the resulting work products against the same acceptance criteria. Do not promote a candidate only because the route, goal activation, or visible board behavior worked. Promote it only when the final result is better enough to justify the overhead, or keep it shadowed when evidence is inconclusive.
 
 For harness, orchestrator, architecture, refactoring, revision, or addition
 requests that ask Seungjeongwon to try many improvement hypotheses, first use

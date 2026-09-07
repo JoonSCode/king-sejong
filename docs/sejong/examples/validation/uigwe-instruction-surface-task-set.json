@@ -157,7 +157,7 @@
         "docs/sejong/VALIDATION.md"
       ],
       "expected_behavior": [
-        "handoff-ready outcome-completion bundles use implicit native goal handoff when host support exists",
+        "handoff-ready outcome-completion bundles use native goal backing only when explicitly authorized under the current host tool contract",
         "users do not need to type /goal separately after Uigwe produces the execution contract",
         "handoff-ready Uigwe bundles cannot be satisfied with Sejong direct edits",
         "research-only, advice-only, plan-only, open-ambiguity, non-handoff-ready, and Sejong-direct work do not create native goals",
@@ -165,7 +165,7 @@
         "Uigwe defines leaf-level and overall numeric completion guardrails before Seungjeongwon handoff",
         "Seungjeongwon closes leaves and runs only after guardrail scores reach 0.98 by default",
         "Seungjeongwon keeps todo verification, subtodo decomposition, visible board updates, redefinition events, attempt ledgers, and verification loops",
-        "validation compares current non-goal-backed execution against implicit native goal handoff",
+        "validation compares current non-goal-backed execution against authorized native goal handoff",
         "validation judges baseline and candidate final results against the same acceptance criteria instead of checking only route intent or goal activation",
         "result comparison is itself run through Seungjeongwon verification decomposition before scoring paired outputs",
         "result comparison includes hypothesis quality, actionability delta, evidence quality, unsupported-claim count, and final promote/reject/shadow recommendation",
@@ -177,7 +177,7 @@
         "putting the executor's full todo tree inside the native goal",
         "marking a goal complete without fresh verification evidence",
         "creating native goals for research-only or open-ambiguity sessions",
-        "promoting implicit native goal handoff based only on route correctness or goal activation",
+        "promoting authorized native goal handoff based only on route correctness or goal activation",
         "claiming product success from TagBack strategy work without measurable external evidence"
       ],
       "grading_notes": [
@@ -654,7 +654,7 @@
           "artifact_refs"
         ],
         "exit_conditions": [
-          "no `open` ambiguity items",
+          "no blocking `open`, `pending`, or `answered` items",
           "user explicitly asks to skip, waive, or proceed despite the ambiguity"
         ],
         "artifact_retention_policy": [

@@ -69,10 +69,7 @@ same failure the gate was meant to prevent.
 - **Owner:** Sejong owns route continuity; Uigwe owns the handoff contract;
   Seungjeongwon owns execution and verification.
 - **Force:** `route`.
-- **Behavior:** For create/change/fix/implement/validate/prepare/ship requests,
-  treat research and advice as helper surfaces. Route through Uigwe before
-  Seungjeongwon unless the user explicitly narrows the work to research-only,
-  advice-only, plan-only, or no-execution output.
+- **Behavior:** Preserve the requested deliverable. Research, review, and proposed changes end at that deliverable when application was not requested. For approved implementation with settled scope and criteria, connect prior decisions to a compact execution contract and use Seungjeongwon. Use Uigwe for material unresolved boundaries or explicitly requested formal planning; preserve existing approval gates.
 - **Verification:** Final report shows either verified execution evidence,
   explicit blocker evidence, or the approved narrower terminal scope.
 

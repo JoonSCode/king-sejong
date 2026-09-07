@@ -513,7 +513,13 @@ def load_ambiguity_registers(context: dict[str, Any]) -> tuple[list[dict[str, An
 def open_ambiguity_count(register: dict[str, Any]) -> int:
     ambiguities = register.get("ambiguities") or []
     if isinstance(ambiguities, list):
-        return sum(1 for item in ambiguities if isinstance(item, dict) and item.get("status") == "open")
+        return sum(
+            1
+            for item in ambiguities
+            if isinstance(item, dict)
+            and item.get("status") == "open"
+            and item.get("blocking", True) is not False
+        )
     blocking_count = register.get("blocking_count")
     return blocking_count if isinstance(blocking_count, int) and blocking_count > 0 else 0
 

@@ -101,17 +101,17 @@ When the user asks Sejong to achieve an outcome, not merely answer a question, S
 
 Outcome-completion requests include creating, changing, fixing, shipping, implementing, validating, cleaning up, preparing a usable artifact, or otherwise reaching a stated goal. They also include follow-up turns where the user approves a recommendation, asks to make advice concrete, or asks to execute a selected direction.
 
-For goal-bearing outcome requests, research and advice are helper surfaces rather than completion surfaces. The default chain is:
+Preserve the requested deliverable. Research, review, and proposal-only requests end at that deliverable; do not turn their completion into an implementation or formal-planning obligation. For implementation outcomes, research and advice support this chain:
 
 ```text
-clarify goal as needed -> Uigwe planning -> Seungjeongwon execution -> verification -> Sillok evidence when useful
+reuse approved scope -> Uigwe for material unresolved boundaries or requested formal planning -> Seungjeongwon execution -> verification -> Sillok evidence when useful
 ```
 
 Use `JangYeongsil` before Uigwe when evidence is missing. Use `Jiphyeonjeon` before or inside Uigwe when serious options remain. These helper calls may run through workers or mailbox-backed rounds, but they return evidence or a recommendation to the lead route; they do not replace Uigwe planning.
 
 `Sejong direct` is only for small exact tasks that do not need a durable plan: one-command checks, simple explanations, narrow non-behavioral typo or link fixes, deterministic regeneration already covered by an approved contract, or obvious mechanical corrections. Do not classify a goal-bearing implementation request as `Sejong direct` merely because it is phrased clearly.
 
-When in doubt, ask the smallest missing clarification needed to decide whether the user wants advice-only/research-only or goal completion. If the answer is goal completion, enter Uigwe.
+When scope and acceptance criteria are already settled, link the request and prior approvals to a compact execution contract and proceed through Seungjeongwon. Do not add an interview or formal packet bundle unless a material decision is missing or the user requested that workflow. Ask only the smallest question needed for dependent work; continue independent approved work while waiting.
 
 When a user asks for a default/detail/specialist experience, treat that wording
 as a UX profile request, not a routing override. Sejong still decides whether
@@ -214,7 +214,7 @@ End or hand off the active Sejong workflow only when one of these is true:
 - the user explicitly invokes another non-Sejong skill or workflow and the request is not a Sejong sub-surface
 - the current conversation/workflow ends in the host environment
 
-If a follow-up seems unrelated but the user has not exited Sejong, still route it through Sejong. For an exact task, that route can be `Sejong direct`; for ambiguous scope, ask the smallest clarifying question needed to decide whether it belongs to the active Sejong workflow.
+Keep follow-up corrections and questions attached to the active objective unless the user cancels or replaces it. Route a lookup or non-behavioral correction through `Sejong direct`; use Seungjeongwon for approved implementation. Ask only about a material unresolved boundary.
 
 This continuity is conversational state, not permanent memory. It does not require creating repository artifacts unless the user asks to promote a shareable record or planning bundle.
 
@@ -400,7 +400,7 @@ Sejong actively owns the end-to-end loop and then calls the selected surface:
 | `Seungjeongwon` | Native execution surface | execute and verify an approved scope or validated bundle |
 | `Sillok` | Evidence records | update scorecards, promotion notes, or decision history |
 | `Danjong` | Rejected or retired option semantics | record rejection or retirement inside a decision or evidence artifact |
-| `Sejong direct` | Clear immediate work | perform the task under normal workspace rules |
+| `Sejong direct` | Exact lookup, explanation, or non-behavioral correction | perform the bounded task under normal workspace rules |
 
 ## Active Invocation Protocol
 
@@ -409,7 +409,7 @@ Do not stop at naming the surface. After classifying a request, execute the sele
 1. `JangYeongsil`: inspect the available evidence, separate known/inferred/unknown facts, and name the next decision.
 2. `Jiphyeonjeon`: hold a structured discussion over the available options, argue for and against each serious path, reject weaker paths with reasons, recommend one path, and name the next surface.
 3. `Uigwe`: call into the Uigwe skill or protocol surface and preserve its live-session approval gates.
-4. `Seungjeongwon`: inspect the bundle, execute through Seungjeongwon, and require execution feedback before claiming completion.
+4. `Seungjeongwon`: inspect the approved scope or bundle, execute through Seungjeongwon, and require execution feedback before claiming completion.
 5. `Sejong direct`: state briefly that formal planning is not needed, perform the clear task, and verify the result.
 6. `Sillok` or `Danjong`: write evidence, archive, rejection, or promotion records rather than creating a new execution lane.
 
@@ -419,7 +419,7 @@ If the user asked for an outcome such as "research, plan, and do it", Sejong may
 JangYeongsil research -> Jiphyeonjeon discussion -> Uigwe planning -> Seungjeongwon execution -> verification -> Sillok evidence
 ```
 
-Stop before Uigwe only when the user explicitly asked for research-only or advice-only output, or when missing evidence, a user decision, or an approval gate is genuinely required. Once the user approves or asks to concretize a recommendation, route to Uigwe.
+Stop at the requested deliverable for research, advice, review, or proposed changes when application was not requested. Once implementation is approved, reuse settled scope and criteria in a compact execution contract; use Uigwe for required unresolved boundaries or explicit formal planning and Seungjeongwon for execution.
 
 ## Surfaces
 
@@ -465,7 +465,7 @@ Required output:
 
 This surface should be used before Uigwe planning when the main uncertainty is strategic rather than structural.
 If the missing part is evidence, route back to `JangYeongsil`; if the choice is settled and the next job is artifact generation, route to `Uigwe`.
-If the user only asked for advice, Jiphyeonjeon may stop at a recommendation. If the user approves that recommendation, asks to make it concrete, or asks to execute it, route to Uigwe.
+If the user only asked for advice, Jiphyeonjeon may stop at a recommendation. If implementation is approved, preserve that approval and use the outcome-completion rule above; do not repeat settled planning questions.
 Skip this surface when research already settles the direction, when the task is a small Sejong-direct command, or when a goal-bearing implementation task should enter Uigwe without strategic debate.
 
 ### `Uigwe`
@@ -508,10 +508,12 @@ This protects Uigwe from performative overhead for one-command checks, simple ex
 | "어떤 선택이 맞아?", "분화할까?", "할 만해?", "논의해보자" | `Jiphyeonjeon` | none yet |
 | vague product or system goal | `Uigwe` | `full` |
 | clarified intent, no approved design | `Uigwe` | `design-to-plan` |
-| approved design or packet set | `Uigwe` | `decompose-only` |
+| approved design or packet set needing formal decomposition | `Uigwe` | `decompose-only` |
 | existing bundle, now execute | `Seungjeongwon` | existing bundle |
 | small exact command, simple answer, or obvious non-behavioral correction | `Sejong direct` | none |
-| goal-bearing implementation, cleanup, artifact creation, or validation outcome | `Uigwe` -> `Seungjeongwon` | resolved by evidence |
+| implementation, cleanup, artifact creation, or validation with settled scope and criteria | compact execution contract -> `Seungjeongwon` | reuse approved evidence |
+| outcome with material unresolved intent or design, or explicit formal planning | `Uigwe` -> `Seungjeongwon` | resolved by evidence |
+| review and proposed changes only | requested review artifact | no implied application |
 | "조사해서 계획하고 실행까지 해줘", "research, plan, implement, and verify" | chained surfaces | resolved by evidence |
 
 ## Verification
@@ -524,7 +526,10 @@ For this public install package, use a small scenario list when changing the rou
 - option comparison -> `Jiphyeonjeon`
 - vague build goal -> `Uigwe`
 - validated bundle execution -> `Seungjeongwon`
-- exact implementation task -> `Sejong direct`
+- exact non-behavioral typo or link correction -> `Sejong direct`
+- implementation with approved scope and acceptance criteria -> compact execution contract -> `Seungjeongwon`
+- review and proposed changes only -> requested review artifact, with no implied application
+- explicit staged planning -> `Uigwe`, preserving requested approvals
 
 Run JSON and example-bundle checks when the router change touches schemas, packet examples, wrapper docs, executor docs, or execution handoff behavior.
 
@@ -545,4 +550,4 @@ Use Uigwe itself to improve the router:
 - If research evidence is stale or unavailable, stay with `JangYeongsil`.
 - If options are still underspecified, stay with `Jiphyeonjeon`.
 - If Uigwe planning reveals missing intent or design boundaries, re-enter the relevant Uigwe stage.
-- If the user asked for direct implementation, do not force a Uigwe plan.
+- For clear approved implementation, use a compact execution contract and Seungjeongwon; do not force another interview. Re-enter Uigwe only for a material unresolved boundary or an explicitly requested formal planning stage.

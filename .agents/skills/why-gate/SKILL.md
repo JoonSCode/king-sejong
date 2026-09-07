@@ -1,6 +1,6 @@
 ---
 name: why-gate
-description: "Use when Codex should force explicit rationale before or after decisions: code review, implementation planning, architecture or abstraction choices, data structure choices, dependency ownership, maintainability tradeoffs, product/app analysis, experience writeups, retrospectives, or agent/team self-audits. Use when the user asks \"why\", \"why gate\", \"ask me why\", \"challenge my reasoning\", \"근거를 물어봐\", \"왜 그렇게 했는지\", or wants choice-based rationale prompts with recommended options plus free-form answers."
+description: "Use to examine the rationale for material decisions in: code review, implementation planning, architecture or abstraction choices, data structure choices, dependency ownership, maintainability tradeoffs, product/app analysis, experience writeups, retrospectives, or agent/team self-audits. Use when the user asks \"why\", \"why gate\", \"ask me why\", \"challenge my reasoning\", \"근거를 물어봐\", \"왜 그렇게 했는지\", or wants choice-based rationale prompts with recommended options plus free-form answers."
 ---
 
 # Why Gate
@@ -11,7 +11,7 @@ Do not interrogate every tiny step. Focus on decisions with risk, ambiguity, fut
 
 ## Route
 
-1. Identify the gate mode.
+1. Identify the gate mode. Default to `self-audit` for your own work and `review` for a requested review. Use `interactive` when the user asks to answer questions or when a material user-owned decision is missing.
    - `interactive`: the user should answer the why question.
    - `self-audit`: Codex or a worker team should inspect its own reasoning.
    - `review`: use why questions to strengthen a code/design/product review.
@@ -20,35 +20,20 @@ Do not interrogate every tiny step. Focus on decisions with risk, ambiguity, fut
    - Code lenses: data structure, abstraction, OOP boundaries, dependency ownership, readability, maintainability, performance, concurrency/lifecycle, testing, product behavior.
    - Product/app lenses: user goal, evidence, constraints, opportunity cost, metrics, risk, differentiation.
    - Experience lenses: role, decision ownership, tradeoff, impact, failure handling, learned principle.
-3. Ask 1-3 high-value why gates at a time.
+3. Examine 1-3 high-value decisions at a time. In `self-audit` and `review`, answer from evidence; do not turn those modes into a user interview.
 4. Capture the result as: `decision`, `reason`, `rejected alternatives`, `accepted cost`, `evidence or verification`, and `follow-up`.
 5. Continue only while a nontrivial choice still lacks a usable reason, the user asks for more gates, or self-audit finds weak rationale.
 
 ## Interactive Choice Gates
 
-When a choice UI such as `request_user_input` is available in the current runtime, use it for interactive Why Gate questions:
+Use only a question tool permitted in the current host mode. Tool visibility alone is insufficient: `request_user_input` may be limited to Plan mode. When an asynchronous question tool is allowed, continue independent approved work while the answer is pending.
 
-- Ask 1-3 short questions at a time.
-- Give 2-3 mutually exclusive options.
-- Put the recommended option first and suffix its label with `(Recommended)`.
-- Do not add an `Other` option; the UI provides a free-form path.
-- Make each option description state the tradeoff or consequence.
-- Stop after asking and wait for the user's answer.
-
-When that UI is unavailable, present the same structure in text:
-
-```text
-Why Gate
-Q: Why did you choose this data structure here?
-
-A. Keep it simple (Recommended) - The current collection matches the small data size and avoids premature indexing.
-B. Optimize lookup now - Choose this if repeated keyed access is already a measured bottleneck.
-C. Preserve ordering semantics - Choose this if stable display order is the real owner of the choice.
-
-Free response: add a different reason if none of these fit.
-```
-
-Avoid open-ended essay prompts unless the user explicitly wants a written rationale. The default is recommended choices plus a free-response escape hatch.
+- Ask the smallest useful question set, following the tool's current option schema.
+- Put the recommended option first when appropriate and preserve the host's free-response path.
+- Reuse earlier answers and approvals; do not ask the same decision again.
+- If no permitted structured input tool exists, ask one concise plain-language question.
+- For a required answer or approval, keep dependent work pending. A preselected option, silence, or elapsed time is not consent.
+- For optional preferences, make a stated reasonable assumption after giving the user a reasonable chance to answer, and continue.
 
 ## Question Quality
 
@@ -73,7 +58,7 @@ When Codex, Sejong, a worker team, or another agent should audit its own work:
 1. List the top 3 decisions made or about to be made.
 2. For each decision, answer the gate yourself using current evidence.
 3. Mark each rationale as `strong`, `thin`, or `unknown`.
-4. If any rationale is `thin`, either revise the choice, gather evidence, or ask the user one interactive gate.
+4. If any rationale is `thin`, revise the choice or gather evidence. Ask the user only when the missing decision belongs to them and materially changes the result.
 5. If any rationale is `unknown`, do not claim the decision is settled.
 
 Self-audit output should be concise:

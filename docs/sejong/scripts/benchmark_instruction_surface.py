@@ -186,9 +186,12 @@ def evaluate_live_session() -> list[dict[str, Any]]:
         "Do not silently complete `deep-interview` or `brainstorming` from one ambiguous brief.",
         "Ask targeted clarification questions in small batches",
         "Do not mark an approval gate as `waived` in a live session unless the user explicitly says to skip approval.",
-        "Each live Uigwe stage must remain active until that stage reaches `100%` readiness or the user explicitly asks to skip or proceed despite the remaining ambiguity.",
-        "Intent Clarification must not advance to Design Exploration while intent readiness is below `100%` in a live clarification loop.",
-        "Design Exploration must not advance to Executor Handoff Contract while design readiness is below `100%` in a live clarification loop.",
+        "Higher-priority instructions, host tool conditions",
+        "Do not ask the user to approve the same decision again",
+        "Set `blocking=true` only for intent, scope, authority, material design, acceptance criteria",
+        "Optional preferences use `blocking=false`",
+        "required-stage readiness is `100%`",
+        "Silence is not an answer or approval",
     ]
     passed, missing = contains_all(skill, required)
     readme_passed = "In live chat usage, Uigwe is supposed to do that interactively." in readme
@@ -305,8 +308,12 @@ def evaluate_implicit_native_goal_handoff() -> list[dict[str, Any]]:
     validation = load_text(VALIDATION_PATH)
     combined = "\n".join([protocol, executor, seungjeongwon_skill, validation])
     required = [
-        "implicit native goal handoff",
-        "does not require the user to type `/goal` separately",
+        "Host-Conditional Native Goal Handoff",
+        "Use native goal backing only when the current host tool conditions are met",
+        "Do not infer goal-creation authorization from tool availability or an ordinary implementation request",
+        "A token budget is set only when explicitly requested",
+        "When goal creation is not requested or permitted, continue Seungjeongwon execution",
+        "repeated-blocker threshold",
         "outcome-completion work, not research-only, advice-only, plan-only, or no-execution work",
         "live ambiguity is closed or explicitly waived",
         "success criteria, verification plan, and re-entry triggers",
@@ -329,16 +336,16 @@ def evaluate_implicit_native_goal_handoff() -> list[dict[str, Any]]:
         "paired_result_comparison",
         "baseline final result",
         "candidate final result",
-        "final recommendation: promote, reject, or keep shadowing implicit native goal handoff",
+        "final recommendation: promote, reject, or keep shadowing authorized native goal handoff",
         "TagBack growth scenario",
         "separate Codex-owned actions from user-owned business actions",
     ]
     passed, missing = contains_all(combined, required)
     return [
         check(
-            "implicit_native_goal_handoff_present",
+            "host_conditional_native_goal_handoff_present",
             passed,
-            "Goal-backed Seungjeongwon handoff is implicit for handoff-ready outcome work while preserving executor-owned todo recursion.",
+            "Goal-backed Seungjeongwon handoff obeys current host authorization while normal execution continues without a native goal.",
             missing=missing,
         )
     ]
@@ -726,7 +733,9 @@ def evaluate_ambiguity_register() -> list[dict[str, Any]]:
         "--write-register",
         "structured_choice_requests",
         "codex_structured_choice",
-        "Stop` blocks completion when any referenced register has open ambiguities",
+        "Stop` blocks completion when any referenced register has blocking open ambiguities",
+        "Optional items do not block completion",
+        "Optional preferences alone must not lower readiness",
         "PreCompact` blocks compaction when an ambiguity-register reference is broken",
         "UserPromptSubmit` injects a compact register summary",
     ]

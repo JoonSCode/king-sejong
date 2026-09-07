@@ -24,11 +24,13 @@
       "$ref": "#/$defs/NonEmptyString"
     },
     "readiness_percent": {
+      "description": "Readiness of required stage decisions and acceptance boundaries. Optional preferences alone must not lower readiness.",
       "type": "integer",
       "minimum": 0,
       "maximum": 100
     },
     "blocking_count": {
+      "description": "Count of open, pending, or answered items whose blocking flag is true.",
       "type": "integer",
       "minimum": 0
     },
@@ -151,6 +153,7 @@
           ]
         },
         "blocking": {
+          "description": "True only for decisions affecting intent, scope, authority, material design, acceptance criteria, or an explicitly requested approval. False for optional preferences that do not prevent approved work.",
           "type": "boolean"
         },
         "resolution_note": {

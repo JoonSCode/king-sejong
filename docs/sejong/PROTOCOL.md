@@ -51,19 +51,16 @@ Uigwe artifacts. See [UX_PROFILES.md](UX_PROFILES.md).
 
 ## Live Session Contract
 
-In a live user session, Uigwe must behave as an interactive protocol rather than a one-shot bundle generator.
+Interactive Uigwe applies when the user asks for staged planning or a required decision is unresolved. Higher-priority instructions, host tool conditions, and the user's explicit scope and prior approvals take precedence over this protocol's general procedure.
 
-Rules:
+- Reuse approved conversation and artifact decisions with evidence refs. Do not repeat an already answered approval; mark it resolved rather than waived.
+- `deep-interview` asks about missing intent or boundaries; `brainstorming` asks about material design ambiguities. Re-enter an earlier stage only when its required contract is unstable.
+- Preserve approval stages explicitly requested by the user. Waivers need an explicit user instruction or a clearly labeled non-interactive evaluation context.
+- Routine implementation choices may use a stated assumption. Optional preferences do not stop independent approved work.
+- An active ambiguity register reaches required-stage readiness of `100%` only when all required decisions are resolved or explicitly waived. Blocking `open`, `pending`, and `answered` items prevent dependent advancement; optional preferences alone do not lower readiness.
+- Prepare a concrete reviewable result before asking for a required approval. Use only input tools permitted in the current mode. Silence is not approval.
 
-- `deep-interview` requires actual questioning of the user when intent or boundaries are missing.
-- `brainstorming` requires actual clarification with the user when material design ambiguities remain.
-- Approval gates are real gates in live sessions. They may be marked `waived` only in explicitly non-interactive contexts such as offline artifact generation, offline evaluation, or when the user explicitly waives them.
-- When a later stage discovers upstream ambiguity, Uigwe must re-enter the earlier stage and resume interaction with the user instead of silently filling the gap alone.
-- General assistant defaults favoring autonomous progress do not override this protocol contract.
-- When an ambiguity register is active, live stage clarification must reach `100%` readiness with no `open` ambiguity items before advancing, unless the user explicitly waives the remaining ambiguity.
-- Each live Uigwe stage must remain active until that stage reaches `100%` readiness or the user explicitly asks to skip or proceed despite the remaining ambiguity.
-- Intent Clarification must not advance to Design Exploration while intent readiness is below `100%` in a live clarification loop.
-- Design Exploration must not advance to Executor Handoff Contract while design readiness is below `100%` in a live clarification loop.
+A clear approved implementation can use a compact execution contract linked to the existing scope, done criteria, verification bar, and re-entry conditions. Do not force a new interview or formal bundle when that contract is already sufficient.
 
 ## Ambiguity Register During Live Sessions
 
@@ -249,31 +246,24 @@ Uigwe must not mark a goal-bearing bundle complete by assuming the executor step
 
 Sejong direct may handle small exact non-goal operations, but it must not replace Seungjeongwon for a handoff-ready Uigwe contract.
 
-### Implicit Native Goal Handoff
+### Host-Conditional Native Goal Handoff
 
-When a live Sejong/Uigwe workflow is goal-bearing and reaches `ready_for_handoff=true`, the default handoff to Seungjeongwon is `implicit native goal handoff` when the host runtime exposes native goal support.
+A handoff-ready Uigwe contract routes outcome-completion work to Seungjeongwon. Native goal backing is optional persistence, governed by the current host tool contract.
 
-This does not require the user to type `/goal` separately. The user's request for Sejong/Uigwe to carry an outcome through execution is treated as delegation for goal-backed execution once Uigwe has produced a stable handoff contract.
+Use native goal backing only when the current host tool conditions are met. Do not infer goal-creation authorization from tool availability or an ordinary implementation request. If the host requires an explicit goal request, that request must come from the user or applicable higher-priority instructions. A token budget is set only when explicitly requested.
 
-Implicit native goal handoff is allowed only when all of these are true:
+An authorized goal-backed handoff still requires:
 
-- the original request is outcome-completion work, not research-only, advice-only, plan-only, or no-execution work
+- outcome-completion work, not research-only, advice-only, plan-only, or no-execution work
 - live ambiguity is closed or explicitly waived
-- the bundle is handoff-ready with success criteria, verification plan, and re-entry triggers
-- the next surface is Seungjeongwon execution, not Sejong direct maintenance
-- the host runtime provides a native goal surface
+- success criteria, verification plan, and re-entry triggers
+- Seungjeongwon execution ownership
 
-Uigwe prepares the goal payload at the handoff boundary:
+The native goal payload must stay broad. Include the approved objective, completion criteria, verification evidence requirements, blocker and re-entry policy, and source refs. Seungjeongwon keeps the detailed todo list, replacements, attempt hypotheses, and verification steps in its execution board and feedback.
 
-- objective tied to the approved Uigwe contract
-- completion criteria
-- verification evidence requirements
-- blocker and re-entry policy
-- source refs for the selected bundle or handoff leaves
+When goal creation is not requested or permitted, continue Seungjeongwon execution in the current task. Record the actual reason in existing feedback fields; do not add a new enum. Use `native_goal_unavailable` only with a reason that accurately identifies the host limitation. Do not pretend a visible tool is absent.
 
-The native goal payload must stay broad. It must not contain the executor's full todo tree, speculative implementation steps, or first-attempt tactics. Seungjeongwon owns those details through its adaptive todo decomposition, visible execution board, attempt ledger, and verification loop.
-
-If native goal support is unavailable, Seungjeongwon still runs the same execution loop and records `native_goal_unavailable` in execution feedback when machine-readable feedback is produced.
+Mark an active goal complete only after fresh evidence satisfies the agreed criteria. Mark it blocked only after the current tool's repeated-blocker threshold is met and no meaningful local progress remains. Do not use a goal status to pause work or alter a user-controlled budget.
 
 ## Readiness-Gated Entry
 

@@ -11,7 +11,7 @@ the current stage is, what choices the lead agent sees, and what user action is
 needed before the workflow may advance.
 
 The schema is [ambiguity-register.schema.json](ambiguity-register.schema.json).
-The example is [examples/ambiguity-register.example.json](examples/ambiguity-register.example.json).
+The required-decision example is [examples/ambiguity-register.example.json](examples/ambiguity-register.example.json). The [optional-preference example](examples/ambiguity-register.optional.example.json) shows an unresolved preference that does not block approved work.
 
 ## Contract
 
@@ -33,11 +33,9 @@ For live user sessions, Uigwe stage clarification must reach `100%` readiness
 before the workflow advances, unless the user explicitly asks to waive the
 remaining ambiguity.
 
-If any ambiguity item remains `open`, `pending`, or `answered`, the stage is not
-complete. A readiness percentage below `100` is useful progress reporting, not
-permission to advance. Each live Uigwe stage stays active until the current
-stage reaches `100%` and no question obligation remains, or the user explicitly
-asks to skip, waive, or proceed despite the remaining ambiguity.
+A `blocking=true` item in `open`, `pending`, or `answered` state prevents dependent advancement. Required-stage readiness is `100%` when required decisions are resolved or explicitly waived, with no blocking `open`, `pending`, or `answered` items. Optional preferences alone must not lower readiness or block independent approved work. An unexplained readiness deficit remains incomplete; do not round it away to pass a gate.
+
+Classify as blocking only decisions affecting intent, scope, authority, material design, acceptance criteria, or an explicitly requested approval. Use `blocking=false` for optional preferences. Reuse prior user answers and approved artifacts with `evidence_refs`; resolve an already answered requirement instead of asking again or inventing a waiver.
 
 Use this user-facing shape:
 
@@ -50,7 +48,7 @@ Use this user-facing shape:
 ## Codex Structured Choice UI
 
 When Codex structured choice UI or another host-native structured input surface
-is available, Uigwe may present the same open ambiguity through that UI. Put the
+is available and permitted in the current mode, Uigwe may present the same required ambiguity through that UI. Put the
 recommended option first, include the strongest alternatives that matter, and
 keep the user's free-form path available.
 
@@ -70,7 +68,7 @@ enforce it. `structured_choice_requests` entries use the
 
 Each ambiguity item has one of these statuses:
 
-- `open`: legacy unresolved state, still blocking advancement
+- `open`: legacy unresolved state; blocks advancement only when `blocking=true`
 - `pending`: a question has been asked and is waiting for the user's answer
 - `answered`: the user has answered, but the lead has not yet accepted the item as resolved or waived
 - `resolved`: answered clearly enough to preserve the stage contract
@@ -91,8 +89,8 @@ When an active context references an ambiguity register:
 - `PreToolUse` blocks write-like execution while the active Uigwe stage is below
   `100%` readiness or still has unresolved question obligations, except for
   updates to the runtime clarification artifact itself.
-- `Stop` blocks completion when any referenced register has open ambiguities or
-  pending question obligations.
+- `Stop` blocks completion when any referenced register has blocking open ambiguities or
+  pending question obligations. Optional items do not block completion.
 - `PreCompact` blocks compaction when an ambiguity-register reference is broken.
 
 These hooks preserve the clarification loop. They do not replace Uigwe gates,

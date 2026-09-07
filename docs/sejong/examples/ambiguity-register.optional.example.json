@@ -1,0 +1,38 @@
+{
+  "format": "sejong.ambiguity-register/v0.1-draft",
+  "metadata": {
+    "id": "ambiguity-optional-preference",
+    "active_context_id": "ctx-king-sejong-example",
+    "route_id": "route-king-sejong-guardrails",
+    "created_at": "2026-05-24T00:00:00Z"
+  },
+  "stage_id": "intent_clarification",
+  "stage_label": "기획 명확화",
+  "readiness_percent": 100,
+  "blocking_count": 0,
+  "ambiguities": [
+    {
+      "id": "optional-label",
+      "question": "Would you prefer a different label for the summary?",
+      "why_it_matters": "This is an optional wording preference; the approved scope and acceptance criteria are already settled.",
+      "options": [
+        {
+          "id": "keep",
+          "label": "Keep the current label",
+          "recommended": true
+        },
+        {
+          "id": "change",
+          "label": "Suggest another label",
+          "recommended": false
+        }
+      ],
+      "free_response_allowed": true,
+      "status": "open",
+      "blocking": false,
+      "evidence_refs": []
+    }
+  ],
+  "next_required_user_action": "No required action; continue and verify the approved scope.",
+  "last_updated_at": "2026-05-24T00:00:00Z"
+}

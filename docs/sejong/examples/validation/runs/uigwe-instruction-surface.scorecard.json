@@ -3,7 +3,7 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-07-21T10:44:02Z",
+    "generated_at": "2026-09-07T05:20:43Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
@@ -113,9 +113,9 @@
       "score": 1.0,
       "checks": [
         {
-          "id": "implicit_native_goal_handoff_present",
+          "id": "host_conditional_native_goal_handoff_present",
           "passed": true,
-          "detail": "Goal-backed Seungjeongwon handoff is implicit for handoff-ready outcome work while preserving executor-owned todo recursion."
+          "detail": "Goal-backed Seungjeongwon handoff obeys current host authorization while normal execution continues without a native goal."
         }
       ],
       "blockers": [],
@@ -672,7 +672,7 @@
         {
           "id": "uigwe_skill_line_budget",
           "passed": true,
-          "detail": "Uigwe SKILL.md line count is 295; budget is 320."
+          "detail": "Uigwe SKILL.md line count is 289; budget is 320."
         },
         {
           "id": "sejong_skill_line_budget",
