@@ -41,12 +41,15 @@
         "docs/sejong/README.md"
       ],
       "expected_behavior": [
+        "vague thoughts are accepted and a completed brief is the output of joint clarification",
+        "context, reasoned recommendations, alternatives, and free responses help discover missing goals and acceptance criteria",
         "ambiguous briefs do not silently produce downstream packets",
         "approval gates are not silently waived in live sessions"
       ],
       "forbidden_behavior": [
         "offline benchmark waiver rules leaking into live sessions",
-        "one-shot packet generation from ambiguous live prompts"
+        "one-shot packet generation from ambiguous live prompts",
+        "requiring users to supply complete goals and done criteria before Uigwe can help"
       ],
       "grading_notes": [
         "This scenario is scored by benchmark_instruction_surface.py."
@@ -312,10 +315,10 @@
     },
     {
       "id": "instruction-research-to-uigwe-promotion",
-      "title": "Decision-prep research promotes to Uigwe",
+      "title": "Requested deliverables terminate while material planning boundaries use Uigwe",
       "profile": "instruction",
       "input_shape": "instruction-surface check",
-      "prompt": "Check that research requested for choosing a strategy or preparing a later plan cannot finish as a final conclusion before Uigwe.",
+      "prompt": "Check that advice and research can finish at the requested deliverable, settled authorized execution reuses a compact contract, and collaborative or material unresolved planning uses Uigwe.",
       "expected_mode": "none",
       "expected_artifacts": [
         ".agents/skills/sejong/SKILL.md",
@@ -328,17 +331,18 @@
       "expected_behavior": [
         "research-only requests may stop at JangYeongsil",
         "advice-only requests may stop at Jiphyeonjeon recommendation",
-        "approving a recommendation or asking to make it concrete routes the work to Uigwe",
-        "goal-bearing outcome requests use research and advice as helper surfaces before Uigwe and Seungjeongwon",
-        "research for deciding a strategy, comparing options, or feeding Uigwe keeps uigwe_promotion_required pending",
-        "JangYeongsil and Jiphyeonjeon output Uigwe-ready input summaries instead of final conclusions",
+        "approved execution with settled scope and acceptance criteria uses a compact contract and Seungjeongwon",
+        "collaborative goal or design discovery and material unresolved planning boundaries use Uigwe",
+        "explicit formal Uigwe requests keep their planning and approval gates",
+        "only an actual required planning boundary records uigwe_promotion_required",
+        "JangYeongsil and Jiphyeonjeon provide Uigwe input summaries when planning is required",
         "write-like execution is blocked before Uigwe entry while the promotion gate is pending",
         "Stop continues the workflow when uigwe_promotion_required remains unresolved"
       ],
       "forbidden_behavior": [
-        "ending decision-prep research with a final strategic conclusion",
-        "routing from decision-prep research directly to Seungjeongwon",
-        "forcing Uigwe for explicit research-only prompts",
+        "silently resolving a material user decision or bypassing an explicit planning gate",
+        "forcing Uigwe for advice-only or research-only prompts merely because a later decision is possible",
+        "repeating an interview for already settled authorized implementation",
         "treating goal-bearing implementation work as Sejong direct just because the wording is clear"
       ],
       "grading_notes": [
@@ -347,12 +351,12 @@
       "guardrail_expectations": {
         "promotion_gate": [
           "uigwe_promotion_required",
-          "research result is not the conclusion",
+          "material unresolved planning boundary",
           "next_surface: uigwe"
         ],
         "hook_enforcement": [
           "write-like execution",
-          "Research or council output must enter Uigwe before write-like execution"
+          "Enter Uigwe before write-like execution, or explicitly resolve the planning requirement"
         ]
       }
     },
@@ -372,7 +376,7 @@
         "docs/sejong/scripts/long_session_experiment_gate.py"
       ],
       "expected_behavior": [
-        "explicit long-session triggers perform a fresh goal check",
+        "long-session triggers check the current objective and authorization without inventing a new goal",
         "task class is recorded before promotion evidence is interpreted",
         "strategy/research synthesis and code-review/defect-analysis are separate classes",
         "code-review/defect-analysis requires a defect-first critic lane",

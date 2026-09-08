@@ -5,8 +5,8 @@ It can research, decide, plan, execute, verify, and record evidence instead of f
 
 Use `sejong` when the request is broad and the agent should choose whether to research, decide, plan, execute, verify, or record evidence.
 
-Uigwe is the formal planning protocol inside Sejong. Use it when the output should be a durable planning bundle with packets, rationale, and Seungjeongwon handoff leaves.
-In live chat usage, Uigwe is supposed to do that interactively.
+Uigwe is the joint intent/design discovery and formal planning protocol inside Sejong. A vague thought, tension, opportunity, or partial idea is valid input; Uigwe helps the user discover the goal, scope, desired quality, and acceptance criteria, then returns the completed brief and durable planning bundle.
+In live chat usage, Uigwe does that interactively through evidence, informed questions, reasoned alternatives, a recommended working answer, and a free-response path. It does not require the user to complete a planning template before starting.
 Progress should be presented as approximate readiness such as `기획 준비도 68%`, paired with the main weak areas.
 The current live stage should not advance until it reaches `100%` readiness or the user explicitly asks to skip or proceed despite the remaining ambiguity.
 When structured Codex choice UI is available, Uigwe can use it to show the same recommended options and free-form path that are recorded in the ambiguity register.
@@ -188,12 +188,12 @@ If the current host runtime officially supports team or teammate messaging, Sejo
 
 Sejong does not require `.codex/prompts/{role}.md`. If a target repo has such a file, treat it as a repo-local overlay on top of the Codex native role prompt. If it is absent, continue with the native role prompt. See [PROMPT_OVERLAYS.md](PROMPT_OVERLAYS.md).
 
-When changing Sejong itself, use the full Sejong chain unless the edit is purely non-behavioral. Material changes to routing, Uigwe planning, Seungjeongwon execution, installer behavior, validation, or artifact storage should go through Jiphyeonjeon decision support, Uigwe handoff-contract planning, then Seungjeongwon actionable decomposition, execution, and verification. In short, material behavior changes should follow the full Sejong chain.
+When changing Sejong itself, use the full Sejong chain unless the edit is purely non-behavioral. Material changes to routing, Uigwe planning, Seungjeongwon execution, installer behavior, validation, or artifact storage should preserve Jiphyeonjeon decision evidence, a Uigwe handoff contract, then Seungjeongwon actionable decomposition, execution, and verification. When an approved contract already contains the decision and pass criteria, cite and validate it without repeating interviews or approval.
 
-Use Uigwe directly when you already want formal planning:
+Use Uigwe directly when you want to discover intent/design together or produce formal planning:
 
 ```text
-$uigwe full <brief>
+$uigwe full <thought-or-brief>
 $uigwe design-to-plan <clear intent or feature brief>
 $uigwe decompose-only <approved design artifact>
 ```

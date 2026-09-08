@@ -27,8 +27,9 @@ Hook behavior is scoped by the why-based force levels in
 [DISCIPLINE_GATES.md](DISCIPLINE_GATES.md). Hooks may enforce `hard` gates such
 as protected self-modification, premature completion, worker authority claims,
 open ambiguity, and active Seungjeongwon runs. They may route or add context for
-`route` gates such as research-to-Uigwe promotion. They should not turn every
-advisory practice into a hard block.
+an explicitly recorded Uigwe promotion gate. They should not infer that gate
+from research, advice, a future possible plan, or ordinary goal-bearing
+execution, and should not turn every advisory practice into a hard block.
 
 The reference tests are:
 
@@ -76,11 +77,32 @@ design artifacts that should remain visible across follow-up prompts,
 compaction, and repository/worktree changes. They do not replace Uigwe packets
 or Seungjeongwon run artifacts.
 
-For research that is explicitly meant to feed a decision or later Uigwe plan,
-active context should include `uigwe_promotion_required` in `pending_gates`
-until Uigwe starts or the user explicitly converts the request to research-only.
-This prevents a research or council note from being treated as the final
-workflow conclusion.
+Active context includes `uigwe_promotion_required` only when the user explicitly
+requests Uigwe or joint intent/design discovery, or when authorized execution
+has a material unresolved planning boundary. The gate remains pending across
+unrelated current-surface and route-history updates. Context update clears it
+only when the current required Uigwe entry is explicitly recorded with
+`--current-surface uigwe`, `--append-route uigwe`, or a
+`--set-route-sequence` whose final item is `uigwe`, or when the user explicitly
+changes the requested scope. Earlier Uigwe route history, including membership
+elsewhere in a newly set sequence, does not satisfy the boundary. Research,
+review, comparison, recommendation, and proposal-only work do not create this
+gate merely because the result might inform later work.
+
+A goal-bearing context defaults to required route `seungjeongwon` and
+`seungjeongwon_receipt_required`. It does not imply Uigwe. When both a real Uigwe
+boundary and execution apply, adding required route `uigwe` to a settled
+required sequence containing `seungjeongwon` inserts Uigwe immediately before
+Seungjeongwon while preserving the order of other required guards. Hooks enforce
+the pending gate itself rather than treating old route history as satisfaction
+or inventing a gate.
+Record that boundary with `start --required-route uigwe` or
+`update --add-required-route uigwe`. The context helper adds
+`uigwe_promotion_required` until one of the explicit current-entry updates above
+records the required entry and context update clears the gate. An
+explicit `--clear-pending-gate uigwe_promotion_required` before entry also
+removes the unresolved Uigwe required route while preserving any independent
+Seungjeongwon receipt obligation.
 
 When `artifact_refs` includes a readable artifact whose `format` is
 `sejong.ambiguity-register/v0.1-draft`, hooks treat it as the active ambiguity
@@ -130,7 +152,7 @@ only that session binding for implicit continuation. Repo Index and the legacy
 - Treat common interpreter write snippets as write-like when they target a
   protected path, including Python `open(..., "w")` or `Path.write_text`, Node
   filesystem writes, Ruby `File.write`, and Perl open/sysopen write modes.
-- Deny write-like or execution-completion tool calls while `uigwe_promotion_required` is pending and the route has not entered `uigwe`.
+- Deny write-like or execution-completion tool calls while an explicitly recorded `uigwe_promotion_required` is pending. The pending gate itself is unresolved authority even if route history contains an earlier Uigwe entry. Do not synthesize this gate from goal-bearing state, research, advice, or route history alone.
 - Deny write-like execution while `seungjeongwon_receipt_required` is pending
   until the route has entered Seungjeongwon and the active context references a
   valid `sejong.seungjeongwon-run/v0.1-draft` artifact or an explicit
@@ -149,7 +171,7 @@ only that session binding for implicit continuation. Repo Index and the legacy
 `PermissionRequest`
 
 - Deny escalated protected edits when route evidence is missing.
-- Deny escalated write-like or execution-completion requests while `uigwe_promotion_required` is pending before Uigwe entry.
+- Deny escalated write-like or execution-completion requests while an explicitly recorded `uigwe_promotion_required` is pending; unrelated current-surface or route-history updates do not clear it.
 - Deny escalated write-like or execution-completion requests while
   `seungjeongwon_receipt_required` is pending before a valid Seungjeongwon
   receipt exists.
@@ -192,7 +214,7 @@ only that session binding for implicit continuation. Repo Index and the legacy
 `Stop`
 
 - Continue the turn when pending gates or missing verification would make completion premature.
-- Continue the turn when `uigwe_promotion_required` remains pending, so decision-prep research cannot end as a final conclusion before Uigwe.
+- Continue the turn when an explicitly recorded `uigwe_promotion_required` remains pending, so a real unresolved or requested Uigwe boundary cannot be bypassed. Research or advice without that gate may end at its requested terminal deliverable.
 - Continue the turn when `seungjeongwon_receipt_required` remains pending, so
   goal-bearing implementation cannot end before a Seungjeongwon execution
   receipt exists.

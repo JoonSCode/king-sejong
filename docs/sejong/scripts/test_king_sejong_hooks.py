@@ -741,7 +741,7 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertEqual(output["decision"], "block")
         self.assertIn("Record verification evidence", output["reason"])
 
-    def test_pre_tool_use_blocks_write_before_research_to_uigwe_promotion(self) -> None:
+    def test_pre_tool_use_blocks_write_before_required_uigwe_planning_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
             context["current_surface"] = "jiphyeonjeon"
@@ -763,15 +763,15 @@ class KingSejongHookTests(unittest.TestCase):
             )
         specific = output["hookSpecificOutput"]
         self.assertEqual(specific["permissionDecision"], "deny")
-        self.assertIn("research-to-Uigwe gate is pending", specific["permissionDecisionReason"])
+        self.assertIn("Uigwe planning boundary is pending", specific["permissionDecisionReason"])
 
-    def test_pre_tool_use_allows_write_after_uigwe_promotion_entry(self) -> None:
+    def test_pre_tool_use_allows_write_after_uigwe_promotion_gate_is_cleared_on_entry(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
             context["current_surface"] = "uigwe"
             context["route_sequence"] = ["jangyeongsil", "jiphyeonjeon", "uigwe"]
             context["required_route_sequence"] = []
-            context["pending_gates"] = ["uigwe_promotion_required"]
+            context["pending_gates"] = []
             context_path = Path(tmp) / "context.json"
             context_path.write_text(json.dumps(context), encoding="utf-8")
 
@@ -787,6 +787,31 @@ class KingSejongHookTests(unittest.TestCase):
                 context_path=context_path,
             )
         self.assertNotEqual(output.get("hookSpecificOutput", {}).get("permissionDecision"), "deny")
+
+    def test_pre_tool_use_blocks_reopened_uigwe_gate_after_prior_entry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context["current_surface"] = "seungjeongwon"
+            context["route_sequence"] = ["jangyeongsil", "uigwe", "seungjeongwon"]
+            context["required_route_sequence"] = ["uigwe", "seungjeongwon"]
+            context["pending_gates"] = ["uigwe_promotion_required"]
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+
+            output = run_hook(
+                "PreToolUse",
+                {
+                    "hook_event_name": "PreToolUse",
+                    "tool_name": "apply_patch",
+                    "tool_input": {
+                        "command": "*** Begin Patch\n*** Update File: README.md\n@@\n-old\n+new\n*** End Patch\n"
+                    },
+                },
+                context_path=context_path,
+            )
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("Uigwe planning boundary is pending", specific["permissionDecisionReason"])
 
     def test_pre_tool_use_blocks_write_before_seungjeongwon_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1183,7 +1208,7 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertEqual(output["decision"], "block")
         self.assertIn("pending King Sejong gates", output["reason"])
 
-    def test_stop_blocks_research_to_uigwe_conclusion(self) -> None:
+    def test_stop_blocks_before_required_uigwe_planning_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
             context["current_surface"] = "jiphyeonjeon"
@@ -1203,6 +1228,7 @@ class KingSejongHookTests(unittest.TestCase):
             )
         self.assertEqual(output["decision"], "block")
         self.assertIn("uigwe_promotion_required remains pending", output["reason"])
+        self.assertIn("required Uigwe planning boundary", output["reason"])
 
     def test_stop_allows_route_only_seungjeongwon_history_without_receipt_gate(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

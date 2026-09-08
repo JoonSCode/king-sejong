@@ -1,13 +1,15 @@
 ---
 name: uigwe
-description: Use when a user explicitly invokes `uigwe`, `의궤`, or wants a vague goal, partial brief, approved design, or packet set turned into formal planning artifacts using `auto`, `full`, `design-to-plan`, or `decompose-only`.
+description: Use when a user explicitly invokes `uigwe`, `의궤`, wants to discover intent or design from a vague thought, or wants a partial brief, approved design, or packet set turned into formal planning artifacts using `auto`, `full`, `design-to-plan`, or `decompose-only`.
 ---
 
 # Uigwe
 
 ## Overview
 
-`Uigwe` is the wrapper-facing skill for the formal planning protocol.
+`Uigwe` is the wrapper-facing skill for collaborative intent and design discovery plus the formal planning protocol.
+
+A vague thought, tension, opportunity, or partial idea is a valid starting point. Uigwe helps the user discover the goal, scope, desired quality, and acceptance criteria through evidence, informed questions, recommended alternatives with reasons, and a free-response path. A completed brief is an output of this collaboration, never an entry requirement.
 
 Use it to produce canonical Uigwe planning artifacts:
 
@@ -34,9 +36,9 @@ Sejong's formal planning surface is `uigwe`.
 Use interactive planning when the user asks for it or when a missing decision materially changes the result. Higher-priority instructions, host tool conditions, and the user's explicit scope and prior approvals take precedence over this skill's general procedure.
 
 - Reuse decisions from the current conversation and approved artifacts with evidence refs. Do not ask the user to approve the same decision again; mark an already answered requirement resolved, not waived.
-- Do not silently complete `deep-interview` or `brainstorming` from one ambiguous brief. Ask targeted clarification questions in small batches when intent, scope, authority, material design, or acceptance criteria are missing.
+- Do not silently complete `deep-interview` or `brainstorming` from one ambiguous thought. Inspect available context and evidence, explain what the missing decision affects, propose a recommended working answer and credible alternatives, then ask targeted clarification questions in small batches. Do not merely send the user's words back as generic “what is the goal?” or “what does done mean?” questions.
 - For material design choices, show credible options, trade-offs, a recommended default, and a free-response path before a required approval. Use only input tools permitted in the current mode; continue independent approved work while a required answer is pending. Silence is not an answer or approval.
-- Do not generate a packet until its required boundaries are clear. Routine implementation choices may use a stated assumption; optional preferences must not stop approved independent work.
+- Build the working definition with the user before generating its packet. Routine implementation choices may use a stated assumption; optional preferences must not stop approved independent work.
 - Preserve approval stages explicitly requested by the user. Do not mark an approval gate as `waived` in a live session unless the user explicitly says to skip approval. Explicitly label offline evaluation assumptions and waivers.
 - Set `blocking=true` only for intent, scope, authority, material design, acceptance criteria, or an explicitly requested approval. Optional preferences use `blocking=false`.
 - When an ambiguity register is active, advance only when required-stage readiness is `100%` and every blocking `open`, `pending`, or `answered` item is resolved or explicitly waived. Readiness measures required decisions; optional preferences alone must not lower it.
@@ -56,8 +58,8 @@ Use the user's language. For Korean users, prefer:
 
 Stage meanings should be explained like this:
 
-- `1단계: 기획 명확화` = clarify what to build, why now, scope, non-goals, constraints, and success criteria
-- `2단계: 설계 명확화` = clarify how to solve it, what alternatives exist, and what trade-offs matter
+- `1단계: 기획 명확화` = start from the user's current thought and jointly discover what outcome matters, why now, scope, non-goals, desired quality, constraints, and success criteria
+- `2단계: 설계 명확화` = use evidence and reasoned alternatives to jointly discover how to solve it and which trade-offs matter
 - `3단계: 실행 계약화` = turn the chosen design into a bounded Seungjeongwon handoff contract, dependencies, verification bar, and re-entry triggers
 - Handoff-ready outcome-completion bundles hand off to Seungjeongwon. Use native goal backing only when the current host tool conditions are met; an ordinary outcome request does not itself authorize goal creation. Seungjeongwon owns adaptive todo decomposition either way.
 - Plan-mode-style clarification is allowed as live UX, but approved Uigwe packets and the Seungjeongwon handoff contract remain the durable source of truth.
@@ -120,7 +122,7 @@ Read only what is needed, in this order:
 ## When To Use
 
 - The user wants a rigorous planning workflow rather than immediate implementation
-- The user has a vague goal and wants to turn it into structured planning artifacts
+- The user has a vague thought or goal and wants help discovering intent, design, and structured planning artifacts
 - The user already has an approved design and wants executor handoff decomposition only
 - The user wants one protocol that works for both `greenfield` and `brownfield`
 - The user wants one standalone protocol that carries intent clarification, design exploration, and executor handoff decomposition as one system
@@ -136,6 +138,7 @@ Read only what is needed, in this order:
 Accept any of:
 
 - a vague goal or brief
+- a rough thought, tension, opportunity, or example without a named goal yet
 - an intent-equivalent requirements artifact
 - an approved design artifact
 - existing Uigwe packet paths
@@ -164,12 +167,12 @@ If the chosen entry point proves too optimistic, re-enter the earlier stage requ
 
 ### `full`
 
-1. Run the Uigwe `Intent Clarification` (`deep-interview`) phase
-2. Ask the user the questions needed to resolve missing intent and boundary data before writing the packet
-3. Produce `Intent Packet`
+1. Run the Uigwe `Intent Clarification` (`deep-interview`) phase from whatever thought or context the user supplied
+2. Investigate relevant context when useful, propose a working goal and boundaries with reasons and alternatives, and ask only the questions needed to resolve material intent and boundary data
+3. Produce the completed working definition as the `Intent Packet`
 4. Get one approval on the interview summary
 5. Run the Uigwe `Design Exploration` (`brainstorming`) phase
-6. Ask the user the questions needed to resolve material design ambiguities before writing the packet
+6. Ground material design questions in evidence, recommend a default with reasons and credible alternatives, and keep a free-response path before writing the packet
 7. Produce `Design Packet`
 8. Get one approval on the design summary
 9. Run the Uigwe `Executor Handoff Contract` (`decomposition`) phase
@@ -180,7 +183,7 @@ If the chosen entry point proves too optimistic, re-enter the earlier stage requ
 1. Validate intent readiness
 2. If intent readiness is not strong enough, re-enter `deep-interview` and ask the user the missing questions instead of inferring the missing boundaries alone
 3. Run the Uigwe `Design Exploration` (`brainstorming`) phase
-4. Ask the user the questions needed to resolve material design ambiguities before writing the packet
+4. Ground material design questions in evidence, recommend a default with reasons and credible alternatives, and keep a free-response path before writing the packet
 5. Produce `Design Packet`
 6. Get one approval on the design summary
 7. Run the Uigwe `Executor Handoff Contract` (`decomposition`) phase
@@ -226,7 +229,7 @@ Use the numeric defaults in `../../../docs/sejong/SCORING_AND_GATES.md` and `../
 
 ## Outputs
 
-The canonical result of this skill is a Uigwe artifact bundle:
+The canonical result of this skill is the completed brief and execution contract expressed as a Uigwe artifact bundle:
 
 - `Intent Packet` when generated
 - `Design Packet` when generated

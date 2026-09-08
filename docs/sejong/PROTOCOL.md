@@ -5,7 +5,7 @@
 
 ## Purpose
 
-`Uigwe` is a planning protocol for turning vague goals, partial briefs, or approved designs into evidence-backed handoff goal graphs.
+`Uigwe` is a collaborative intent and design discovery protocol that turns vague thoughts, goals, partial briefs, or approved designs into evidence-backed outcome contracts and handoff goal graphs. A user does not need to arrive with a named goal, complete scope, or definition of done; those are outputs Uigwe develops with them.
 
 It is designed to work across both:
 
@@ -54,7 +54,8 @@ Uigwe artifacts. See [UX_PROFILES.md](UX_PROFILES.md).
 Interactive Uigwe applies when the user asks for staged planning or a required decision is unresolved. Higher-priority instructions, host tool conditions, and the user's explicit scope and prior approvals take precedence over this protocol's general procedure.
 
 - Reuse approved conversation and artifact decisions with evidence refs. Do not repeat an already answered approval; mark it resolved rather than waived.
-- `deep-interview` asks about missing intent or boundaries; `brainstorming` asks about material design ambiguities. Re-enter an earlier stage only when its required contract is unstable.
+- Start from the user's actual thought, example, tension, or preference. Before asking, inspect relevant context and evidence, explain why the missing decision matters, propose a recommended working answer and credible alternatives, and preserve a free-response path. Do not simply bounce generic goal, scope, or done questions back to the user.
+- `deep-interview` jointly discovers missing intent or boundaries; `brainstorming` jointly discovers material design choices. Re-enter an earlier stage only when its required contract is unstable.
 - Preserve approval stages explicitly requested by the user. Waivers need an explicit user instruction or a clearly labeled non-interactive evaluation context.
 - Routine implementation choices may use a stated assumption. Optional preferences do not stop independent approved work.
 - An active ambiguity register reaches required-stage readiness of `100%` only when all required decisions are resolved or explicitly waived. Blocking `open`, `pending`, and `answered` items prevent dependent advancement; optional preferences alone do not lower readiness.
@@ -115,6 +116,8 @@ For material planning or design decisions, Uigwe must make the decision boundary
 - the recommended option with trade-offs, rejected alternatives, and a free-response path
 - success criteria, verification plan, and re-entry triggers
 
+Historical context is evidence, not a timeless command. When a prior decision or evaluation is reused, preserve the situation in which it arose, the user's desired outcome and why, counterevidence, later correction or supersession, source ref, applicable scope, and freshness. A temporary count, model choice, date, or local tactic remains scoped to that case unless the user promoted it to a durable principle.
+
 When a UX profile or specialist adapter contributes evidence, Uigwe should name
 the adapter output's `owner_surface`, `next_surface`, forbidden claims, and
 whether the output is evidence, diagnostics, status, presentation, or handoff
@@ -144,11 +147,11 @@ Helper calls return to Uigwe and do not approve gates or finalize canonical pack
 
 ### 1. Intent Clarification (`deep-interview`)
 
-**Goal:** clarify intent and boundaries before design or decomposition.
+**Goal:** jointly discover intent and boundaries from the user's current thought before design or decomposition.
 
 Required outcomes:
 
-- clear goal
+- a clear goal derived from the user's current thought and relevant evidence
 - why this matters now
 - explicit scope
 - explicit non-goals
@@ -162,13 +165,13 @@ Artifact:
 
 Approval model:
 
-- interactive questioning during the stage
+- informed interactive questioning during the stage, with reasons, a recommended working answer, credible alternatives when useful, and a free-response path
 - one user approval gate after the stage summary is produced
 - no default approval waiver in live sessions
 
 ### 2. Design Exploration (`brainstorming`)
 
-**Goal:** compare approaches, select a design direction, and keep viable alternatives visible.
+**Goal:** jointly explore approaches, select a design direction, and keep viable alternatives visible.
 
 Required outcomes:
 
@@ -186,7 +189,7 @@ Artifact:
 
 Approval model:
 
-- interactive clarification during the stage
+- evidence-grounded interactive clarification during the stage, with recommendations, reasons, alternatives, and a free-response path
 - one user approval gate after the design summary is produced
 - no default approval waiver in live sessions
 

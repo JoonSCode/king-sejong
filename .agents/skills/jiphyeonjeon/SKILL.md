@@ -18,13 +18,13 @@ It is a thin court-mode skill. Its source-of-truth routing contract is `../../..
 5. Record rejected options and reasons.
 6. Recommend the next path with confidence, risks, and the next Sejong surface.
 
-When the council is deciding from research that was gathered for a later plan, its recommendation is not the workflow conclusion. Return the selected option, rejected options, risks, and an Uigwe-ready input summary with `next_surface: uigwe`; do not route to Seungjeongwon or Sejong direct until Uigwe planning has run or the user explicitly cancels the promotion.
+Honor the requested terminal deliverable. A recommendation or comparison may be the workflow conclusion even when the user may plan later. Return an Uigwe-ready input summary with `next_surface: uigwe` only when the current request includes formal planning or joint intent/design discovery, or when authorized execution still has a material unresolved planning boundary. If implementation is already approved and its scope and acceptance criteria are settled, preserve the decision and route to Seungjeongwon through a compact execution contract without reopening it.
 
 ## Helper Use
 
 Jiphyeonjeon may be called from Sejong, Uigwe, JangYeongsil, or Seungjeongwon as a helper call when multiple perspectives would materially improve accuracy.
 
-Use it to sharpen a vague first Uigwe definition, compare design alternatives, challenge decomposition shape, assess whether execution feedback requires Uigwe re-entry, or decide which option should become Danjong.
+Use it to help Uigwe discover a vague goal or first definition, compare design alternatives, challenge decomposition shape, assess whether execution feedback requires Uigwe re-entry, or decide which option should become Danjong. Return evidence and recommendations to Uigwe; do not bounce the user's vague prompt back as an unsupported request for a completed goal or done definition.
 
 Jiphyeonjeon does not approve Uigwe gates, finalize `spec.md`, finalize `rationale.md`, finalize `goal-tree.json`, claim worker consensus as approval, or replace lead-owned Sejong synthesis.
 

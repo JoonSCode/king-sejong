@@ -22,7 +22,7 @@ It is a thin court-mode skill. Its source-of-truth routing contract is `../../..
 4. Name the `decision_question` this evidence enables.
 5. Return to the calling Sejong court mode with source refs, confidence, risks, and the recommended next surface.
 
-If the research is for choosing a strategy, preparing a plan, or feeding Uigwe, do not present the research note as the final conclusion. Return decision-ready evidence, the Uigwe input summary, and `next_surface: uigwe` or `next_surface: jiphyeonjeon`; only research-only prompts may stop at JangYeongsil.
+Honor the requested terminal deliverable. Research-only work may end with decision-ready evidence even when the user will use it later. Return `next_surface: jiphyeonjeon` when the current request also asks for option judgment, and `next_surface: uigwe` only when it asks for formal planning or joint intent/design discovery, or when authorized execution has a material unresolved planning boundary. Do not turn evidence into a user decision or create a downstream obligation merely because the research could inform later work.
 
 ## Helper Use
 

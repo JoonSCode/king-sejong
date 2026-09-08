@@ -247,8 +247,8 @@ def context_summary(context: dict[str, Any]) -> str:
         summary += " active_seungjeongwon_runs=" + ";".join(active_runs) + "."
     if pending_uigwe_promotion_unsatisfied(context):
         summary += (
-            " uigwe_promotion_required=true; research or council output is not final; "
-            "enter Uigwe or ask the user to convert the request to research-only."
+            " uigwe_promotion_required=true; a required Uigwe planning boundary remains; "
+            "enter Uigwe or explicitly resolve the planning requirement."
         )
     return summary
 
@@ -382,7 +382,7 @@ def has_pending_uigwe_promotion(context: dict[str, Any]) -> bool:
 
 
 def pending_uigwe_promotion_unsatisfied(context: dict[str, Any]) -> bool:
-    return has_pending_uigwe_promotion(context) and not route_entered(context, "uigwe")
+    return has_pending_uigwe_promotion(context)
 
 
 def has_pending_seungjeongwon_receipt(context: dict[str, Any]) -> bool:
@@ -802,9 +802,9 @@ def handle_pre_tool_use(payload: dict[str, Any], context: dict[str, Any]) -> dic
         return deny_pre_tool(reason)
     if pending_uigwe_promotion_unsatisfied(context) and is_write_like:
         return deny_pre_tool(
-            "King Sejong research-to-Uigwe gate is pending. "
-            "Research or council output must enter Uigwe before write-like execution, "
-            "unless the user explicitly converts the request to research-only."
+            "King Sejong Uigwe planning boundary is pending. "
+            "Enter Uigwe before write-like execution, or explicitly resolve the planning requirement "
+            "when the requested deliverable is terminal or the material boundary is settled."
         )
     if pending_seungjeongwon_receipt_unsatisfied(context) and is_write_like:
         return deny_pre_tool(
@@ -844,7 +844,7 @@ def handle_permission_request(payload: dict[str, Any], context: dict[str, Any]) 
         )
     if pending_uigwe_promotion_unsatisfied(context) and is_write_like_tool_call(payload):
         return deny_permission(
-            "King Sejong research-to-Uigwe gate is pending; enter Uigwe before write-like execution."
+            "King Sejong Uigwe planning boundary is pending; enter Uigwe before write-like execution."
         )
     if pending_seungjeongwon_receipt_unsatisfied(context) and is_write_like_tool_call(payload):
         return deny_permission(
@@ -961,7 +961,7 @@ def handle_stop(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, A
             "decision": "block",
             "reason": (
                 "Continue King Sejong execution: uigwe_promotion_required remains pending. "
-                "Research-for-decision must enter Uigwe or be explicitly converted to research-only."
+                "The required Uigwe planning boundary must be entered or explicitly resolved."
             ),
         }
     if pending_seungjeongwon_receipt_unsatisfied(context):

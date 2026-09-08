@@ -10,6 +10,10 @@ Use it when a Sejong or Uigwe workflow must show what is still unclear, how clea
 the current stage is, what choices the lead agent sees, and what user action is
 needed before the workflow may advance.
 
+A rough thought is valid input. The register records how Uigwe is helping turn
+that thought into a goal, scope, desired quality, and acceptance criteria; it is
+not a form the user must complete before Uigwe can begin.
+
 The schema is [ambiguity-register.schema.json](ambiguity-register.schema.json).
 The required-decision example is [examples/ambiguity-register.example.json](examples/ambiguity-register.example.json). The [optional-preference example](examples/ambiguity-register.optional.example.json) shows an unresolved preference that does not block approved work.
 
@@ -36,6 +40,14 @@ remaining ambiguity.
 A `blocking=true` item in `open`, `pending`, or `answered` state prevents dependent advancement. Required-stage readiness is `100%` when required decisions are resolved or explicitly waived, with no blocking `open`, `pending`, or `answered` items. Optional preferences alone must not lower readiness or block independent approved work. An unexplained readiness deficit remains incomplete; do not round it away to pass a gate.
 
 Classify as blocking only decisions affecting intent, scope, authority, material design, acceptance criteria, or an explicitly requested approval. Use `blocking=false` for optional preferences. Reuse prior user answers and approved artifacts with `evidence_refs`; resolve an already answered requirement instead of asking again or inventing a waiver.
+
+Before opening a question, inspect the available context and evidence. State why
+the missing choice affects the result, put the lead's recommended working answer
+first, include credible alternatives when useful, and preserve the user's
+free-response path. Do not create generic questions that merely ask the user to
+restate “the goal” or “done” without informed help. When the available evidence
+supports a safe working proposal, make that proposal reviewable before asking
+for the material user decision.
 
 Use this user-facing shape:
 

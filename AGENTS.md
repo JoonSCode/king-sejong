@@ -13,7 +13,7 @@ King Sejong is a Codex-native skill and protocol distribution, not a separate ru
 The stable shape is:
 
 - `Sejong` is the broad user-facing front door for routing, decision support, execution, verification, and evidence records.
-- `Uigwe` is the formal planning protocol when a direction needs gates, packets, decomposition, or promotion-ready artifacts.
+- `Uigwe` is the joint intent/design discovery and formal planning protocol. It accepts vague thoughts, helps the user discover the goal, scope, quality, and acceptance criteria, and produces the gated packets or handoff contract when that planning boundary is needed.
 - `Seungjeongwon` is the default execution and verification path for clear tasks.
 - `TeamExecutor` is an optional backend for `$team` wrappers that coordinate separate CLI workers in `tmux` panes through Sejong-owned state, mailbox, and lease files.
 - Hook guardrails are Codex-native lifecycle checks that inject only the durable Context bound to the exact Codex `session_id`, guard protected self-modification paths, and keep subagent or `$team` output bounded. Repo Index and legacy `state/active-context.json` never grant automatic injection authority. They must not be treated as a complete sandbox. User-scope install uses the marked King Sejong plugin block in `${CODEX_HOME:-~/.codex}/config.toml` as the canonical hook source; the old marked direct hook block is legacy fallback only and must not be enabled alongside the plugin hook.

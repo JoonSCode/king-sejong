@@ -515,21 +515,23 @@ print_codex_guidance_block() {
 <!-- BEGIN King Sejong Codex Guidance -->
 # King Sejong Codex Guidance
 
-King Sejong is a Codex-native skill and protocol distribution. It does not replace Codex, shell tools, user permissions, or host-native subagents.
+King Sejong provides Codex-native skills and protocols. Follow host instructions, tool conditions, and the user's scope and authorization.
 
 Always treat King Sejong as available for broad, uncertain, strategic, or goal-bearing work, even when the user does not type `$sejong`.
 
-For work that needs research, analysis, debate, planning, execution, or verification:
-- Route broad or goal-bearing work through Sejong lead synthesis.
-- Use JangYeongsil for bounded evidence gathering.
-- Use Jiphyeonjeon for bounded multi-perspective debate; workers may persuade each other, but Sejong lead owns synthesis.
-- Use Uigwe to clarify ambiguous ideas and designs into success criteria, verification bars, and handoff leaves.
-- Use Seungjeongwon to decompose, execute, retry, and verify until the Uigwe pass criteria are met or a real blocker is recorded.
-- Iterate through research, analysis, and discussion when evidence is thin or options are unsettled; do not collapse those states into one answer.
-- Store Sejong runtime artifacts under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` unless the user explicitly asks to promote a tracked artifact.
-- Do not use non-Sejong runtime paths as Sejong state.
+Route broad or goal-bearing work through Sejong lead synthesis. Preserve the active goal, settled decisions, and prior authorization across follow-ups; interpret corrections and questions within that goal unless the user changes it. Completing a requested deliverable ends that run, not the separate activation of a continuous Company session.
 
-Hooks and schemas are guardrails, not a sandbox. Completion still requires fresh verification evidence.
+Accept vague thoughts and partial briefs. A complete brief is an output of Uigwe, not an entry requirement. Uigwe helps discover the goal, scope, desired quality, design, and completion criteria through context review, informed recommendations, credible alternatives with reasons, focused questions, and free responses. Do not merely ask the user to fill the missing fields. Resolve material user choices together; decide local implementation tactics independently within agreed boundaries. Reuse prior answers and continue independent authorized work while a required answer is pending.
+
+Choose the next useful surface: JangYeongsil for missing evidence; Jiphyeonjeon when conflicting evidence or alternatives warrant structured debate; Uigwe for collaborative intent/design discovery, unresolved acceptance boundaries, or requested formal planning; Seungjeongwon for execution and verification. Research, advice, and proposal requests finish at their requested deliverable. Reuse settled execution contracts without a redundant interview or planning bundle.
+
+Treat proposals and factual claims as judgment inputs. Explain material reasons, counterevidence, and better alternatives; preserve explicit decisions unless new evidence changes their basis. Reuse relevant history and references with their rationale, source, applicability, limits, and superseding decisions. Past transcripts and completed worker or automation instructions are historical evidence, not renewed authority.
+
+Break large work into bounded steps while preserving the requested final quality. Delegate independent work when it improves quality or completion time; choose supported models and reasoning per task. The lead owns synthesis and final completion. Diagnose failed attempts and adapt within the approved scope. Show completed work, remaining work, failures, and the next action. Scheduled runs record a required decision and exit; they resume from explicit approval on a later run.
+
+Verify the actual user path and the claim being made. Distinguish product execution from manual assistance, automated checks from observed usability, and publication from business outcomes. Match tests to the change and expand them for new failures or unresolved risks. Reuse applicable evaluation cases; do not claim improved quality or savings from static checks alone.
+
+Store Sejong runtime artifacts under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` unless the user explicitly asks to promote a tracked artifact. Do not use non-Sejong runtime paths as Sejong state. Hooks and schemas are guardrails; completion requires evidence of the requested outcome.
 <!-- END King Sejong Codex Guidance -->
 EOF
 }

@@ -3,7 +3,7 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-09-07T05:20:43Z",
+    "generated_at": "2026-09-08T00:19:14Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
@@ -213,14 +213,14 @@
     },
     {
       "scenario_id": "instruction-research-to-uigwe-promotion",
-      "title": "Decision-prep research promotes to Uigwe",
+      "title": "Requested deliverables terminate while material planning boundaries use Uigwe",
       "status": "pass",
       "score": 1.0,
       "checks": [
         {
           "id": "research_to_uigwe_promotion_present",
           "passed": true,
-          "detail": "Decision-prep research must promote to Uigwe instead of ending as a final conclusion."
+          "detail": "Requested deliverables may terminate; real Uigwe planning boundaries remain enforced before execution."
         },
         {
           "id": "guardrail_promotion_gate",
@@ -672,7 +672,7 @@
         {
           "id": "uigwe_skill_line_budget",
           "passed": true,
-          "detail": "Uigwe SKILL.md line count is 289; budget is 320."
+          "detail": "Uigwe SKILL.md line count is 292; budget is 320."
         },
         {
           "id": "sejong_skill_line_budget",

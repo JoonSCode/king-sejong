@@ -229,6 +229,57 @@ class SejongDoctorTests(unittest.TestCase):
         self.assertIn("device-owner", str(lock_check["detail"]))
         self.assertTrue(lock_still_exists)
 
+    def test_doctor_ignores_empty_installer_flock_without_writing_it(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            lock_path = sejong_home / "state" / "locks" / "user-install.lock"
+            lock_path.parent.mkdir(parents=True)
+            lock_path.write_bytes(b"")
+            before = lock_path.stat()
+
+            result = run_doctor(
+                ["--repo-root", str(REPO_ROOT), "--skip-python-deps", "--skip-active-context", "--json"],
+                sejong_home,
+            )
+
+            after = lock_path.stat()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        lock_check = checks_by_name(payload)["runtime-locks"]
+        self.assertEqual(lock_check["status"], "ok")
+        self.assertEqual(lock_check["detail"], "no runtime locks present")
+        self.assertEqual(before.st_ino, after.st_ino)
+        self.assertEqual(before.st_size, after.st_size)
+        self.assertEqual(before.st_mtime_ns, after.st_mtime_ns)
+
+    def test_doctor_keeps_malformed_runtime_lock_failing_beside_installer_flock(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            installer_lock = sejong_home / "state" / "locks" / "user-install.lock"
+            malformed_lock = sejong_home / "state" / "locks" / "active-pointer.lock"
+            installer_lock.parent.mkdir(parents=True)
+            installer_lock.write_bytes(b"")
+            malformed_lock.write_text("not runtime lock metadata", encoding="utf-8")
+            before = installer_lock.stat()
+
+            result = run_doctor(
+                ["--repo-root", str(REPO_ROOT), "--skip-python-deps", "--skip-active-context", "--json"],
+                sejong_home,
+            )
+
+            after = installer_lock.stat()
+
+        self.assertEqual(result.returncode, 1)
+        payload = json.loads(result.stdout)
+        lock_check = checks_by_name(payload)["runtime-locks"]
+        self.assertEqual(lock_check["status"], "fail")
+        self.assertIn(str(malformed_lock), str(lock_check["detail"]))
+        self.assertNotIn(str(installer_lock), str(lock_check["detail"]))
+        self.assertEqual(before.st_ino, after.st_ino)
+        self.assertEqual(before.st_size, after.st_size)
+        self.assertEqual(before.st_mtime_ns, after.st_mtime_ns)
+
 
 if __name__ == "__main__":
     unittest.main()

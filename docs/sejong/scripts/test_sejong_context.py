@@ -14,6 +14,7 @@ SCRIPT_PATH = Path(__file__).resolve()
 SEJONG_ROOT = SCRIPT_PATH.parents[1]
 REPO_ROOT = SCRIPT_PATH.parents[3]
 CONTEXT_SCRIPT = SEJONG_ROOT / "scripts" / "sejong_context.py"
+HOOK_SCRIPT = SEJONG_ROOT / "scripts" / "king_sejong_hooks.py"
 sys.path.insert(0, str(CONTEXT_SCRIPT.parent))
 import sejong_context as context_module  # noqa: E402
 
@@ -55,6 +56,28 @@ def start_context(sejong_home: Path, run_id: str, *extra: str, session_id: str =
         raise AssertionError(result.stderr or result.stdout)
     line = next(item for item in result.stdout.splitlines() if item.startswith("run_context="))
     return Path(line.removeprefix("run_context="))
+
+
+def run_pre_tool_hook(context_path: Path) -> dict:
+    result = subprocess.run(
+        [sys.executable, str(HOOK_SCRIPT), "PreToolUse", "--context", str(context_path)],
+        input=json.dumps(
+            {
+                "hook_event_name": "PreToolUse",
+                "tool_name": "apply_patch",
+                "tool_input": {
+                    "command": "*** Begin Patch\n*** Update File: README.md\n@@\n-old\n+new\n*** End Patch\n"
+                },
+                "cwd": str(REPO_ROOT),
+            }
+        ),
+        text=True,
+        capture_output=True,
+        cwd=str(REPO_ROOT),
+    )
+    if result.returncode != 0:
+        raise AssertionError(result.stderr or result.stdout)
+    return json.loads(result.stdout) if result.stdout.strip() else {}
 
 
 class SejongContextTests(unittest.TestCase):
@@ -124,10 +147,54 @@ class SejongContextTests(unittest.TestCase):
             bindings = list((sejong_home / "state" / "session-bindings").glob("*.json"))
             self.assertEqual(json.loads(bindings[0].read_text(encoding="utf-8"))["state"], "unbound")
 
-    def test_start_goal_bearing_adds_receipt_gate_and_required_route(self) -> None:
+    def test_start_research_or_advice_terminal_has_no_execution_or_planning_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = start_context(
+                Path(tmp),
+                "advice-terminal",
+                "--current-surface",
+                "jiphyeonjeon",
+            )
+            context = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(context["required_route_sequence"], [])
+            self.assertEqual(context["pending_gates"], [])
+
+    def test_start_settled_goal_bearing_requires_only_seungjeongwon_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = start_context(Path(tmp), "goal-bearing", "--goal-bearing")
             context = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(context["required_route_sequence"], ["seungjeongwon"])
+            self.assertEqual(context["pending_gates"], ["seungjeongwon_receipt_required"])
+
+    def test_start_unresolved_material_planning_requires_uigwe_before_execution(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = start_context(
+                Path(tmp),
+                "planning-boundary",
+                "--goal-bearing",
+                "--required-route",
+                "uigwe",
+            )
+            context = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(context["required_route_sequence"], ["uigwe", "seungjeongwon"])
+            self.assertEqual(
+                context["pending_gates"],
+                ["uigwe_promotion_required", "seungjeongwon_receipt_required"],
+            )
+
+    def test_start_explicit_uigwe_entry_has_no_unsatisfied_promotion_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = start_context(
+                Path(tmp),
+                "explicit-uigwe",
+                "--current-surface",
+                "uigwe",
+                "--goal-bearing",
+                "--required-route",
+                "uigwe",
+            )
+            context = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(context["route_sequence"], ["uigwe"])
             self.assertEqual(context["required_route_sequence"], ["uigwe", "seungjeongwon"])
             self.assertEqual(context["pending_gates"], ["seungjeongwon_receipt_required"])
 
@@ -183,6 +250,277 @@ class SejongContextTests(unittest.TestCase):
             context = json.loads(path.read_text(encoding="utf-8"))
             self.assertIn("seungjeongwon", context["required_route_sequence"])
             self.assertIn("seungjeongwon_receipt_required", context["pending_gates"])
+
+    def test_route_only_seungjeongwon_does_not_imply_execution_receipt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            start_path = start_context(
+                sejong_home,
+                "route-only-start",
+                "--required-route",
+                "seungjeongwon",
+                session_id="route-only-start-session",
+            )
+            started = json.loads(start_path.read_text(encoding="utf-8"))
+            self.assertEqual(started["required_route_sequence"], ["seungjeongwon"])
+            self.assertEqual(started["pending_gates"], [])
+
+            update_path = start_context(
+                sejong_home,
+                "route-only-update",
+                session_id="route-only-update-session",
+            )
+            result = run_context(
+                [
+                    "update",
+                    "--session-id",
+                    "route-only-update-session",
+                    "--add-required-route",
+                    "seungjeongwon",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            updated = json.loads(update_path.read_text(encoding="utf-8"))
+            self.assertEqual(updated["required_route_sequence"], ["seungjeongwon"])
+            self.assertEqual(updated["pending_gates"], [])
+
+    def test_update_required_uigwe_route_adds_promotion_gate_until_entry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            path = start_context(sejong_home, "planning-update")
+            result = run_context(
+                ["update", "--session-id", "session-test", "--add-required-route", "uigwe"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            context = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(context["required_route_sequence"], ["uigwe"])
+            self.assertEqual(context["pending_gates"], ["uigwe_promotion_required"])
+
+    def test_update_explicitly_resolves_unentered_uigwe_boundary_without_dropping_execution_receipt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            path = start_context(
+                sejong_home,
+                "resolved-planning-boundary",
+                "--goal-bearing",
+                "--required-route",
+                "uigwe",
+            )
+            result = run_context(
+                [
+                    "update",
+                    "--session-id",
+                    "session-test",
+                    "--clear-pending-gate",
+                    "uigwe_promotion_required",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            context = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(context["required_route_sequence"], ["seungjeongwon"])
+            self.assertEqual(context["pending_gates"], ["seungjeongwon_receipt_required"])
+
+    def test_update_entering_uigwe_satisfies_promotion_gate_and_keeps_required_route(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            path = start_context(
+                sejong_home,
+                "entered-planning-boundary",
+                "--goal-bearing",
+                "--required-route",
+                "uigwe",
+            )
+            result = run_context(
+                [
+                    "update",
+                    "--session-id",
+                    "session-test",
+                    "--current-surface",
+                    "uigwe",
+                    "--append-route",
+                    "uigwe",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            context = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(context["required_route_sequence"], ["uigwe", "seungjeongwon"])
+            self.assertEqual(context["pending_gates"], ["seungjeongwon_receipt_required"])
+
+    def test_redundant_uigwe_gate_clear_after_entry_keeps_required_route_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            path = start_context(
+                sejong_home,
+                "entered-boundary-redundant-clear",
+                "--goal-bearing",
+                "--required-route",
+                "uigwe",
+            )
+            entered = run_context(
+                [
+                    "update",
+                    "--session-id",
+                    "session-test",
+                    "--current-surface",
+                    "uigwe",
+                    "--append-route",
+                    "uigwe",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(entered.returncode, 0, entered.stderr)
+            redundant_clear = run_context(
+                [
+                    "update",
+                    "--session-id",
+                    "session-test",
+                    "--clear-pending-gate",
+                    "uigwe_promotion_required",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(redundant_clear.returncode, 0, redundant_clear.stderr)
+            context = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(context["required_route_sequence"], ["uigwe", "seungjeongwon"])
+            self.assertEqual(context["pending_gates"], ["seungjeongwon_receipt_required"])
+
+    def test_reopened_uigwe_boundary_survives_unrelated_update_and_blocks_until_current_entry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            path = start_context(sejong_home, "reopened-planning-boundary", "--goal-bearing")
+            completed_prior_route = run_context(
+                [
+                    "update",
+                    "--session-id",
+                    "session-test",
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--set-route-sequence",
+                    "sejong",
+                    "--set-route-sequence",
+                    "uigwe",
+                    "--set-route-sequence",
+                    "seungjeongwon",
+                    "--clear-pending-gate",
+                    "seungjeongwon_receipt_required",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(completed_prior_route.returncode, 0, completed_prior_route.stderr)
+
+            reopened = run_context(
+                ["update", "--session-id", "session-test", "--add-required-route", "uigwe"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(reopened.returncode, 0, reopened.stderr)
+            reopened_context = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(reopened_context["required_route_sequence"], ["uigwe", "seungjeongwon"])
+            self.assertEqual(reopened_context["pending_gates"], ["uigwe_promotion_required"])
+
+            unrelated = run_context(
+                [
+                    "update",
+                    "--session-id",
+                    "session-test",
+                    "--current-surface",
+                    "jangyeongsil",
+                    "--set-route-sequence",
+                    "sejong",
+                    "--set-route-sequence",
+                    "uigwe",
+                    "--set-route-sequence",
+                    "seungjeongwon",
+                    "--set-route-sequence",
+                    "jangyeongsil",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(unrelated.returncode, 0, unrelated.stderr)
+            unrelated_context = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(unrelated_context["pending_gates"], ["uigwe_promotion_required"])
+            blocked = run_pre_tool_hook(path)
+            self.assertEqual(blocked["hookSpecificOutput"]["permissionDecision"], "deny")
+            self.assertIn(
+                "Uigwe planning boundary is pending",
+                blocked["hookSpecificOutput"]["permissionDecisionReason"],
+            )
+
+            entered = run_context(
+                [
+                    "update",
+                    "--session-id",
+                    "session-test",
+                    "--current-surface",
+                    "uigwe",
+                    "--append-route",
+                    "uigwe",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(entered.returncode, 0, entered.stderr)
+            entered_context = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(entered_context["pending_gates"], [])
+            self.assertNotEqual(
+                run_pre_tool_hook(path).get("hookSpecificOutput", {}).get("permissionDecision"),
+                "deny",
+            )
+
+    def test_settled_goal_upgrade_inserts_uigwe_before_unentered_executor_route(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sejong_home = Path(tmp)
+            path = start_context(
+                sejong_home,
+                "settled-to-uigwe-upgrade",
+                "--goal-bearing",
+                "--required-route",
+                "jiphyeonjeon",
+                "--protected-path",
+                "README.md",
+            )
+            upgraded = run_context(
+                ["update", "--session-id", "session-test", "--add-required-route", "uigwe"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(upgraded.returncode, 0, upgraded.stderr)
+            upgraded_context = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                upgraded_context["required_route_sequence"],
+                ["jiphyeonjeon", "uigwe", "seungjeongwon"],
+            )
+            self.assertEqual(
+                upgraded_context["pending_gates"],
+                ["uigwe_promotion_required", "seungjeongwon_receipt_required"],
+            )
+
+            for surface in ("jiphyeonjeon", "uigwe", "seungjeongwon"):
+                args = [
+                    "update",
+                    "--session-id",
+                    "session-test",
+                    "--current-surface",
+                    surface,
+                    "--append-route",
+                    surface,
+                ]
+                if surface == "seungjeongwon":
+                    args.extend(["--clear-pending-gate", "seungjeongwon_receipt_required"])
+                routed = run_context(args, sejong_home=sejong_home)
+                self.assertEqual(routed.returncode, 0, routed.stderr)
+
+            executed_context = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                executed_context["route_sequence"],
+                ["sejong", "jiphyeonjeon", "uigwe", "seungjeongwon"],
+            )
+            self.assertEqual(executed_context["pending_gates"], [])
+            self.assertNotEqual(
+                run_pre_tool_hook(path).get("hookSpecificOutput", {}).get("permissionDecision"),
+                "deny",
+            )
 
     def test_context_revision_cas_rejects_stale_writer(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

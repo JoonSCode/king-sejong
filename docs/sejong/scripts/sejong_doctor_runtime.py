@@ -158,8 +158,25 @@ def lock_owner_summary(path: Path, record: JsonObject, reason: str | None) -> st
     return " ".join(fields)
 
 
+def is_empty_installer_flock(path: Path) -> bool:
+    """Recognize the installer's reserved, metadata-free flock file without opening it."""
+    try:
+        return (
+            path.name == "user-install.lock"
+            and path.is_file()
+            and not path.is_symlink()
+            and path.stat().st_size == 0
+        )
+    except FileNotFoundError:
+        return False
+
+
 def runtime_lock_check(root: Path) -> Check:
-    lock_paths = sorted((root / "state" / "locks").glob("*.lock"))
+    lock_paths = [
+        path
+        for path in sorted((root / "state" / "locks").glob("*.lock"))
+        if not is_empty_installer_flock(path)
+    ]
     if not lock_paths:
         return Check("runtime-locks", "ok", "no runtime locks present")
     malformed: list[str] = []

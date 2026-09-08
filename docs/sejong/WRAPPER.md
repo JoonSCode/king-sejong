@@ -29,7 +29,7 @@ The wrapper is not:
 
 Instead, it is a thin orchestration surface that:
 
-- accepts a request
+- accepts a rough thought, example, tension, opportunity, request, or existing artifact
 - determines the correct Uigwe entry mode
 - runs the relevant Uigwe protocol phases or delegates their orchestration without changing their internal ownership
 - returns a structured result that points to the canonical Uigwe artifacts
@@ -50,6 +50,7 @@ The wrapper must preserve these boundaries.
 - select or confirm the entry mode
 - package input artifacts for Uigwe
 - preserve Uigwe's interactive stage behavior in live sessions rather than collapsing it into one-shot artifact generation
+- let Uigwe investigate context, propose a reasoned working definition and alternatives, and ask only material questions; a completed brief is returned as an output rather than required as input
 - return result metadata and artifact locations
 - record the requested post-planning handoff lane without executing it itself
 
@@ -62,6 +63,7 @@ The wrapper must preserve these boundaries.
 
 In a live session, the wrapper must surface Uigwe's clarification questions and approval requests to the user. It must not silently waive those gates unless the context is explicitly non-interactive or the user explicitly waives them.
 In those user-facing messages, the wrapper should prefer plain-language stage descriptions such as `1단계: 기획 명확화`, `2단계: 설계 명확화`, and `3단계: 실행 계약화`, plus approximate readiness with the main unresolved areas. It should avoid leading with packet names by default and should not promise a fixed number of next questions.
+The wrapper must not ask the user to supply a complete goal, scope, quality bar, or done definition as an entry form. It presents Uigwe's informed recommendation, why the choice matters, credible alternatives when useful, and a free-response path so the user and Uigwe can discover those boundaries together.
 
 ### Consumer Responsibilities
 
@@ -107,7 +109,7 @@ This should be the default mode.
 
 ### `full`
 
-Use when only a vague goal or brief exists.
+Use when only a vague thought, tension, opportunity, goal, example, or partial brief exists.
 
 ### `design-to-plan`
 
@@ -121,11 +123,11 @@ Use when an approved design already exists and `Executor Handoff Contract` (`dec
 
 ## Inputs
 
-The wrapper accepts one request object.
+The wrapper accepts one request object. Natural-language input may be incomplete; missing goal and acceptance fields select collaborative clarification rather than rejecting entry.
 
 The request includes:
 
-- a natural-language brief
+- a natural-language thought, example, tension, opportunity, goal, or brief
 - explicit profile selection
 - explicit mode selection
 - explicit executor handoff selection
@@ -142,7 +144,7 @@ The request should always carry both routing fields:
 
 Use `none` for any lane that is not requested.
 
-The wrapper should prefer explicit artifacts over inferred context.
+The wrapper should reuse explicit artifacts and approved conversation context when available, while treating a rough natural-language thought as sufficient input for `full` mode.
 
 ## Artifact Storage
 
@@ -167,7 +169,7 @@ The result includes:
 - whether planner re-entry was needed
 - high-level notes or blockers
 
-The wrapper result is a summary layer. The canonical planning truth remains in Uigwe artifacts such as:
+The wrapper result is a summary layer. The jointly completed brief and canonical planning truth remain in Uigwe artifacts such as:
 
 - `Intent Packet`
 - `Design Packet`

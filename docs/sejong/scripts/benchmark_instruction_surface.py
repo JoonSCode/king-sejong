@@ -183,8 +183,11 @@ def evaluate_live_session() -> list[dict[str, Any]]:
     skill = load_text(UIGWE_SKILL_PATH)
     readme = load_text(README_PATH)
     required = [
-        "Do not silently complete `deep-interview` or `brainstorming` from one ambiguous brief.",
-        "Ask targeted clarification questions in small batches",
+        "Do not silently complete `deep-interview` or `brainstorming` from one ambiguous thought.",
+        "targeted clarification questions in small batches",
+        "A completed brief is an output of this collaboration, never an entry requirement.",
+        "recommended alternatives with reasons, and a free-response path",
+        "Do not merely send the user's words back as generic",
         "Do not mark an approval gate as `waived` in a live session unless the user explicitly says to skip approval.",
         "Higher-priority instructions, host tool conditions",
         "Do not ask the user to approve the same decision again",
@@ -194,7 +197,12 @@ def evaluate_live_session() -> list[dict[str, Any]]:
         "Silence is not an answer or approval",
     ]
     passed, missing = contains_all(skill, required)
-    readme_passed = "In live chat usage, Uigwe is supposed to do that interactively." in readme
+    readme_passed = all(fragment in readme for fragment in (
+        "In live chat usage, Uigwe does that interactively",
+        "informed questions",
+        "a free-response path",
+        "does not require the user to complete a planning template",
+    ))
     return [
         check("live_session_rules_present", passed, "Live-session clarification and approval rules remain in SKILL.md.", missing=missing),
         check("readme_live_session_summary_present", readme_passed, "README still summarizes interactive live-session behavior."),
@@ -472,28 +480,30 @@ def evaluate_research_to_uigwe_promotion() -> list[dict[str, Any]]:
         [sejong_skill, jangyeongsil_skill, jiphyeonjeon_skill, router, hooks, context_schema, hook_script]
     )
     required = [
-        "Research-To-Uigwe Promotion Gate",
+        "Terminal Deliverable And Uigwe Promotion Gate",
         "Uigwe-To-Seungjeongwon Handoff Gate",
-        "research result is not the conclusion",
-        "Research-to-Uigwe rule",
+        "A vague thought is a valid Uigwe input; a complete brief is an output.",
+        "Terminal-deliverable rule",
         "Advice-only rule",
         "Outcome-completion rule",
         "research-only",
         "advice-only",
         "uigwe_promotion_required",
         "next_surface: uigwe",
-        "If the user approves a Jiphyeonjeon recommendation, asks to make it concrete, or asks to carry it out",
+        "If the user approves a Jiphyeonjeon recommendation and asks to carry it out, preserve that approval.",
+        "Do not create the promotion gate for research, advice, review, comparison, or proposal-only work.",
+        "Route directly to Seungjeongwon through a compact execution contract when scope and acceptance criteria are settled.",
         "Do not classify a goal-bearing implementation request as `Sejong direct`",
         "Once Uigwe reaches a handoff-ready outcome contract, route execution and verification to `Seungjeongwon`",
         "write-like execution",
-        "Research or council output must enter Uigwe before write-like execution",
+        "Enter Uigwe before write-like execution, or explicitly resolve the planning requirement",
     ]
     passed, missing = contains_all(combined, required)
     return [
         check(
             "research_to_uigwe_promotion_present",
             passed,
-            "Decision-prep research must promote to Uigwe instead of ending as a final conclusion.",
+            "Requested deliverables may terminate; real Uigwe planning boundaries remain enforced before execution.",
             missing=missing,
         )
     ]
@@ -511,7 +521,7 @@ def evaluate_long_session_outcome_entry() -> list[dict[str, Any]]:
         "Long-Session Outcome Entry",
         "`장기실행`",
         "`long-session`",
-        "fresh goal check",
+        "current objective and authorization check",
         "task-class classification",
         "task-class gated",
         "`strategy-research-synthesis`",
@@ -761,7 +771,8 @@ def evaluate_sejong_self_modification() -> list[dict[str, Any]]:
         "Material self-modification includes changes to:",
         "Use `Jiphyeonjeon` when the policy, behavior, naming, or boundary decision is not already settled.",
         "`Sejong direct` remains allowed for narrow non-behavioral maintenance",
-        "material behavior changes should follow the full Sejong chain",
+        "When changing Sejong itself, use the full Sejong chain unless the edit is purely non-behavioral.",
+        "cite and validate it without repeating interviews or approval",
     ]
     passed, missing = contains_all(combined, required)
     return [

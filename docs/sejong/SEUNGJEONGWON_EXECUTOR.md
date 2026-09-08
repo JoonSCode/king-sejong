@@ -15,13 +15,13 @@ research -> decision -> Uigwe planning -> Seungjeongwon execution -> verificatio
 Seungjeongwon accepts either:
 
 - a validated Uigwe bundle
-- a clear Sejong direct scope
+- a clear, authorized scope captured in a compact execution contract
 
 Then it carries the work through implementation, verification, and feedback.
 
 ## Relationship To Uigwe
 
-Uigwe owns planning truth.
+Uigwe owns planning truth when a Uigwe bundle exists.
 
 Seungjeongwon owns execution truth.
 
@@ -33,9 +33,14 @@ When a Uigwe bundle exists, Seungjeongwon treats these files as authoritative:
 - `rationale.md`
 - optional `planning-summary.md`
 
-It does not reopen planning unless execution discovers a contradiction.
+For settled implementation without a Uigwe bundle, the compact execution
+contract links the user's request, prior approvals, scope, acceptance criteria,
+verification bar, and applicable rationale refs. Seungjeongwon reuses those
+decisions and does not repeat approval or invent Uigwe ceremony. It reopens
+planning only when execution discovers a material contradiction or missing
+user-owned decision.
 
-Uigwe owns the approved goal, non-goals, success criteria, verification bar, must-preserve behaviors, and re-entry triggers. Seungjeongwon may adapt decomposition and implementation tactics when the original execution hypothesis is wrong, but it must preserve those guardrails unless the user or Uigwe explicitly reopens them.
+The active Uigwe bundle owns these guardrails when it exists; otherwise the compact execution contract owns them. Seungjeongwon may adapt decomposition and implementation tactics when the original execution hypothesis is wrong, but it must preserve the approved goal, non-goals, success criteria, verification bar, must-preserve behaviors, and re-entry triggers unless the user or Uigwe explicitly reopens them.
 
 Uigwe handoff leaves are not final implementation todos. They are bounded objectives that are safe to start from. Seungjeongwon owns the executor-side loop that turns each handoff leaf into actionable leaves before execution begins.
 
@@ -142,11 +147,12 @@ For a Uigwe bundle:
 For direct action:
 
 - explicit user request
+- prior approval and decision refs when the current conversation or artifacts already settled them
 - target files or repo scope when relevant
 - done criteria
 - verification command or observable proof when known
 
-Direct action is exceptional. It is for clear non-goal maintenance or user-explicit direct scope when no Uigwe handoff contract is active. When a validated Uigwe bundle or handoff-ready Uigwe state exists, Seungjeongwon must execute from that contract rather than letting Sejong direct or ordinary direct edits bypass the executor.
+The compact execution path is normal for authorized implementation whose scope and acceptance criteria are already settled. Small exact non-goal maintenance may remain Sejong direct. When a validated Uigwe bundle or handoff-ready Uigwe state exists, Seungjeongwon must execute from that contract rather than letting Sejong direct or ordinary direct edits bypass the executor.
 
 ## Execution Rules
 
@@ -158,7 +164,7 @@ Direct action is exceptional. It is for clear non-goal maintenance or user-expli
    - planning uncertainty -> return to Uigwe
    - implementation failure -> debug and continue
    - blocked external decision -> ask the user
-6. For validation-heavy work, decompose the verification objective into task-specific verification perspectives before judging the result.
+6. For validation-heavy work, select only task-specific verification perspectives that cover distinct material claims or causal risks before judging the result.
 7. Verify each completed actionable leaf or direct task.
 8. Record evidence before reporting completion.
 
@@ -212,7 +218,7 @@ When execution feedback is persisted or handed back as JSON, record the same use
 
 When the work is to validate, compare, review, prove readiness, or decide whether a new behavior is actually better, Seungjeongwon treats verification itself as an execution objective.
 
-Before judging the result, list the task-specific verification perspectives needed for that objective. The perspectives are not fixed, but typical examples include:
+Before judging the result, list the smallest sufficient set of task-specific verification perspectives needed for that objective. Perspectives are not a required role roster; add or split one only when it covers a distinct material claim, causal path, or risk. Typical examples include:
 
 - contract and scope preservation
 - result quality against acceptance criteria
@@ -233,7 +239,7 @@ For each perspective, define:
 - owner or responsibility boundary
 - first action
 
-Then verify the verification plan before executing it. A perspective is weak when it is too broad, unmeasurable, disconnected from acceptance criteria, missing evidence, duplicative, or likely to produce only a subjective opinion. Weak perspectives are split, replaced, or escalated the same way weak actionable todos are.
+Then verify the verification plan before executing it. A perspective is weak when it is too broad, unmeasurable, disconnected from acceptance criteria, missing evidence, duplicative, or likely to produce only a subjective opinion. Weak perspectives are split, replaced, or escalated when that change improves causal coverage; do not expand the plan merely to make it look comprehensive.
 
 This loop is recursive:
 
@@ -380,6 +386,9 @@ Required fields in the human-facing closeout:
   work
 - verification evidence: fresh tests, builds, schema checks, runtime checks, or
   explicit evidence gaps
+- actual user-surface evidence: observed behavior on the interface, device,
+  artifact, or workflow the user will use; identify any manual substitution or
+  proxy path and do not report it as product-path execution
 - external gate state: account, App Store, CloudKit, device, production data,
   user research, or other gates that cannot be proven by local commands
 - warnings or residual risk: known warnings, noisy logs, unsupported
@@ -395,7 +404,7 @@ visible. Do not compress separate states into one "done" claim.
 Seungjeongwon reports:
 
 - `status`: `completed`, `blocked`, `invalidated`, or `failed`
-- completed leaf ids or Sejong direct scope
+- completed leaf ids or compact execution scope
 - blocked or invalidated scope with reason
 - files changed or artifacts produced
 - actionable decomposition evidence
@@ -432,6 +441,15 @@ Acceptable evidence includes:
 - manual runtime check with clear observed result
 - git status and commit evidence when closeout is requested
 - explicit blocker evidence when completion is not possible
+
+Evidence labels must preserve what was actually observed. An automated check
+does not prove the rendered or interactive surface unless it exercises that
+surface. A manual mock, hand-built artifact, or operator-assisted path is a
+manual substitution, not evidence that the product generated or delivered the
+same result. Local execution, external publication, user adoption, and business
+outcomes require separate evidence. Scale causal and regression checks to the
+changed path, its dependencies, and the claim being made; broaden them when a
+failure or uncovered risk justifies it.
 
 When a `sejong.seungjeongwon-run/v0.1-draft` artifact is used, completed todos
 must carry guardrail scores and at least one attempt. Completed runs must have no

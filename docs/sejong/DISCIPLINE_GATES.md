@@ -46,20 +46,34 @@ same failure the gate was meant to prevent.
   names the current Sejong surface and the next surface when the task is not
   complete.
 
-### Research To Uigwe
+### Terminal Deliverable And Uigwe Promotion
 
-- **Why:** Research that is gathered to choose a strategy or prepare execution is
-  not the final output; it is planning evidence.
-- **Prevents:** A research summary being mistaken for a decision, plan, or
-  completed outcome.
+- **Why:** Research and advice can be the requested result, while joint
+  intent/design discovery and unresolved implementation boundaries need Uigwe.
+- **Prevents:** A research summary being mistaken for implemented work, and a
+  useful research or recommendation deliverable being trapped behind an
+  unrequested planning ceremony.
 - **Owner:** JangYeongsil returns evidence; Sejong owns promotion; Uigwe owns the
   resulting planning contract.
 - **Force:** `route`.
-- **Behavior:** If research is explicitly for deciding, planning, comparing
-  options, or feeding Uigwe, keep `uigwe_promotion_required` pending until Uigwe
-  starts or the user narrows the request to research-only.
-- **Verification:** The output includes evidence, decision question, serious
-  options when applicable, Uigwe input summary, and `next_surface: uigwe`.
+- **Behavior:** First honor the requested terminal deliverable. Set
+  `uigwe_promotion_required` only for an explicit Uigwe/formal-planning request,
+  joint intent or design discovery, or authorized implementation with a material
+  unresolved goal, design, acceptance, authority, quality, or scope boundary.
+  Express that boundary as required route `uigwe`; context creation or update
+  derives the pending promotion gate until the current required route entry.
+  When set, the pending gate itself is unresolved authority. Keep it pending
+  across unrelated surface and history updates. Context update clears it only
+  when `--current-surface uigwe`, `--append-route uigwe`, or a
+  `--set-route-sequence` ending in `uigwe` records the current required entry,
+  or when the user explicitly changes the requested scope. Earlier Uigwe route
+  history or membership elsewhere in a set sequence does not satisfy a new
+  boundary. Research, review, comparison, recommendation, and
+  proposal-only requests do not create the gate by themselves.
+- **Verification:** A terminal evidence or advice result stays inside its
+  requested boundary. A real Uigwe route includes the supporting evidence,
+  decision question, serious options when applicable, Uigwe input summary, and
+  `next_surface: uigwe`.
 
 ### Outcome Completion
 
@@ -101,7 +115,12 @@ same failure the gate was meant to prevent.
 - **Force:** `hard` when the active context explicitly contains
   `seungjeongwon_receipt_required`; route-only mentions of `seungjeongwon` do
   not imply the receipt gate. Use `route` otherwise.
-- **Behavior:** While `seungjeongwon_receipt_required` is pending, write-like
+- **Behavior:** A goal-bearing start defaults to required route
+  `seungjeongwon` plus `seungjeongwon_receipt_required`; it does not imply
+  Uigwe. A real unresolved or explicitly requested Uigwe boundary is represented
+  separately. Adding required Uigwe to a settled required sequence containing
+  Seungjeongwon inserts it immediately before Seungjeongwon while preserving all
+  other guard order. While the receipt gate is pending, write-like
   execution is denied until the route has entered Seungjeongwon and the active
   context references a valid `sejong.seungjeongwon-run/v0.1-draft` artifact or
   an explicit `native_goal_unavailable` execution-feedback ref. Context creation
@@ -120,10 +139,13 @@ same failure the gate was meant to prevent.
 - **Owner:** JangYeongsil gathers evidence when the cause is unclear;
   Seungjeongwon owns the execution attempt loop.
 - **Force:** `hard` for failures, bugs, regressions, test failures, build
-  failures, and unexpected behavior; `advisory` for small non-risky cleanup.
+  failures, and unexpected behavior when the cause could change the fix;
+  `advisory` for small low-risk cleanup and obvious deterministic corrections.
 - **Behavior:** Before changing behavior to fix a failure, reproduce or inspect
-  the failure, identify where it originates, and state the hypothesis the fix
-  will test.
+  the failure enough to identify the causal path and state the hypothesis the
+  fix will test. Scale the investigation and regression radius to the changed
+  path, dependencies, risk, and claim; do not require exhaustive diagnosis when
+  a bounded causal check distinguishes the plausible causes.
 - **Verification:** Attempt ledger or final report records the symptom, evidence,
   root-cause hypothesis, action, verification command or observable proof, and
   result.
@@ -137,8 +159,12 @@ same failure the gate was meant to prevent.
   evidence.
 - **Force:** `hard`.
 - **Behavior:** Before claiming complete/fixed/passing/ready, identify what would
-  prove the claim, run or perform the proof, read the output, and report the
-  evidence or the exact validation gap.
+  prove the claim on the surface the user will actually use, run or perform the
+  proof, read the output, and report the evidence or the exact validation gap.
+  Distinguish automated checks, observed user-surface behavior, manual
+  substitution, external publication, and downstream product or business
+  outcomes. Match the check to the changed causal path and expand it only when a
+  new failure, dependency, or material claim justifies broader coverage.
 - **Verification:** Final report includes fresh command output summary,
   observable proof, schema check, bundle validation, manual runtime result, or
   explicit blocker evidence.
@@ -191,7 +217,9 @@ same failure the gate was meant to prevent.
 - **Owner:** Sejong owns synthesis and routing; Uigwe owns planning gates;
   Seungjeongwon owns final verification.
 - **Force:** `hard` for authority claims; `advisory` for ordinary worker quality.
-- **Behavior:** Workers receive a bounded role, scope, allowed outputs,
+- **Behavior:** Select a worker only when its distinct evidence, implementation,
+  or verification scope can improve completion time or confidence. Do not fill a
+  standard role roster by default. Workers receive a bounded role, scope, allowed outputs,
   forbidden claims, verification expectation, and stop condition. Worker output
   is evidence for the lead, not approval.
 - **Verification:** TeamExecutor checks, subagent stop checks, or lead synthesis
@@ -276,7 +304,7 @@ same failure the gate was meant to prevent.
   gathering plus optional Sillok evidence, not to a final decision or plan. Map
   dynamic workflow concepts to Codex native subagents, host-native teams,
   TeamExecutor, `manual_shadow`, or `codex_mock_workflow` tactics after an
-  approved Uigwe contract or clear direct scope, not to a new court mode. Do not
+  approved Uigwe contract or settled compact execution scope, not to a new court mode. Do not
   invoke Claude CLI, Claude API, or an external Claude workflow runtime as a
   hidden backend. Migrate the concept, mock the operational shape, or keep it
   shadowed. A workflow run may hold operational state, but the Uigwe contract
@@ -288,7 +316,7 @@ same failure the gate was meant to prevent.
   by `docs/sejong/scripts/sejong_workflow_run.py`. See
   `docs/sejong/WORKFLOW_RUN.md` for the lifecycle, promotion rules, and
   remaining-risk audit model.
-- **Ownership summary:** Sejong owns route selection and synthesis. JangYeongsil owns research evidence. Uigwe owns the normative contract and approval gates. Seungjeongwon owns execution, workflow-backend use, verification, and feedback.
+- **Ownership summary:** Sejong owns route selection and synthesis. JangYeongsil owns research evidence. Uigwe owns the normative contract and approval gates when planning is required; a settled compact execution contract may carry prior approvals directly. Seungjeongwon owns execution, workflow-backend use, verification, and feedback.
 - **Deep research mapping summary:** Map `/deep-research`-style workflows to JangYeongsil evidence gathering plus optional Sillok evidence.
 - **Mapping summary:** Map `/deep-research`-style concepts to JangYeongsil evidence gathering plus optional Sillok evidence. Map dynamic workflow concepts to Codex-native or mocked Seungjeongwon and TeamExecutor tactics. In both cases, the Uigwe contract remains the source of truth and Claude runtimes are not invoked.
 - **No hidden runtime summary:** Do not invoke Claude CLI, Claude API, or an external Claude workflow runtime.
@@ -350,7 +378,10 @@ same failure the gate was meant to prevent.
   would lose an active gate or invalid run artifact.
 - **Behavior:** Runtime state belongs under
   `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` by default, not non-Sejong
-  runtime paths and not target-repo tracked paths.
+  runtime paths and not target-repo tracked paths. Long-session continuity
+  preserves the current approved objective and authorization; it refreshes
+  stale or mismatched repo, instruction-scope, evidence, and acceptance state
+  instead of inventing a new goal or repeating approvals after compaction.
 - **Verification:** Hook checks, context doctor, Seungjeongwon run checks, or
   TeamExecutor checks validate active state and keep repository `git status`
   free of unintended runtime artifacts.
@@ -402,7 +433,7 @@ mapped into Sejong surfaces:
 | Brainstorming approval | Uigwe live-session gates | Use for material design choices, not tiny exact tasks. |
 | Subagent review loops | Bounded Worker Authority | Reviewers provide evidence; lead owns synthesis. |
 | Dynamic workflow scripts | External Dynamic Workflow Adoption / Seungjeongwon backend | Useful for repeatable fan-out, cross-checking, and verification; never a new court mode or Uigwe replacement. |
-| Deep-research workflows | JangYeongsil evidence + Sillok evidence | Cited reports and claim ledgers are evidence; decision-prep research still promotes to Uigwe. |
+| Deep-research workflows | JangYeongsil evidence + Sillok evidence | Cited reports and claim ledgers are evidence; promote to Uigwe only for an actual unresolved or explicitly requested planning boundary. |
 | Worktree isolation | Durable Runtime State / execution safety | Useful tactic, not a Sejong authority requirement. |
 | Worker mailbox patterns | TeamExecutor backend | Optional runtime backend under Sejong state and lead ownership. |
 | Durable goal ledgers | Durable Runtime State | Useful ledger pattern; keep Sejong state under the Sejong runtime root. |

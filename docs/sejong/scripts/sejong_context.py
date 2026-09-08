@@ -109,6 +109,7 @@ DEFAULT_EXIT_CONDITIONS = (
     "host_conversation_ends",
 )
 SEUNGJEONGWON_RECEIPT_GATE = "seungjeongwon_receipt_required"
+UIGWE_PROMOTION_GATE = "uigwe_promotion_required"
 CONTEXT_LOCK_TIMEOUT_ENV = "SEJONG_CONTEXT_LOCK_TIMEOUT_SECONDS"
 DEFAULT_CONTEXT_LOCK_TIMEOUT_SECONDS = 2.0
 
@@ -220,6 +221,22 @@ def unique_append(values: list[str], additions: list[str]) -> list[str]:
     return result
 
 
+def add_required_routes(required_route_sequence: list[str], additions: list[str]) -> list[str]:
+    required = list(required_route_sequence)
+    for route in additions:
+        if not route:
+            continue
+        if route == "uigwe":
+            required = [item for item in required if item != "uigwe"]
+            if "seungjeongwon" in required:
+                required.insert(required.index("seungjeongwon"), "uigwe")
+            else:
+                required.append("uigwe")
+        elif route not in required:
+            required.append(route)
+    return required
+
+
 def add_goal_bearing_execution_defaults(
     required_route_sequence: list[str],
     pending_gates: list[str],
@@ -229,10 +246,28 @@ def add_goal_bearing_execution_defaults(
     required = list(required_route_sequence)
     pending = list(pending_gates)
     if goal_bearing:
-        required = unique_append(required, ["uigwe", "seungjeongwon"])
-    if "seungjeongwon" in required:
+        required = unique_append(required, ["seungjeongwon"])
         pending = unique_append(pending, [SEUNGJEONGWON_RECEIPT_GATE])
     return required, pending
+
+
+def synchronize_uigwe_promotion_gate(
+    pending_gates: list[str],
+    *,
+    require_uigwe_now: bool,
+    uigwe_entry_recorded: bool,
+) -> list[str]:
+    if uigwe_entry_recorded:
+        return [gate for gate in pending_gates if gate != UIGWE_PROMOTION_GATE]
+    if require_uigwe_now:
+        pending = list(pending_gates)
+        if UIGWE_PROMOTION_GATE not in pending:
+            if SEUNGJEONGWON_RECEIPT_GATE in pending:
+                pending.insert(pending.index(SEUNGJEONGWON_RECEIPT_GATE), UIGWE_PROMOTION_GATE)
+            else:
+                pending.append(UIGWE_PROMOTION_GATE)
+        return pending
+    return list(pending_gates)
 
 
 def coerce_ref_item(item: Any) -> str | None:
@@ -411,12 +446,17 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--projection-profile", choices=sorted(PROJECTION_PROFILES))
     start.add_argument("--current-surface", default="sejong", choices=sorted(SURFACES))
     start.add_argument("--route", action="append", dest="route_sequence")
-    start.add_argument("--required-route", action="append", dest="required_route_sequence")
+    start.add_argument(
+        "--required-route",
+        action="append",
+        dest="required_route_sequence",
+        help="Require a route. Requiring Uigwe adds its promotion gate until route entry.",
+    )
     start.add_argument("--pending-gate", action="append", dest="pending_gates")
     start.add_argument(
         "--goal-bearing",
         action="store_true",
-        help="Mark an outcome-completion workflow; adds Uigwe -> Seungjeongwon and the receipt gate.",
+        help="Mark an outcome-completion workflow; adds Seungjeongwon and the receipt gate.",
     )
     start.add_argument("--protected-path", action="append", dest="protected_paths")
     start.add_argument("--allowed-direct-change-type", action="append", dest="allowed_direct_change_types")
@@ -430,14 +470,27 @@ def build_parser() -> argparse.ArgumentParser:
     update.add_argument("--current-surface", choices=sorted(SURFACES))
     update.add_argument("--append-route", action="append", dest="append_routes")
     update.add_argument("--set-route-sequence", action="append", dest="set_route_sequence")
-    update.add_argument("--add-required-route", action="append", dest="add_required_routes")
+    update.add_argument(
+        "--add-required-route",
+        action="append",
+        dest="add_required_routes",
+        help="Add a required route. Adding Uigwe adds its promotion gate until route entry.",
+    )
     update.add_argument("--add-pending-gate", action="append", dest="add_pending_gates")
     update.add_argument(
         "--require-seungjeongwon-receipt",
         action="store_true",
         help="Require a Seungjeongwon execution receipt before write-like execution.",
     )
-    update.add_argument("--clear-pending-gate", action="append", dest="clear_pending_gates")
+    update.add_argument(
+        "--clear-pending-gate",
+        action="append",
+        dest="clear_pending_gates",
+        help=(
+            "Clear a pending gate. Clearing uigwe_promotion_required before Uigwe entry also removes "
+            "the unsatisfied Uigwe required route."
+        ),
+    )
     update.add_argument("--add-protected-path", action="append", dest="add_protected_paths")
     update.add_argument("--objective-id")
     update.add_argument("--add-objective-ref", action="append", dest="add_objective_refs")
@@ -516,9 +569,14 @@ def start_context(args: argparse.Namespace) -> int:
     repo_id = args.repo_id or repo_slug(repo_root)
     route_sequence = args.route_sequence or [args.current_surface]
     required_route_sequence, pending_gates = add_goal_bearing_execution_defaults(
-        args.required_route_sequence or [],
+        add_required_routes([], args.required_route_sequence or []),
         args.pending_gates or [],
         goal_bearing=args.goal_bearing,
+    )
+    pending_gates = synchronize_uigwe_promotion_gate(
+        pending_gates,
+        require_uigwe_now="uigwe" in required_route_sequence,
+        uigwe_entry_recorded="uigwe" in route_sequence,
     )
     session_id = args.session_id or f"session-{run_id}"
     repo_roots = [repo_root, *(resolve_path(path) for path in (args.additional_repo_roots or []))]
@@ -585,6 +643,11 @@ def load_context_argument(path: str | None, session_id: str | None = None) -> tu
 def update_context(args: argparse.Namespace) -> int:
     _, context = load_context_argument(args.context, args.session_id)
     loaded_revision = int(context.get("context_revision", 0))
+    uigwe_entry_recorded = (
+        args.current_surface == "uigwe"
+        or "uigwe" in (args.append_routes or [])
+        or bool(args.set_route_sequence and args.set_route_sequence[-1] == "uigwe")
+    )
     if args.current_surface:
         context["current_surface"] = args.current_surface
     if args.set_route_sequence:
@@ -592,8 +655,15 @@ def update_context(args: argparse.Namespace) -> int:
     if args.append_routes:
         context["route_sequence"] = unique_append(context.get("route_sequence", []), args.append_routes)
     if args.add_required_routes:
-        context["required_route_sequence"] = unique_append(
-            context.get("required_route_sequence", []), args.add_required_routes
+        context["required_route_sequence"] = add_required_routes(
+            context.get("required_route_sequence", []),
+            args.add_required_routes,
+        )
+    if "uigwe" in (args.add_required_routes or []) or uigwe_entry_recorded:
+        context["pending_gates"] = synchronize_uigwe_promotion_gate(
+            context.get("pending_gates", []),
+            require_uigwe_now="uigwe" in (args.add_required_routes or []),
+            uigwe_entry_recorded=uigwe_entry_recorded,
         )
     if args.add_pending_gates:
         context["pending_gates"] = unique_append(context.get("pending_gates", []), args.add_pending_gates)
@@ -606,7 +676,12 @@ def update_context(args: argparse.Namespace) -> int:
         )
     if args.clear_pending_gates:
         clear = set(args.clear_pending_gates)
+        uigwe_gate_was_pending = UIGWE_PROMOTION_GATE in context.get("pending_gates", [])
         context["pending_gates"] = [gate for gate in context.get("pending_gates", []) if gate not in clear]
+        if UIGWE_PROMOTION_GATE in clear and uigwe_gate_was_pending and not uigwe_entry_recorded:
+            context["required_route_sequence"] = [
+                route for route in context.get("required_route_sequence", []) if route != "uigwe"
+            ]
     if args.add_protected_paths:
         context["protected_paths"] = unique_append(context.get("protected_paths", []), args.add_protected_paths)
     if args.objective_id:

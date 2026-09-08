@@ -45,6 +45,33 @@ class InstallSejongTests(unittest.TestCase):
         self.assertIn("King Sejong Codex Guidance", result.stdout)
         self.assertIn("Always treat King Sejong as available", result.stdout)
         self.assertIn("Do not use non-Sejong runtime paths as Sejong state.", result.stdout)
+        self.assertIn("A complete brief is an output of Uigwe", result.stdout)
+        self.assertIn("actual user path", result.stdout)
+
+    def test_user_scope_replaces_only_managed_guidance_and_is_repeatable(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            codex_home = Path(tmp)
+            agents_path = codex_home / "AGENTS.md"
+            user_before = "# 개인 작업 원칙\n자연스러운 한국어로 보고한다.\n"
+            user_after = "# 모델 선택\n작업에 맞는 모델을 선택한다.\n"
+            agents_path.write_text(
+                user_before
+                + "<!-- BEGIN King Sejong Codex Guidance -->\nobsolete managed text\n"
+                + "<!-- END King Sejong Codex Guidance -->\n"
+                + user_after,
+                encoding="utf-8",
+            )
+            expected = run_installer(["--print-codex-guidance"])
+            self.assertEqual(expected.returncode, 0, expected.stderr)
+            for _ in range(2):
+                installed = run_installer(["--scope", "user", "--force"], codex_home=codex_home)
+                self.assertEqual(installed.returncode, 0, installed.stderr)
+                actual = agents_path.read_text(encoding="utf-8")
+                self.assertIn(user_before, actual)
+                self.assertIn(user_after, actual)
+                self.assertNotIn("obsolete managed text", actual)
+                self.assertEqual(actual.count("<!-- BEGIN King Sejong Codex Guidance -->"), 1)
+                self.assertIn(expected.stdout.strip(), actual)
 
     def test_user_scope_writes_managed_agents_guidance_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

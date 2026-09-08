@@ -10,7 +10,7 @@ King Sejong is the full court-style orchestration system. `Sejong` is the lead r
 
 It exists because real user requests often say "research this", "think through this", "is this worth making", or "use Uigwe/의궤 for this" before the correct planning entry mode is known.
 
-Sejong keeps Uigwe focused on its strongest job: converting clarified intent, evidence, and decisions into durable planning artifacts. Sejong owns the larger work loop around Uigwe: gather evidence, decide whether planning is useful, invoke Uigwe when needed, execute the selected work, verify the outcome, and record evidence.
+Sejong keeps Uigwe focused on its strongest job: helping the user discover unclear intent and design, then turning the result into a durable outcome and execution contract. A vague thought is a valid Uigwe input; a complete brief is an output. Sejong owns the larger work loop around Uigwe: gather evidence, decide whether collaborative clarification or formal planning is useful, invoke Uigwe when needed, execute authorized work, verify the outcome, and record evidence.
 
 This file is Sejong's routing contract. Sejong is not a new planning protocol and not a replacement for Uigwe. The internal surface ids are `jangyeongsil`, `jiphyeonjeon`, `uigwe`, `seungjeongwon`, and `sejong-direct`.
 
@@ -36,12 +36,12 @@ Use `King Sejong` when referring to the total orchestration system: Sejong lead 
 | `Sejong` | chained or `sejong-direct` | All-in-one front door for research, planning, execution, verification, and evidence |
 | `JangYeongsil` / `장영실` | `jangyeongsil` | Research, experiment, evidence gathering, and unknown discovery |
 | `Jiphyeonjeon` / `집현전` | `jiphyeonjeon` | Discussion, debate, option comparison, recommendation, and decision support |
-| `Uigwe` / `의궤` | `uigwe` | Formal planning with Uigwe modes and artifacts |
+| `Uigwe` / `의궤` | `uigwe` | Joint intent/design discovery and formal outcome-contract planning |
 | `Seungjeongwon` / `승정원` | `seungjeongwon` | Native execution and verification after a scope or bundle is approved |
 | `Sillok` / `실록` | evidence record | Scorecards, promotion notes, proof, and decision history |
 | `Danjong` / `단종` | retired option | Retired, rejected, or deposed options |
 
-Uigwe is the whole formal planning surface. It has entry modes such as `full`, `design-to-plan`, and `decompose-only`, but the Sejong surface name remains `uigwe`.
+Uigwe is the whole joint intent/design discovery and formal planning surface. It has entry modes such as `full`, `design-to-plan`, and `decompose-only`, but the Sejong surface name remains `uigwe`.
 
 LazyCodex-style UX profiles such as `compact/default`, `expanded/detail`, and
 `bounded-specialist-evidence` are not Sejong surfaces. They are presentation and
@@ -56,36 +56,36 @@ The three pre-execution surfaces are intentionally different:
 
 - `JangYeongsil`: use when facts, history, evidence, external constraints, or experiments are still unclear. Its job is to discover and separate known, inferred, and unknown material.
 - `Jiphyeonjeon`: use when enough material exists to hold a discussion, but the direction is not settled. Its job is to weigh options, surface trade-offs, argue for and against paths, reject weaker alternatives, and recommend what to do next.
-- `Uigwe`: use when the direction is ready to become a durable planning bundle. Its job is not open-ended discussion; it turns clarified intent or a selected design into formal artifacts and Seungjeongwon handoff leaves.
+- `Uigwe`: use when the user wants to discover intent or design together, when a material goal, design, scope, authority, quality, or acceptance boundary is unresolved, or when a durable planning bundle is requested. It investigates context, offers informed options and reasons, asks for material user choices, and turns the resulting intent or design into formal artifacts and Seungjeongwon handoff leaves.
 
-In short: `JangYeongsil` gathers the evidence, `Jiphyeonjeon` discusses and decides, and `Uigwe` writes the formal plan.
+These modes may cooperate: `JangYeongsil` gathers evidence, `Jiphyeonjeon` challenges consequential options, and `Uigwe` leads joint intent/design discovery and writes the resulting contract.
 
 `Jiphyeonjeon` is not mandatory in every Sejong chain. Use it as a short deliberation pass only when the gathered evidence leaves a meaningful choice.
 
 Route decisions also follow the why-based discipline gates in
 [DISCIPLINE_GATES.md](DISCIPLINE_GATES.md). In particular, Sejong remains the
-router-first authority when a Sejong workflow is active; research that feeds a
-decision routes to Uigwe, outcome-completion work continues to execution and
+router-first authority when a Sejong workflow is active; requested terminal
+deliverables stop at their stated boundary, outcome-completion work continues to execution and
 verification, and subordinate runtimes or skills stay below the selected court
 surface.
 
-## Research-To-Uigwe Promotion Gate
+## Terminal Deliverable And Uigwe Promotion Gate
 
-Research can stop at `JangYeongsil` only when the user asks for evidence by itself: source history, facts, examples, status, or a lightweight situation read with no downstream decision or plan.
+First determine the terminal deliverable from the current request and prior authorization. Research, source history, facts, examples, status, review, comparison, recommendation, and proposal-only work may stop with that requested result even when the user may use it in a later decision or plan.
 
-Advice can stop at `Jiphyeonjeon` only when the user asks for a recommendation, judgment, or comparison by itself and does not ask to concretize, plan, implement, verify, or otherwise achieve the recommended outcome. The advice output should name the recommendation, rejected options, risks, confidence, and what approval or extra detail would be needed to enter Uigwe.
+Advice at `Jiphyeonjeon` may stop with a recommendation, judgment, or comparison when application or formal planning was not requested. The output should name the recommendation, rejected options, risks, confidence, and the material decision or evidence needed only if the user later chooses to continue.
 
-If the user approves a Jiphyeonjeon recommendation, asks to make it concrete, or asks to carry it out, the advice is no longer the terminal output. Treat the approved recommendation as Uigwe input and route to Uigwe before Seungjeongwon execution.
+If the user approves a Jiphyeonjeon recommendation and asks to carry it out, preserve that approval. Route directly to Seungjeongwon through a compact execution contract when scope and acceptance criteria are settled. Enter Uigwe when the user asks to explore the intent or design together, requests formal planning, or a material goal, design, acceptance, authority, quality, or scope boundary still needs the user's choice.
 
-When the user asks for research to decide what to do next, choose a strategy, compare market or product options, or prepare a future plan, the research result is not the conclusion. Treat it as pre-Uigwe evidence:
+When Uigwe is required, research and deliberation are supporting evidence rather than substitute approvals:
 
 ```text
 JangYeongsil research -> Jiphyeonjeon option judgment when choices remain -> Uigwe planning
 ```
 
-Typical trigger phrases include "what should we try", "how should we get users", "analyze the current situation before planning", "research before Uigwe", "compare options so I can decide", and equivalent Korean phrasing such as "뭘 시도해볼지", "현황 분석하고 선택지 비교", or "의궤 전에 리서치".
+Typical triggers include “help me figure out what we are trying to make,” “work through the design with me,” “research before Uigwe,” a direct Uigwe invocation, or authorized implementation whose material planning boundary remains unresolved. “What should we try?”, “compare options,” and similar advice requests do not alone require Uigwe.
 
-For these requests, the Sejong lead must set or preserve a pending gate named `uigwe_promotion_required` in active context until Uigwe starts or the user explicitly converts the request to research-only. The final JangYeongsil or Jiphyeonjeon output should provide:
+Only for these actual Uigwe requirements, the Sejong lead sets or preserves `uigwe_promotion_required`. The gate itself remains unresolved authority until context update records the current required Uigwe entry and clears it, or the user explicitly changes the requested scope. Earlier Uigwe route history does not satisfy a newly recorded boundary. The supporting JangYeongsil or Jiphyeonjeon output should provide:
 
 - evidence and source refs
 - serious options and rejected options when applicable
@@ -93,7 +93,7 @@ For these requests, the Sejong lead must set or preserve a pending gate named `u
 - the recommended Uigwe entry mode and input summary
 - `next_surface: uigwe`
 
-It must not claim final strategic conclusion, start Seungjeongwon execution, or perform Sejong-direct implementation before Uigwe promotion. If the user explicitly asks for "research only", do not create the promotion gate and do not force Uigwe.
+It must not claim the user's decision, start Seungjeongwon execution, or perform Sejong-direct implementation before the real Uigwe boundary is resolved. Do not create the promotion gate for research, advice, review, comparison, or proposal-only work.
 
 ## Outcome Completion Gate
 
@@ -122,18 +122,18 @@ Seungjeongwon from evidence, ambiguity, risk, and completion requirements.
 
 Use this entry when the user asks for `장기실행`, `긴 세션`, `끝까지`, `long-session`, "keep going until it is verified", or an equivalent persistent outcome loop.
 
-This entry is a routing and evidence contract, not a request to make a massive prompt:
+This entry is a routing and evidence contract:
 
 ```text
-fresh goal check -> task-class classification -> JangYeongsil evidence when needed -> Jiphyeonjeon challenge when useful -> Uigwe pass criteria -> Seungjeongwon verified execution
+current objective and authorization check -> terminal deliverable and task-class classification -> evidence or selective challenge when useful -> Uigwe only for an unresolved planning boundary or requested formal plan -> Seungjeongwon for authorized verified execution
 ```
 
-A stale active context from another install, cleanup, or execution run does not satisfy a new goal. If the objective, repo, acceptance criteria, task class, or evidence basis changes, refresh the active Sejong context before continuing.
+A current approved objective remains authoritative across a long session. Refresh the active context when its objective, repo, acceptance criteria, task class, instruction scope, or evidence basis is stale or mismatched; do not invent a fresh goal or repeat approvals solely because time passed or context was compacted.
 
 Classify the request into the smallest useful task class:
 
 - `strategy-research-synthesis`: strategy, research synthesis, marketing, planning, or multi-source artifact work where evidence breadth and synthesis are likely quality drivers.
-- `code-review-defect-analysis`: code review, bug hunt, readiness review, failure analysis, or regression diagnosis where concrete failure modes matter more than broad process structure. Require a defect-first Jiphyeonjeon critic lane before Uigwe handoff.
+- `code-review-defect-analysis`: code review, bug hunt, readiness review, failure analysis, or regression diagnosis where concrete failure modes matter more than broad process structure. Use a defect-first critic lane when it can reveal a distinct causal failure; do not force Uigwe when the requested terminal deliverable is the review or diagnosis.
 - `small-artifact`: short content or artifact work where long-session overhead may outweigh value.
 - `simple-direct`: exact commands, small factual answers, deterministic regeneration under an approved contract, or obvious non-behavioral edits. Keep these on Sejong direct.
 
@@ -141,7 +141,7 @@ Long-session promotion is task-class gated. A win in one class does not promote 
 
 ## Uigwe-To-Seungjeongwon Handoff Gate
 
-Uigwe is the boundary before goal-bearing execution. Once Sejong has entered Uigwe for an outcome-completion request, the next execution surface is Seungjeongwon after the Uigwe contract is handoff-ready.
+When Uigwe is required or explicitly selected before goal-bearing execution, it is the planning boundary. Once Sejong has entered Uigwe for an outcome-completion request, the next execution surface is Seungjeongwon after the Uigwe contract is handoff-ready. Settled authorized implementation may start Seungjeongwon from a compact execution contract without synthetic Uigwe ceremony.
 
 Do not skip from JangYeongsil or Jiphyeonjeon directly to Seungjeongwon for write-like execution when Uigwe promotion is pending. Do not skip from handoff-ready Uigwe output to Sejong direct edits merely because the first implementation step is obvious.
 
@@ -152,10 +152,11 @@ The allowed exits from Uigwe before Seungjeongwon are:
 - Uigwe discovers that the selected direction is not ready and re-enters JangYeongsil, Jiphyeonjeon, or an earlier Uigwe stage
 - the task is reclassified as a small exact non-goal operation, such as a one-command check or non-behavioral typo/link correction
 
-For goal-bearing implementation, cleanup, validation, artifact creation, or shipping work, the default route is:
+For goal-bearing implementation, cleanup, validation, artifact creation, or shipping work, select one of these routes from the actual planning state:
 
 ```text
-Uigwe handoff-ready contract -> Seungjeongwon actionable decomposition -> execution -> verification
+settled approved scope -> compact execution contract -> Seungjeongwon actionable decomposition -> execution -> verification
+unresolved or explicitly requested Uigwe boundary -> Uigwe handoff-ready contract -> Seungjeongwon actionable decomposition -> execution -> verification
 ```
 
 ## Recursive Goal Planning
@@ -249,6 +250,13 @@ Jiphyeonjeon decision -> Uigwe handoff-contract planning -> Seungjeongwon action
 
 Use `Jiphyeonjeon` when the policy, behavior, naming, or boundary decision is not already settled. Use `Uigwe` to turn the selected direction into handoff leaves with done criteria, verification bar, and re-entry triggers. Use `Seungjeongwon` to decompose those leaves into actionable work, make the edits, and prove the guardrails pass.
 
+When an approved material self-modification contract already contains the
+decision rationale, scope, pass criteria, and handoff boundaries, cite and
+validate that evidence through the required Jiphyeonjeon and Uigwe route rather
+than repeating interviews or asking for the same approval. Reopen live debate
+or clarification only when the contract leaves a material decision unresolved
+or new counterevidence invalidates it.
+
 `Sejong direct` remains allowed for narrow non-behavioral maintenance, such as typo fixes, broken links, formatting-only edits, deterministic scorecard regeneration, or mechanical corrections that do not change routing, planning, execution, installer, validation, or artifact-storage behavior.
 
 Hook-backed environments should treat the material self-modification list as `protected_paths` in the active context checkpoint. A supported `PreToolUse` or `PermissionRequest` hook may deny protected edits until the route sequence contains `jiphyeonjeon`, `uigwe`, and `seungjeongwon` in order.
@@ -294,7 +302,7 @@ Use bounded workers when independent work can run in parallel without blocking t
 
 - `JangYeongsil`: split evidence gathering across independent sources, docs, repo history, or external references.
 - `Jiphyeonjeon`: compare serious options through separate advocate, critic, or specialist perspectives before the lead agent synthesizes a recommendation. When the decision benefits from real debate, use a bounded persuasion round where workers answer each other's objections; close on apparent convergence or after 30 minutes of deadlock.
-- `Uigwe`: keep live-session approval gates with the lead agent; use workers only for bounded side research, preflight, readiness, risk, dependency, scope, or verification checks that do not decide the gate. Uigwe worker use is plan validation, not debate over the selected direction.
+- `Uigwe`: keep joint intent/design discovery, live-session questions, and approval gates with the lead agent. Use workers for bounded evidence, option critique, preflight, readiness, risk, dependency, scope, or verification checks that support the discovery without deciding the gate. Jiphyeonjeon helper debate returns options and objections to Uigwe; it does not own Uigwe's synthesis.
 - `Seungjeongwon`: split implementation or verification across disjoint file scopes, test surfaces, or review lanes.
 - `Sillok`: have a verifier collect evidence while execution continues, then let the lead agent decide what belongs in the final record.
 
@@ -385,7 +393,7 @@ Research, discussion, and planning may overlap only in this limited pipeline:
 2. `Jiphyeonjeon` may begin once there is enough stable material for real comparison, but its final recommendation waits for blocking research lanes.
 3. `Uigwe` may run preflight checks once a likely direction exists, including artifact inventory, mode-readiness checks, and validation planning while JangYeongsil or Jiphyeonjeon helper calls continue.
 4. Uigwe formal gates and final packets wait for lead-owned synthesis, blocking evidence, the final Jiphyeonjeon recommendation when one is needed, and any live-session approval gate.
-5. Execution waits for a clear direct task, approved scope, or validated bundle. If `uigwe_promotion_required` is pending, execution also waits for Uigwe to start or for the user to explicitly cancel the promotion requirement.
+5. Execution waits for a clear direct task, approved scope, or validated bundle. If `uigwe_promotion_required` is pending, execution also waits until context update records the current required Uigwe entry and clears the gate, or the user explicitly cancels that promotion requirement.
 
 ## Internal Structure
 
@@ -396,7 +404,7 @@ Sejong actively owns the end-to-end loop and then calls the selected surface:
 | `Sejong` | All-in-one front door | choose the next surface, execute it, and continue when the user asked for an outcome |
 | `JangYeongsil` | Research surface | gather evidence and produce a research note |
 | `Jiphyeonjeon` | Discussion and decision surface | compare options, argue trade-offs, and produce a decision note |
-| `Uigwe` | Formal planning protocol | run `full`, `design-to-plan`, or `decompose-only` |
+| `Uigwe` | Joint intent/design discovery and formal planning protocol | run `full`, `design-to-plan`, or `decompose-only` |
 | `Seungjeongwon` | Native execution surface | execute and verify an approved scope or validated bundle |
 | `Sillok` | Evidence records | update scorecards, promotion notes, or decision history |
 | `Danjong` | Rejected or retired option semantics | record rejection or retirement inside a decision or evidence artifact |
@@ -437,7 +445,7 @@ Required output:
 
 This surface is useful for the user's broad "만능/리서치" usage because it prevents early packet generation from hiding weak evidence.
 
-If the research was requested to support a decision, strategy, or later Uigwe plan, JangYeongsil must return decision-ready evidence and `next_surface: uigwe` or `next_surface: jiphyeonjeon`; it must not turn the research note into a final conclusion.
+If the current request also asks for a decision, joint discovery, formal planning, or execution, JangYeongsil returns decision-ready evidence to the next required surface. Otherwise the research note may be the requested final deliverable. Potential later use does not create a current Uigwe obligation.
 
 ### `Jiphyeonjeon`
 
@@ -464,13 +472,13 @@ Required output:
 - next surface
 
 This surface should be used before Uigwe planning when the main uncertainty is strategic rather than structural.
-If the missing part is evidence, route back to `JangYeongsil`; if the choice is settled and the next job is artifact generation, route to `Uigwe`.
+If the missing part is evidence, route back to `JangYeongsil`; if the choice is settled and the user wants formal planning artifacts, route to `Uigwe`.
 If the user only asked for advice, Jiphyeonjeon may stop at a recommendation. If implementation is approved, preserve that approval and use the outcome-completion rule above; do not repeat settled planning questions.
-Skip this surface when research already settles the direction, when the task is a small Sejong-direct command, or when a goal-bearing implementation task should enter Uigwe without strategic debate.
+Skip this surface when research already settles the direction, when the task is a small Sejong-direct command, or when an authorized implementation task can enter Seungjeongwon from a settled compact contract.
 
 ### `Uigwe`
 
-Use when the desired output is a canonical Uigwe bundle, or when a goal-bearing implementation request needs a durable execution contract before Seungjeongwon.
+Use when the user wants to discover intent or design together, the desired output is a canonical Uigwe bundle, or an authorized implementation request has a material unresolved planning boundary. A rough thought is sufficient input; Uigwe develops the complete brief with the user instead of requiring one first.
 
 Mode resolution:
 
@@ -504,9 +512,10 @@ This protects Uigwe from performative overhead for one-command checks, simple ex
 | "실록에 남겨", "Sillok evidence" | evidence or promotion record | none |
 | "단종 처리해", "Danjong archive" | `Jiphyeonjeon` rejected or retired option | none yet |
 | "조사해봐", "히스토리 긁어봐", "근거 확인해봐" with no downstream decision | `JangYeongsil` | none yet |
-| "현황 분석하고 뭘 시도할지 비교해줘", "리서치 결과로 의궤하고 싶어", "research before deciding/planning" | `JangYeongsil` -> `Jiphyeonjeon` if options remain -> `Uigwe` | resolved by evidence; keep `uigwe_promotion_required` pending until Uigwe starts |
+| "현황 분석하고 뭘 시도할지 비교해줘", "research and recommend options" | `JangYeongsil` -> `Jiphyeonjeon` if options remain, then stop at the requested recommendation | none unless the user requests planning or execution |
+| "리서치 결과로 의궤하고 싶어", "research before Uigwe" | `JangYeongsil` -> `Jiphyeonjeon` if material options remain -> `Uigwe` | resolved by evidence; keep `uigwe_promotion_required` pending until the current required Uigwe entry is recorded |
 | "어떤 선택이 맞아?", "분화할까?", "할 만해?", "논의해보자" | `Jiphyeonjeon` | none yet |
-| vague product or system goal | `Uigwe` | `full` |
+| vague thought, product tension, opportunity, or system goal needing joint discovery | `Uigwe` | `full` |
 | clarified intent, no approved design | `Uigwe` | `design-to-plan` |
 | approved design or packet set needing formal decomposition | `Uigwe` | `decompose-only` |
 | existing bundle, now execute | `Seungjeongwon` | existing bundle |
@@ -523,8 +532,9 @@ Router quality should be checked with concrete examples, not vibes.
 For this public install package, use a small scenario list when changing the router:
 
 - evidence-only request -> `JangYeongsil`
+- research plus recommendation only -> `JangYeongsil`, optional `Jiphyeonjeon`, then stop at the recommendation
 - option comparison -> `Jiphyeonjeon`
-- vague build goal -> `Uigwe`
+- vague thought or build goal needing joint discovery -> `Uigwe`
 - validated bundle execution -> `Seungjeongwon`
 - exact non-behavioral typo or link correction -> `Sejong direct`
 - implementation with approved scope and acceptance criteria -> compact execution contract -> `Seungjeongwon`
@@ -535,7 +545,7 @@ Run JSON and example-bundle checks when the router change touches schemas, packe
 
 ## Improvement Loop
 
-Use Uigwe itself to improve the router:
+For a router change with unresolved behavior or acceptance boundaries, use Uigwe to establish the contract. For an already approved change with settled criteria, reuse that contract and begin with step 3 through Seungjeongwon:
 
 1. Write or update a Uigwe planning bundle for the router change.
 2. State the evaluation method and pass criteria in `spec.md`.

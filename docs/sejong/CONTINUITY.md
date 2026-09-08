@@ -39,6 +39,28 @@ It must store refs to Sillok traces, ambiguity registers, Uigwe packets,
 Seungjeongwon run artifacts, route decisions, or other runtime artifacts instead
 of copying raw logs or private evidence.
 
+## Historical Rationale Reuse
+
+Continuity preserves enough context to understand a prior decision instead of
+flattening it into a timeless instruction. Keep the full rationale in its owned
+decision, Uigwe, Sillok, or execution artifact and reference it from the
+capsule. The reusable record should identify:
+
+- the situation and problem in which the decision arose
+- the desired outcome and why it mattered
+- whether the item was an observation, hypothesis, proposal, user-approved
+  decision, or durable principle
+- serious counterevidence and rejected alternatives
+- later correction, withdrawal, or superseding decision
+- source refs, applicable project or task scope, freshness, and evaluation case
+
+Reuse a prior decision only when its source, scope, and applicability match the
+current task. Temporary counts, dates, model choices, local tactics, and
+one-session preferences keep their original lifetime unless the user explicitly
+promoted them. A newer conflicting instruction supersedes the older one only in
+the scope it actually covers; preserve the earlier rationale as history rather
+than executing it.
+
 ## Projection Profiles
 
 Hooks inject a projection derived from the capsule, never the full capsule by
@@ -68,6 +90,9 @@ Continuation should refresh or reject the capsule when:
 
 - `repo_root` does not cover the current workspace
 - `objective` or `task_class` changes
+- an instruction's source, project scope, task scope, or stated lifetime no
+  longer covers the current work
+- a referenced decision was corrected, withdrawn, or superseded
 - a source artifact ref is missing, unreadable, or invalid
 - a write-like action depends on stale verification
 - privacy or security risk flags require fresh review
