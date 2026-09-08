@@ -77,7 +77,13 @@ User-scope install writes a compact generic Codex guidance block to `${CODEX_HOM
 
 The installer also owns explicit update maintenance. `--check-updates` fetches the configured upstream and reports whether the King Sejong source checkout is up to date, behind, ahead, dirty, or diverged. `--auto-update` refuses dirty or diverged source checkouts, uses `git pull --ff-only` when updates are available, then refreshes the selected managed install with force semantics and normal verification. Hooks must not silently self-update King Sejong during ordinary session start.
 
-The skill files stay short by design. They load the detailed contracts from the installed Sejong docs only when needed.
+The skill files stay short by design. Sejong first loads the canonical,
+high-frequency decision table in [ROUTING_ENTRY.md](ROUTING_ENTRY.md), then
+loads only the selected court skill and detail contracts whose trigger is
+present. The full [ROUTER.md](ROUTER.md) is a selective reference for
+multi-surface lifecycle, helpers, workers, recursive goals, protected
+self-modification, and failure recovery; it is not a mandatory read for every
+ordinary route classification.
 
 ## Multisession Runtime Core
 
@@ -101,7 +107,7 @@ For normal use:
 1. Read [RUNTIME_CONTRACT.md](RUNTIME_CONTRACT.md) for the Codex-native runtime contract.
 2. Read [ROLE_SEPARATION.md](ROLE_SEPARATION.md) for court-mode boundaries.
 3. Read [DISCIPLINE_GATES.md](DISCIPLINE_GATES.md) for why-based force levels and quality gates.
-4. Read [ROUTER.md](ROUTER.md) to understand Sejong's lanes.
+4. Read [ROUTING_ENTRY.md](ROUTING_ENTRY.md) for Sejong's canonical precedence and four route classes; open the relevant sections of [ROUTER.md](ROUTER.md) only when a selected route needs detailed lifecycle, helper, worker, or failure rules.
 5. Read [PROTOCOL.md](PROTOCOL.md) to understand Uigwe's planning model.
 6. Read [WRAPPER.md](WRAPPER.md) if you want machine-consumable packet flow.
 7. Read [ARTIFACT_STORAGE.md](ARTIFACT_STORAGE.md) to understand where research, planning, runtime, and evidence artifacts are stored.

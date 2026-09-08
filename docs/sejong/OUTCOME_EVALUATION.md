@@ -44,6 +44,23 @@ Use [product_evidence_gate.py](scripts/product_evidence_gate.py) for that field-
 
 ## Artifact Formats
 
+Before a paired comparison, freeze the input, rubric, baseline/candidate labels,
+and treatment separately. Reuse relevant prior cases when their inputs and
+evaluation purpose still apply. Each run record must identify the source commit
+and dirty-content digest, exact instruction/input hashes, configured source and
+dependency paths, requested model/reasoning, and host-observed model/usage when
+available. Mark unavailable observations explicitly.
+
+For installed-workflow claims, also bind the installed snapshot and content
+identity, Core identity, actual entry path, and raw execution evidence. A source
+checkout alone does not establish which installed runtime executed. For a
+text-only smoke, label those runtime fields not exercised and record any shared
+host instructions or unverified isolation; do not describe it as a product run
+or infer a causal prompt/model quality gain from it. Keep manual assistance and
+input transformations visible. Freeze independent blind scores before revealing
+the labels; retain failed runs and ties. Contract and installation repairs prove
+the repaired behavior only, not a general outcome-quality promotion.
+
 Task file:
 
 ```json

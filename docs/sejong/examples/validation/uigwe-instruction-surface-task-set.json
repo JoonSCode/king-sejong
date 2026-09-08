@@ -9,24 +9,34 @@
   "scenarios": [
     {
       "id": "instruction-routing-modes",
-      "title": "Uigwe routing modes remain visible",
+      "title": "Sejong entry routes selectively while Uigwe modes remain visible",
       "profile": "instruction",
       "input_shape": "instruction-surface check",
-      "prompt": "Check that the Uigwe skill still exposes trigger rules, non-trigger rules, and accepted modes.",
+      "prompt": "Check that Sejong starts from one short canonical precedence and four-route table, loads only selected court contracts, preserves authority and completion gates, and leaves Uigwe trigger and mode rules visible in its own skill.",
       "expected_mode": "none",
       "expected_artifacts": [
-        ".agents/skills/uigwe/SKILL.md"
+        ".agents/skills/uigwe/SKILL.md",
+        ".agents/skills/sejong/SKILL.md",
+        "docs/sejong/ROUTING_ENTRY.md",
+        "docs/sejong/ROUTER.md"
       ],
       "expected_behavior": [
         "auto, full, design-to-plan, and decompose-only are documented",
-        "Do Not Use When guidance remains visible"
+        "Do Not Use When guidance remains visible",
+        "the mandatory Sejong entry preserves explicit invocation, active-goal continuity, protected self-modification, terminal deliverables, unresolved Uigwe boundaries, and Seungjeongwon receipt gates",
+        "research or advice, settled authorized execution, materially unresolved execution, and explicit Uigwe or formal planning are distinguished",
+        "selected court and cross-cutting contracts load only when their trigger is present",
+        "the score reports the measured pre-change and current mandatory first-read word counts"
       ],
       "forbidden_behavior": [
         "mode names disappearing from the skill surface",
-        "planning being encouraged for direct execution tasks"
+        "planning being encouraged for direct execution tasks",
+        "loading the full Router merely to classify every ordinary request",
+        "using an aspirational fixed word budget or claiming model quality or elapsed-time improvement from reduced load scope"
       ],
       "grading_notes": [
-        "This scenario is scored by benchmark_instruction_surface.py."
+        "This scenario is scored by benchmark_instruction_surface.py.",
+        "The pre-change measurement at c401acb was 7,985 mandatory words: 1,501 in the Sejong skill and 6,484 in the full Router. The benchmark compares that measured baseline with the live skill-plus-entry count; the number is evidence, not a recommended budget."
       ]
     },
     {

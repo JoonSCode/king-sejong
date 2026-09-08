@@ -27,6 +27,7 @@ PUBLIC_README_PATH = REPO_ROOT / "README.md"
 README_KO_PATH = REPO_ROOT / "README.ko.md"
 INSTALLER_PATH = REPO_ROOT / "scripts" / "install-sejong.sh"
 ROUTER_PATH = SEJONG_ROOT / "ROUTER.md"
+ROUTING_ENTRY_PATH = SEJONG_ROOT / "ROUTING_ENTRY.md"
 REPO_CONTEXT_PATH = SEJONG_ROOT / "REPO_CONTEXT.md"
 PROTOCOL_PATH = SEJONG_ROOT / "PROTOCOL.md"
 RUNTIME_CONTRACT_PATH = SEJONG_ROOT / "RUNTIME_CONTRACT.md"
@@ -35,6 +36,7 @@ SEUNGJEONGWON_EXECUTOR_PATH = SEJONG_ROOT / "SEUNGJEONGWON_EXECUTOR.md"
 VALIDATION_PATH = SEJONG_ROOT / "VALIDATION.md"
 ARTIFACT_STORAGE_PATH = SEJONG_ROOT / "ARTIFACT_STORAGE.md"
 TEAM_EXECUTOR_PATH = SEJONG_ROOT / "TEAM_EXECUTOR.md"
+DELEGATION_RUNTIME_PATH = SEJONG_ROOT / "DELEGATION_RUNTIME.md"
 HOOKS_PATH = SEJONG_ROOT / "HOOKS.md"
 DISCIPLINE_GATES_PATH = SEJONG_ROOT / "DISCIPLINE_GATES.md"
 AMBIGUITY_REGISTER_PATH = SEJONG_ROOT / "AMBIGUITY_REGISTER.md"
@@ -63,6 +65,11 @@ UX_PROFILE_CONTRACT_TEST_PATH = SEJONG_ROOT / "scripts" / "test_ux_profile_contr
 UIGWE_SKILL_LINE_BUDGET = 320
 SEJONG_SKILL_LINE_BUDGET = 90
 COURT_HELPER_SKILL_LINE_BUDGET = 80
+
+# Measured at the pre-selective-loading baseline c401acb: the 1,501-word
+# Sejong front door required the 6,484-word Router on every entry. This is a
+# historical before measurement, not a recommended prompt-size budget.
+PRE_SELECTIVE_LOADING_MANDATORY_WORDS = 7_985
 
 SCENARIO_IDS = (
     "instruction-routing-modes",
@@ -141,6 +148,10 @@ def line_count(path: Path) -> int:
     return len(load_text(path).splitlines())
 
 
+def word_count(path: Path) -> int:
+    return len(load_text(path).split())
+
+
 def contains_all(text: str, needles: list[str]) -> tuple[bool, list[str]]:
     missing = [needle for needle in needles if needle not in text]
     return not missing, missing
@@ -158,8 +169,10 @@ def check(name: str, passed: bool, detail: str, *, missing: list[str] | None = N
 
 
 def evaluate_routing() -> list[dict[str, Any]]:
-    skill = load_text(UIGWE_SKILL_PATH)
-    required = [
+    uigwe_skill = load_text(UIGWE_SKILL_PATH)
+    sejong_skill = load_text(SEJONG_SKILL_PATH)
+    routing_entry = load_text(ROUTING_ENTRY_PATH)
+    required_uigwe = [
         "Use when a user explicitly invokes `uigwe`",
         "## Do Not Use When",
         "`auto`",
@@ -168,14 +181,79 @@ def evaluate_routing() -> list[dict[str, Any]]:
         "`decompose-only`",
         "Mode Resolution",
     ]
-    passed, missing = contains_all(skill, required)
+    uigwe_passed, uigwe_missing = contains_all(uigwe_skill, required_uigwe)
+
+    required_entry = [
+        "canonical first read for Sejong route selection",
+        "Follow higher-priority instructions",
+        "explicit court invocation",
+        "active Sejong workflow for the same current goal",
+        "protected",
+        "Jiphyeonjeon -> Uigwe -> Seungjeongwon",
+        "Research, review, comparison, recommendation, or proposal only",
+        "Settled, authorized implementation",
+        "Authorized implementation with a material unresolved boundary",
+        "Explicit Uigwe, joint discovery, or formal planning",
+        "Terminal research or advice",
+        "Blocking ambiguity",
+        "uigwe_promotion_required",
+        "seungjeongwon_receipt_required",
+        "prevents write-like execution",
+        "current host tool conditions permit it",
+        "user explicitly requested a",
+        "ordinary outcome authorization alone is insufficient",
+        "Routine local implementation tactics are autonomous",
+    ]
+    entry_passed, entry_missing = contains_all(routing_entry, required_entry)
+
+    required_selective_loading = [
+        "Always load `../../../docs/sejong/ROUTING_ENTRY.md` first",
+        "`../../../docs/sejong/ROUTER.md`",
+        "merely to classify an ordinary",
+        "Load the selected court skill and only the detail contracts",
+        "Selective Contract Loading",
+        "DEEP_RESEARCH.md",
+        "TEAM_EXECUTOR.md",
+        "WRAPPER.md",
+        "PROTOCOL.md",
+        "AMBIGUITY_REGISTER.md",
+        "SEUNGJEONGWON_EXECUTOR.md",
+        "HOOKS.md",
+        "DISCIPLINE_GATES.md",
+        "SECURITY.md",
+        "SILLOK_TRACE.md",
+        "REPO_CONTEXT.md",
+        "Do not load the entire Router merely to classify an ordinary request.",
+    ]
+    loading_surface = "\n".join([sejong_skill, routing_entry])
+    loading_passed, loading_missing = contains_all(loading_surface, required_selective_loading)
+
+    current_mandatory_words = word_count(SEJONG_SKILL_PATH) + word_count(ROUTING_ENTRY_PATH)
+    scope_reduced = current_mandatory_words < PRE_SELECTIVE_LOADING_MANDATORY_WORDS
     return [
         check(
             "routing_terms_present",
-            passed,
+            uigwe_passed,
             "Uigwe trigger, non-trigger, and entry-mode terms remain visible in SKILL.md.",
-            missing=missing,
-        )
+            missing=uigwe_missing,
+        ),
+        check(
+            "sejong_four_route_entry_present",
+            entry_passed,
+            "The canonical Sejong entry preserves precedence, the four route classes, continuity, and required gates.",
+            missing=entry_missing,
+        ),
+        check(
+            "sejong_selective_contract_loading_present",
+            loading_passed,
+            "Sejong loads the canonical entry first and names route-triggered detail contracts without requiring the full Router for ordinary classification.",
+            missing=loading_missing,
+        ),
+        check(
+            "sejong_mandatory_read_scope_reduced",
+            scope_reduced,
+            f"Mandatory first-read scope changed from {PRE_SELECTIVE_LOADING_MANDATORY_WORDS} words at c401acb to {current_mandatory_words} words ({word_count(SEJONG_SKILL_PATH)}-word skill plus {word_count(ROUTING_ENTRY_PATH)}-word routing entry). This measures load scope only.",
+        ),
     ]
 
 
@@ -414,6 +492,7 @@ def evaluate_validation_benchmark() -> list[dict[str, Any]]:
 
 def evaluate_sejong_boundary() -> list[dict[str, Any]]:
     skill = load_text(SEJONG_SKILL_PATH)
+    routing_entry = load_text(ROUTING_ENTRY_PATH)
     router = load_text(ROUTER_PATH)
     required = [
         "It is not a shim over another skill.",
@@ -424,7 +503,7 @@ def evaluate_sejong_boundary() -> list[dict[str, Any]]:
         "handoff-ready Uigwe output to Sejong direct edits",
         "Sejong direct is not a replacement for Seungjeongwon on goal-bearing work",
     ]
-    passed, missing = contains_all("\n".join([skill, router]), required)
+    passed, missing = contains_all("\n".join([skill, routing_entry, router]), required)
     return [
         check("sejong_uigwe_boundary_present", passed, "Sejong remains a router/front door and does not duplicate Uigwe packet rules.", missing=missing)
     ]
@@ -448,7 +527,7 @@ def evaluate_cross_stage_helper_calls() -> list[dict[str, Any]]:
         "Helper calls return to Uigwe and do not approve gates or finalize canonical packets.",
         "`JangYeongsil` and `Jiphyeonjeon` also have thin installed skill front doors",
         "JangYeongsil research can run while Uigwe prepares artifact inventory, mode-readiness, or validation preflight",
-        "Jiphyeonjeon option review may run while Uigwe inventories artifacts",
+        "Jiphyeonjeon option review may run beside that preflight",
         "Backend selection is capability-aware.",
         "Do not build a second native mailbox, lease manager, process manager, or fan-in engine.",
         "with `current_surface` set to the helper mode",
@@ -470,6 +549,7 @@ def evaluate_cross_stage_helper_calls() -> list[dict[str, Any]]:
 
 def evaluate_research_to_uigwe_promotion() -> list[dict[str, Any]]:
     sejong_skill = load_text(SEJONG_SKILL_PATH)
+    routing_entry = load_text(ROUTING_ENTRY_PATH)
     jangyeongsil_skill = load_text(JANGYEONGSIL_SKILL_PATH)
     jiphyeonjeon_skill = load_text(JIPHYEONJEON_SKILL_PATH)
     router = load_text(ROUTER_PATH)
@@ -477,15 +557,15 @@ def evaluate_research_to_uigwe_promotion() -> list[dict[str, Any]]:
     context_schema = load_text(CONTEXT_SCHEMA_PATH)
     hook_script = load_text(HOOK_SCRIPT_PATH)
     combined = "\n".join(
-        [sejong_skill, jangyeongsil_skill, jiphyeonjeon_skill, router, hooks, context_schema, hook_script]
+        [sejong_skill, routing_entry, jangyeongsil_skill, jiphyeonjeon_skill, router, hooks, context_schema, hook_script]
     )
     required = [
         "Terminal Deliverable And Uigwe Promotion Gate",
         "Uigwe-To-Seungjeongwon Handoff Gate",
         "A vague thought is a valid Uigwe input; a complete brief is an output.",
-        "Terminal-deliverable rule",
-        "Advice-only rule",
-        "Outcome-completion rule",
+        "Terminal research or advice",
+        "Research, review, comparison, recommendation, or proposal only",
+        "Outcome work continues to verified execution or a real blocker.",
         "research-only",
         "advice-only",
         "uigwe_promotion_required",
@@ -494,7 +574,7 @@ def evaluate_research_to_uigwe_promotion() -> list[dict[str, Any]]:
         "Do not create the promotion gate for research, advice, review, comparison, or proposal-only work.",
         "Route directly to Seungjeongwon through a compact execution contract when scope and acceptance criteria are settled.",
         "Do not classify a goal-bearing implementation request as `Sejong direct`",
-        "Once Uigwe reaches a handoff-ready outcome contract, route execution and verification to `Seungjeongwon`",
+        "then enter Seungjeongwon when the outcome contract is handoff-ready",
         "write-like execution",
         "Enter Uigwe before write-like execution, or explicitly resolve the planning requirement",
     ]
@@ -604,13 +684,15 @@ def evaluate_installer_update_maintenance() -> list[dict[str, Any]]:
 
 def evaluate_bounded_parallelism() -> list[dict[str, Any]]:
     skill = load_text(SEJONG_SKILL_PATH)
+    routing_entry = load_text(ROUTING_ENTRY_PATH)
     router = load_text(ROUTER_PATH)
     team = load_text(TEAM_EXECUTOR_PATH)
-    combined = "\n".join([skill, router, team])
+    delegation = load_text(DELEGATION_RUNTIME_PATH)
+    combined = "\n".join([skill, routing_entry, router, team, delegation])
     required = [
         "workers are an optional execution tactic",
         "lead Sejong agent owns routing, synthesis, final decision, and final verification",
-        "For parallel Jiphyeonjeon, use bounded briefs",
+        "`Jiphyeonjeon` supports a parallel chamber",
         "`$team` / `TeamExecutor` wrappers",
         "team_executor.py",
         "${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/",
@@ -625,7 +707,7 @@ def evaluate_bounded_parallelism() -> list[dict[str, Any]]:
         "private evidence",
         "spawn budget",
         "`Uigwe` supports only preflight parallelism before gates",
-        "do not use worker or subagent agreement as evidence or approval",
+        "Worker agreement is not evidence, approval, or verification.",
         "runtime-generated worker prompt",
         "workers/<worker-id>/prompt.md",
         "SEJONG_WORKER_PROMPT",
@@ -637,11 +719,11 @@ def evaluate_bounded_parallelism() -> list[dict[str, Any]]:
         "forbidden authority claims",
         "return format",
         "stop condition",
-        "exact worker/runtime identity",
-        "active and terminal-but-unreleased leases",
-        "released cleanup receipt before fan-in",
-        "do not open native workers on audit-only ownership",
-        "kill processes by name",
+        "exact runtime identity and supported release proof",
+        "Terminal output alone does not close",
+        "every required host-native cleanup receipt is `released`",
+        "does not create audit-only native workers",
+        "kills a host process",
     ]
     passed, missing = contains_all(combined, required)
     return [

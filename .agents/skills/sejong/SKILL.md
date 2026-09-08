@@ -5,68 +5,40 @@ description: Use when a user invokes Sejong/$sejong or court aliases JangYeongsi
 
 # Sejong
 
-`sejong` is the lead router inside King Sejong, the full court-style orchestration system for broad research, decision support, planning triage, execution, verification, evidence recording, or direct action.
+`sejong` is the lead router and synthesizer inside King Sejong. It is not a shim over another skill.
 
-It is not a shim over another skill. Its source-of-truth routing contract is `../../../docs/sejong/ROUTER.md`.
+Always load `../../../docs/sejong/ROUTING_ENTRY.md` first and apply its
+precedence, four route classes, continuity, completion, and gate checks. Do not
+load the entire `../../../docs/sejong/ROUTER.md` merely to classify an ordinary
+request. Load the selected court skill and only the detail contracts named by
+the routing entry for the need that is actually present.
 
-When hooks or TeamExecutor are involved, active workflow context is represented by the checkpoint contract in `../../../docs/sejong/king-sejong-context.schema.json` and the hook guardrails in `../../../docs/sejong/HOOKS.md`. Live clarification state may be recorded as an ambiguity register described in `../../../docs/sejong/AMBIGUITY_REGISTER.md`.
+Preserve the user's requested terminal deliverable. Research, review,
+comparison, recommendation, and proposal-only work may end with that result.
+Settled authorized implementation goes through a compact execution contract to
+Seungjeongwon. Materially unresolved intent, design, scope, authority, quality,
+or acceptance goes through Uigwe first. A vague thought is valid Uigwe input;
+joint discovery and a completed brief are Uigwe outputs.
 
-When security-sensitive evidence, verification, or tool actions are involved, follow the Sillok trace contract in `../../../docs/sejong/SILLOK_TRACE.md` and the security guardrails in `../../../docs/sejong/SECURITY.md`.
+Continue the active current goal without requiring another `$sejong` token or
+repeating recorded approval. Do not silently make material user decisions.
+Routine local implementation tactics remain autonomous inside approved scope.
 
-When repo instruction context such as `AGENTS.md` should be initialized or refreshed, use the guarded candidate-diff workflow in `../../../docs/sejong/REPO_CONTEXT.md`; do not silently rewrite tracked instruction files.
+For material Sejong self-modification, preserve the protected
+`Jiphyeonjeon -> Uigwe -> Seungjeongwon` route. Reuse a settled approved
+contract as decision and planning evidence without repeating debate,
+interviews, or approval; reopen only for a consequential unresolved choice or
+new counterevidence.
 
-When a request depends on workflow discipline, quality gates, subordinate
-runtime behavior, worker authority, or completion evidence, follow
-`../../../docs/sejong/DISCIPLINE_GATES.md`.
+Treat `uigwe_promotion_required`, blocking ambiguity, and
+`seungjeongwon_receipt_required` as current authority. Prior route history does
+not satisfy a newly opened Uigwe gate, and outcome completion requires fresh
+verification evidence or a real blocker.
 
-## Routing
-
-1. Load `../../../docs/sejong/ROUTER.md`.
-2. Classify the request into the next useful Sejong surface.
-3. Execute the selected surface when enough context is available; do not stop at only naming it.
-4. If the user asked for an outcome rather than a single artifact, continue through downstream surfaces until the work is executed, verified, or blocked on a real missing decision.
-5. Once invoked, keep follow-up turns inside the active Sejong workflow until the user explicitly exits Sejong or switches to another non-Sejong workflow; do not require the user to repeat `$sejong` on every turn.
-6. For material changes to Sejong, Uigwe, Seungjeongwon, installer, validation, or artifact-storage behavior, preserve the protected Jiphyeonjeon -> Uigwe -> Seungjeongwon route. When a settled approved contract already contains the decision rationale, scope, and pass criteria, cite and validate that evidence through Jiphyeonjeon and Uigwe without repeating debate, interviews, or approval; reopen them only for a consequential unresolved choice or new counterevidence. Use Seungjeongwon for implementation and verification. Reserve Sejong direct for non-behavioral typo, link, or formatting fixes.
-7. Treat Korean court names as active user-facing surfaces:
-   - `JangYeongsil` -> research, experiment, and evidence gathering
-   - `Jiphyeonjeon` -> discussion, debate, option comparison, and decision support
-   - `Uigwe` -> joint intent/design discovery and formal outcome-contract planning
-   - `Seungjeongwon` -> execution and verification through the native Seungjeongwon executor
-   - `Sillok` -> evidence and promotion records
-   - `Danjong` -> retired or rejected option semantics, never an execution surface
-
-Canonical internal surface ids are `jangyeongsil`, `jiphyeonjeon`, `uigwe`, `seungjeongwon`, and `sejong-direct`. Execution and verification are required behavior for `sejong-direct` and for any completed `seungjeongwon` path.
-
-Treat JangYeongsil, Jiphyeonjeon, Uigwe, Seungjeongwon, Sillok, and Danjong as Sejong court modes, not peer agents. For non-trivial workflows, surface the current mode to the user in plain language such as `조사 중`, `판단 중`, `계획 정리 중`, `실행 중`, `기록 중`, or `제외/보류 중`, and state what the user can do next.
-
-Do not describe a court mode as a borrowed style or imported technique; say the Sejong lead is entering `JangYeongsil` for evidence gathering, entering `Jiphyeonjeon` for decision support, or using bounded workers inside the active court mode.
-
-Boundary rule: use `JangYeongsil` when facts or evidence are unclear, `Jiphyeonjeon` when enough material exists but options need discussion, and `Uigwe` when the user wants to discover intent or design together, a material goal/design/acceptance boundary is unresolved, or a formal durable planning bundle is requested. Uigwe accepts vague thoughts and helps turn them into an informed outcome contract; a completed brief is its output, never an entry requirement. Preserve Uigwe live-session gates when routing there.
-
-Terminal-deliverable rule: determine what the user asked this turn to receive. Research, review, comparison, recommendation, and proposal-only requests end with that deliverable even when the result may inform a later decision. Set `uigwe_promotion_required` only when the user requested Uigwe or joint intent/design discovery, or when authorized implementation has a material unresolved goal, design, acceptance, authority, or scope boundary. When set, the gate itself is unresolved authority; preserve it until context update records the current required Uigwe entry and clears it, or the user explicitly changes the requested scope. Earlier Uigwe route history does not satisfy a newly recorded boundary.
-
-Advice-only rule: Jiphyeonjeon may stop at a recommendation when the user only asked for judgment or comparison. If the user approves implementation, connect the recommendation and approval to an execution contract. Use `Uigwe` only for missing required boundaries or requested formal planning, then use `Seungjeongwon`.
-
-Outcome-completion rule: preserve the requested deliverable. Research, review, and proposal-only requests end at that deliverable; they do not require implementation or a new planning stage. For implementation with settled scope and acceptance criteria, connect prior approvals to a compact execution contract and use `Seungjeongwon`. Enter `Uigwe` for material unresolved intent or design, or when the user requested formal staged planning. Once Uigwe reaches a handoff-ready outcome contract, route execution and verification to `Seungjeongwon`; do not satisfy the goal with `Sejong direct` edits merely because the next implementation step looks clear. Keep `Sejong direct` limited to small exact commands, simple answers, obvious non-behavioral typo or link fixes, deterministic regeneration under an approved contract, and mechanical corrections.
-
-Long-session rule: when the user asks for `장기실행`, `긴 세션`, `끝까지`, `long-session`, or a persistent outcome loop, treat it as a task-scoped persistence request rather than a global prompt-length preference. Reuse the current approved objective when it still applies; refresh only stale or mismatched context. Classify the terminal deliverable and task class, gather evidence and use selective challenge roles when they materially help, enter Uigwe only for a real unresolved planning boundary or requested formal planning, then use Seungjeongwon for authorized execution and verification. Long-session behavior is task-class gated and remains shadowed unless strict promotion evidence shows repeated wins for that class; code review, bug hunt, and failure analysis use a defect-first critic lane when it materially improves causal coverage.
-
-When a live Sejong or Uigwe clarification uses an ambiguity register, do not advance dependent work while a blocking `open`, `pending`, or `answered` decision remains. Required-stage readiness is `100%` when required decisions are resolved or explicitly waived; optional preferences alone do not lower it. Reuse prior answers and approvals with evidence refs.
-
-`JangYeongsil` and `Jiphyeonjeon` can be primary routes or helper calls inside another active court mode. Use JangYeongsil from Sejong, Uigwe, or Jiphyeonjeon when facts, examples, repo history, experiments, or external evidence are needed; return `known` / `inferred` / `unknown` evidence to the calling mode. Use Jiphyeonjeon from Sejong, Uigwe, JangYeongsil, or Seungjeongwon whenever multiple perspectives would materially improve accuracy; return a decision note, rejected options, risks, and the next surface. Helper calls do not approve Uigwe gates, finalize packets, claim consensus, or override lead synthesis.
-
-`Jiphyeonjeon` is an optional deliberation pass, not a required step in every Sejong chain. Use bounded workers only when independent research, option-review, implementation, or verification lanes would materially improve speed or confidence; the lead Sejong agent owns synthesis, final routing, and final verification.
-
-For parallel Jiphyeonjeon, use bounded briefs from advocate, critic, specialist, operator, or risk-review lenses over the same evidence bundle; do not use worker or subagent agreement as evidence or approval. Substantial Jiphyeonjeon work may use host-native team messaging when the runtime officially supports it, otherwise `$team` mailbox-mediated challenge rounds. The lead Sejong agent opens and closes rounds and owns synthesis. Research, discussion, and planning may overlap only as bounded preflight work: JangYeongsil evidence lanes may run while Uigwe prepares readiness checks, and Jiphyeonjeon option review may run while Uigwe inventories artifacts, but Uigwe gates and final packets remain lead/user-owned.
-
-Codex native subagents, host-native team/teammate support, and `$team` tmux workers are different backends. Prefer official host-native team messaging when the current runtime exposes it and the task needs peer challenge. Use Codex native subagents for parent-mediated side tasks. For `$team`, use Sejong state under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/` instead of repo-local or tool-specific orchestration state. Before starting workers, write a role assignment with current court mode, route context, source-of-truth refs, worker role, assigned scope, allowed outputs, verification expectation, stop condition, and forbidden claims. When using Codex native subagents, `.codex/prompts/{role}.md` is an optional repo-local overlay. If it is absent, use the Codex native role prompt and continue; do not treat missing overlays as a Sejong install failure.
-
-Worker lifecycle rule: before selecting a host-native backend, confirm that the
-host exposes an exact worker/runtime identity and a supported release or teardown
-operation with proof. If it does not, keep the work in the lead session or use a
-Core-owned backend; do not open native workers on audit-only ownership. For every
-native worker that is opened, register its exact resource lease as soon as the
-host returns the identity, count active and terminal-but-unreleased leases against
-the concurrency budget, and require a released cleanup receipt before fan-in or
-another native wave. Missing cleanup proof is a blocker, not a reason to scan or
-kill processes by name.
+Load `../../../docs/sejong/ROUTER.md` only for multi-surface or long-session
+lifecycle, recursive goals, helper/council routing, worker selection, protected
+self-modification detail, or failure recovery. Load
+`../../../docs/sejong/HOOKS.md`, the context schemas,
+`../../../docs/sejong/DISCIPLINE_GATES.md`, security/Sillok contracts, or
+`../../../docs/sejong/REPO_CONTEXT.md` only when their routing-entry trigger is
+present.

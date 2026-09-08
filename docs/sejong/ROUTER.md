@@ -12,7 +12,9 @@ It exists because real user requests often say "research this", "think through t
 
 Sejong keeps Uigwe focused on its strongest job: helping the user discover unclear intent and design, then turning the result into a durable outcome and execution contract. A vague thought is a valid Uigwe input; a complete brief is an output. Sejong owns the larger work loop around Uigwe: gather evidence, decide whether collaborative clarification or formal planning is useful, invoke Uigwe when needed, execute authorized work, verify the outcome, and record evidence.
 
-This file is Sejong's routing contract. Sejong is not a new planning protocol and not a replacement for Uigwe. The internal surface ids are `jangyeongsil`, `jiphyeonjeon`, `uigwe`, `seungjeongwon`, and `sejong-direct`.
+[ROUTING_ENTRY.md](ROUTING_ENTRY.md) is the canonical high-frequency route-selection contract. This file supplies the detailed lifecycle, helper, council, recursive-goal, protected-self-modification, and failure rules selected after entry; it does not need to be loaded in full to classify an ordinary request. The route tables and examples below elaborate the entry and must stay consistent with it.
+
+Sejong is not a new planning protocol and not a replacement for Uigwe. The internal surface ids are `jangyeongsil`, `jiphyeonjeon`, `uigwe`, `seungjeongwon`, and `sejong-direct`.
 
 ## Non-Goals
 

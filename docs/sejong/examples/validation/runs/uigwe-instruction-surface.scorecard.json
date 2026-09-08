@@ -3,7 +3,7 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-09-08T00:19:14Z",
+    "generated_at": "2026-09-08T00:49:53Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
@@ -18,7 +18,7 @@
   "scenario_results": [
     {
       "scenario_id": "instruction-routing-modes",
-      "title": "Uigwe routing modes remain visible",
+      "title": "Sejong entry routes selectively while Uigwe modes remain visible",
       "status": "pass",
       "score": 1.0,
       "checks": [
@@ -26,6 +26,21 @@
           "id": "routing_terms_present",
           "passed": true,
           "detail": "Uigwe trigger, non-trigger, and entry-mode terms remain visible in SKILL.md."
+        },
+        {
+          "id": "sejong_four_route_entry_present",
+          "passed": true,
+          "detail": "The canonical Sejong entry preserves precedence, the four route classes, continuity, and required gates."
+        },
+        {
+          "id": "sejong_selective_contract_loading_present",
+          "passed": true,
+          "detail": "Sejong loads the canonical entry first and names route-triggered detail contracts without requiring the full Router for ordinary classification."
+        },
+        {
+          "id": "sejong_mandatory_read_scope_reduced",
+          "passed": true,
+          "detail": "Mandatory first-read scope changed from 7985 words at c401acb to 1260 words (312-word skill plus 948-word routing entry). This measures load scope only."
         }
       ],
       "blockers": [],
@@ -677,7 +692,7 @@
         {
           "id": "sejong_skill_line_budget",
           "passed": true,
-          "detail": "Sejong SKILL.md line count is 72; budget is 90."
+          "detail": "Sejong SKILL.md line count is 44; budget is 90."
         },
         {
           "id": "jangyeongsil_skill_line_budget",
