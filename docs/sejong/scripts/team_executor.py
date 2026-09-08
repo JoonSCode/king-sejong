@@ -371,7 +371,17 @@ def delegation_run_path(team: dict[str, Any]) -> Path | None:
 
 
 def linked_round_id_failure(delegation_path: Path, rounds: dict[str, Any]) -> str | None:
-    core_round_ids = load_delegation_run(delegation_path).rounds_started
+    delegation = load_delegation_run(delegation_path)
+    execution_wave_round_ids = {
+        f"wave:{wave_id}"
+        for wave in delegation.waves
+        if isinstance((wave_id := wave.get("wave_id")), str) and wave_id
+    }
+    core_round_ids = tuple(
+        round_id
+        for round_id in delegation.rounds_started
+        if round_id not in execution_wave_round_ids
+    )
     local_round_ids = tuple(str(item.get("round_id") or "") for item in rounds.get("rounds", []))
     if core_round_ids == local_round_ids:
         return None

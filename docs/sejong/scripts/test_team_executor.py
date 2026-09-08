@@ -1593,6 +1593,86 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             self.assertNotEqual(checked.returncode, 0)
             self.assertIn("Core round ids do not match TeamExecutor round ids", checked.stderr)
 
+    def test_check_compares_mailbox_rounds_without_declared_wave_budget_tokens(self) -> None:
+        # Given: two execution waves consume the shared round budget before a mailbox round opens.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sejong_home = root / "sejong"
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=2, concurrency=2, rounds=3).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "wave-round-projection",
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--delegation-run",
+                    str(delegation_path),
+                    "--worker",
+                    "worker-a:executor:first",
+                    "--worker",
+                    "worker-b:critic:second",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            for arguments in (
+                ["add-wave", str(delegation_path), "--wave-id", "wave-0", "--worker-id", "worker-a"],
+                ["add-wave", str(delegation_path), "--wave-id", "wave-1", "--worker-id", "worker-b", "--depends-on", "wave-0"],
+            ):
+                added = subprocess.run(
+                    [sys.executable, str(DELEGATION_RUN), *arguments],
+                    text=True,
+                    capture_output=True,
+                    cwd=str(REPO_ROOT),
+                )
+                self.assertEqual(added.returncode, 0, added.stderr)
+            run_dir = sejong_home / "state" / "team" / "wave-round-projection"
+
+            # When/Then: wave accounting does not look like mailbox drift, before or after a real mailbox round.
+            checked = run_team_command(["check", str(run_dir)], sejong_home=sejong_home)
+            self.assertEqual(checked.returncode, 0, checked.stderr)
+            opened = run_team_command(
+                ["open-round", str(run_dir), "--round-id", "review-round", "--purpose", "bounded review"],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(opened.returncode, 0, opened.stderr)
+            checked = run_team_command(["check", str(run_dir)], sejong_home=sejong_home)
+            self.assertEqual(checked.returncode, 0, checked.stderr)
+
+    def test_check_does_not_ignore_undeclared_wave_prefixed_round_drift(self) -> None:
+        # Given: a linked run contains a wave-looking round id with no matching declared wave.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sejong_home = root / "sejong"
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=1, concurrency=1).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "undeclared-wave-round",
+                    "--current-surface",
+                    "jiphyeonjeon",
+                    "--delegation-run",
+                    str(delegation_path),
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            delegation["rounds_started"] = ["wave:ghost"]
+            delegation_path.write_text(json.dumps(delegation), encoding="utf-8")
+            run_dir = sejong_home / "state" / "team" / "undeclared-wave-round"
+
+            # When: TeamExecutor checks the two linked ledgers.
+            checked = run_team_command(["check", str(run_dir)], sejong_home=sejong_home)
+
+            # Then: only exact tokens for declared waves are excluded from mailbox-round comparison.
+            self.assertNotEqual(checked.returncode, 0)
+            self.assertIn("Core round ids do not match TeamExecutor round ids", checked.stderr)
+
     def test_tmux_launch_failure_releases_delegation_worker_reservations(self) -> None:
         # Given: one delegation-linked worker and a tmux executable that always fails.
         with tempfile.TemporaryDirectory() as tmp:
@@ -1854,6 +1934,8 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
                 0,
             )
             run_dir = sejong_home / "state" / "team" / "wave-replay"
+            checked = run_team_command(["check", str(run_dir)], sejong_home=sejong_home)
+            self.assertEqual(checked.returncode, 0, checked.stderr)
             launched = run_team_command(
                 ["launch", str(run_dir), "--wave-id", "wave-1"],
                 sejong_home=sejong_home,
@@ -1866,6 +1948,8 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             worker_state = json.loads((run_dir / "workers" / "worker-a" / "state.json").read_text(encoding="utf-8"))
             self.assertEqual(worker_state["status"], "launched")
             self.assertEqual(len(list((run_dir / "artifacts" / "wave-launch-attempts").glob("*.json"))), 1)
+            checked = run_team_command(["check", str(run_dir)], sejong_home=sejong_home)
+            self.assertEqual(checked.returncode, 0, checked.stderr)
 
             # When: the same wave launch is replayed.
             replay = run_team_command(
@@ -1877,6 +1961,47 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             # Then: serialized TeamExecutor state rejects a duplicate launch.
             self.assertNotEqual(replay.returncode, 0)
             self.assertIn("wave is not pending", replay.stderr)
+            terminal = subprocess.run(
+                [
+                    sys.executable,
+                    str(DELEGATION_RUN),
+                    "record-terminal",
+                    str(delegation_path),
+                    "--receipt-id",
+                    "receipt-worker-a",
+                    "--wave-id",
+                    "wave-1",
+                    "--worker-id",
+                    "worker-a",
+                    "--backend-worker-ref",
+                    "tmux://test/worker-a",
+                    "--worker-contract-ref",
+                    "contract://worker-a",
+                    "--worker-output-ref",
+                    "output://worker-a",
+                    "--status",
+                    "completed",
+                    "--summary",
+                    "worker-a completed",
+                    "--evidence-ref",
+                    "evidence://worker-a",
+                ],
+                text=True,
+                capture_output=True,
+                cwd=str(REPO_ROOT),
+            )
+            self.assertEqual(terminal.returncode, 0, terminal.stderr)
+            fan_in = subprocess.run(
+                [sys.executable, str(DELEGATION_RUN), "fan-in", str(delegation_path), "--wave-id", "wave-1"],
+                text=True,
+                capture_output=True,
+                cwd=str(REPO_ROOT),
+            )
+            self.assertEqual(fan_in.returncode, 0, fan_in.stderr)
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            self.assertEqual(delegation["waves"][0]["status"], "passed")
+            checked = run_team_command(["check", str(run_dir)], sejong_home=sejong_home)
+            self.assertEqual(checked.returncode, 0, checked.stderr)
 
     def test_wave_tmux_launch_failure_records_terminal_failures_without_releasing_core_workers(self) -> None:
         # Given: Core has opened one TeamExecutor wave and tmux process launch will fail.

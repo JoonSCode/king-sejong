@@ -235,6 +235,13 @@ to registered. Core fan-in reflects the preserved terminal receipts; a launch
 failure remains separate evidence even if every worker had already completed
 before a later tmux command failed.
 
+Core stores both mailbox round ids and declared execution-wave budget tokens in
+`rounds_started`. Linked TeamExecutor validation projects out only the exact
+`wave:<wave-id>` tokens derived from the run's declared waves before comparing
+that ledger with `rounds.json`. Those tokens still consume Core's shared round
+budget. Undeclared wave-looking values and mismatched mailbox round ids remain
+validation failures.
+
 Delegation-linked initialization preflights the full worker batch before either
 artifact commits it. Add-worker materialization, local round validation, and
 launch planning also complete before their corresponding delegation mutation.
