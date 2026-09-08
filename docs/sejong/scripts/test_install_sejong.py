@@ -47,6 +47,8 @@ class InstallSejongTests(unittest.TestCase):
         self.assertIn("Do not use non-Sejong runtime paths as Sejong state.", result.stdout)
         self.assertIn("A complete brief is an output of Uigwe", result.stdout)
         self.assertIn("actual user path", result.stdout)
+        self.assertIn("During an explicitly active Agent Company session", result.stdout)
+        self.assertIn("This conditional Company rule does not activate Company", result.stdout)
 
     def test_user_scope_replaces_only_managed_guidance_and_is_repeatable(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -89,6 +91,7 @@ class InstallSejongTests(unittest.TestCase):
             self.assertIn("END King Sejong Codex Guidance", text)
             self.assertIn("Always treat King Sejong as available", text)
             self.assertIn("Do not use non-Sejong runtime paths as Sejong state.", text)
+            self.assertIn("every ordinary prose final reply", text)
             self.assertNotIn("This repository is both the source repository", text)
 
     def test_user_scope_installs_codex_plugin_adapter(self) -> None:

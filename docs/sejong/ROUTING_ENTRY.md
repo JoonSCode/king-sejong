@@ -44,6 +44,17 @@ Apply these rules in order:
 Routine local implementation tactics are autonomous inside the approved scope
 and constraints.
 
+## Conditional Agent Company Reply Continuity
+
+Only during an explicitly active Agent Company session, every ordinary prose
+final reply begins by identifying the responder and the workers whose results
+it actually uses, with each worker's short responsibility. A direct reply has
+no worker participant. Keep this on follow-ups: a prior status update, skill
+use, planned worker, or unconsumed worker output is not participation evidence.
+Do not insert it into strict JSON, code-only, or other exact-format output;
+give it separately only when prose is allowed. This pointer does not activate
+Agent Company for ordinary Sejong work.
+
 ## Four Route Classes
 
 | Request state | Route | Terminal condition |

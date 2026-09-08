@@ -3,7 +3,7 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-09-08T00:49:53Z",
+    "generated_at": "2026-09-08T14:51:29Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
@@ -40,7 +40,7 @@
         {
           "id": "sejong_mandatory_read_scope_reduced",
           "passed": true,
-          "detail": "Mandatory first-read scope changed from 7985 words at c401acb to 1260 words (312-word skill plus 948-word routing entry). This measures load scope only."
+          "detail": "Mandatory first-read scope changed from 7985 words at c401acb to 1355 words (312-word skill plus 1043-word routing entry). This measures load scope only."
         }
       ],
       "blockers": [],

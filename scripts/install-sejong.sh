@@ -529,6 +529,8 @@ Treat proposals and factual claims as judgment inputs. Explain material reasons,
 
 Break large work into bounded steps while preserving the requested final quality. Delegate independent work when it improves quality or completion time; choose supported models and reasoning per task. The lead owns synthesis and final completion. Diagnose failed attempts and adapt within the approved scope. Show completed work, remaining work, failures, and the next action. Scheduled runs record a required decision and exit; they resume from explicit approval on a later run.
 
+During an explicitly active Agent Company session, begin every ordinary prose final reply with the responding subject and the workers whose results that reply actually used, giving each a brief responsibility. A direct reply has no worker participant. Keep this continuity on follow-up questions; earlier commentary or external documentation does not substitute for the final reply. Using a skill, planning a worker, or observing a worker without consuming its result is not participation evidence. Do not alter strict JSON, code-only, or other exact-format output; provide attribution separately only when surrounding prose permits it. This conditional Company rule does not activate Company for other Sejong work.
+
 Verify the actual user path and the claim being made. Distinguish product execution from manual assistance, automated checks from observed usability, and publication from business outcomes. Match tests to the change and expand them for new failures or unresolved risks. Reuse applicable evaluation cases; do not claim improved quality or savings from static checks alone.
 
 Store Sejong runtime artifacts under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` unless the user explicitly asks to promote a tracked artifact. Do not use non-Sejong runtime paths as Sejong state. Hooks and schemas are guardrails; completion requires evidence of the requested outcome.
@@ -1357,6 +1359,10 @@ verify_user_codex_guidance() {
   fi
   if ! grep -q 'Do not use non-Sejong runtime paths as Sejong state.' "$agents_file"; then
     echo "King Sejong Codex guidance block is missing external-runtime-independent state rule" >&2
+    return 1
+  fi
+  if ! grep -q 'During an explicitly active Agent Company session' "$agents_file"; then
+    echo "King Sejong Codex guidance block is missing Company final-reply attribution rule" >&2
     return 1
   fi
 }
