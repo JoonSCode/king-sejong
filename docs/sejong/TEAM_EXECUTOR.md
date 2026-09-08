@@ -209,9 +209,31 @@ before launch. Team state stores `delegation_run_ref` and `budget_ref`; these ar
 references to Core enforcement, not a second budget implementation. Terminal
 worker output must still enter the generic receipt and fan-in flow described in
 [DELEGATION_RUNTIME.md](DELEGATION_RUNTIME.md). Team registration or tmux launch
-alone is never a terminal receipt. Workers assigned to a Core wave cannot use
-the TeamExecutor `launch` path; the caller must use Core `open-wave` after its
-dependencies pass.
+alone is never a terminal receipt.
+
+For a declared Core wave, use `launch <run-dir> --wave-id <wave-id>`. The wave
+must still be pending, every required worker must be a registered local
+TeamExecutor worker, and the effective command map must cover exactly that
+wave's worker set. Stored worker commands provide defaults and a single
+`--worker-command` may override each default; duplicate or out-of-wave explicit
+assignments are rejected. `--dry-run` validates Core dependency and budget rules
+without opening the wave. A real launch opens the pending wave through Core
+before starting tmux. An already-active or closed wave is rejected.
+
+The per-run lock serializes the local dispatch-once transition. Before Core
+mutation or worker-pane creation, TeamExecutor seals one launch-attempt artifact;
+its presence rejects replay even if the launcher stops before it can mark the
+local workers launched. Wave launch chooses a nonce-bearing tmux session identity and
+does not accept a caller-selected `--session`. It also rejects a pre-existing
+exact session identity so a failed `new-session` never cleans up a session it did
+not create. If tmux launch fails after Core opens the wave, TeamExecutor attempts
+removal only after its own `new-session` succeeded and records failed terminal
+receipts backed by a launch-failure artifact. Session removal is not process or
+resource release attestation. Existing terminal receipts are preserved. The
+failure path never synthesizes completed receipts or releases wave workers back
+to registered. Core fan-in reflects the preserved terminal receipts; a launch
+failure remains separate evidence even if every worker had already completed
+before a later tmux command failed.
 
 Delegation-linked initialization preflights the full worker batch before either
 artifact commits it. Add-worker materialization, local round validation, and
@@ -235,6 +257,7 @@ python3 docs/sejong/scripts/team_executor.py prepare-workspaces <run-dir>
 python3 docs/sejong/scripts/team_executor.py cleanup-workspaces <run-dir>
 python3 docs/sejong/scripts/team_executor.py preflight
 python3 docs/sejong/scripts/team_executor.py launch <run-dir> --worker-command 'critic=codex ...' --dry-run
+python3 docs/sejong/scripts/team_executor.py launch <run-dir> --wave-id discovery --worker-command 'critic=codex ...' --dry-run
 python3 docs/sejong/scripts/team_executor.py smoke-live-launch <run-dir> --worker-id implementer --isolate-write-workers
 python3 docs/sejong/scripts/team_executor.py check-sandbox-claims docs/sejong/TEAM_EXECUTOR.md docs/sejong/SECURITY.md
 ```

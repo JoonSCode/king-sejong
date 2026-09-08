@@ -54,6 +54,8 @@ def fake_tmux_env(
     *,
     version_exit: int = 0,
     launch_exit: int = 0,
+    session_exists: bool = False,
+    cleanup_exit: int = 0,
 ) -> dict[str, str]:
     fake_bin = root / "fake-tmux-bin"
     fake_bin.mkdir(parents=True, exist_ok=True)
@@ -63,6 +65,12 @@ def fake_tmux_env(
         "if [ \"$1\" = \"-V\" ]; then\n"
         "  echo 'tmux 3.5a'\n"
         f"  exit {version_exit}\n"
+        "fi\n"
+        "if [ \"$1\" = \"has-session\" ]; then\n"
+        f"  exit {0 if session_exists else 1}\n"
+        "fi\n"
+        "if [ \"$1\" = \"kill-session\" ]; then\n"
+        f"  exit {cleanup_exit}\n"
         "fi\n"
         f"exit {launch_exit}\n",
         encoding="utf-8",
@@ -1676,6 +1684,263 @@ class TeamExecutorAuthorityTests(unittest.TestCase):
             self.assertIn("assigned to a wave", result.stderr)
             delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
             self.assertEqual(delegation["workers"][0]["status"], "registered")
+            opened = subprocess.run(
+                [sys.executable, str(DELEGATION_RUN), "open-wave", str(delegation_path), "--wave-id", "wave-1"],
+                text=True,
+                capture_output=True,
+                cwd=str(REPO_ROOT),
+            )
+            self.assertEqual(opened.returncode, 0, opened.stderr)
+            already_open = run_team_command(
+                ["launch", str(run_dir), "--wave-id", "wave-1", "--dry-run"],
+                sejong_home=root / "sejong",
+                env_overrides=fake_tmux_env(root),
+            )
+            self.assertNotEqual(already_open.returncode, 0)
+            self.assertIn("wave is not pending", already_open.stderr)
+
+    def test_pending_delegation_wave_dry_run_plans_exact_team_worker_set(self) -> None:
+        # Given: Core has a pending wave whose TeamExecutor workers are still registered.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sejong_home = root / "sejong"
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=2, concurrency=2).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "active-wave",
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--delegation-run",
+                    str(delegation_path),
+                    "--worker",
+                    "worker-a:executor:first",
+                    "--worker",
+                    "worker-b:critic:second",
+                    "--command",
+                    "worker-a=echo a",
+                    "--command",
+                    "worker-b=echo b",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            self.assertEqual(
+                subprocess.run(
+                    [
+                        sys.executable,
+                        str(DELEGATION_RUN),
+                        "add-wave",
+                        str(delegation_path),
+                        "--wave-id",
+                        "wave-1",
+                        "--worker-id",
+                        "worker-a",
+                        "--worker-id",
+                        "worker-b",
+                    ],
+                    text=True,
+                    capture_output=True,
+                    cwd=str(REPO_ROOT),
+                ).returncode,
+                0,
+            )
+            run_dir = sejong_home / "state" / "team" / "active-wave"
+
+            # When: TeamExecutor plans the pending Core wave.
+            result = run_team_command(
+                [
+                    "launch",
+                    str(run_dir),
+                    "--wave-id",
+                    "wave-1",
+                    "--worker-command",
+                    "worker-a=echo override-a",
+                    "--dry-run",
+                ],
+                sejong_home=sejong_home,
+                env_overrides=fake_tmux_env(root),
+            )
+
+            # Then: every and only required wave worker receives a pane command without consuming the wave.
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("echo override-a", result.stdout)
+            self.assertIn("echo b", result.stdout)
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            self.assertEqual([worker["status"] for worker in delegation["workers"]], ["registered", "registered"])
+            self.assertEqual(delegation["waves"][0]["status"], "pending")
+
+    def test_pending_wave_launch_requires_commands_for_exact_worker_set(self) -> None:
+        # Given: a pending two-worker Core wave with only one TeamExecutor command.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sejong_home = root / "sejong"
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=2, concurrency=2).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "incomplete-wave",
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--delegation-run",
+                    str(delegation_path),
+                    "--worker",
+                    "worker-a:executor:first",
+                    "--worker",
+                    "worker-b:critic:second",
+                    "--command",
+                    "worker-a=echo a",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            self.assertEqual(
+                subprocess.run(
+                    [sys.executable, str(DELEGATION_RUN), "add-wave", str(delegation_path), "--wave-id", "wave-1", "--worker-id", "worker-a", "--worker-id", "worker-b"],
+                    text=True,
+                    capture_output=True,
+                    cwd=str(REPO_ROOT),
+                ).returncode,
+                0,
+            )
+            run_dir = sejong_home / "state" / "team" / "incomplete-wave"
+
+            # When: the launch command does not cover the complete wave.
+            result = run_team_command(
+                ["launch", str(run_dir), "--wave-id", "wave-1", "--dry-run"],
+                sejong_home=sejong_home,
+                env_overrides=fake_tmux_env(root),
+            )
+
+            # Then: TeamExecutor rejects the incomplete worker set before any process action.
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("wave commands must exactly cover required workers", result.stderr)
+
+    def test_successful_wave_launch_is_not_replayable(self) -> None:
+        # Given: a one-worker Core wave that TeamExecutor has already launched successfully.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sejong_home = root / "sejong"
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=1, concurrency=1).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "wave-replay",
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--delegation-run",
+                    str(delegation_path),
+                    "--worker",
+                    "worker-a:executor:bounded",
+                    "--command",
+                    "worker-a=echo ready",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            self.assertEqual(
+                subprocess.run(
+                    [sys.executable, str(DELEGATION_RUN), "add-wave", str(delegation_path), "--wave-id", "wave-1", "--worker-id", "worker-a"],
+                    text=True,
+                    capture_output=True,
+                    cwd=str(REPO_ROOT),
+                ).returncode,
+                0,
+            )
+            run_dir = sejong_home / "state" / "team" / "wave-replay"
+            launched = run_team_command(
+                ["launch", str(run_dir), "--wave-id", "wave-1"],
+                sejong_home=sejong_home,
+                env_overrides=fake_tmux_env(root),
+            )
+            self.assertEqual(launched.returncode, 0, launched.stderr)
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            self.assertEqual(delegation["waves"][0]["status"], "active")
+            self.assertEqual(delegation["workers"][0]["status"], "launched")
+            worker_state = json.loads((run_dir / "workers" / "worker-a" / "state.json").read_text(encoding="utf-8"))
+            self.assertEqual(worker_state["status"], "launched")
+            self.assertEqual(len(list((run_dir / "artifacts" / "wave-launch-attempts").glob("*.json"))), 1)
+
+            # When: the same wave launch is replayed.
+            replay = run_team_command(
+                ["launch", str(run_dir), "--wave-id", "wave-1"],
+                sejong_home=sejong_home,
+                env_overrides=fake_tmux_env(root),
+            )
+
+            # Then: serialized TeamExecutor state rejects a duplicate launch.
+            self.assertNotEqual(replay.returncode, 0)
+            self.assertIn("wave is not pending", replay.stderr)
+
+    def test_wave_tmux_launch_failure_records_terminal_failures_without_releasing_core_workers(self) -> None:
+        # Given: Core has opened one TeamExecutor wave and tmux process launch will fail.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sejong_home = root / "sejong"
+            delegation_path = root / "delegation-run.json"
+            self.assertEqual(init_delegation_run(delegation_path, total=1, concurrency=1).returncode, 0)
+            initialized = run_team_command(
+                [
+                    "init",
+                    "--run-id",
+                    "wave-launch-failure",
+                    "--current-surface",
+                    "seungjeongwon",
+                    "--delegation-run",
+                    str(delegation_path),
+                    "--worker",
+                    "worker-a:executor:bounded",
+                    "--command",
+                    "worker-a=echo ready",
+                ],
+                sejong_home=sejong_home,
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            self.assertEqual(
+                subprocess.run(
+                    [sys.executable, str(DELEGATION_RUN), "add-wave", str(delegation_path), "--wave-id", "wave-1", "--worker-id", "worker-a"],
+                    text=True,
+                    capture_output=True,
+                    cwd=str(REPO_ROOT),
+                ).returncode,
+                0,
+            )
+            run_dir = sejong_home / "state" / "team" / "wave-launch-failure"
+
+            # When: tmux cannot create the exact session.
+            result = run_team_command(
+                ["launch", str(run_dir), "--wave-id", "wave-1"],
+                sejong_home=sejong_home,
+                env_overrides=fake_tmux_env(root, launch_exit=42),
+            )
+
+            # Then: Core retains a truthful terminal failure instead of reopening the active wave reservation.
+            self.assertNotEqual(result.returncode, 0)
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            self.assertEqual(delegation["workers"][0]["status"], "failed")
+            terminal = delegation["receipts"][0]
+            self.assertEqual(terminal["wave_id"], "wave-1")
+            self.assertEqual(terminal["worker_id"], "worker-a")
+            self.assertEqual(terminal["terminal_status"], "failed")
+            self.assertTrue(Path(terminal["worker_output_ref"]).exists())
+            self.assertNotEqual(delegation["workers"][0]["status"], "registered")
+            worker_state = json.loads((run_dir / "workers" / "worker-a" / "state.json").read_text(encoding="utf-8"))
+            self.assertEqual(worker_state["status"], "failed")
+            fan_in = subprocess.run(
+                [sys.executable, str(DELEGATION_RUN), "fan-in", str(delegation_path), "--wave-id", "wave-1"],
+                text=True,
+                capture_output=True,
+                cwd=str(REPO_ROOT),
+            )
+            self.assertEqual(fan_in.returncode, 0, fan_in.stderr)
+            delegation = json.loads(delegation_path.read_text(encoding="utf-8"))
+            self.assertEqual(delegation["waves"][0]["status"], "failed")
 
 
 if __name__ == "__main__":

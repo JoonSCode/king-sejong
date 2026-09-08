@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import fcntl
 import fnmatch
+import hashlib
 import json
 import os
 import re
@@ -29,12 +30,16 @@ from delegation_run import (
     cancel_round as cancel_delegation_round,
     check_failures as delegation_check_failures,
     launch_workers as reserve_delegation_workers,
+    open_execution_wave,
+    record_terminal_receipt,
     register_workers as register_delegation_workers,
     release_workers as release_delegation_workers,
     start_round as start_delegation_round,
     unregister_workers as unregister_delegation_workers,
 )
 from delegation_run_model import load_run as load_delegation_run
+from delegation_run_model import WorkerStatus as DelegationWorkerStatus
+from delegation_wave import ReceiptId, TerminalReceiptRequest, TerminalStatus, WaveId, open_wave
 from sejong_paths import resolve_path
 from team_executor_runtime import HEALTHY, fingerprint_team_executor
 
@@ -1908,29 +1913,14 @@ def check_sandbox_claims(args: argparse.Namespace) -> int:
     return 0
 
 
-def launch(args: argparse.Namespace) -> int:
-    run_dir = require_run_dir(Path(args.run_dir))
-    team = load_team(run_dir)
-    commands = {
-        worker["worker_id"]: worker["command"]
-        for worker in team.get("workers", [])
-        if worker.get("command")
-    }
-    commands.update(dict(args.worker_command or []))
-    unknown = set(commands) - worker_ids(team)
-    if unknown:
-        raise SystemExit(f"commands reference unknown workers: {sorted(unknown)}")
-    if not commands:
-        raise SystemExit("at least one --worker-command worker_id=command is required")
-    tmux_executable = require_healthy_team_executor()
-    delegation_path = delegation_run_path(team)
-    delegation_worker_ids = tuple(DelegationWorkerId(worker_id) for worker_id in commands)
-    if delegation_path is not None:
-        require_delegation_action(
-            lambda: reserve_delegation_workers(delegation_path, delegation_worker_ids, persist=False)
-        )
-
-    session = args.session or f"sejong-{team['run_id']}"
+def planned_tmux_commands(
+    args: argparse.Namespace,
+    run_dir: Path,
+    team: dict[str, Any],
+    commands: dict[str, str],
+    tmux_executable: str,
+    session: str,
+) -> list[list[str]]:
     default_cwd = str(resolve_path(args.cwd or team["repo_root"]))
     tmux_commands: list[list[str]] = []
     for index, (worker_id, command) in enumerate(commands.items()):
@@ -1944,7 +1934,11 @@ def launch(args: argparse.Namespace) -> int:
             isolate_write_workers=args.isolate_write_workers,
             dry_run=args.dry_run,
         )
-        worker_cwd = str(isolation.get("workspace_path") or default_cwd) if isolation.get("backend") == "worktree" else default_cwd
+        worker_cwd = (
+            str(isolation.get("workspace_path") or default_cwd)
+            if isolation.get("backend") == "worktree"
+            else default_cwd
+        )
         env_values = worker_env_values(
             run_dir=run_dir,
             team=team,
@@ -1953,7 +1947,11 @@ def launch(args: argparse.Namespace) -> int:
             prompt_file=prompt_file,
             isolation=isolation,
         )
-        shell_command = shell_with_worker_env(env_values, command, prompt_file if worker.get("prompt_path") else None)
+        shell_command = shell_with_worker_env(
+            env_values,
+            command,
+            prompt_file if worker.get("prompt_path") else None,
+        )
         if index == 0:
             tmux_commands.append(
                 [
@@ -1980,6 +1978,339 @@ def launch(args: argparse.Namespace) -> int:
                 ]
             )
     tmux_commands.append([tmux_executable, "select-layout", "-t", session, "tiled"])
+    return tmux_commands
+
+
+def wave_launch_contract(
+    team: dict[str, Any],
+    wave_id: str,
+    worker_command: list[tuple[str, str]] | None,
+) -> tuple[Path, tuple[str, ...], dict[str, str]]:
+    delegation_path = delegation_run_path(team)
+    if delegation_path is None:
+        raise SystemExit("--wave-id requires a delegation-linked TeamExecutor run")
+    failures = delegation_check_failures(delegation_path)
+    if failures:
+        raise SystemExit(f"delegation run is invalid: {'; '.join(failures)}")
+    run = load_delegation_run(delegation_path)
+    wave = next((item for item in run.waves if item.get("wave_id") == wave_id), None)
+    if wave is None:
+        raise SystemExit(f"unknown wave: {wave_id}")
+    status = wave.get("status")
+    if status != "pending":
+        raise SystemExit(f"wave is not pending: {wave_id}")
+    try:
+        validated_run = open_wave(run, WaveId(wave_id))
+    except DelegationContractError as error:
+        raise SystemExit(str(error)) from error
+
+    required = tuple(str(worker_id) for worker_id in wave.get("required_worker_ids") or [])
+    core_workers = {str(worker.worker_id): worker for worker in validated_run.workers}
+    invalid_core = sorted(
+        worker_id
+        for worker_id in required
+        if worker_id not in core_workers
+        or core_workers[worker_id].backend is not Backend.TEAM_EXECUTOR
+        or core_workers[worker_id].status is not DelegationWorkerStatus.LAUNCHED
+    )
+    if invalid_core:
+        raise SystemExit(f"wave workers are not launched TeamExecutor workers in Core: {invalid_core}")
+
+    local_workers = {str(worker.get("worker_id")): worker for worker in team.get("workers", [])}
+    missing_local = sorted(set(required) - set(local_workers))
+    if missing_local:
+        raise SystemExit(f"wave references workers missing from TeamExecutor: {missing_local}")
+    invalid_local = sorted(
+        worker_id for worker_id in required if local_workers[worker_id].get("status") != "registered"
+    )
+    if invalid_local:
+        raise SystemExit(f"wave workers are not locally registered: {invalid_local}")
+
+    override_items = worker_command or []
+    override_ids = [worker_id for worker_id, _ in override_items]
+    duplicate_overrides = sorted(
+        worker_id for worker_id in set(override_ids) if override_ids.count(worker_id) > 1
+    )
+    if duplicate_overrides:
+        raise SystemExit(f"wave commands contain duplicate worker ids: {duplicate_overrides}")
+    overrides = dict(override_items)
+    outside_wave = sorted(set(overrides) - set(required))
+    if outside_wave:
+        raise SystemExit(f"wave commands reference workers outside the wave: {outside_wave}")
+    commands = {
+        worker_id: overrides.get(worker_id) or str(local_workers[worker_id].get("command") or "")
+        for worker_id in required
+    }
+    missing_commands = sorted(worker_id for worker_id, command in commands.items() if not command)
+    if missing_commands:
+        raise SystemExit(
+            "wave commands must exactly cover required workers; "
+            f"missing commands for: {missing_commands}"
+        )
+    return delegation_path, required, commands
+
+
+def record_wave_launch_failure(
+    *,
+    run_dir: Path,
+    team: dict[str, Any],
+    delegation_path: Path,
+    wave_id: str,
+    worker_ids_to_record: tuple[str, ...],
+    session: str,
+    error: BaseException,
+    cleanup: dict[str, Any],
+) -> tuple[Path | None, list[str]]:
+    failures: list[str] = []
+    failure_path = run_dir / "artifacts" / f"wave-launch-failure-{uuid.uuid4().hex}.json"
+    try:
+        write_json(
+            failure_path,
+            {
+                "format": "sejong.team-wave-launch-failure/v0.1-draft",
+                "run_id": team["run_id"],
+                "wave_id": wave_id,
+                "worker_ids": list(worker_ids_to_record),
+                "session": session,
+                "error": str(error),
+                "cleanup": cleanup,
+                "authority": "evidence_only",
+                "created_at": now_utc(),
+            },
+        )
+    except OSError as artifact_error:
+        failures.append(f"launch failure evidence write failed: {artifact_error}")
+        return None, failures
+
+    for worker_id in worker_ids_to_record:
+        core_run = load_delegation_run(delegation_path)
+        if any(
+            receipt.get("receipt_type") == "worker_terminal"
+            and receipt.get("wave_id") == wave_id
+            and receipt.get("worker_id") == worker_id
+            for receipt in core_run.receipts
+        ):
+            continue
+        worker = worker_by_id(team, worker_id) or {}
+        prompt_file = (run_dir / str(worker.get("prompt_path") or "")).resolve()
+        try:
+            record_terminal_receipt(
+                delegation_path,
+                TerminalReceiptRequest(
+                    receipt_id=ReceiptId(f"team-executor-launch-{wave_id}-{worker_id}"),
+                    wave_id=WaveId(wave_id),
+                    worker_id=DelegationWorkerId(worker_id),
+                    backend_worker_ref=f"tmux://{session}/{worker_id}",
+                    worker_contract_ref=str(prompt_file),
+                    worker_output_ref=str(failure_path),
+                    terminal_status=TerminalStatus.FAILED,
+                    summary="TeamExecutor wave launch failed; evidence awaits Core fan-in and review",
+                    evidence_refs=(str(failure_path),),
+                    blocker=f"TeamExecutor tmux launch failed: {error}",
+                ),
+            )
+        except DelegationContractError as receipt_error:
+            failures.append(f"terminal receipt failed for {worker_id}: {receipt_error}")
+    return failure_path, failures
+
+
+def wave_launch_attempt_path(run_dir: Path, wave_id: str) -> Path:
+    digest = hashlib.sha256(wave_id.encode()).hexdigest()
+    return run_dir / "artifacts" / "wave-launch-attempts" / f"{digest}.json"
+
+
+def create_wave_launch_attempt(
+    *,
+    run_dir: Path,
+    team: dict[str, Any],
+    wave_id: str,
+    worker_ids_to_launch: tuple[str, ...],
+    session: str,
+) -> Path:
+    path = wave_launch_attempt_path(run_dir, wave_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    temporary.write_text(
+        json.dumps(
+            {
+                "format": "sejong.team-wave-launch-attempt/v0.1-draft",
+                "run_id": team["run_id"],
+                "wave_id": wave_id,
+                "worker_ids": list(worker_ids_to_launch),
+                "session": session,
+                "status": "attempting",
+                "authority": "dispatch_once_evidence",
+                "created_at": now_utc(),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    try:
+        os.link(temporary, path)
+    except FileExistsError as error:
+        raise SystemExit(f"wave launch attempt already exists: {wave_id}") from error
+    finally:
+        temporary.unlink(missing_ok=True)
+    return path
+
+
+def save_local_wave_statuses(
+    run_dir: Path,
+    worker_statuses: dict[str, str],
+    *,
+    expected_status: str | None = None,
+) -> None:
+    team = load_team(run_dir)
+    states: dict[str, dict[str, Any]] = {}
+    for worker_id, status in worker_statuses.items():
+        worker = worker_by_id(team, worker_id)
+        if worker is None:
+            raise OSError(f"wave worker is missing from local team state: {worker_id}")
+        state = load_worker_state(run_dir, worker_id)
+        if expected_status is not None and (
+            worker.get("status") != expected_status or state.get("status") != expected_status
+        ):
+            raise OSError(f"wave worker local state changed during launch: {worker_id}")
+        worker["status"] = status
+        state["status"] = status
+        states[worker_id] = state
+    for worker_id, state in states.items():
+        save_worker_state(run_dir, worker_id, state)
+    save_team(run_dir, team)
+
+
+def launch_wave(args: argparse.Namespace, run_dir: Path, tmux_executable: str) -> int:
+    with run_state_lock(run_dir):
+        if args.session:
+            raise SystemExit("--session is not supported with --wave-id")
+        team = load_team(run_dir)
+        delegation_path, required, commands = wave_launch_contract(
+            team,
+            args.wave_id,
+            args.worker_command,
+        )
+        identity = hashlib.sha256(f"{team['run_id']}:{args.wave_id}".encode()).hexdigest()[:12]
+        session = f"sejong-wave-{identity}-{uuid.uuid4().hex[:12]}"
+        tmux_commands = planned_tmux_commands(
+            args,
+            run_dir,
+            team,
+            commands,
+            tmux_executable,
+            session,
+        )
+        if args.dry_run:
+            for command in tmux_commands:
+                print(" ".join(command))
+            return 0
+
+        if tmux_session_exists(session, tmux_executable):
+            raise SystemExit(f"tmux wave session already exists: {session}")
+        attempt_path = create_wave_launch_attempt(
+            run_dir=run_dir,
+            team=team,
+            wave_id=args.wave_id,
+            worker_ids_to_launch=required,
+            session=session,
+        )
+        try:
+            open_execution_wave(delegation_path, WaveId(args.wave_id))
+        except DelegationContractError as error:
+            attempt_path.unlink(missing_ok=True)
+            raise SystemExit(str(error)) from error
+
+        session_started = False
+        try:
+            for index, command in enumerate(tmux_commands):
+                subprocess.run(command, check=True)
+                if index == 0:
+                    session_started = True
+            save_local_wave_statuses(
+                run_dir,
+                {worker_id: "launched" for worker_id in required},
+                expected_status="registered",
+            )
+        except (OSError, subprocess.CalledProcessError) as error:
+            cleanup: dict[str, Any] = {
+                "session": session,
+                "attempted": session_started,
+                "status": "not_required" if not session_started else "failed",
+                "detail": "tmux session was not created" if not session_started else "",
+            }
+            if session_started:
+                try:
+                    result = subprocess.run(
+                        [tmux_executable, "kill-session", "-t", session],
+                        check=False,
+                        capture_output=True,
+                        text=True,
+                    )
+                    cleanup["status"] = "session_removed" if result.returncode == 0 else "failed"
+                    cleanup["detail"] = result.stderr.strip() or result.stdout.strip()
+                except OSError as cleanup_error:
+                    cleanup["detail"] = str(cleanup_error)
+            _, receipt_failures = record_wave_launch_failure(
+                run_dir=run_dir,
+                team=team,
+                delegation_path=delegation_path,
+                wave_id=args.wave_id,
+                worker_ids_to_record=required,
+                session=session,
+                error=error,
+                cleanup=cleanup,
+            )
+            core_run = load_delegation_run(delegation_path)
+            core_statuses = {str(worker.worker_id): worker.status.value for worker in core_run.workers}
+            try:
+                save_local_wave_statuses(
+                    run_dir,
+                    {
+                        worker_id: core_statuses[worker_id]
+                        for worker_id in required
+                        if core_statuses.get(worker_id) in {"failed", "timed_out", "blocked"}
+                    },
+                )
+            except OSError as state_error:
+                receipt_failures.append(f"local failure state write failed: {state_error}")
+            detail = f"tmux wave launch failed: {error}"
+            if cleanup["status"] == "failed":
+                detail = f"{detail}; exact tmux cleanup failed: {cleanup['detail']}"
+            if receipt_failures:
+                detail = f"{detail}; {'; '.join(receipt_failures)}"
+            raise SystemExit(detail) from error
+    print(f"tmux wave session launched: {session}")
+    return 0
+
+
+def launch(args: argparse.Namespace) -> int:
+    run_dir = require_run_dir(Path(args.run_dir))
+    if args.wave_id:
+        return launch_wave(args, run_dir, require_healthy_team_executor())
+    team = load_team(run_dir)
+    commands = {
+        worker["worker_id"]: worker["command"]
+        for worker in team.get("workers", [])
+        if worker.get("command")
+    }
+    commands.update(dict(args.worker_command or []))
+    unknown = set(commands) - worker_ids(team)
+    if unknown:
+        raise SystemExit(f"commands reference unknown workers: {sorted(unknown)}")
+    if not commands:
+        raise SystemExit("at least one --worker-command worker_id=command is required")
+    tmux_executable = require_healthy_team_executor()
+    delegation_path = delegation_run_path(team)
+    delegation_worker_ids = tuple(DelegationWorkerId(worker_id) for worker_id in commands)
+    if delegation_path is not None:
+        require_delegation_action(
+            lambda: reserve_delegation_workers(delegation_path, delegation_worker_ids, persist=False)
+        )
+
+    session = args.session or f"sejong-{team['run_id']}"
+    tmux_commands = planned_tmux_commands(args, run_dir, team, commands, tmux_executable, session)
 
     if args.dry_run:
         for command in tmux_commands:
@@ -2169,6 +2500,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     launch_parser = subparsers.add_parser("launch", help="Launch tmux panes for registered workers")
     launch_parser.add_argument("run_dir")
+    launch_parser.add_argument("--wave-id", help="Open one exact pending Core delegation wave")
     launch_parser.add_argument("--session")
     launch_parser.add_argument("--cwd")
     launch_parser.add_argument("--worker-command", action="append", type=parse_assignment)
