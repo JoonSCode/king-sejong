@@ -150,6 +150,9 @@
         },
         "attempt_ids": {
           "$ref": "#/$defs/StringList"
+        },
+        "replacement_todo_ids": {
+          "$ref": "https://kinno.dev/schemas/sejong/seungjeongwon-run.schema.json#/$defs/ReplacementTodoIds"
         }
       },
       "required": [

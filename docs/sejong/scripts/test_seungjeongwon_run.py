@@ -7,8 +7,10 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from delegation_run_model import JsonObject
+import seungjeongwon_run as run_module
 
 
 SCRIPT_PATH = Path(__file__).resolve()
@@ -23,6 +25,94 @@ def run_command(args: list[str]) -> subprocess.CompletedProcess[str]:
         text=True,
         capture_output=True,
         cwd=str(REPO_ROOT),
+    )
+
+
+def start_run(path: Path, *todos: str) -> subprocess.CompletedProcess[str]:
+    args = [
+        "start",
+        "--path",
+        str(path),
+        "--run-id",
+        f"run-{path.stem}",
+        "--repo-root",
+        ".",
+        "--goal",
+        "Keep execution active until the original goal is verified.",
+        "--success-criterion",
+        "The goal is verified after all actionable work succeeds.",
+        "--verification-method",
+        "Run the focused execution-loop checks.",
+    ]
+    for todo in todos:
+        args.extend(("--todo", todo))
+    return run_command(args)
+
+
+def record_attempt(
+    path: Path,
+    todo_id: str,
+    result: str,
+    *,
+    attempt_id: str | None = None,
+) -> subprocess.CompletedProcess[str]:
+    args = [
+        "record-attempt",
+        "--path",
+        str(path),
+        "--todo-id",
+        todo_id,
+        "--hypothesis",
+        f"Attempt {result} provides current evidence.",
+        "--action",
+        "Exercise the focused fixture.",
+        "--verification",
+        "Inspect the explicit result.",
+        "--result",
+        result,
+        "--finding",
+        f"The attempt result is {result}.",
+        "--next-decision",
+        "Complete on pass or try the next hypothesis.",
+        "--evidence-ref",
+        f"evidence-{todo_id}-{result}",
+    ]
+    if attempt_id:
+        args.extend(("--attempt-id", attempt_id))
+    return run_command(args)
+
+
+def complete_todo(path: Path, todo_id: str) -> subprocess.CompletedProcess[str]:
+    return run_command(
+        [
+            "complete-todo",
+            "--path",
+            str(path),
+            "--todo-id",
+            todo_id,
+            "--guardrail-score",
+            "done_criteria_satisfaction=1.0",
+            "--guardrail-score",
+            "overall=1.0",
+        ]
+    )
+
+
+def complete_run(path: Path) -> subprocess.CompletedProcess[str]:
+    return run_command(
+        [
+            "complete",
+            "--path",
+            str(path),
+            "--verification-evidence",
+            "fresh goal verification passed",
+            "--guardrail-score",
+            "selected_leaf_coverage=1.0",
+            "--guardrail-score",
+            "success_criteria_coverage=1.0",
+            "--guardrail-score",
+            "overall=1.0",
+        ]
     )
 
 
@@ -668,7 +758,7 @@ class SeungjeongwonRunTests(unittest.TestCase):
                     "--verification",
                     "guardrail score",
                     "--result",
-                    "partial",
+                    "pass",
                     "--finding",
                     "Evidence quality is weak.",
                     "--next-decision",
@@ -766,6 +856,373 @@ class SeungjeongwonRunTests(unittest.TestCase):
             )
         self.assertNotEqual(complete.returncode, 0)
         self.assertIn("selected leaf coverage below threshold", complete.stderr)
+
+    def test_attempt_result_compatibility_is_explicit(self) -> None:
+        for result in ("pass", "passed", "success", "succeeded", "successful", " PASS "):
+            with self.subTest(result=result):
+                self.assertTrue(run_module.attempt_result_passed(result))
+        for result in ("failed", "partial", "ok", ""):
+            with self.subTest(result=result):
+                self.assertFalse(run_module.attempt_result_passed(result))
+
+    def test_failed_attempt_cannot_complete_todo_or_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "failed-attempt.json"
+            self.assertEqual(
+                start_run(run_path, "T1|Try implementation|The focused check passes|focused check").returncode,
+                0,
+            )
+            self.assertEqual(record_attempt(run_path, "T1", "failed").returncode, 0)
+
+            todo_result = complete_todo(run_path, "T1")
+            run_result = complete_run(run_path)
+
+            self.assertNotEqual(todo_result.returncode, 0)
+            self.assertIn("latest attempt result is not passing", todo_result.stderr)
+            self.assertNotEqual(run_result.returncode, 0)
+            payload = json.loads(run_path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["status"], "active")
+            self.assertEqual(payload["todos"][0]["status"], "in_progress")
+
+    def test_completion_rejects_unresolved_blockers_reentry_and_terminal_failures(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "completion-boundaries.json"
+            self.assertEqual(
+                start_run(run_path, "T1|Finish work|Work passes|focused check").returncode,
+                0,
+            )
+            self.assertEqual(record_attempt(run_path, "T1", "pass").returncode, 0)
+            self.assertEqual(complete_todo(run_path, "T1").returncode, 0)
+            self.assertEqual(complete_run(run_path).returncode, 0)
+            completed = json.loads(run_path.read_text(encoding="utf-8"))
+
+            mutations = {
+                "blockers": lambda data: data.update(blockers=["dependency unresolved"]),
+                "reentry": lambda data: data.update(uigwe_reentry_requests=["brainstorming required"]),
+                "blocked todo": lambda data: data["todos"][0].update(status="blocked"),
+                "invalidated todo": lambda data: data["todos"][0].update(status="invalidated"),
+            }
+            for label, mutate in mutations.items():
+                with self.subTest(label=label):
+                    candidate = json.loads(json.dumps(completed))
+                    mutate(candidate)
+                    run_path.write_text(json.dumps(candidate), encoding="utf-8")
+                    checked = run_command(["check", "--path", str(run_path)])
+                    self.assertNotEqual(checked.returncode, 0)
+
+    def test_attempt_integrity_rejects_duplicate_and_cross_todo_references(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "attempt-integrity.json"
+            self.assertEqual(
+                start_run(
+                    run_path,
+                    "T1|First task|First task passes|focused check",
+                    "T2|Second task|Second task passes|focused check",
+                ).returncode,
+                0,
+            )
+            self.assertEqual(record_attempt(run_path, "T1", "pass", attempt_id="A-shared").returncode, 0)
+            before = run_path.read_bytes()
+            duplicate = record_attempt(run_path, "T2", "pass", attempt_id="A-shared")
+            self.assertNotEqual(duplicate.returncode, 0)
+            self.assertIn("duplicate attempt_id", duplicate.stderr)
+            self.assertEqual(run_path.read_bytes(), before)
+
+            payload = json.loads(run_path.read_text(encoding="utf-8"))
+            payload["todos"][1]["attempt_ids"] = ["A-shared"]
+            run_path.write_text(json.dumps(payload), encoding="utf-8")
+            crossed = run_command(["check", "--path", str(run_path)])
+            self.assertNotEqual(crossed.returncode, 0)
+            self.assertIn("belongs to todo T1", crossed.stderr)
+
+    def test_failed_attempt_reopens_completed_run_and_removes_stale_completion_authority(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "reopen-completed.json"
+            self.assertEqual(
+                start_run(run_path, "T1|Complete once|Initial check passes|focused check").returncode,
+                0,
+            )
+            self.assertEqual(record_attempt(run_path, "T1", "pass").returncode, 0)
+            self.assertEqual(complete_todo(run_path, "T1").returncode, 0)
+            self.assertEqual(complete_run(run_path).returncode, 0)
+
+            failed = record_attempt(run_path, "T1", "failed", attempt_id="A-regression")
+
+            self.assertEqual(failed.returncode, 0, failed.stderr)
+            payload = json.loads(run_path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["status"], "active")
+            self.assertEqual(payload["todos"][0]["status"], "in_progress")
+            self.assertEqual(payload["todos"][0]["guardrail_scores"], {})
+            self.assertEqual(payload["guardrail_scores"], {})
+            self.assertEqual(payload["verification_evidence"], ["fresh goal verification passed"])
+            self.assertEqual(payload["provenance"]["verification_refs"], ["fresh goal verification passed"])
+            self.assertEqual(payload["attempt_ledger"][-1]["result"], "failed")
+
+    def test_active_run_with_closed_todos_can_wait_for_goal_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "goal-verification.json"
+            self.assertEqual(
+                start_run(run_path, "T1|Finish leaf|Leaf check passes|focused check").returncode,
+                0,
+            )
+            self.assertEqual(record_attempt(run_path, "T1", "pass").returncode, 0)
+            self.assertEqual(complete_todo(run_path, "T1").returncode, 0)
+            payload = json.loads(run_path.read_text(encoding="utf-8"))
+            payload["verification_evidence"] = ["leaf evidence does not yet close the original goal"]
+            run_path.write_text(json.dumps(payload), encoding="utf-8")
+
+            checked = run_command(["check", "--path", str(run_path)])
+            summarized = run_command(["summary", "--path", str(run_path), "--json"])
+
+            self.assertEqual(checked.returncode, 0, checked.stderr)
+            self.assertEqual(summarized.returncode, 0, summarized.stderr)
+            self.assertEqual(json.loads(summarized.stdout)["next_action"], "verify_goal_criteria")
+
+    def test_active_empty_run_with_existing_verification_history_returns_to_goal_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "empty-goal-verification.json"
+            self.assertEqual(start_run(run_path).returncode, 0)
+            payload = json.loads(run_path.read_text(encoding="utf-8"))
+            payload["verification_evidence"] = ["prior evidence remains historical"]
+            run_path.write_text(json.dumps(payload), encoding="utf-8")
+
+            summarized = run_command(["summary", "--path", str(run_path), "--json"])
+
+            self.assertEqual(summarized.returncode, 0, summarized.stderr)
+            self.assertEqual(json.loads(summarized.stdout)["next_action"], "verify_goal_criteria")
+
+    def test_summary_distinguishes_retry_replanning_reentry_and_independent_work(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "summary-branches.json"
+            self.assertEqual(
+                start_run(
+                    run_path,
+                    "T1|Retry task|Retry succeeds|focused check",
+                    "T2|Independent task|Independent task succeeds|focused check",
+                ).returncode,
+                0,
+            )
+            self.assertEqual(record_attempt(run_path, "T1", "failed").returncode, 0)
+            payload = json.loads(run_path.read_text(encoding="utf-8"))
+            payload["blockers"] = ["A separate dependency is blocked"]
+            run_path.write_text(json.dumps(payload), encoding="utf-8")
+            retry = run_command(["summary", "--path", str(run_path), "--json"])
+            self.assertEqual(retry.returncode, 0, retry.stderr)
+            self.assertEqual(json.loads(retry.stdout)["next_action"], "retry_todo_with_next_hypothesis:T1")
+
+            payload["todos"][0]["status"] = "invalidated"
+            payload["todos"][1]["status"] = "completed"
+            payload["todos"][1]["attempt_ids"] = ["A2"]
+            payload["todos"][1]["guardrail_scores"] = {"overall": 1.0}
+            payload["attempt_ledger"].append(
+                {
+                    **payload["attempt_ledger"][0],
+                    "attempt_id": "A2",
+                    "todo_id": "T2",
+                    "result": "pass",
+                }
+            )
+            payload["blockers"] = []
+            payload["todos"][0]["status"] = "blocked"
+            run_path.write_text(json.dumps(payload), encoding="utf-8")
+            blocked = run_command(["summary", "--path", str(run_path), "--json"])
+            self.assertEqual(blocked.returncode, 0, blocked.stderr)
+            self.assertEqual(json.loads(blocked.stdout)["next_action"], "resolve_blocker_or_reenter_uigwe")
+
+            payload["todos"][0]["status"] = "invalidated"
+            run_path.write_text(json.dumps(payload), encoding="utf-8")
+            replanning = run_command(["summary", "--path", str(run_path), "--json"])
+            self.assertEqual(replanning.returncode, 0, replanning.stderr)
+            self.assertEqual(json.loads(replanning.stdout)["next_action"], "replan_invalidated_todo:T1")
+
+            payload["uigwe_reentry_requests"] = ["design no longer satisfies the goal"]
+            run_path.write_text(json.dumps(payload), encoding="utf-8")
+            reentry = run_command(["summary", "--path", str(run_path), "--json"])
+            self.assertEqual(reentry.returncode, 0, reentry.stderr)
+            self.assertEqual(json.loads(reentry.stdout)["next_action"], "reenter_uigwe")
+
+    def test_add_and_replace_todo_preserve_original_scope_until_replacements_complete(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "replace-todo.json"
+            self.assertEqual(
+                start_run(run_path, "T1|Original task|Original scope is resolved|focused check").returncode,
+                0,
+            )
+            added = run_command(
+                [
+                    "add-todo",
+                    "--path",
+                    str(run_path),
+                    "--todo",
+                    "T2|Independent task|Independent task passes|focused check",
+                ]
+            )
+            self.assertEqual(added.returncode, 0, added.stderr)
+            replaced = run_command(
+                [
+                    "replace-todo",
+                    "--path",
+                    str(run_path),
+                    "--todo-id",
+                    "T1",
+                    "--replacement-todo",
+                    "T1a|First replacement|First replacement passes|focused check",
+                    "--replacement-todo",
+                    "T1b|Second replacement|Second replacement passes|focused check",
+                ]
+            )
+            self.assertEqual(replaced.returncode, 0, replaced.stderr)
+            payload = json.loads(run_path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["todos"][0]["status"], "replaced")
+            self.assertEqual(payload["todos"][0]["replacement_todo_ids"], ["T1a", "T1b"])
+            self.assertNotEqual(complete_run(run_path).returncode, 0)
+
+            for todo_id in ("T2", "T1a", "T1b"):
+                self.assertEqual(record_attempt(run_path, todo_id, "passed").returncode, 0)
+                self.assertEqual(complete_todo(run_path, todo_id).returncode, 0)
+            self.assertEqual(complete_run(run_path).returncode, 0)
+
+    def test_replace_todo_rejects_invalid_links_and_preserves_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "invalid-replacement.json"
+            self.assertEqual(
+                start_run(run_path, "T1|Original task|Original scope is resolved|focused check").returncode,
+                0,
+            )
+            invalid_commands = (
+                ["replace-todo", "--path", str(run_path), "--todo-id", "missing", "--replacement-todo", "T2|New|Done|Check"],
+                ["replace-todo", "--path", str(run_path), "--todo-id", "T1", "--replacement-todo", "T1|Self|Done|Check"],
+                ["add-todo", "--path", str(run_path), "--todo", "T1|Duplicate|Done|Check"],
+            )
+            for command in invalid_commands:
+                with self.subTest(command=command[0:4]):
+                    before = run_path.read_bytes()
+                    result = run_command(command)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(run_path.read_bytes(), before)
+
+            payload = json.loads(run_path.read_text(encoding="utf-8"))
+            payload["todos"].extend(
+                [
+                    {**run_module.parse_todo("T2|Second|Done|Check"), "status": "replaced", "replacement_todo_ids": ["T1"]},
+                ]
+            )
+            payload["todos"][0]["status"] = "replaced"
+            payload["todos"][0]["replacement_todo_ids"] = ["T2"]
+            run_path.write_text(json.dumps(payload), encoding="utf-8")
+            cycled = run_command(["check", "--path", str(run_path)])
+            self.assertNotEqual(cycled.returncode, 0)
+            self.assertIn("replacement cycle", cycled.stderr)
+
+            for malformed in ([], 7, {"bad": "shape"}, [7], [{}]):
+                with self.subTest(malformed=malformed):
+                    candidate = json.loads(json.dumps(payload))
+                    candidate["todos"][0]["replacement_todo_ids"] = malformed
+                    run_path.write_text(json.dumps(candidate), encoding="utf-8")
+                    checked = run_command(["check", "--path", str(run_path)])
+                    self.assertNotEqual(checked.returncode, 0)
+                    self.assertNotIn("Traceback", checked.stderr)
+                    self.assertIn("replacement_todo_ids", checked.stderr)
+
+    def test_atomic_write_failure_preserves_original_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "atomic.json"
+            path.write_text('{"original": true}\n', encoding="utf-8")
+            before = path.read_bytes()
+
+            with patch.object(run_module.os, "replace", side_effect=OSError("simulated replace failure")):
+                with self.assertRaises(OSError):
+                    run_module.write_json(path, {"replacement": True})
+
+            self.assertEqual(path.read_bytes(), before)
+            self.assertEqual(list(path.parent.glob(f".{path.name}.*.tmp")), [])
+
+    def test_checkpoint_replay_preserves_replacement_links_and_detects_stale_change(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_path = Path(tmp) / "replacement-checkpoint-run.json"
+            checkpoint_path = Path(tmp) / "replacement-checkpoint.json"
+            replay_path = Path(tmp) / "replacement-replay.json"
+            self.assertEqual(
+                start_run(run_path, "T1|Original task|Original scope is resolved|focused check").returncode,
+                0,
+            )
+            self.assertEqual(
+                run_command(
+                    [
+                        "replace-todo",
+                        "--path",
+                        str(run_path),
+                        "--todo-id",
+                        "T1",
+                        "--replacement-todo",
+                        "T1a|Replacement|Replacement passes|focused check",
+                    ]
+                ).returncode,
+                0,
+            )
+            self.assertEqual(
+                run_command(
+                    [
+                        "checkpoint",
+                        "--path",
+                        str(run_path),
+                        "--output",
+                        str(checkpoint_path),
+                        "--context-id",
+                        "ctx-replacement",
+                        "--objective-id",
+                        "obj-replacement",
+                    ]
+                ).returncode,
+                0,
+            )
+            checkpoint_payload = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+            for malformed in (None, "bad", [None], ["bad"]):
+                with self.subTest(malformed_checkpoint_statuses=malformed):
+                    candidate = json.loads(json.dumps(checkpoint_payload))
+                    candidate["todo_statuses"] = malformed
+                    failures = run_module.checkpoint_failures(candidate)
+                    self.assertTrue(any("todo_statuses" in failure for failure in failures))
+            original_status = next(item for item in checkpoint_payload["todo_statuses"] if item["todo_id"] == "T1")
+            self.assertEqual(original_status["replacement_todo_ids"], ["T1a"])
+
+            replayed = run_command(
+                [
+                    "replay",
+                    "--checkpoint",
+                    str(checkpoint_path),
+                    "--path",
+                    str(run_path),
+                    "--output",
+                    str(replay_path),
+                    "--expect-context-id",
+                    "ctx-replacement",
+                    "--expect-objective-id",
+                    "obj-replacement",
+                ]
+            )
+            self.assertEqual(replayed.returncode, 0, replayed.stderr)
+            replay_payload = json.loads(replay_path.read_text(encoding="utf-8"))
+            self.assertEqual(replay_payload["todo_statuses"], checkpoint_payload["todo_statuses"])
+
+            payload = json.loads(run_path.read_text(encoding="utf-8"))
+            payload["todos"][0]["replacement_todo_ids"] = []
+            payload["updated_at"] = "2026-09-12T08:00:00Z"
+            run_path.write_text(json.dumps(payload), encoding="utf-8")
+            stale = run_command(
+                [
+                    "stale-check",
+                    "--checkpoint",
+                    str(checkpoint_path),
+                    "--path",
+                    str(run_path),
+                ]
+            )
+            self.assertNotEqual(stale.returncode, 0)
+            self.assertTrue(
+                "replacement_todo_ids must be a non-empty list" in stale.stderr
+                or "stale checkpoint todo_statuses mismatch" in stale.stderr
+            )
 
     def test_checkpoint_replay_preserves_resume_fields(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -27,6 +28,7 @@ CLOSED_TODO_STATUSES = {"completed", "blocked", "invalidated", "replaced"}
 TODO_STATUSES = OPEN_TODO_STATUSES | CLOSED_TODO_STATUSES
 DEFAULT_GUARDRAIL_THRESHOLD = 0.98
 DEFAULT_COVERAGE_THRESHOLD = 1.0
+PASSING_ATTEMPT_RESULTS = {"pass", "passed", "success", "succeeded", "successful"}
 PROVENANCE_REQUIRED_FIELDS = (
     "created_by",
     "source_repo",
@@ -50,7 +52,25 @@ def load_json(path: Path) -> dict[str, Any]:
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temporary_path = Path(handle.name)
+            handle.write(json.dumps(data, indent=2, sort_keys=True) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_path, path)
+    except Exception:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+        raise
 
 
 def parse_todo(value: str) -> dict[str, Any]:
@@ -154,6 +174,59 @@ def current_todo(data: dict[str, Any]) -> dict[str, Any] | None:
     return open_items[0] if open_items else None
 
 
+def attempt_result_passed(result: Any) -> bool:
+    return isinstance(result, str) and result.strip().lower() in PASSING_ATTEMPT_RESULTS
+
+
+def todo_attempts(data: dict[str, Any], todo_id: str) -> list[dict[str, Any]]:
+    return [attempt for attempt in data.get("attempt_ledger") or [] if attempt.get("todo_id") == todo_id]
+
+
+def latest_todo_attempt(data: dict[str, Any], todo_id: str) -> dict[str, Any] | None:
+    attempts = todo_attempts(data, todo_id)
+    return attempts[-1] if attempts else None
+
+
+def todo_statuses(data: dict[str, Any]) -> list[dict[str, Any]]:
+    statuses: list[dict[str, Any]] = []
+    for todo in data.get("todos") or []:
+        status = {
+            "todo_id": todo.get("todo_id"),
+            "status": todo.get("status"),
+            "attempt_ids": todo.get("attempt_ids") or [],
+        }
+        if "replacement_todo_ids" in todo:
+            status["replacement_todo_ids"] = todo.get("replacement_todo_ids")
+        statuses.append(status)
+    return statuses
+
+
+def replacement_scope_resolved(data: dict[str, Any], todo_id: str, seen: set[str] | None = None) -> bool:
+    todo = todo_by_id(data, todo_id)
+    if todo is None:
+        return False
+    if todo.get("status") == "completed":
+        return True
+    if todo.get("status") != "replaced":
+        return False
+    replacements = todo.get("replacement_todo_ids")
+    if not isinstance(replacements, list) or not replacements:
+        return False
+    active_seen = set(seen or ())
+    if todo_id in active_seen:
+        return False
+    active_seen.add(todo_id)
+    return all(replacement_scope_resolved(data, replacement_id, active_seen) for replacement_id in replacements)
+
+
+def clear_completion_authority(data: dict[str, Any], todo: dict[str, Any] | None = None) -> None:
+    data["status"] = "active"
+    data["guardrail_scores"] = {}
+    if todo is not None:
+        todo["status"] = "in_progress"
+        todo["guardrail_scores"] = {}
+
+
 def run_summary(data: dict[str, Any]) -> dict[str, Any]:
     active_todo = current_todo(data) or {}
     attempts = data.get("attempt_ledger") or []
@@ -171,14 +244,29 @@ def run_summary(data: dict[str, Any]) -> dict[str, Any]:
 
     if status == "completed":
         next_action = "no_action_completed"
-    elif blockers:
-        next_action = "resolve_blocker_or_reenter_uigwe"
-    elif status == "blocked":
-        next_action = "resolve_blocker_or_reenter_uigwe"
+    elif uigwe_reentry_requests:
+        next_action = "reenter_uigwe"
     elif status == "active" and current_todo_id:
-        next_action = f"continue_todo:{current_todo_id}"
-    elif status == "active" and verification_refs:
-        next_action = "complete_or_block_run"
+        latest_attempt = latest_todo_attempt(data, current_todo_id)
+        if latest_attempt is not None and not attempt_result_passed(latest_attempt.get("result")):
+            next_action = f"retry_todo_with_next_hypothesis:{current_todo_id}"
+        else:
+            next_action = f"continue_todo:{current_todo_id}"
+    elif any(todo.get("status") == "blocked" for todo in data.get("todos") or []):
+        next_action = "resolve_blocker_or_reenter_uigwe"
+    elif invalidated_todo := next(
+        (todo for todo in data.get("todos") or [] if todo.get("status") == "invalidated"),
+        None,
+    ):
+        next_action = f"replan_invalidated_todo:{invalidated_todo.get('todo_id')}"
+    elif status == "blocked" or blockers:
+        next_action = "resolve_blocker_or_reenter_uigwe"
+    elif status == "active" and (
+        data.get("todos")
+        or verification_refs
+        or (data.get("provenance") or {}).get("verification_refs")
+    ):
+        next_action = "verify_goal_criteria"
     elif status == "active":
         next_action = "add_actionable_todo_or_record_blocker"
     else:
@@ -431,7 +519,17 @@ def run_failures(data: dict[str, Any]) -> list[str]:
     selected_leaf_coverage = float(guardrail_thresholds.get("selected_leaf_coverage", DEFAULT_COVERAGE_THRESHOLD))
     success_criteria_coverage = float(guardrail_thresholds.get("success_criteria_coverage", DEFAULT_COVERAGE_THRESHOLD))
 
-    attempt_ids = {attempt.get("attempt_id") for attempt in data.get("attempt_ledger") or []}
+    attempt_ledger = data.get("attempt_ledger") or []
+    attempt_ids: set[str] = set()
+    attempts_by_id: dict[str, dict[str, Any]] = {}
+    for attempt in attempt_ledger:
+        attempt_id = attempt.get("attempt_id")
+        if isinstance(attempt_id, str) and attempt_id:
+            if attempt_id in attempt_ids:
+                failures.append(f"duplicate attempt_id: {attempt_id}")
+            else:
+                attempt_ids.add(attempt_id)
+                attempts_by_id[attempt_id] = attempt
     todo_ids: set[str] = set()
     for todo in data.get("todos") or []:
         todo_id = todo.get("todo_id")
@@ -446,15 +544,45 @@ def run_failures(data: dict[str, Any]) -> list[str]:
                 failures.append(f"todo {todo_id} missing {field}")
         if todo.get("status") not in TODO_STATUSES:
             failures.append(f"todo {todo_id} has unsupported status: {todo.get('status')}")
+        replacement_ids = todo.get("replacement_todo_ids")
+        if "replacement_todo_ids" in todo:
+            if not isinstance(replacement_ids, list) or not replacement_ids:
+                failures.append(f"todo {todo_id} replacement_todo_ids must be a non-empty list")
+                replacement_ids = []
+            elif any(not isinstance(item, str) or not item for item in replacement_ids):
+                failures.append(f"todo {todo_id} replacement_todo_ids must contain only non-empty strings")
+            elif len(replacement_ids) != len(set(replacement_ids)):
+                failures.append(f"todo {todo_id} replacement_todo_ids must be unique")
+            if todo.get("status") != "replaced":
+                failures.append(f"todo {todo_id} with replacement_todo_ids must have replaced status")
+        elif todo.get("status") == "replaced":
+            failures.append(f"replaced todo requires replacement_todo_ids: {todo_id}")
         todo_attempt_ids = todo.get("attempt_ids") or []
         if not isinstance(todo_attempt_ids, list):
             failures.append(f"todo {todo_id} attempt_ids must be a list")
             todo_attempt_ids = []
+        elif len(todo_attempt_ids) != len(set(todo_attempt_ids)):
+            failures.append(f"todo {todo_id} attempt_ids must be unique")
         missing_attempts = sorted(set(todo_attempt_ids) - attempt_ids)
         if missing_attempts:
             failures.append(f"todo {todo_id} references missing attempts: {', '.join(missing_attempts)}")
+        for attempt_id in todo_attempt_ids:
+            attempt = attempts_by_id.get(attempt_id)
+            if attempt is not None and attempt.get("todo_id") != todo_id:
+                failures.append(f"todo {todo_id} references attempt {attempt_id} that belongs to todo {attempt.get('todo_id')}")
+        ledger_todo_attempt_ids = [
+            attempt.get("attempt_id")
+            for attempt in attempt_ledger
+            if attempt.get("todo_id") == todo_id and attempt.get("attempt_id")
+        ]
+        if todo_attempt_ids != ledger_todo_attempt_ids:
+            failures.append(f"todo {todo_id} attempt_ids do not match attempt ledger order")
         if todo.get("status") == "completed" and not todo_attempt_ids:
             failures.append(f"completed todo requires at least one attempt: {todo_id}")
+        if todo.get("status") == "completed" and todo_attempt_ids:
+            latest_attempt = latest_todo_attempt(data, todo_id)
+            if latest_attempt is None or not attempt_result_passed(latest_attempt.get("result")):
+                failures.append(f"completed todo latest attempt result is not passing: {todo_id}")
         todo_scores = todo.get("guardrail_scores")
         if todo.get("status") == "completed":
             if not isinstance(todo_scores, dict) or not todo_scores:
@@ -470,7 +598,48 @@ def run_failures(data: dict[str, Any]) -> list[str]:
                 if "overall" not in todo_scores:
                     failures.append(f"completed todo requires overall guardrail score: {todo_id}")
 
-    for attempt in data.get("attempt_ledger") or []:
+    for todo in data.get("todos") or []:
+        todo_id = todo.get("todo_id")
+        raw_replacement_ids = todo.get("replacement_todo_ids")
+        if not isinstance(raw_replacement_ids, list):
+            continue
+        for replacement_id in raw_replacement_ids:
+            if not isinstance(replacement_id, str) or not replacement_id:
+                continue
+            if replacement_id == todo_id:
+                failures.append(f"todo {todo_id} cannot replace itself")
+            elif replacement_id not in todo_ids:
+                failures.append(f"todo {todo_id} references missing replacement todo: {replacement_id}")
+
+    replacement_graph = {
+        todo.get("todo_id"): [
+            replacement_id
+            for replacement_id in (todo.get("replacement_todo_ids") or [])
+            if isinstance(replacement_id, str) and replacement_id
+        ]
+        for todo in data.get("todos") or []
+        if todo.get("todo_id") and isinstance(todo.get("replacement_todo_ids") or [], list)
+    }
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def visit_replacements(todo_id: str) -> None:
+        if todo_id in visiting:
+            failures.append(f"replacement cycle includes todo: {todo_id}")
+            return
+        if todo_id in visited:
+            return
+        visiting.add(todo_id)
+        for replacement_id in replacement_graph.get(todo_id, []):
+            if replacement_id in replacement_graph:
+                visit_replacements(replacement_id)
+        visiting.remove(todo_id)
+        visited.add(todo_id)
+
+    for todo_id in replacement_graph:
+        visit_replacements(todo_id)
+
+    for attempt in attempt_ledger:
         attempt_id = attempt.get("attempt_id")
         for field in (
             "attempt_id",
@@ -491,6 +660,16 @@ def run_failures(data: dict[str, Any]) -> list[str]:
     if data.get("status") == "completed":
         if open_todos(data):
             failures.append("completed run cannot have open todos")
+        if data.get("blockers"):
+            failures.append("completed run cannot have unresolved blockers")
+        if data.get("uigwe_reentry_requests"):
+            failures.append("completed run cannot have unresolved Uigwe re-entry requests")
+        for todo in data.get("todos") or []:
+            todo_id = todo.get("todo_id")
+            if todo.get("status") in {"blocked", "invalidated"}:
+                failures.append(f"completed run cannot contain {todo.get('status')} todo: {todo_id}")
+            elif todo.get("status") == "replaced" and not replacement_scope_resolved(data, str(todo_id)):
+                failures.append(f"completed run has unresolved replacement scope: {todo_id}")
         if not data.get("verification_evidence"):
             failures.append("completed run requires verification evidence")
         run_scores = data.get("guardrail_scores")
@@ -512,8 +691,6 @@ def run_failures(data: dict[str, Any]) -> list[str]:
                 failures.append("completed run requires selected_leaf_coverage guardrail score")
             if "success_criteria_coverage" not in run_scores:
                 failures.append("completed run requires success_criteria_coverage guardrail score")
-    if data.get("status") == "active" and data.get("verification_evidence") and not open_todos(data):
-        failures.append("active run with verification evidence and no open todos should be completed or blocked")
     return failures
 
 
@@ -575,14 +752,7 @@ def checkpoint_payload(data: dict[str, Any], run_path: Path, args: argparse.Name
         "verification_methods": data["verification_methods"],
         "guardrail_thresholds": data["guardrail_thresholds"],
         "active_todos": open_todos(data),
-        "todo_statuses": [
-            {
-                "todo_id": todo.get("todo_id"),
-                "status": todo.get("status"),
-                "attempt_ids": todo.get("attempt_ids") or [],
-            }
-            for todo in data.get("todos") or []
-        ],
+        "todo_statuses": todo_statuses(data),
         "attempt_ledger": data["attempt_ledger"],
         "verification_evidence": data["verification_evidence"],
         "execution_feedback_refs": data["execution_feedback_refs"],
@@ -644,6 +814,25 @@ def checkpoint_failures(data: dict[str, Any]) -> list[str]:
         failures.append("checkpoint guardrail_thresholds must be an object")
     if "guardrail_scores" in data and not isinstance(data.get("guardrail_scores"), dict):
         failures.append("checkpoint guardrail_scores must be an object")
+    raw_todo_statuses = data.get("todo_statuses")
+    todo_statuses_to_check = raw_todo_statuses if isinstance(raw_todo_statuses, list) else []
+    for index, todo_status in enumerate(todo_statuses_to_check):
+        if not isinstance(todo_status, dict):
+            failures.append(f"checkpoint todo_statuses[{index}] must be an object")
+            continue
+        todo_id = todo_status.get("todo_id")
+        replacement_ids = todo_status.get("replacement_todo_ids")
+        if "replacement_todo_ids" in todo_status:
+            if not isinstance(replacement_ids, list) or not replacement_ids:
+                failures.append(f"checkpoint todo {todo_id} replacement_todo_ids must be a non-empty list")
+            elif any(not isinstance(item, str) or not item for item in replacement_ids):
+                failures.append(f"checkpoint todo {todo_id} replacement_todo_ids must contain only non-empty strings")
+            elif len(replacement_ids) != len(set(replacement_ids)):
+                failures.append(f"checkpoint todo {todo_id} replacement_todo_ids must be unique")
+            if todo_status.get("status") != "replaced":
+                failures.append(f"checkpoint todo {todo_id} with replacement_todo_ids must have replaced status")
+        elif todo_status.get("status") == "replaced":
+            failures.append(f"checkpoint replaced todo requires replacement_todo_ids: {todo_id}")
     for field in ("checkpoint_id", "run_id", "repo_root", "source_run_path", "source_run_updated_at", "approved_goal", "status", "created_at"):
         if field in data and not data.get(field):
             failures.append(f"checkpoint {field} must be non-empty")
@@ -665,6 +854,7 @@ def resume_payload(checkpoint: dict[str, Any], *, format_name: str) -> dict[str,
         "verification_methods": checkpoint["verification_methods"],
         "guardrail_thresholds": checkpoint["guardrail_thresholds"],
         "active_todos": checkpoint["active_todos"],
+        "todo_statuses": checkpoint["todo_statuses"],
         "attempt_ledger": checkpoint["attempt_ledger"],
         "verification_evidence": checkpoint["verification_evidence"],
         "execution_feedback_refs": checkpoint["execution_feedback_refs"],
@@ -715,6 +905,8 @@ def replay_stale_failures(
         failures.append("stale checkpoint approved_goal mismatch")
     if checkpoint["active_todos"] != open_todos(run_data):
         failures.append("stale checkpoint active_todos mismatch")
+    if checkpoint["todo_statuses"] != todo_statuses(run_data):
+        failures.append("stale checkpoint todo_statuses mismatch")
     for field in ("attempt_ledger", "verification_evidence", "execution_feedback_refs", "delegation_fan_in_refs", "guardrail_scores", "blockers", "uigwe_reentry_requests"):
         if checkpoint.get(field) != run_data.get(field):
             failures.append(f"stale checkpoint {field} mismatch")
@@ -804,6 +996,16 @@ def record_attempt(args: argparse.Namespace) -> int:
         print(f"unknown todo: {args.todo_id}", file=sys.stderr)
         return 1
     attempt_id = args.attempt_id or f"A{len(data.get('attempt_ledger') or []) + 1}"
+    if any(attempt.get("attempt_id") == attempt_id for attempt in data.get("attempt_ledger") or []):
+        print(f"duplicate attempt_id: {attempt_id}", file=sys.stderr)
+        return 1
+    if todo.get("status") == "replaced":
+        print(f"replaced todo cannot receive attempts: {args.todo_id}", file=sys.stderr)
+        return 1
+    reopens_completion = (
+        not attempt_result_passed(args.result)
+        and (todo.get("status") == "completed" or data.get("status") == "completed")
+    )
     attempt = {
         "attempt_id": attempt_id,
         "todo_id": args.todo_id,
@@ -818,7 +1020,9 @@ def record_attempt(args: argparse.Namespace) -> int:
     }
     data.setdefault("attempt_ledger", []).append(attempt)
     todo.setdefault("attempt_ids", []).append(attempt_id)
-    if todo.get("status") == "pending":
+    if reopens_completion:
+        clear_completion_authority(data, todo)
+    elif todo.get("status") == "pending":
         todo["status"] = "in_progress"
     data["updated_at"] = now_utc()
     failures = run_failures(data)
@@ -826,6 +1030,74 @@ def record_attempt(args: argparse.Namespace) -> int:
         return emit_failures(failures)
     write_json(path, data)
     print(f"attempt recorded: {attempt_id}")
+    return 0
+
+
+def add_todo(args: argparse.Namespace) -> int:
+    path = Path(args.path)
+    data = load_json(path)
+    new_todo = args.todo
+    todo_id = new_todo["todo_id"]
+    if todo_by_id(data, todo_id) is not None:
+        print(f"duplicate todo_id: {todo_id}", file=sys.stderr)
+        return 1
+    if data.get("status") == "completed":
+        clear_completion_authority(data)
+    else:
+        data["status"] = "active"
+        data["guardrail_scores"] = {}
+    data.setdefault("todos", []).append(new_todo)
+    data["updated_at"] = now_utc()
+    failures = run_failures(data)
+    if failures:
+        return emit_failures(failures)
+    write_json(path, data)
+    print(f"todo added: {todo_id}")
+    return 0
+
+
+def replace_todo(args: argparse.Namespace) -> int:
+    path = Path(args.path)
+    data = load_json(path)
+    original = todo_by_id(data, args.todo_id)
+    if original is None:
+        print(f"unknown todo: {args.todo_id}", file=sys.stderr)
+        return 1
+    if original.get("status") == "replaced":
+        print(f"todo is already replaced: {args.todo_id}", file=sys.stderr)
+        return 1
+    replacements = args.replacement_todo or []
+    if not replacements:
+        print("replace-todo requires at least one replacement todo", file=sys.stderr)
+        return 1
+    replacement_ids = [todo["todo_id"] for todo in replacements]
+    if len(replacement_ids) != len(set(replacement_ids)):
+        print("replacement todo ids must be unique", file=sys.stderr)
+        return 1
+    if args.todo_id in replacement_ids:
+        print(f"todo {args.todo_id} cannot replace itself", file=sys.stderr)
+        return 1
+    existing_ids = {todo.get("todo_id") for todo in data.get("todos") or []}
+    duplicate_ids = [todo_id for todo_id in replacement_ids if todo_id in existing_ids]
+    if duplicate_ids:
+        print(f"replacement todo already exists: {', '.join(duplicate_ids)}", file=sys.stderr)
+        return 1
+
+    if data.get("status") == "completed":
+        clear_completion_authority(data)
+    else:
+        data["status"] = "active"
+        data["guardrail_scores"] = {}
+    original["status"] = "replaced"
+    original["guardrail_scores"] = {}
+    original["replacement_todo_ids"] = replacement_ids
+    data.setdefault("todos", []).extend(replacements)
+    data["updated_at"] = now_utc()
+    failures = run_failures(data)
+    if failures:
+        return emit_failures(failures)
+    write_json(path, data)
+    print(f"todo replaced: {args.todo_id} -> {', '.join(replacement_ids)}")
     return 0
 
 
@@ -838,6 +1110,10 @@ def complete_todo(args: argparse.Namespace) -> int:
         return 1
     if not todo.get("attempt_ids"):
         print(f"todo requires at least one attempt before completion: {args.todo_id}", file=sys.stderr)
+        return 1
+    latest_attempt = latest_todo_attempt(data, args.todo_id)
+    if latest_attempt is None or not attempt_result_passed(latest_attempt.get("result")):
+        print(f"todo latest attempt result is not passing: {args.todo_id}", file=sys.stderr)
         return 1
     todo["guardrail_scores"] = score_map(args.guardrail_score)
     todo["status"] = "completed"
@@ -1032,6 +1308,20 @@ def build_parser() -> argparse.ArgumentParser:
     attempt_parser.add_argument("--next-decision", required=True)
     attempt_parser.add_argument("--evidence-ref", action="append")
     attempt_parser.set_defaults(func=record_attempt)
+
+    add_todo_parser = subparsers.add_parser("add-todo", help="Append an actionable todo to an existing run.")
+    add_todo_parser.add_argument("--path", required=True)
+    add_todo_parser.add_argument("--todo", type=parse_todo, required=True)
+    add_todo_parser.set_defaults(func=add_todo)
+
+    replace_todo_parser = subparsers.add_parser(
+        "replace-todo",
+        help="Preserve an original todo and atomically connect its replacement todos.",
+    )
+    replace_todo_parser.add_argument("--path", required=True)
+    replace_todo_parser.add_argument("--todo-id", required=True)
+    replace_todo_parser.add_argument("--replacement-todo", action="append", type=parse_todo, required=True)
+    replace_todo_parser.set_defaults(func=replace_todo)
 
     todo_parser = subparsers.add_parser("complete-todo", help="Mark a todo completed after at least one attempt.")
     todo_parser.add_argument("--path", required=True)

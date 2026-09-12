@@ -283,6 +283,14 @@ An authorized goal-backed handoff still requires:
 
 The native goal payload must stay broad. Include the approved objective, completion criteria, verification evidence requirements, blocker and re-entry policy, and source refs. Seungjeongwon keeps the detailed todo list, replacements, attempt hypotheses, and verification steps in its execution board and feedback.
 
+The planning, persistence, and execution loops must remain connected. Finishing
+the initial handoff leaves triggers verification of the original goal; an
+uncovered criterion creates more in-scope work. A failed execution hypothesis
+returns to Seungjeongwon's retry or re-decomposition loop. A planning
+contradiction returns to the relevant Uigwe stage through the lead, preserving
+settled choices and continuing after the contradiction is resolved. A handoff
+or re-entry recommendation alone does not finish authorized outcome work.
+
 When goal creation is not requested or permitted, continue Seungjeongwon execution in the current task. Record the actual reason in existing feedback fields; do not add a new enum. Use `native_goal_unavailable` only with a reason that accurately identifies the host limitation. Do not pretend a visible tool is absent.
 
 Mark an active goal complete only after fresh evidence satisfies the agreed criteria. Mark it blocked only after the current tool's repeated-blocker threshold is met and no meaningful local progress remains. Do not use a goal status to pause work or alter a user-controlled budget.

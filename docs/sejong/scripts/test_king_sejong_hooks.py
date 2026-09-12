@@ -1437,6 +1437,68 @@ class KingSejongHookTests(unittest.TestCase):
         self.assertEqual(output["decision"], "block")
         self.assertIn("active Seungjeongwon run remains", output["reason"])
 
+    def test_stop_rejects_completed_run_with_unresolved_work(self) -> None:
+        for unresolved in ("blocker", "reentry", "blocked", "invalidated"):
+            with self.subTest(unresolved=unresolved), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                run_data = seungjeongwon_run_fixture(status="completed")
+                if unresolved == "blocker":
+                    run_data["blockers"] = ["Required persistence check failed."]
+                elif unresolved == "reentry":
+                    run_data["uigwe_reentry_requests"] = ["Reconcile the contradicted design."]
+                else:
+                    run_data["todos"] = seungjeongwon_run_fixture(todo_status=unresolved)["todos"]
+                run_path = root / "seungjeongwon-run.json"
+                run_path.write_text(json.dumps(run_data), encoding="utf-8")
+                context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+                context["required_route_sequence"] = []
+                context["pending_gates"] = []
+                context["artifact_refs"] = [str(run_path)]
+                context_path = root / "context.json"
+                context_path.write_text(json.dumps(context), encoding="utf-8")
+
+                output = run_hook("Stop", {"stop_hook_active": False}, context_path)
+
+                self.assertEqual(output.get("decision"), "block")
+                self.assertIn("invalid Seungjeongwon run refs", output["reason"])
+
+    def test_goal_verification_phase_continues_and_survives_compaction(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run_data = seungjeongwon_run_fixture(status="completed")
+            run_data["status"] = "active"
+            run_data["guardrail_scores"] = {}
+            run_data["repo_root"] = str(REPO_ROOT)
+            run_path = root / "seungjeongwon-run.json"
+            run_path.write_text(json.dumps(run_data), encoding="utf-8")
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
+            context.update({
+                "repo_id": "goal-review",
+                "run_id": "goal-review-context",
+                "repo_root": str(REPO_ROOT),
+                "objective_id": "original-goal-review",
+                "required_route_sequence": [],
+                "pending_gates": [],
+                "artifact_refs": [str(run_path)],
+            })
+            context_path = root / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+            runtime_root = root / "sejong-home"
+
+            stopped = run_hook("Stop", {"stop_hook_active": False}, context_path)
+            compacted = run_hook("PreCompact", {"cwd": str(REPO_ROOT)}, context_path, sejong_home=runtime_root)
+            resumed = run_hook("SessionStart", {"source": "compact"}, context_path)
+
+            self.assertEqual(stopped.get("decision"), "block")
+            self.assertIn("verify_goal_criteria", stopped["reason"])
+            self.assertEqual(compacted, {})
+            checkpoints = list(runtime_root.rglob("*.seungjeongwon-checkpoint.json"))
+            self.assertEqual(len(checkpoints), 1)
+            checkpoint = json.loads(checkpoints[0].read_text(encoding="utf-8"))
+            self.assertEqual(checkpoint["approved_goal"], run_data["goal"])
+            self.assertEqual(checkpoint["success_criteria"], run_data["success_criteria"])
+            self.assertIn("verify_goal_criteria", resumed["hookSpecificOutput"]["additionalContext"])
+
     def test_precompact_blocks_invalid_seungjeongwon_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             run_path = Path(tmp) / "seungjeongwon-run.json"

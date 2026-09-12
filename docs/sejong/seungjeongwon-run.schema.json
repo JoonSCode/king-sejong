@@ -231,6 +231,9 @@
         },
         "attempt_ids": {
           "$ref": "#/$defs/StringList"
+        },
+        "replacement_todo_ids": {
+          "$ref": "#/$defs/ReplacementTodoIds"
         }
       },
       "required": [
@@ -242,6 +245,14 @@
         "status",
         "attempt_ids"
       ]
+    },
+    "ReplacementTodoIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/NonEmptyString"
+      }
     },
     "Attempt": {
       "type": "object",

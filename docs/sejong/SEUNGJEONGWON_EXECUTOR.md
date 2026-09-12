@@ -44,6 +44,15 @@ The active Uigwe bundle owns these guardrails when it exists; otherwise the comp
 
 Uigwe handoff leaves are not final implementation todos. They are bounded objectives that are safe to start from. Seungjeongwon owns the executor-side loop that turns each handoff leaf into actionable leaves before execution begins.
 
+These responsibilities form a continuing goal loop: Uigwe establishes and checks
+the goal and its decomposition; Seungjeongwon chooses, executes, and revises the
+detailed work; authorized native goal backing helps the host continue that same
+objective. Completing the initial todo list does not establish that the goal is
+achieved. Compare the resulting behavior with the original success criteria,
+look for an uncovered requirement or counterexample, and add or replace work
+inside the approved boundaries when needed. Keep the run active during this
+goal-level verification, including when it already contains partial evidence.
+
 Uigwe also owns the numeric completion guardrails that decide when
 Seungjeongwon may close an actionable leaf or the overall run. The default
 completion threshold is `0.98` for every leaf guardrail, `0.98` for the leaf
@@ -202,6 +211,13 @@ When native goal backing is active, the same loop remains authoritative. Failed 
 
 If the 4-6 loop keeps failing because the todo is too broad, dependency order is wrong, or the first implementation hypothesis was weak, Seungjeongwon continues local decomposition. If the handoff leaf itself is wrong, it recommends Uigwe `local_reexploration`. If the chosen design is wrong, it recommends `brainstorming`. If the goal, non-goals, success criteria, or must-preserve behavior are incomplete or contradicted, it recommends `deep_interview` or `human_review`.
 
+Carry that re-entry through the Sejong lead while preserving the active objective
+and settled decisions. A re-entry recommendation is an intermediate handoff,
+not completion of an authorized outcome request. Resolve planning defects that
+fit the approved boundaries and resume execution; wait only for a consequential
+user-owned choice or a real external dependency, continuing independent work.
+Do not mark an invalidated tactic as a blocked goal merely to stop retrying.
+
 ## Visible Execution Board
 
 When Codex todo tooling is available, Seungjeongwon uses it as the user-visible execution board.
@@ -310,6 +326,14 @@ hypothesis
 
 The loop continues until the actionable leaf is completed, blocked, invalidated, or escalated. A failed verification result is not itself a reason to change the success criteria; it is evidence for the next hypothesis unless it proves that Uigwe re-entry is required.
 
+Record the next attempt from the failure's causal finding. Use `pass` for a
+successful verification result and `failed` for a failed check; keep observations
+and uncertainty in `finding` and evidence refs. A score cannot override a failed
+or unknown latest verification result. If new verification contradicts a
+completed todo, reopen it, invalidate stale completion scores, and keep the new
+attempt in the ledger. Preserve earlier evidence as history without treating it
+as proof that the changed result still passes.
+
 An actionable leaf is `completed` only when:
 
 - every Uigwe-defined numeric completion guardrail for that leaf is at least
@@ -319,6 +343,13 @@ An actionable leaf is `completed` only when:
 - scope, dependency, regression, and re-entry guardrails are resolved
 - the recommended Uigwe re-entry target is `none`
 - hard binary guardrails are true rather than averaged into the score
+
+The run helper checks completion-record consistency: a completed todo requires
+its own latest successful verification attempt, and a completed run cannot
+retain unresolved blockers, Uigwe re-entry requests, blocked or invalidated
+work, or unfinished replacements. These checks do not execute the verification
+command or independently judge the truth of an entered result or score. The
+executor still owes fresh evidence against every original success criterion.
 
 Each attempt should record:
 
@@ -340,8 +371,18 @@ Use the reference helper when a machine-checkable active run artifact is useful:
 ```bash
 python3 docs/sejong/scripts/seungjeongwon_run.py start --path <run.json> --run-id <id> --goal "..." --success-criterion "..." --verification-method "..."
 python3 docs/sejong/scripts/seungjeongwon_run.py record-attempt --path <run.json> --todo-id T1 --hypothesis "..." --action "..." --verification "..." --result pass --finding "..." --next-decision "..."
+python3 docs/sejong/scripts/seungjeongwon_run.py add-todo --path <run.json> --todo 'T2|Uncovered work|Observable done criterion|Verification method'
+python3 docs/sejong/scripts/seungjeongwon_run.py replace-todo --path <run.json> --todo-id T1 --replacement-todo 'T3|Revised work|Preserved outcome criterion|Verification method'
 python3 docs/sejong/scripts/seungjeongwon_run.py check --path <run.json>
 ```
+
+Use replacement when the execution approach changes: retain the original todo,
+its attempts, and its `replacement_todo_ids` instead of deleting the failed
+approach. Every replacement must resolve to completed work before the original
+scope can count as covered. Checkpoints preserve these links so continuation
+does not lose why the execution plan changed. Existing `replaced` records need
+their actual replacement links recorded before final completion; never invent
+links or relax the original success criteria to make a legacy record pass.
 
 Use the workflow-run helper when a machine-checkable backend shadow comparison
 is useful:
