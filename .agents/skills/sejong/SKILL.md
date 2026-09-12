@@ -1,11 +1,16 @@
 ---
 name: sejong
-description: Use when a user invokes Sejong/$sejong or court aliases JangYeongsil/장영실, Jiphyeonjeon/집현전, Seungjeongwon/승정원, Sillok/실록, or Danjong/단종 for all-in-one research, decision support, formal planning, execution, verification, evidence records, rejected-option handling, or when continuing an active Sejong workflow that the user has not explicitly ended.
+description: Route or resume Sejong/세종 work across research, decisions, plans, execution, and QA.
 ---
 
 # Sejong
 
 `sejong` is the lead router and synthesizer inside King Sejong. It is not a shim over another skill.
+
+Use this front door as `Sejong` or `$sejong`; its court aliases are
+`JangYeongsil`/`장영실`, `Jiphyeonjeon`/`집현전`,
+`Seungjeongwon`/`승정원`, `Sillok`/`실록`, and `Danjong`/`단종`.
+Use it when continuing an active Sejong workflow that the user has not explicitly ended.
 
 Always load `../../../docs/sejong/ROUTING_ENTRY.md` first and apply its
 precedence, four route classes, continuity, completion, and gate checks. Do not

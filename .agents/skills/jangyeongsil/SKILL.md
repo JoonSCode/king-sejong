@@ -1,11 +1,13 @@
 ---
 name: jangyeongsil
-description: Use when a user invokes JangYeongsil/장영실 or when Sejong, Uigwe, or Jiphyeonjeon needs bounded research, experiment, source inspection, repo-history review, example gathering, or evidence separation before a decision, plan, or execution step.
+description: Research evidence and test hypotheses with JangYeongsil/장영실 for decisions and plans.
 ---
 
 # JangYeongsil
 
 `JangYeongsil` is the King Sejong evidence and experiment front door.
+
+Use this court skill when invoked as `JangYeongsil` or `장영실`.
 
 It is a thin court-mode skill. Its source-of-truth routing contract is `../../../docs/sejong/ROUTER.md`, with artifact storage in `../../../docs/sejong/ARTIFACT_STORAGE.md` and security-sensitive evidence rules in `../../../docs/sejong/SILLOK_TRACE.md` and `../../../docs/sejong/SECURITY.md`.
 

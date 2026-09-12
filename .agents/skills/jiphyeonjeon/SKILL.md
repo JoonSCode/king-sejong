@@ -1,11 +1,13 @@
 ---
 name: jiphyeonjeon
-description: Use when a user invokes Jiphyeonjeon/집현전 or when Sejong, Uigwe, JangYeongsil, or Seungjeongwon needs structured discussion, option comparison, adversarial review, council-style decision support, rejected-option handling, or bounded team challenge rounds.
+description: Compare options and challenge evidence with Jiphyeonjeon/집현전 for a pending decision.
 ---
 
 # Jiphyeonjeon
 
 `Jiphyeonjeon` is the King Sejong discussion and decision-support front door.
+
+Use this court skill when invoked as `Jiphyeonjeon` or `집현전`.
 
 It is a thin court-mode skill. Its source-of-truth routing contract is `../../../docs/sejong/ROUTER.md`, with TeamExecutor behavior in `../../../docs/sejong/TEAM_EXECUTOR.md`.
 

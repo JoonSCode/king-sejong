@@ -3,7 +3,7 @@
   "metadata": {
     "id": "uigwe-instruction-surface-scorecard",
     "task_set_id": "uigwe-instruction-surface-task-set",
-    "generated_at": "2026-09-08T14:51:29Z",
+    "generated_at": "2026-09-12T06:08:42Z",
     "system_under_test": "sejong-uigwe",
     "runner": "docs/sejong/scripts/benchmark_instruction_surface.py"
   },
@@ -40,7 +40,7 @@
         {
           "id": "sejong_mandatory_read_scope_reduced",
           "passed": true,
-          "detail": "Mandatory first-read scope changed from 7985 words at c401acb to 1355 words (312-word skill plus 1043-word routing entry). This measures load scope only."
+          "detail": "Mandatory first-read scope changed from 7985 words at c401acb to 1358 words (315-word skill plus 1043-word routing entry). This measures load scope only."
         }
       ],
       "blockers": [],
@@ -692,17 +692,22 @@
         {
           "id": "sejong_skill_line_budget",
           "passed": true,
-          "detail": "Sejong SKILL.md line count is 44; budget is 90."
+          "detail": "Sejong SKILL.md line count is 49; budget is 90."
         },
         {
           "id": "jangyeongsil_skill_line_budget",
           "passed": true,
-          "detail": "JangYeongsil SKILL.md line count is 46; budget is 80."
+          "detail": "JangYeongsil SKILL.md line count is 48; budget is 80."
         },
         {
           "id": "jiphyeonjeon_skill_line_budget",
           "passed": true,
-          "detail": "Jiphyeonjeon SKILL.md line count is 47; budget is 80."
+          "detail": "Jiphyeonjeon SKILL.md line count is 49; budget is 80."
+        },
+        {
+          "id": "skill_discovery_description_budget",
+          "passed": true,
+          "detail": "King Sejong discovery descriptions stay within the local 120-character catalog budget: .agents/skills/sejong/SKILL.md=84, .agents/skills/uigwe/SKILL.md=87, .agents/skills/jangyeongsil/SKILL.md=84, .agents/skills/jiphyeonjeon/SKILL.md=84, .agents/skills/seungjeongwon/SKILL.md=73, .agents/skills/why-gate/SKILL.md=93."
         },
         {
           "id": "validation_detail_lives_in_reference",

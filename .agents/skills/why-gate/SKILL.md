@@ -1,11 +1,14 @@
 ---
 name: why-gate
-description: "Use to examine the rationale for material decisions in: code review, implementation planning, architecture or abstraction choices, data structure choices, dependency ownership, maintainability tradeoffs, product/app analysis, experience writeups, retrospectives, or agent/team self-audits. Use when the user asks \"why\", \"why gate\", \"ask me why\", \"challenge my reasoning\", \"근거를 물어봐\", \"왜 그렇게 했는지\", or wants choice-based rationale prompts with recommended options plus free-form answers."
+description: Examine why/왜 and trade-offs behind material product, design, engineering, or team decisions.
 ---
 
 # Why Gate
 
 Why Gate is a rationale checkpoint. Use it to make important choices explain themselves: why this path, why not a simpler or stronger alternative, what cost is accepted, and what evidence would change the decision.
+
+Use it when a user asks `why`, `why gate`, `ask me why`, `challenge my reasoning`,
+`근거를 물어봐`, or `왜 그렇게 했는지`.
 
 Do not interrogate every tiny step. Focus on decisions with risk, ambiguity, future maintenance cost, user impact, or weak evidence.
 

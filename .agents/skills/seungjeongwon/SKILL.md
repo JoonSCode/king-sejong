@@ -1,11 +1,13 @@
 ---
 name: seungjeongwon
-description: Use when a user invokes Seungjeongwon/승정원 or when Sejong needs native execution, verification, execution feedback, commit-ready evidence, or a persistent completion loop for a clear task or validated Uigwe bundle.
+description: Execute and verify approved work or Uigwe bundles with Seungjeongwon/승정원.
 ---
 
 # Seungjeongwon
 
 `seungjeongwon` is King Sejong's native executor.
+
+Use this court skill when invoked as `Seungjeongwon` or `승정원`.
 
 Use it to carry an approved scope or validated Uigwe bundle through actionable todo decomposition, implementation, verification, evidence capture, and execution feedback.
 

@@ -1,6 +1,6 @@
 ---
 name: uigwe
-description: Use when a user explicitly invokes `uigwe`, `의궤`, wants to discover intent or design from a vague thought, or wants a partial brief, approved design, or packet set turned into formal planning artifacts using `auto`, `full`, `design-to-plan`, or `decompose-only`.
+description: Clarify intent/design and build Uigwe/의궤 plans from ideas, briefs, or approved designs.
 ---
 
 # Uigwe

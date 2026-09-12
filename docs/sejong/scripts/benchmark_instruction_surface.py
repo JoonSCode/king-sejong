@@ -20,6 +20,7 @@ SEJONG_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "sejong" / "SKILL.md"
 JANGYEONGSIL_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "jangyeongsil" / "SKILL.md"
 JIPHYEONJEON_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "jiphyeonjeon" / "SKILL.md"
 SEUNGJEONGWON_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "seungjeongwon" / "SKILL.md"
+WHY_GATE_SKILL_PATH = REPO_ROOT / ".agents" / "skills" / "why-gate" / "SKILL.md"
 JANGYEONGSIL_OPENAI_YAML_PATH = REPO_ROOT / ".agents" / "skills" / "jangyeongsil" / "agents" / "openai.yaml"
 JIPHYEONJEON_OPENAI_YAML_PATH = REPO_ROOT / ".agents" / "skills" / "jiphyeonjeon" / "agents" / "openai.yaml"
 README_PATH = SEJONG_ROOT / "README.md"
@@ -65,6 +66,9 @@ UX_PROFILE_CONTRACT_TEST_PATH = SEJONG_ROOT / "scripts" / "test_ux_profile_contr
 UIGWE_SKILL_LINE_BUDGET = 320
 SEJONG_SKILL_LINE_BUDGET = 90
 COURT_HELPER_SKILL_LINE_BUDGET = 80
+# This local discovery-surface budget protects concise catalog metadata. It is
+# not a claim about an official host truncation threshold.
+SKILL_DESCRIPTION_CHARACTER_BUDGET = 120
 
 # Measured at the pre-selective-loading baseline c401acb: the 1,501-word
 # Sejong front door required the 6,484-word Router on every entry. This is a
@@ -152,6 +156,29 @@ def word_count(path: Path) -> int:
     return len(load_text(path).split())
 
 
+def single_line_frontmatter_description(path: Path) -> str:
+    """Read the deliberately supported plain, single-line description subset."""
+    lines = load_text(path).splitlines()
+    if len(lines) < 3 or lines[0] != "---":
+        raise ValueError(f"{path} has no YAML frontmatter.")
+    try:
+        closing_index = lines.index("---", 1)
+    except ValueError as error:
+        raise ValueError(f"{path} has unterminated YAML frontmatter.") from error
+
+    descriptions = [line for line in lines[1:closing_index] if line.startswith("description:")]
+    if len(descriptions) != 1:
+        raise ValueError(f"{path} must have exactly one frontmatter description.")
+
+    description_line = descriptions[0]
+    if not description_line.startswith("description: "):
+        raise ValueError(f"{path} description must be a plain single-line value.")
+    value = description_line.removeprefix("description: ")
+    if not value or value[0] in {'\"', "'", ">", "|"} or "\t" in value or " #" in value:
+        raise ValueError(f"{path} description must be an unquoted plain single-line value.")
+    return value
+
+
 def contains_all(text: str, needles: list[str]) -> tuple[bool, list[str]]:
     missing = [needle for needle in needles if needle not in text]
     return not missing, missing
@@ -173,7 +200,7 @@ def evaluate_routing() -> list[dict[str, Any]]:
     sejong_skill = load_text(SEJONG_SKILL_PATH)
     routing_entry = load_text(ROUTING_ENTRY_PATH)
     required_uigwe = [
-        "Use when a user explicitly invokes `uigwe`",
+        "Use `$uigwe` or `의궤`",
         "## Do Not Use When",
         "`auto`",
         "`full`",
@@ -1182,6 +1209,22 @@ def evaluate_compression() -> list[dict[str, Any]]:
     sejong_lines = line_count(SEJONG_SKILL_PATH)
     jangyeongsil_lines = line_count(JANGYEONGSIL_SKILL_PATH)
     jiphyeonjeon_lines = line_count(JIPHYEONJEON_SKILL_PATH)
+    discovery_skills = (
+        SEJONG_SKILL_PATH,
+        UIGWE_SKILL_PATH,
+        JANGYEONGSIL_SKILL_PATH,
+        JIPHYEONJEON_SKILL_PATH,
+        SEUNGJEONGWON_SKILL_PATH,
+        WHY_GATE_SKILL_PATH,
+    )
+    description_lengths = {
+        rel(path): len(single_line_frontmatter_description(path))
+        for path in discovery_skills
+    }
+    descriptions_fit = all(
+        length <= SKILL_DESCRIPTION_CHARACTER_BUDGET
+        for length in description_lengths.values()
+    )
     skill = load_text(UIGWE_SKILL_PATH)
     return [
         check(
@@ -1203,6 +1246,14 @@ def evaluate_compression() -> list[dict[str, Any]]:
             "jiphyeonjeon_skill_line_budget",
             jiphyeonjeon_lines <= COURT_HELPER_SKILL_LINE_BUDGET,
             f"Jiphyeonjeon SKILL.md line count is {jiphyeonjeon_lines}; budget is {COURT_HELPER_SKILL_LINE_BUDGET}.",
+        ),
+        check(
+            "skill_discovery_description_budget",
+            descriptions_fit,
+            "King Sejong discovery descriptions stay within the local "
+            f"{SKILL_DESCRIPTION_CHARACTER_BUDGET}-character catalog budget: "
+            + ", ".join(f"{path}={length}" for path, length in description_lengths.items())
+            + ".",
         ),
         check(
             "validation_detail_lives_in_reference",
