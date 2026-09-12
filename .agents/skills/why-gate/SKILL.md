@@ -1,6 +1,6 @@
 ---
 name: why-gate
-description: Examine why/왜 and trade-offs behind material product, design, engineering, or team decisions.
+description: Challenge why/왜 and trade-offs in material product, technical, or team decisions.
 ---
 
 # Why Gate
