@@ -490,6 +490,13 @@ def looks_like_continuity_capsule_ref(ref: str) -> bool:
     return "continuity-capsule" in lowered and lowered.endswith(".json")
 
 
+def read_artifact_object(path: Path) -> dict[str, Any]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("artifact must be a JSON object")
+    return data
+
+
 def load_ambiguity_registers(context: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
     registers: list[dict[str, Any]] = []
     broken_refs: list[str] = []
@@ -500,13 +507,15 @@ def load_ambiguity_registers(context: dict[str, Any]) -> tuple[list[dict[str, An
                 broken_refs.append(str(path))
             continue
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError, UnicodeError):
+            data = read_artifact_object(path)
+        except (ValueError, OSError, UnicodeError):
             if looks_like_ambiguity_register_ref(ref):
                 broken_refs.append(str(path))
             continue
         if data.get("format") == AMBIGUITY_REGISTER_FORMAT:
             registers.append(data)
+        elif looks_like_ambiguity_register_ref(ref):
+            broken_refs.append(str(path))
     return registers, broken_refs
 
 
@@ -604,6 +613,22 @@ def ambiguity_register_summary(context: dict[str, Any]) -> str:
     return " ".join(parts)
 
 
+def capsule_context_failures(capsule: dict[str, Any], context: dict[str, Any]) -> list[str]:
+    failures = capsule_failures(capsule)
+    if failures:
+        return failures
+    for field in ("active_context_id", "run_id"):
+        if capsule[field] != context.get(field):
+            failures.append(f"{field} does not match active Context")
+    if not context_applies_to_cwd(context, {"cwd": capsule["repo_root"]}):
+        failures.append("repo_root does not match active Context repository identities")
+    # Legacy Contexts may omit task_class. Capsule objective prose is not an
+    # objective_id or the latest conversational intent and cannot be compared.
+    if context.get("task_class") and capsule["task_class"] != context["task_class"]:
+        failures.append("task_class does not match active Context")
+    return failures
+
+
 def load_continuity_capsules(context: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str], list[str]]:
     capsules: list[dict[str, Any]] = []
     broken_refs: list[str] = []
@@ -615,17 +640,20 @@ def load_continuity_capsules(context: dict[str, Any]) -> tuple[list[dict[str, An
                 broken_refs.append(str(path))
             continue
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError, UnicodeError):
+            data = read_artifact_object(path)
+        except (ValueError, OSError, UnicodeError):
             if looks_like_continuity_capsule_ref(ref):
                 broken_refs.append(str(path))
             continue
         if data.get("format") != CONTINUITY_CAPSULE_FORMAT:
+            if looks_like_continuity_capsule_ref(ref):
+                invalid_refs.append(f"{path}: unexpected capsule format")
             continue
-        failures = capsule_failures(data)
+        failures = capsule_context_failures(data, context)
         if failures:
             invalid_refs.append(f"{path}: {'; '.join(failures)}")
-        capsules.append(data)
+        else:
+            capsules.append(data)
     return capsules, broken_refs, invalid_refs
 
 
@@ -634,8 +662,6 @@ def continuity_capsule_summary(context: dict[str, Any]) -> str:
     parts: list[str] = []
     preferred_profile = context.get("projection_profile")
     for capsule in capsules:
-        if capsule_failures(capsule):
-            continue
         parts.append(capsule_projection(capsule, preferred_profile))
     if broken_refs:
         parts.append("broken_continuity_capsule_refs=" + ",".join(broken_refs) + ".")
@@ -684,12 +710,14 @@ def load_seungjeongwon_run_entries(
                 broken_refs.append(str(path))
             continue
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError, UnicodeError):
+            data = read_artifact_object(path)
+        except (ValueError, OSError, UnicodeError):
             if looks_like_seungjeongwon_run_ref(ref):
                 broken_refs.append(str(path))
             continue
         if data.get("format") != SEUNGJEONGWON_RUN_FORMAT:
+            if looks_like_seungjeongwon_run_ref(ref):
+                invalid_refs.append(f"{path}: unexpected Seungjeongwon run format")
             continue
         if active_only and data.get("status") != "active":
             continue

@@ -54,12 +54,16 @@ class TaskClassDelegationBoundaryTests(unittest.TestCase):
             gate.DelegationInput(
                 task_class="simple_lookup",
                 host_native_state="available",
+                host_native_cleanup_capability="host_owned_exact",
+                host_native_cleanup_evidence_ref="fixture://host/preflight",
                 host_native_write_isolation="worktree",
                 requires_write_isolation=True,
             ),
             gate.DelegationInput(
                 task_class="simple_lookup",
                 host_native_state="available",
+                host_native_cleanup_capability="host_owned_exact",
+                host_native_cleanup_evidence_ref="fixture://host/preflight",
                 host_native_direct_messaging="available",
                 requires_peer_messaging=True,
             ),

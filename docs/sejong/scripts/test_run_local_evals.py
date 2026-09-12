@@ -14,6 +14,7 @@ class RunLocalEvalsTests(unittest.TestCase):
             step_ids,
             [
                 "hook-tests",
+                "hook-artifact-boundary-tests",
                 "adversarial-confidence-pack",
                 "context-tests",
                 "doctor-tests",
@@ -30,6 +31,7 @@ class RunLocalEvalsTests(unittest.TestCase):
                 "cleanup-tests",
                 "work-lifecycle-tests",
                 "e2e-tests",
+                "surface-expectation-tests",
                 "sejong-surface-benchmark",
                 "instruction-surface-benchmark",
                 "json-contracts",

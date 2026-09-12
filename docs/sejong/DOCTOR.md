@@ -17,19 +17,23 @@ environment check before release work.
 From the source checkout:
 
 ```bash
-python3 docs/sejong/scripts/sejong_doctor.py
+bash docs/sejong/scripts/run_with_supported_python.sh docs/sejong/scripts/sejong_doctor.py
 ```
+
+The launcher selects Python 3.11 or newer from `PATH`, then falls back to a
+`uv`-managed interpreter. It does not replace the system Python. If neither is
+available, it stops with an environment setup message before the doctor runs.
 
 Machine-readable output:
 
 ```bash
-python3 docs/sejong/scripts/sejong_doctor.py --json
+bash docs/sejong/scripts/run_with_supported_python.sh docs/sejong/scripts/sejong_doctor.py --json
 ```
 
 Check a specific durable Context explicitly:
 
 ```bash
-python3 docs/sejong/scripts/sejong_doctor.py --context ~/.codex/sejong/runs/<repo-id>/<run-id>/king-sejong-context.json
+bash docs/sejong/scripts/run_with_supported_python.sh docs/sejong/scripts/sejong_doctor.py --context ~/.codex/sejong/runs/<repo-id>/<run-id>/king-sejong-context.json
 ```
 
 Without `--context`, the doctor does not treat `state/active-context.json` as a
@@ -38,7 +42,7 @@ foreground Context. It scans durable runs and runtime state only for diagnostics
 For tests or hermetic CI that should not depend on local Python packages:
 
 ```bash
-python3 docs/sejong/scripts/sejong_doctor.py --skip-python-deps --skip-active-context
+bash docs/sejong/scripts/run_with_supported_python.sh docs/sejong/scripts/sejong_doctor.py --skip-python-deps --skip-active-context
 ```
 
 ## Checks

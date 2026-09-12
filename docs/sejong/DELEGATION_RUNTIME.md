@@ -41,6 +41,28 @@ host-native backend is unavailable for that run; the lead continues locally or
 selects a Core-owned backend. Sejong does not create audit-only native workers
 and hope to clean them up afterward.
 
+`task_class_delegation_gate.py` admits `codex_native` only when
+`host_native_state=available`, `host_native_cleanup_capability` is
+`core_owned_exact` or `host_owned_exact`, and
+`host_native_cleanup_evidence_ref` names the current host observation that
+establishes exact runtime identity and supported release proof. The capability
+defaults to `unknown`; `unknown`, `unavailable`, and `audit_only` exclude native.
+An exact capability without its evidence reference also excludes native.
+Both CLI flags and `--from-json` use the same input validation and admission
+rule. For example, after observing the required host support, pass
+`--host-native-state available --host-native-cleanup-capability host_owned_exact
+--host-native-cleanup-evidence-ref <observed-capability-ref>`.
+
+This is a caller-supplied capability record, not an automatic host probe or a
+release receipt. The lead must inspect the referenced current host evidence
+before dispatch. It does not assert that the active host supports teardown.
+Old inputs remain parseable and task-shape scores are unchanged, but omitted
+capabilities cannot authorize native workers. A healthy Core-owned
+TeamExecutor may be selected; otherwise optional work stays local and unmet
+required worker capabilities produce `no_write_dry_run`. Existing scope and
+authority gates remain in force. Exact leases and released cleanup receipts
+are still required after worker termination, regardless of preflight success.
+
 For host-native Codex agents, `native_delegation_adapter.py` is a narrow receipt
 projection boundary. It verifies that the worker was registered with backend
 `native`, converts the host thread id to `codex-thread://<thread-id>`, and calls

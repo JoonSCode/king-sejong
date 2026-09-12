@@ -570,15 +570,16 @@ class KingSejongHookTests(unittest.TestCase):
 
     def test_user_prompt_submit_injects_continuity_capsule_projection(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
+            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
             capsule_path = Path(tmp) / "continuity-capsule.json"
             capsule_path.write_text(
                 json.dumps(
                     {
                         "format": "sejong.continuity-capsule/v0.1-draft",
                         "capsule_id": "capsule-test",
-                        "active_context_id": "ctx-test",
+                        "active_context_id": context["active_context_id"],
                         "repo_root": str(REPO_ROOT),
-                        "run_id": "run-test",
+                        "run_id": context["run_id"],
                         "objective": "Keep AI working context compact.",
                         "task_class": "runtime-contract-design",
                         "current_surface": "uigwe",
@@ -611,7 +612,6 @@ class KingSejongHookTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            context = json.loads(CONTEXT_PATH.read_text(encoding="utf-8"))
             context["repo_root"] = str(REPO_ROOT)
             context["projection_profile"] = "standard"
             context["artifact_refs"] = [str(capsule_path)]

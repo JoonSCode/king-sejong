@@ -40,6 +40,10 @@ WRITE_MODES = {"allowed", "no_write", "dry_run", "destructive"}
 HOST_NATIVE_STATES = {"unknown", "available", "unavailable"}
 NATIVE_MESSAGING_STATES = {"unknown", "available", "unavailable"}
 NATIVE_WRITE_ISOLATIONS = {"unknown", "shared_workspace", "worktree"}
+EXACT_NATIVE_CLEANUP_CAPABILITIES = {"core_owned_exact", "host_owned_exact"}
+NATIVE_CLEANUP_CAPABILITIES = {
+    "unknown", "unavailable", "audit_only", *EXACT_NATIVE_CLEANUP_CAPABILITIES,
+}
 ROUTES = (
     "direct_execution",
     "bounded_subagents",
@@ -79,10 +83,13 @@ class DelegationInput:
     requires_cross_session_recovery: bool = False
     requires_write_isolation: bool = False
     requires_peer_messaging: bool = False
+    # Observed pre-spawn support, not the worker's eventual release receipt.
+    host_native_cleanup_capability: str = "unknown"
+    host_native_cleanup_evidence_ref: str | None = None
 
 
 def _validate_choice(name: str, value: str, choices: set[str]) -> None:
-    if value not in choices:
+    if not isinstance(value, str) or value not in choices:
         raise ValueError(f"{name} must be one of: {', '.join(sorted(choices))}")
 
 
@@ -110,6 +117,11 @@ def validate_input(case: DelegationInput) -> None:
         ("write_mode", case.write_mode, WRITE_MODES),
         ("host_native_state", case.host_native_state, HOST_NATIVE_STATES),
         (
+            "host_native_cleanup_capability",
+            case.host_native_cleanup_capability,
+            NATIVE_CLEANUP_CAPABILITIES,
+        ),
+        (
             "host_native_direct_messaging",
             case.host_native_direct_messaging,
             NATIVE_MESSAGING_STATES,
@@ -127,6 +139,11 @@ def validate_input(case: DelegationInput) -> None:
     )
     for name, value, choices in fields:
         _validate_choice(name, value, choices)
+    cleanup_ref = case.host_native_cleanup_evidence_ref
+    if cleanup_ref is not None and (
+        not isinstance(cleanup_ref, str) or not cleanup_ref.strip()
+    ):
+        raise ValueError("host_native_cleanup_evidence_ref must be a non-empty string or null")
     boolean_fields = (
         "requires_independent_process",
         "requires_cross_session_recovery",
@@ -180,8 +197,12 @@ def requires_worker_backend(case: DelegationInput) -> bool:
 
 def fallback_reasons(case: DelegationInput) -> list[str]:
     reasons: list[str] = []
-    if case.host_native_state == "unavailable":
-        reasons.append("host_native_unavailable")
+    if case.host_native_state != "available":
+        reasons.append(f"host_native_{case.host_native_state}")
+    if case.host_native_cleanup_capability not in EXACT_NATIVE_CLEANUP_CAPABILITIES:
+        reasons.append(f"native_cleanup_capability_{case.host_native_cleanup_capability}")
+    elif case.host_native_cleanup_evidence_ref is None:
+        reasons.append("native_cleanup_evidence_missing")
     if case.requires_independent_process:
         reasons.append("independent_process_required")
     if case.requires_cross_session_recovery:

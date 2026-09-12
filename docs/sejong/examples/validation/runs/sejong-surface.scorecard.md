@@ -1,10 +1,10 @@
 # King Sejong Surface Scorecard
 
 - Task set: `sejong-seed-task-set`
-- Generated at: `2026-06-14T06:56:13Z`
+- Generated at: `2026-09-12T06:17:19Z`
 - Status: `pass`
 - Average score: `1.0`
-- Pass/partial/fail: `31/0/0`
+- Pass/partial/fail: `32/0/0`
 
 ## Scenarios
 - `route-evidence-only-history`: `pass` (1.0)
@@ -12,7 +12,8 @@
 - `route-vague-product-plan`: `pass` (1.0)
 - `route-approved-bundle-execution`: `pass` (1.0)
 - `route-clear-direct-task`: `pass` (1.0)
-- `route-goal-bearing-clear-task-handoff`: `pass` (1.0)
+- `route-goal-bearing-unresolved-handoff`: `pass` (1.0)
+- `route-settled-implementation-no-bundle`: `pass` (1.0)
 - `route-material-self-modification`: `pass` (1.0)
 - `repo-context-refresh-candidate-first`: `pass` (1.0)
 - `research-stale-external-facts`: `pass` (1.0)

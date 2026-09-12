@@ -35,6 +35,7 @@ The reference tests are:
 
 ```bash
 python3 docs/sejong/scripts/test_king_sejong_hooks.py
+python3 docs/sejong/scripts/test_hook_artifact_boundaries.py
 python3 docs/sejong/scripts/test_sejong_context.py
 python3 docs/sejong/scripts/test_session_binding_context.py
 python3 docs/sejong/scripts/test_king_sejong_multisession_e2e.py
@@ -225,6 +226,13 @@ only that session binding for implicit continuation. Repo Index and the legacy
   until every `codex-thread://` worker has a released cleanup receipt and fan-in
   passes; terminal worker output alone cannot satisfy `Stop`.
 - Continue the turn when any referenced continuity capsule is broken or invalid.
+
+Typed artifact readers reject non-object JSON and unexpected formats on known
+capsule, ambiguity-register, and execution-run refs without throwing. `Stop`
+returns `decision: "block"`; `PreCompact` returns `continue: false`. Other JSON
+evidence may use non-object roots and is ignored by these readers. Capsule
+identity, repository, and declared task-class checks run before any projection;
+see [CONTINUITY.md](CONTINUITY.md) for compatibility and objective-text limits.
 
 `PreCompact`
 

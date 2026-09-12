@@ -49,6 +49,11 @@ def build_steps(*, write_scorecards: bool, include_install_verify: bool) -> list
             python_script("test_king_sejong_hooks.py"),
         ),
         EvalStep(
+            "hook-artifact-boundary-tests",
+            "Foreign capsule identity and malformed referenced JSON are rejected before projection",
+            python_script("test_hook_artifact_boundaries.py"),
+        ),
+        EvalStep(
             "adversarial-confidence-pack",
             "Black-box guardrail mutations for receipts, active context, write bypasses, and team state",
             python_script("run_adversarial_confidence_pack.py"),
@@ -130,6 +135,11 @@ def build_steps(*, write_scorecards: bool, include_install_verify: bool) -> list
             "External runtime artifact E2E guardrail check",
             python_script("test_king_sejong_e2e.py"),
             temp_sejong_home=True,
+        ),
+        EvalStep(
+            "surface-expectation-tests",
+            "Settled and unresolved execution expectations preserve required and forbidden routes",
+            python_script("test_benchmark_sejong_surface.py"),
         ),
         EvalStep(
             "sejong-surface-benchmark",

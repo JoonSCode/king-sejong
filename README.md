@@ -134,10 +134,15 @@ bash scripts/install-sejong.sh --verify /path/to/your-repo
 To run a read-only local health check:
 
 ```bash
-python3 docs/sejong/scripts/sejong_doctor.py
+bash docs/sejong/scripts/run_with_supported_python.sh docs/sejong/scripts/sejong_doctor.py
 ```
 
 The doctor reports managed-path health, dependency availability, git cleanliness, active context shape, active Seungjeongwon runs, multisession active runs, stale active pointers, broken runtime refs, lock owner metadata, cleanup dry-run retention, and user-scope install drift. It is read-only by default.
+
+King Sejong's Python tools require Python 3.11 or newer. The launcher and
+`install-sejong.sh` use a compatible Python already on `PATH`, or use `uv` to
+find one without replacing the system Python. If neither is available, they
+stop with an environment setup message before reporting managed-content drift.
 
 To draft a repo-context candidate without editing `AGENTS.md`:
 

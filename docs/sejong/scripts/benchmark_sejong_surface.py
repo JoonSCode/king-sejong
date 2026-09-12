@@ -44,7 +44,8 @@ REQUIRED_SCENARIO_IDS = {
     "route-vague-product-plan",
     "route-approved-bundle-execution",
     "route-clear-direct-task",
-    "route-goal-bearing-clear-task-handoff",
+    "route-goal-bearing-unresolved-handoff",
+    "route-settled-implementation-no-bundle",
     "route-material-self-modification",
     "repo-context-refresh-candidate-first",
     "research-stale-external-facts",
@@ -203,6 +204,25 @@ def evaluate_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
             "guardrail_expectations_present_when_needed",
             bool(guardrail_expectations) or not needs_guardrail,
             "Scenarios with team, protected, continuity, or handoff risk name guardrail expectations.",
+        )
+    )
+
+    required_route = guardrail_expectations.get("required_route_sequence") or []
+    forbidden = set(scenario.get("forbidden_surfaces") or [])
+
+    def preserves_required_route(route: list[str]) -> bool:
+        remaining = iter(route)
+        return all(any(surface == expected for surface in remaining) for expected in required_route)
+
+    checks.append(
+        check(
+            "routing_expectations_consistent",
+            route_sequence in acceptable_routes
+            and all(
+                not forbidden.intersection(route) and preserves_required_route(route)
+                for route in [route_sequence, *acceptable_routes]
+            ),
+            "Primary and alternative routes preserve required order and exclude forbidden surfaces.",
         )
     )
 

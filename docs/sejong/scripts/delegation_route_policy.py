@@ -31,7 +31,11 @@ def required_evidence(route: str, backend: str, case: DelegationInput) -> list[s
     if route in {"bounded_subagents", "team_executor"}:
         evidence += ["bounded worker scope", "worker output treated as evidence only"]
     if backend == "codex_native":
-        evidence += ["native agent thread refs", "terminal delegation receipts"]
+        evidence += [
+            "exact runtime identity and supported release proof capability evidence",
+            "native agent thread refs", "terminal delegation receipts",
+            "exact worker resource leases", "released worker cleanup receipts",
+        ]
     if backend == "team_executor":
         evidence += [
             "healthy TeamExecutor preflight receipt",

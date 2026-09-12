@@ -275,13 +275,16 @@ Supported worker backends include:
 
 `$team` state belongs under `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}/state/team/<run-id>/`. It must use Sejong-owned state rooted at `${SEJONG_HOME:-${CODEX_HOME:-~/.codex}/sejong}` rather than repo-local or tool-specific orchestration state. See [TEAM_EXECUTOR.md](TEAM_EXECUTOR.md) for the mailbox, tmux worker, and lease contract.
 
-Backend selection is capability-aware. When bounded native agents are available
-and satisfy required isolation or messaging, choose `bounded_subagents` with
+Backend selection is capability-aware. When bounded native agents are available,
+have observed exact runtime identity and release-proof capability, and satisfy
+required isolation or messaging, choose `bounded_subagents` with
 backend `codex_native`. Choose `$team` / `TeamExecutor` when native agents are
 unavailable or the task requires independent CLI processes, cross-session
 recovery, direct messaging the native host cannot provide, or write isolation
-that the native host cannot guarantee. Unknown native capability preserves the
-legacy task-shape route; it is not evidence that native-first selection occurred.
+that the native host cannot guarantee. Unknown native or cleanup capability
+does not admit native workers. Task-shape scoring remains unchanged; selection
+falls back to a healthy Core-owned backend or local execution, or blocks when
+required worker capabilities cannot be satisfied.
 
 Use `docs/sejong/scripts/task_class_delegation_gate.py` to record the capability
 decision. Native workers then use `native_delegation_adapter.py` only to project

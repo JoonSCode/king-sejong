@@ -151,6 +151,18 @@ Codex 집이 `~/.codex`가 아니면 먼저 `CODEX_HOME`을 정하시옵소서.
 
 관리되는 `${CODEX_HOME:-~/.codex}/AGENTS.md` 안내 블록을 건너뛰려면 `bash scripts/install-sejong.sh --scope user --codex-guidance none`을 쓰시옵소서.
 
+읽기 전용 Doctor로 설치와 실행 환경을 살피려면 이리 하시옵소서.
+
+```bash
+bash docs/sejong/scripts/run_with_supported_python.sh docs/sejong/scripts/sejong_doctor.py
+```
+
+King Sejong의 Python 도구는 Python 3.11 이상이 필요하옵니다. 위 launcher와
+`install-sejong.sh`는 `PATH`에서 지원 Python을 고르고, 없으면 `uv`가 관리하는
+Python을 찾사옵니다. 시스템 Python을 갈아치우지 않으며, 둘 다 없으면 관리
+파일이 달라졌다고 오진하지 않고 먼저 실행 환경을 갖추라는 안내와 함께
+멈추옵니다.
+
 저장소 범위에서 설치관이 옮기는 길은 이러하옵니다.
 
 - `.agents/skills/sejong/`

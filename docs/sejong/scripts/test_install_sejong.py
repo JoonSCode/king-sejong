@@ -7,6 +7,7 @@ import os
 import signal
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import unittest
@@ -16,6 +17,7 @@ from pathlib import Path
 SCRIPT_PATH = Path(__file__).resolve()
 REPO_ROOT = SCRIPT_PATH.parents[3]
 INSTALLER = REPO_ROOT / "scripts" / "install-sejong.sh"
+PYTHON_RUNNER = REPO_ROOT / "docs" / "sejong" / "scripts" / "run_with_supported_python.sh"
 
 
 def run_installer(
@@ -39,6 +41,187 @@ def run_installer(
 
 
 class InstallSejongTests(unittest.TestCase):
+    def test_readmes_use_supported_python_runner_for_doctor(self) -> None:
+        documented_command = (
+            "bash docs/sejong/scripts/run_with_supported_python.sh "
+            "docs/sejong/scripts/sejong_doctor.py"
+        )
+        for relative_path in ("README.md", "README.ko.md", "docs/sejong/README.md", "docs/sejong/DOCTOR.md"):
+            with self.subTest(relative_path=relative_path):
+                text = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+                self.assertIn(documented_command, text)
+                self.assertNotIn("python3 docs/sejong/scripts/sejong_doctor.py", text)
+
+    def test_public_python_runner_bootstraps_doctor_from_system_python(self) -> None:
+        system_python = Path("/usr/bin/python3")
+        uv_path = shutil.which("uv")
+        if not system_python.exists() or uv_path is None:
+            self.skipTest("system Python and uv are required for the compatibility path")
+        version = subprocess.run(
+            [str(system_python), "-c", "import sys; print(sys.version_info.major, sys.version_info.minor)"],
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        if tuple(int(part) for part in version.stdout.split()) >= (3, 11):
+            self.skipTest("system Python already satisfies the documented runtime")
+
+        result = subprocess.run(
+            [
+                "bash",
+                str(PYTHON_RUNNER),
+                str(REPO_ROOT / "docs" / "sejong" / "scripts" / "sejong_doctor.py"),
+                "--help",
+            ],
+            text=True,
+            capture_output=True,
+            cwd=str(REPO_ROOT),
+            env={
+                **os.environ,
+                "PATH": os.pathsep.join((str(Path(uv_path).parent), "/usr/bin", "/bin")),
+            },
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("usage: sejong_doctor.py", result.stdout)
+
+    def test_public_python_runner_accepts_newer_uv_managed_python(self) -> None:
+        if sys.version_info < (3, 11):
+            self.skipTest("the test process must provide a supported fixture interpreter")
+        bash_path = shutil.which("bash")
+        if bash_path is None:
+            self.skipTest("bash is required")
+        with tempfile.TemporaryDirectory() as tmp:
+            fake_bin = Path(tmp)
+            fake_uv = fake_bin / "uv"
+            fake_uv.write_text(
+                "#!/bin/sh\n"
+                "if [ \"$1\" = \"python\" ] && [ \"$2\" = \"find\" ] && [ \"$3\" = \">=3.11\" ]; then\n"
+                "  echo \"$SEJONG_TEST_UV_PYTHON\"\n"
+                "  exit 0\n"
+                "fi\n"
+                "echo \"unexpected uv arguments: $*\" >&2\n"
+                "exit 42\n",
+                encoding="utf-8",
+            )
+            fake_uv.chmod(0o755)
+            result = subprocess.run(
+                [bash_path, str(PYTHON_RUNNER), "-c", "import sys; print(sys.version_info.minor)"],
+                text=True,
+                capture_output=True,
+                cwd=str(REPO_ROOT),
+                env={
+                    **os.environ,
+                    "PATH": str(fake_bin),
+                    "SEJONG_TEST_UV_PYTHON": sys.executable,
+                },
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), str(sys.version_info.minor))
+
+    def test_user_install_bootstraps_supported_python_from_system_python(self) -> None:
+        system_python = Path("/usr/bin/python3")
+        uv_path = shutil.which("uv")
+        if not system_python.exists() or uv_path is None:
+            self.skipTest("system Python and uv are required for the compatibility path")
+        version = subprocess.run(
+            [str(system_python), "-c", "import sys; print(sys.version_info.major, sys.version_info.minor)"],
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        if tuple(int(part) for part in version.stdout.split()) >= (3, 11):
+            self.skipTest("system Python already satisfies the installer runtime")
+
+        restricted_path = os.pathsep.join((str(Path(uv_path).parent), "/usr/bin", "/bin"))
+        with tempfile.TemporaryDirectory() as tmp:
+            temp_root = Path(tmp)
+            stable_source = temp_root / "source"
+            shutil.copytree(
+                REPO_ROOT,
+                stable_source,
+                ignore=shutil.ignore_patterns(".git", "__pycache__"),
+            )
+            codex_home = temp_root / "codex"
+            installed = run_installer(
+                ["--scope", "user", "--force", "--codex-guidance", "none"],
+                codex_home=codex_home,
+                extra_env={"PATH": restricted_path},
+                installer=stable_source / "scripts" / "install-sejong.sh",
+            )
+            verified = run_installer(
+                ["--scope", "user", "--verify", "--codex-guidance", "none"],
+                codex_home=codex_home,
+                extra_env={"PATH": restricted_path},
+                installer=stable_source / "scripts" / "install-sejong.sh",
+            )
+            installed_runner = codex_home / "skills" / "sejong" / "docs" / "scripts" / PYTHON_RUNNER.name
+            installed_doctor = codex_home / "skills" / "sejong" / "docs" / "scripts" / "sejong_doctor.py"
+            doctor_help = subprocess.run(
+                ["bash", str(installed_runner), str(installed_doctor), "--help"],
+                text=True,
+                capture_output=True,
+                cwd=str(REPO_ROOT),
+                env={**os.environ, "PATH": restricted_path},
+            )
+            installed_skill = codex_home / "skills" / "sejong" / "SKILL.md"
+            installed_skill.write_text(
+                installed_skill.read_text(encoding="utf-8") + "\n# deterministic test drift\n",
+                encoding="utf-8",
+            )
+            drifted = run_installer(
+                ["--scope", "user", "--verify", "--codex-guidance", "none"],
+                codex_home=codex_home,
+                extra_env={"PATH": restricted_path},
+                installer=stable_source / "scripts" / "install-sejong.sh",
+            )
+
+        self.assertEqual(installed.returncode, 0, installed.stderr)
+        self.assertEqual(verified.returncode, 0, verified.stderr)
+        self.assertEqual(doctor_help.returncode, 0, doctor_help.stderr)
+        self.assertIn("usage: sejong_doctor.py", doctor_help.stdout)
+        self.assertNotIn("managed content is stale or modified", verified.stderr)
+        self.assertNotEqual(drifted.returncode, 0)
+        self.assertIn("managed content is stale or modified", drifted.stderr)
+
+    def test_installer_reports_unsupported_python_as_environment_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            temp_root = Path(tmp)
+            fake_bin = temp_root / "bin"
+            fake_bin.mkdir()
+            fake_python = fake_bin / "python3"
+            fake_python.write_text(
+                "#!/bin/sh\n"
+                "if [ \"$1\" = \"-c\" ]; then\n"
+                "  exit 1\n"
+                "fi\n"
+                "echo 'unsupported test interpreter' >&2\n"
+                "exit 1\n",
+                encoding="utf-8",
+            )
+            fake_python.chmod(0o755)
+            dirname_path = shutil.which("dirname")
+            bash_path = shutil.which("bash")
+            if dirname_path is None or bash_path is None:
+                self.skipTest("bash and dirname are required")
+            (fake_bin / "dirname").symlink_to(dirname_path)
+            result = subprocess.run(
+                [str(bash_path), str(INSTALLER), "--scope", "user", "--verify", "--codex-guidance", "none"],
+                text=True,
+                capture_output=True,
+                cwd=str(REPO_ROOT),
+                env={
+                    **os.environ,
+                    "CODEX_HOME": str(temp_root / "codex"),
+                    "PATH": str(fake_bin),
+                },
+            )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("requires Python 3.11 or newer, or uv", result.stderr)
+        self.assertNotIn("managed content is stale or modified", result.stderr)
+
     def test_print_codex_guidance_is_generic_and_external_runtime_free(self) -> None:
         result = run_installer(["--print-codex-guidance"])
         self.assertEqual(result.returncode, 0, result.stderr)

@@ -120,16 +120,21 @@ def upsert_record(items: list[dict[str, Any]], record: dict[str, Any]) -> list[d
     return result
 
 
-def capsule_failures(data: dict[str, Any]) -> list[str]:
+def capsule_failures(data: Any) -> list[str]:
+    if not isinstance(data, dict):
+        return ["continuity capsule must be an object"]
     failures: list[str] = []
     for field in REQUIRED_FIELDS:
         if field not in data:
             failures.append(f"missing {field}")
+        elif field not in (*STRING_LIST_FIELDS, "selected_decisions", "rejected_options", "verification_state"):
+            if not isinstance(data[field], str) or not data[field].strip():
+                failures.append(f"{field} must be a non-empty string")
     if data.get("format") != FORMAT:
         failures.append(f"unexpected format: {data.get('format')}")
-    if data.get("current_surface") not in SURFACES:
+    if not isinstance(data.get("current_surface"), str) or data["current_surface"] not in SURFACES:
         failures.append(f"invalid current_surface: {data.get('current_surface')}")
-    if data.get("projection_profile") not in PROJECTION_PROFILES:
+    if not isinstance(data.get("projection_profile"), str) or data["projection_profile"] not in PROJECTION_PROFILES:
         failures.append(f"invalid projection_profile: {data.get('projection_profile')}")
     for field in STRING_LIST_FIELDS:
         if field in data:
@@ -141,7 +146,7 @@ def capsule_failures(data: dict[str, Any]) -> list[str]:
         failures.append("verification_state must be an object")
     else:
         status = verification.get("status")
-        if status not in {"unverified", "in_progress", "passed", "failed", "blocked"}:
+        if not isinstance(status, str) or status not in {"unverified", "in_progress", "passed", "failed", "blocked"}:
             failures.append(f"invalid verification_state.status: {status}")
         for field in ("last_verified_claim", "refs"):
             if field not in verification:

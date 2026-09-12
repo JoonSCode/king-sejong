@@ -194,8 +194,19 @@ if [[ "$VERIFY_ONLY" -eq 1 && "$CODEX_GUIDANCE" == "print" ]]; then
   exit 1
 fi
 
+BOOTSTRAP_SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+PYTHON_RUNNER="$BOOTSTRAP_SCRIPT_DIR/../docs/sejong/scripts/run_with_supported_python.sh"
+if [[ ! -f "$PYTHON_RUNNER" ]]; then
+  echo "King Sejong Python launcher is missing: $PYTHON_RUNNER" >&2
+  exit 1
+fi
+# shellcheck source=../docs/sejong/scripts/run_with_supported_python.sh
+source "$PYTHON_RUNNER"
+sejong_select_python
+export PYTHONDONTWRITEBYTECODE=1
+
 canonical_path() {
-  python3 - "$1" <<'PY'
+  sejong_run_python - "$1" <<'PY'
 import sys
 from pathlib import Path
 
@@ -204,7 +215,7 @@ PY
 }
 
 same_path() {
-  python3 - "$1" "$2" <<'PY'
+  sejong_run_python - "$1" "$2" <<'PY'
 import sys
 from pathlib import Path
 
@@ -230,7 +241,7 @@ PY
 }
 
 verify_hook_script_reference() {
-  python3 - "$1" "$2" <<'PY'
+  sejong_run_python - "$1" "$2" <<'PY'
 import re
 import sys
 from pathlib import Path
@@ -286,7 +297,7 @@ acquire_user_install_lock_and_reexec() {
   local lock_path="$codex_home/sejong/state/locks/user-install.lock"
 
   mkdir -p "$(dirname "$lock_path")"
-  python3 - "$lock_path" "${BASH_SOURCE[0]}" "$@" <<'PY'
+  sejong_run_python - "$lock_path" "${BASH_SOURCE[0]}" "$@" <<'PY'
 import fcntl
 import math
 import os
@@ -350,7 +361,7 @@ validate_inherited_user_install_lock() {
   local lock_path="$codex_home/sejong/state/locks/user-install.lock"
   local lock_fd=${SEJONG_INSTALL_LOCK_FD:-}
 
-  python3 - "$lock_path" "$lock_fd" <<'PY'
+  sejong_run_python - "$lock_path" "$lock_fd" <<'PY'
 import fcntl
 import os
 import sys
@@ -376,7 +387,7 @@ reject_unsupported_authority_downgrade() {
   local codex_home=$1
   local transaction_path="$codex_home/sejong/state/install-transaction.json"
 
-  python3 - "$transaction_path" "$RUNTIME_AUTHORITY_EPOCH" <<'PY'
+  sejong_run_python - "$transaction_path" "$RUNTIME_AUTHORITY_EPOCH" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -437,7 +448,7 @@ wait_for_user_install_test_snapshot_release() {
     echo "both snapshot test barrier paths are required" >&2
     exit 1
   fi
-  python3 - "$ready_path" "$release_path" <<'PY'
+  sejong_run_python - "$ready_path" "$release_path" <<'PY'
 import os
 import sys
 import time
@@ -468,7 +479,7 @@ wait_for_user_install_test_maintenance_release() {
     echo "both maintenance test barrier paths are required" >&2
     exit 1
   fi
-  python3 - "$ready_path" "$release_path" <<'PY'
+  sejong_run_python - "$ready_path" "$release_path" <<'PY'
 import os
 import sys
 import time
@@ -492,7 +503,7 @@ atomic_publish_file() {
   local tmp_file=$1
   local target_file=$2
 
-  python3 - "$tmp_file" "$target_file" <<'PY'
+  sejong_run_python - "$tmp_file" "$target_file" <<'PY'
 import os
 import sys
 from pathlib import Path
@@ -725,7 +736,7 @@ core_identity_source_commit() {
     git -C "$SOURCE_ROOT" rev-parse HEAD
     return
   fi
-  python3 - "$INSTALL_SOURCE_ROOT" "$INSTALL_SOURCE_ROOT/docs/sejong/scripts" <<'PY'
+  sejong_run_python - "$INSTALL_SOURCE_ROOT" "$INSTALL_SOURCE_ROOT/docs/sejong/scripts" <<'PY'
 import sys
 from pathlib import Path
 
@@ -757,7 +768,7 @@ write_user_core_identity() {
   identity_path=$(core_identity_path "$codex_home")
   source_commit=$(core_identity_source_commit)
   source_tree_state=$(core_identity_source_tree_state)
-  python3 "$identity_helper" write \
+  sejong_run_python "$identity_helper" write \
     --source-root "$INSTALL_SOURCE_ROOT" \
     --installed-root "$codex_home" \
     --output "$identity_path" \
@@ -775,7 +786,7 @@ verify_user_core_identity() {
   identity_path=$(core_identity_path "$codex_home")
   source_commit=$(core_identity_source_commit)
   source_tree_state=$(core_identity_source_tree_state)
-  python3 "$identity_helper" verify \
+  sejong_run_python "$identity_helper" verify \
     --identity "$identity_path" \
     --source-root "$INSTALL_SOURCE_ROOT" \
     --installed-root "$codex_home" \
@@ -1022,7 +1033,7 @@ ensure_sejong_state_dir() {
 }
 
 runtime_authority_digest() {
-  python3 - "$INSTALL_SOURCE_ROOT" <<'PY'
+  sejong_run_python - "$INSTALL_SOURCE_ROOT" <<'PY'
 import hashlib
 import sys
 from pathlib import Path
@@ -1047,7 +1058,7 @@ PY
 }
 
 managed_source_digest() {
-  python3 - "$INSTALL_SOURCE_ROOT" <<'PY'
+  sejong_run_python - "$INSTALL_SOURCE_ROOT" <<'PY'
 import hashlib
 import os
 import sys
@@ -1080,7 +1091,7 @@ PY
 }
 
 source_canonical_digest() {
-  python3 - "$INSTALL_SOURCE_ROOT/docs/sejong/scripts/king_sejong_hooks.py" <<'PY'
+  sejong_run_python - "$INSTALL_SOURCE_ROOT/docs/sejong/scripts/king_sejong_hooks.py" <<'PY'
 import hashlib
 import sys
 from pathlib import Path
@@ -1183,7 +1194,7 @@ verify_install_transaction() {
   local expected_digest
 
   expected_digest=$(runtime_authority_digest)
-  python3 - "$transaction_path" "$expected_digest" "$codex_home" <<'PY'
+  sejong_run_python - "$transaction_path" "$expected_digest" "$codex_home" <<'PY'
 import hashlib
 import json
 import sys
@@ -1697,7 +1708,7 @@ stage_user_install_canonical() {
   USER_INSTALL_STAGED_CANONICAL=$(mktemp "$staging_root/king_sejong_hooks.py.XXXXXX")
   cp "$INSTALL_SOURCE_ROOT/docs/sejong/scripts/king_sejong_hooks.py" "$USER_INSTALL_STAGED_CANONICAL"
   chmod 0755 "$USER_INSTALL_STAGED_CANONICAL"
-  actual_digest=$(python3 - "$USER_INSTALL_STAGED_CANONICAL" <<'PY'
+  actual_digest=$(sejong_run_python - "$USER_INSTALL_STAGED_CANONICAL" <<'PY'
 import hashlib
 import sys
 from pathlib import Path
@@ -1754,7 +1765,7 @@ publish_user_install_canonical() {
     echo "missing staged canonical hook for final publish" >&2
     exit 1
   fi
-  actual_digest=$(python3 - "$USER_INSTALL_STAGED_CANONICAL" <<'PY'
+  actual_digest=$(sejong_run_python - "$USER_INSTALL_STAGED_CANONICAL" <<'PY'
 import hashlib
 import sys
 from pathlib import Path

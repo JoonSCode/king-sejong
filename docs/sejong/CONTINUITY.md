@@ -101,6 +101,15 @@ Continuation should refresh or reject the capsule when:
 Completion still requires fresh verification. A capsule may remind the model what
 was last verified, but it cannot make stale verification current.
 
+Before injection, hooks require the capsule's `active_context_id` and `run_id`
+to match the bound Context. Its repository identity must belong to that Context's
+declared repositories; worktrees of the same Git repository remain valid. If the
+Context declares `task_class`, it must also match. Legacy Contexts without that
+optional field remain supported. Capsule `objective` is descriptive text, while
+Context `objective_id` is an identifier and `last_user_intent` changes on follow-ups;
+hooks do not compare these different fields. The lead must still refresh the
+capsule when the approved objective or evidence basis changes within the same run.
+
 ## Hook Behavior
 
 When the exact Codex session binding resolves an active Context that references
@@ -110,6 +119,12 @@ a valid continuity capsule:
 - `SessionStart(source=compact)` restores that projection after compaction.
 - `PreCompact` blocks compaction when a continuity capsule reference is broken or invalid.
 - `Stop` blocks completion when a referenced capsule is broken or invalid.
+
+Mismatched capsules are invalid: hooks report the reference without injecting
+its working-set content. Known capsule, ambiguity-register, and execution-run
+references with non-object JSON or an unexpected format produce structured
+blocking results at `Stop` and `PreCompact`, rather than an uncaught exception.
+Unrelated JSON evidence arrays are ignored by these typed artifact loaders.
 
 Hooks are guardrails. They do not approve Uigwe gates, change Seungjeongwon
 status, redefine success, or decide final synthesis from the capsule.

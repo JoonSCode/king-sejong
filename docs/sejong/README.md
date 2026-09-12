@@ -166,13 +166,16 @@ Use Sejong repo-context init/refresh when a target repository needs an initial `
 Use the local doctor when the environment itself is uncertain:
 
 ```bash
-python3 docs/sejong/scripts/sejong_doctor.py
+bash docs/sejong/scripts/run_with_supported_python.sh docs/sejong/scripts/sejong_doctor.py
 ```
 
 The doctor is read-only by default. In addition to source, dependency, hook, git,
 and explicitly selected durable-Context checks, it reports multisession active
 runs, preserved non-authoritative legacy pointers, broken runtime refs, runtime
 lock owner metadata, cleanup dry-run retention, and user-scope install drift.
+The launcher and installer select Python 3.11 or newer from `PATH`, then fall
+back to a `uv`-managed interpreter without changing the system Python. Failure
+to find that runtime is reported as an environment error before content drift.
 
 Use the repo-context candidate helper when a durable lesson should be considered
 without immediately editing tracked instructions:

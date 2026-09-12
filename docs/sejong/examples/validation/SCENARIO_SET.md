@@ -40,7 +40,8 @@
 - `route-vague-product-plan`: vague planning routes to Uigwe `full`
 - `route-approved-bundle-execution`: validated bundle routes to `Seungjeongwon`
 - `route-clear-direct-task`: exact verification stays `Sejong direct`
-- `route-goal-bearing-clear-task-handoff`: clear goal-bearing implementation enters Uigwe then Seungjeongwon instead of direct edits
+- `route-goal-bearing-unresolved-handoff`: unresolved failure categories and acceptance require Uigwe before execution
+- `route-settled-implementation-no-bundle`: prior approval and settled criteria use a compact contract and Seungjeongwon without a new Uigwe interview
 - `route-material-self-modification`: protected validation change uses Jiphyeonjeon -> Uigwe -> Seungjeongwon
 - `repo-context-refresh-candidate-first`: repo instruction refresh is candidate-diff first
 - `research-stale-external-facts`: time-sensitive research requires current sources

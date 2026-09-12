@@ -32,6 +32,8 @@ class ContinuityReplayGateTests(unittest.TestCase):
             context = json.loads(CONTEXT_EXAMPLE.read_text(encoding="utf-8"))
             capsule_path = Path(tmp) / "continuity-capsule.json"
             capsule = json.loads(CAPSULE_EXAMPLE.read_text(encoding="utf-8"))
+            capsule["active_context_id"] = context["active_context_id"]
+            capsule["run_id"] = context["run_id"]
             capsule["repo_root"] = str(REPO_ROOT)
             capsule_path.write_text(json.dumps(capsule), encoding="utf-8")
             context["repo_root"] = str(REPO_ROOT)
@@ -72,6 +74,8 @@ class ContinuityReplayGateTests(unittest.TestCase):
             context = json.loads(CONTEXT_EXAMPLE.read_text(encoding="utf-8"))
             capsule_path = Path(tmp) / "continuity-capsule.example.json"
             capsule = json.loads(CAPSULE_EXAMPLE.read_text(encoding="utf-8"))
+            capsule["active_context_id"] = context["active_context_id"]
+            capsule["run_id"] = context["run_id"]
             capsule["repo_root"] = str(REPO_ROOT)
             capsule_path.write_text(json.dumps(capsule), encoding="utf-8")
             context["repo_root"] = str(REPO_ROOT)

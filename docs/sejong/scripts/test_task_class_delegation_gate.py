@@ -33,6 +33,102 @@ def broad_input() -> gate.DelegationInput:
 
 
 class TaskClassDelegationGateTests(unittest.TestCase):
+    def test_native_available_without_cleanup_preflight_falls_back(self) -> None:
+        # ARCH-03: availability does not imply exact identity/release support.
+        for health, expected in (("unknown", "current_session"), ("healthy", "team_executor")):
+            with self.subTest(health=health):
+                result = gate.evaluate(replace(
+                    broad_input(), task_class="validation_review", write_risk="low",
+                    host_native_state="available", team_executor_health=health,
+                ))
+                self.assertEqual(result["selected_backend"], expected)
+                self.assertIn("native_cleanup_capability_unknown", result["fallback_reasons"])
+                self.assertEqual(result["hard_gate_failures"], [])
+
+    def test_native_cleanup_requires_exact_observed_capability(self) -> None:
+        for capability in ("unknown", "unavailable", "audit_only", "core_owned_exact", "host_owned_exact"):
+            for evidence in (None, "fixture://host/exact-identity-and-release-support"):
+                with self.subTest(capability=capability, evidence=evidence):
+                    result = gate.evaluate(replace(
+                        broad_input(), host_native_state="available",
+                        host_native_cleanup_capability=capability,
+                        host_native_cleanup_evidence_ref=evidence,
+                    ))
+                    admitted = capability in {"core_owned_exact", "host_owned_exact"} and evidence
+                    self.assertEqual(result["selected_backend"], "codex_native" if admitted else "team_executor")
+                    if admitted:
+                        self.assertIn("exact runtime identity and supported release proof capability evidence", result["required_evidence"])
+                        self.assertIn("released worker cleanup receipts", result["required_evidence"])
+                        self.assertEqual(result["decision_factors"]["host_native_cleanup_evidence_ref"], evidence)
+
+    def test_exact_cleanup_does_not_imply_available_host_or_override_authority(self) -> None:
+        for host in ("unknown", "unavailable"):
+            with self.subTest(host=host):
+                result = gate.evaluate(replace(
+                    broad_input(), host_native_state=host,
+                    host_native_cleanup_capability="host_owned_exact",
+                    host_native_cleanup_evidence_ref="fixture://host/preflight",
+                ))
+                self.assertNotEqual(result["selected_backend"], "codex_native")
+        result = gate.evaluate(replace(
+            broad_input(), host_native_state="available",
+            host_native_cleanup_capability="host_owned_exact",
+            host_native_cleanup_evidence_ref="fixture://host/preflight",
+            worker_authority_policy="final_verification",
+        ))
+        self.assertEqual(result["selected_route"], "no_write_dry_run")
+
+    def test_cleanup_missing_blocks_required_native_when_core_unavailable(self) -> None:
+        result = gate.evaluate(replace(
+            broad_input(), host_native_state="available",
+            host_native_write_isolation="worktree", requires_write_isolation=True,
+            team_executor_health="unknown",
+        ))
+        self.assertEqual(result["selected_route"], "no_write_dry_run")
+        self.assertEqual(result["recommended_reentry_target"], "seungjeongwon")
+
+    def test_cleanup_preflight_cli_and_json_admission_agree(self) -> None:
+        base = {
+            "task_class": "validation_review", "evidence_breadth": "broad",
+            "overhead_roi": "high", "worker_scope_state": "disjoint",
+            "host_native_state": "available", "team_executor_health": "unknown",
+        }
+        for preflight, expected in (({}, "current_session"), ({
+            "host_native_cleanup_capability": "host_owned_exact",
+            "host_native_cleanup_evidence_ref": "fixture://host/preflight",
+        }, "codex_native")):
+            payload = {**base, **preflight}
+            for json_input in (True, False):
+                with self.subTest(preflight=preflight, json_input=json_input):
+                    argv = ["--from-json", "-"] if json_input else [
+                        arg for key, value in payload.items()
+                        for arg in ("--" + key.replace("_", "-"), value)
+                    ]
+                    result = subprocess.run(
+                        [sys.executable, str(RUNNER), *argv],
+                        input=json.dumps(payload) if json_input else None,
+                        text=True, capture_output=True, cwd=str(REPO_ROOT),
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    report = json.loads(result.stdout)
+                    self.assertEqual(report["selected_backend"], expected)
+
+    def test_invalid_cleanup_preflight_json_is_rejected(self) -> None:
+        for field, value in (
+            ("host_native_cleanup_capability", "available"),
+            ("host_native_cleanup_evidence_ref", " "),
+            ("host_native_cleanup_evidence_ref", 1),
+        ):
+            with self.subTest(field=field, value=value):
+                result = subprocess.run(
+                    [sys.executable, str(RUNNER), "--from-json", "-"],
+                    input=json.dumps({"task_class": "validation_review", field: value}),
+                    text=True, capture_output=True,
+                )
+                self.assertEqual(result.returncode, 1)
+                self.assertIn(field, result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+
     def test_simple_low_overhead_task_uses_direct_execution(self) -> None:
         result = gate.evaluate(
             gate.DelegationInput(
@@ -60,7 +156,8 @@ class TaskClassDelegationGateTests(unittest.TestCase):
         self.assertIn("Uigwe contract refs preserved", result["required_evidence"])
         self.assertIn("majority-vote authority", result["forbidden_claims"])
         self.assertEqual(result["selected_backend"], "team_executor")
-        self.assertEqual(result["fallback_reasons"], [])
+        self.assertIn("host_native_unknown", result["fallback_reasons"])
+        self.assertIn("native_cleanup_capability_unknown", result["fallback_reasons"])
         self.assertIn("host_native_capability_unknown", result["capability_notes"])
 
     def test_native_available_prefers_bounded_subagents_for_broad_execution(
@@ -70,6 +167,8 @@ class TaskClassDelegationGateTests(unittest.TestCase):
             broad_input(),
             uigwe_contract_state="handoff_ready",
             host_native_state="available",
+            host_native_cleanup_capability="host_owned_exact",
+            host_native_cleanup_evidence_ref="fixture://host/preflight",
         ))
 
         self.assertEqual(result["selected_route"], "bounded_subagents")
@@ -115,6 +214,8 @@ class TaskClassDelegationGateTests(unittest.TestCase):
         result = gate.evaluate(replace(
             broad_input(),
             host_native_state="available",
+            host_native_cleanup_capability="host_owned_exact",
+            host_native_cleanup_evidence_ref="fixture://host/preflight",
             requires_independent_process=True,
         ))
 
@@ -142,6 +243,8 @@ class TaskClassDelegationGateTests(unittest.TestCase):
             broad_input(),
             task_class="bundle_execution",
             host_native_state="available",
+            host_native_cleanup_capability="host_owned_exact",
+            host_native_cleanup_evidence_ref="fixture://host/preflight",
             requires_cross_session_recovery=True,
         ))
 
@@ -152,6 +255,8 @@ class TaskClassDelegationGateTests(unittest.TestCase):
         result = gate.evaluate(replace(
             broad_input(),
             host_native_state="available",
+            host_native_cleanup_capability="host_owned_exact",
+            host_native_cleanup_evidence_ref="fixture://host/preflight",
             host_native_write_isolation="shared_workspace",
             requires_write_isolation=True,
         ))
@@ -165,6 +270,8 @@ class TaskClassDelegationGateTests(unittest.TestCase):
         result = gate.evaluate(replace(
             broad_input(),
             host_native_state="available",
+            host_native_cleanup_capability="host_owned_exact",
+            host_native_cleanup_evidence_ref="fixture://host/preflight",
             host_native_write_isolation="worktree",
             requires_write_isolation=True,
         ))
@@ -179,6 +286,8 @@ class TaskClassDelegationGateTests(unittest.TestCase):
             task_class="validation_review",
             write_risk="low",
             host_native_state="available",
+            host_native_cleanup_capability="host_owned_exact",
+            host_native_cleanup_evidence_ref="fixture://host/preflight",
             host_native_direct_messaging="unavailable",
             requires_peer_messaging=True,
         ))
@@ -192,6 +301,8 @@ class TaskClassDelegationGateTests(unittest.TestCase):
             task_class="validation_review",
             write_risk="low",
             host_native_state="available",
+            host_native_cleanup_capability="host_owned_exact",
+            host_native_cleanup_evidence_ref="fixture://host/preflight",
             host_native_direct_messaging="available",
             requires_peer_messaging=True,
         ))
@@ -202,6 +313,9 @@ class TaskClassDelegationGateTests(unittest.TestCase):
     def test_moderate_independent_work_uses_bounded_subagents(self) -> None:
         result = gate.evaluate(replace(
             broad_input(),
+            host_native_state="available",
+            host_native_cleanup_capability="host_owned_exact",
+            host_native_cleanup_evidence_ref="fixture://host/preflight",
             task_class="validation_review",
             write_risk="low",
             evidence_breadth="moderate",
@@ -216,7 +330,9 @@ class TaskClassDelegationGateTests(unittest.TestCase):
         result = gate.evaluate(
             gate.DelegationInput(
                 task_class="research",
-                write_risk="none",
+                host_native_state="available",
+                host_native_cleanup_capability="host_owned_exact",
+                host_native_cleanup_evidence_ref="fixture://host/preflight",                write_risk="none",
                 evidence_breadth="unknown",
                 code_coupling="cross_module",
                 overhead_roi="medium",

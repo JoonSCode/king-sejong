@@ -242,11 +242,11 @@
       }
     },
     {
-      "id": "route-goal-bearing-clear-task-handoff",
-      "title": "Goal-bearing clear work uses Uigwe then Seungjeongwon",
+      "id": "route-goal-bearing-unresolved-handoff",
+      "title": "Implementation with unresolved acceptance enters Uigwe",
       "profile": "routing",
-      "input_shape": "clear implementation outcome with no approved bundle yet",
-      "prompt": "/sejong validation summary에 실패 원인 분류를 추가해서 구현하고 테스트까지 해줘.",
+      "input_shape": "implementation requested, but failure categories and acceptance criteria remain materially unresolved",
+      "prompt": "/sejong validation summary에 실패 원인 분류를 추가해줘. 어떤 실패를 나눌지와 완료 기준은 아직 못 정했어. 먼저 같이 정리한 뒤 구현하고 테스트해줘.",
       "expected_mode": "design-to-plan",
       "expected_route_sequence": [
         "uigwe",
@@ -266,24 +266,24 @@
       "forbidden_surfaces": [
         "sejong-direct"
       ],
-      "clarification_required": false,
+      "clarification_required": true,
       "expected_artifacts": [
         "Uigwe handoff contract",
         "execution feedback",
         "verification evidence"
       ],
       "expected_behavior": [
-        "recognizes that clear wording still requests a goal-bearing implementation outcome",
-        "creates or uses an Uigwe execution contract before implementation",
-        "routes implementation and verification through Seungjeongwon"
+        "identifies unresolved failure categories and acceptance criteria as the reason for Uigwe",
+        "offers bounded classification alternatives and asks only the material missing choice",
+        "enters Seungjeongwon after that boundary is settled"
       ],
       "forbidden_behavior": [
-        "treating goal-bearing implementation as Sejong direct because the first edit seems obvious",
-        "skipping Uigwe and editing files directly",
+        "treating missing formal bundle alone as a reason for Uigwe",
+        "implementing unresolved failure categories without settling acceptance",
         "claiming completion without Seungjeongwon execution feedback"
       ],
       "grading_notes": [
-        "This scenario protects against AI skipping Uigwe or bypassing Seungjeongwon on clear implementation requests."
+        "Uigwe is justified by unresolved acceptance, not by goal-bearing wording or missing bundle. Compare the settled no-bundle scenario."
       ],
       "guardrail_expectations": {
         "required_route_sequence": [
@@ -299,7 +299,58 @@
         "max_turns": 5,
         "max_tool_calls": 35,
         "max_total_tokens": 90000,
-        "overhead_budget_note": "Clear goal-bearing implementation justifies Uigwe handoff and Seungjeongwon execution overhead."
+        "overhead_budget_note": "Planning overhead is justified only by the named unresolved acceptance boundary."
+      }
+    },
+    {
+      "id": "route-settled-implementation-no-bundle",
+      "title": "Settled approved implementation uses a compact contract",
+      "profile": "routing",
+      "input_shape": "approved scope and acceptance without a formal bundle; no protected self-modification or open gates",
+      "prompt": "/sejong 일반 앱 저장소의 summary.py에 실패 원인 분류를 추가하는 건 승인했어. 입력은 missing-file과 invalid-json 두 종류이고 출력에 reason 필드만 추가해. 기존 성공 출력과 공개 API는 유지하고, 두 실패 fixture와 기존 테스트 통과가 완료 기준이야. 정식 bundle은 없지만 이 범위로 구현하고 테스트해줘.",
+      "expected_mode": "none",
+      "expected_route_sequence": [
+        "seungjeongwon"
+      ],
+      "acceptable_route_sequences": [
+        [
+          "seungjeongwon"
+        ]
+      ],
+      "forbidden_surfaces": [
+        "uigwe",
+        "sejong-direct"
+      ],
+      "clarification_required": false,
+      "expected_artifacts": [
+        "compact execution contract linked to approval",
+        "implementation and focused test evidence"
+      ],
+      "expected_behavior": [
+        "reuses explicit approval, scope and acceptance through a compact execution contract",
+        "executes and verifies through Seungjeongwon without a new interview"
+      ],
+      "forbidden_behavior": [
+        "creating Uigwe ceremony solely because a formal bundle is absent",
+        "claiming execution or tests from a proposed plan alone"
+      ],
+      "grading_notes": [
+        "Missing bundle is not missing approval. A separate protected self-modification scenario still preserves its route."
+      ],
+      "guardrail_expectations": {
+        "required_route_sequence": [
+          "seungjeongwon"
+        ],
+        "blocked_surfaces": [
+          "unnecessary Uigwe interview",
+          "unverified completion"
+        ]
+      },
+      "resource_expectations": {
+        "max_turns": 4,
+        "max_tool_calls": 25,
+        "max_total_tokens": 45000,
+        "overhead_budget_note": "Reuse the settled contract; measure real usage separately from this static check."
       }
     },
     {

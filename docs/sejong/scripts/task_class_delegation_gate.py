@@ -13,6 +13,7 @@ from delegation_route_contract import (
     EVIDENCE_BREADTHS,
     FORMAT as POLICY_FORMAT,
     HOST_NATIVE_STATES,
+    NATIVE_CLEANUP_CAPABILITIES,
     NATIVE_MESSAGING_STATES,
     NATIVE_WRITE_ISOLATIONS,
     OVERHEAD_ROIS,
@@ -80,6 +81,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--host-native-state", choices=sorted(HOST_NATIVE_STATES), default="unknown"
     )
     parser.add_argument(
+        "--host-native-cleanup-capability",
+        choices=sorted(NATIVE_CLEANUP_CAPABILITIES), default="unknown",
+        help="Observed support for exact runtime identity and release proof before spawn.",
+    )
+    parser.add_argument(
+        "--host-native-cleanup-evidence-ref",
+        help="Reference to the current host capability observation; not a release receipt.",
+    )
+    parser.add_argument(
         "--host-native-direct-messaging",
         choices=sorted(NATIVE_MESSAGING_STATES),
         default="unknown",
@@ -134,6 +144,8 @@ def input_from_args(args: argparse.Namespace) -> DelegationInput:
         worker_scope_state=args.worker_scope_state,
         write_mode=args.write_mode,
         host_native_state=args.host_native_state,
+        host_native_cleanup_capability=args.host_native_cleanup_capability,
+        host_native_cleanup_evidence_ref=args.host_native_cleanup_evidence_ref,
         host_native_direct_messaging=args.host_native_direct_messaging,
         host_native_write_isolation=args.host_native_write_isolation,
         team_executor_health=(

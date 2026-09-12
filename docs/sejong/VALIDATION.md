@@ -200,6 +200,26 @@ python3 docs/sejong/scripts/benchmark_sejong_surface.py --write --require-target
 
 This benchmark does not call an LLM. It validates that `examples/validation/sejong-seed-task-set.json` remains a complete, gradeable Sejong-level scenario set with route sequences, acceptable alternatives, forbidden surfaces, guardrail expectations, observable artifacts, and resource budgets.
 
+The benchmark also rejects contradictory route expectations: a primary route
+must be an accepted alternative, and every accepted route must preserve the
+required order and exclude forbidden surfaces. The paired implementation seeds
+distinguish unresolved acceptance from settled approval without a formal bundle.
+These checks validate the fixture contract; they do not infer intent from prose
+or establish that a model followed it.
+
+For a behavior comparison, freeze the same user prompts, approval/context
+fixtures, model request, tool access, and workspace state for baseline and
+candidate. Include a report-only task, exact direct check, settled implementation,
+vague intent, an approval-reuse follow-up followed by an unresolved acceptance
+change, and restoration with a pending gate. Preserve raw model responses,
+tool events, exit status, source hashes, observed usage and elapsed time under
+the external Sejong run directory. Judge actual file/test outcomes independently
+from stated route decisions. A supplied history or capsule fixture is a replay
+probe, not proof that the host performed compaction. Unavailable effective-model,
+usage, or host evidence remains unknown. A small paired run may establish
+contract fidelity and expose regressions; it is not a statistical quality or
+cost-improvement claim.
+
 ### Phase 2D: Outcome Quality Pairwise Evaluation
 
 Run this when the change claims that Sejong produces better work products, not only better routing or guardrail behavior:
