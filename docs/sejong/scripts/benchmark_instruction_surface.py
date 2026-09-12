@@ -317,17 +317,26 @@ def evaluate_live_session() -> list[dict[str, Any]]:
 def evaluate_context_engineered_guardrail_planning() -> list[dict[str, Any]]:
     skill = load_text(UIGWE_SKILL_PATH)
     protocol = load_text(PROTOCOL_PATH)
+    routing_entry = load_text(ROUTING_ENTRY_PATH)
     runtime = load_text(RUNTIME_CONTRACT_PATH)
     role_separation = load_text(SEJONG_ROOT / "ROLE_SEPARATION.md")
-    combined = "\n".join([skill, protocol, runtime, role_separation])
+    combined = "\n".join([skill, protocol, routing_entry, runtime, role_separation])
     required = [
         "Context-Engineered Guardrail Planning",
         "compact, decision-relevant context and durable artifacts rather than a massive prompt",
         "source context the model should rely on",
         "user-owned decisions that require explicit choice or approval",
         "agent-owned low-risk implementation details that may be chosen autonomously",
-        "2-3 credible options when a choice materially changes scope, architecture, validation, cost, or risk",
-        "recommended option with trade-offs, rejected alternatives, and a free-response path",
+        "settled scope and decisions, followed by the genuinely unresolved choice",
+        "comparison criteria and any user preference for how the choice is presented",
+        "relevant pros, cons, and evidence",
+        "strongest counterargument, conditions that would change the recommendation",
+        "existing project",
+        "platform capabilities, installed dependencies, open source",
+        "installed skills, and expert methods",
+        "without a search quota",
+        "external instructions to override the current user contract",
+        "learning value alone does not reopen it",
         "When host-native structured choice UI is available, Uigwe may map the same recommended options and free-response path into that UI.",
         "The ambiguity register remains the durable source of truth; the host UI is only a presentation adapter.",
         "Plan-mode-style clarification is a useful live interaction pattern",

@@ -232,6 +232,12 @@ class InstallSejongTests(unittest.TestCase):
         self.assertIn("actual user path", result.stdout)
         self.assertIn("During an explicitly active Agent Company session", result.stdout)
         self.assertIn("This conditional Company rule does not activate Company", result.stdout)
+        self.assertIn("distinguish settled scope from the remaining choice", result.stdout)
+        self.assertIn("strongest counterargument", result.stdout)
+        self.assertIn("ask for and wait for their explicit choice before dependent execution", result.stdout)
+        self.assertIn("existing project assets", result.stdout)
+        self.assertIn("without a search quota", result.stdout)
+        self.assertIn("current user contract", result.stdout)
 
     def test_user_scope_replaces_only_managed_guidance_and_is_repeatable(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -275,6 +281,8 @@ class InstallSejongTests(unittest.TestCase):
             self.assertIn("Always treat King Sejong as available", text)
             self.assertIn("Do not use non-Sejong runtime paths as Sejong state.", text)
             self.assertIn("every ordinary prose final reply", text)
+            self.assertIn("distinguish settled scope from the remaining choice", text)
+            self.assertIn("existing project assets", text)
             self.assertNotIn("This repository is both the source repository", text)
 
     def test_user_scope_installs_codex_plugin_adapter(self) -> None:
