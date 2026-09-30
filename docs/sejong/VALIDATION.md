@@ -648,6 +648,41 @@ When the scorecards include `resource_usage`, review:
 
 Token and cost deltas are secondary metrics. They should not hide a real quality improvement, but a candidate that spends substantially more tokens without score gains should not be promoted by default.
 
+The comparator requires the same frozen task-set identity and scenario ID set,
+unique non-empty scenario IDs, valid status/score values, and aggregate counts
+and mean consistent with the scenarios. It uses the existing surface generators'
+four-decimal mean rounding. Invalid or incomparable inputs exit nonzero before
+reporting a comparison. Preserve the candidate, acceptance criteria, holdout,
+and independent evidence references in existing records; a matching task-set ID
+alone does not prove that the underlying tasks or acceptance criteria were frozen.
+
+Missing token or price usage is `unknown`, never zero. Quality-only comparison
+remains available without usage. An explicit token ceiling independently fails
+if usage is unknown, the baseline is zero (undefined ratio), or the ratio exceeds
+the ceiling, even without `--require-non-regression`:
+
+```bash
+python3 -B docs/sejong/scripts/test_compare_scorecards.py
+python3 docs/sejong/scripts/compare_scorecards.py <baseline.scorecard.json> <candidate.scorecard.json> --require-non-regression --max-token-ratio 1
+```
+
+Use complete provider-reported raw tokens, including lead, workers, context
+transfer, failed attempts, retries, verification, integration, and evaluation.
+Link usage traces and incomplete-cost reasons in existing scorecard `notes`;
+omit unknown `resource_usage` rather than inserting zero or deriving tokens from
+credits or prices. Do not double-count cached/reasoning tokens already included
+in provider totals. This comparator consumes recorded totals; it does not collect
+or certify their completeness. Select perspectives on demand and use a bounded
+challenge when it can change the decision, rather than requiring a fixed roster.
+
+The public Core `deterministic-regression` CI job runs the focused comparator
+CLI tests and both existing surface benchmarks serially on every push and pull
+request, with Python 3.13, a read-only repository token, and a ten-minute timeout.
+It does not call models, write scorecards, install managed runtime surfaces, or
+publish evaluation records. Run the same three commands locally (benchmarks use
+`--require-targets`, without `--write`). Green CI proves these source contracts,
+not model behavior, app acceptance, token savings, or required merge protection.
+
 ## Recommended Promotion Gates
 
 Do not promote a planning-method change unless the frozen benchmark and shadow runs meet these first-pass targets:
