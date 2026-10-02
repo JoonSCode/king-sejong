@@ -1,5 +1,23 @@
 # AGENTS.md
 
+## Orca Company branch direction
+
+This branch is the dedicated Core development line for the independent Orca
+Company fork. See [`docs/orca-company-fork.md`](docs/orca-company-fork.md).
+The user selected the existing B workspace for option C, not a shared-Core
+compatibility experiment. Core may be redesigned, simplified, replaced, or
+restructured for the approved Orca goals. Upstream's Codex-native and
+tool-independent defaults below describe the inherited baseline; shared code,
+upstream API/packaging compatibility, original layer boundaries, and merge-back
+are not required. Reuse remains a fit-based implementation choice.
+Preserve user authority, bounded delegation, source/evidence identity, explicit
+resource ownership, and independent final verification. Orca lifecycle evidence
+must not be replaced by assumed process exit or a second competing dispatcher.
+Current preparation is source-only guidance and synthetic-case design. Managed
+behavior, hooks, dependency bindings, and installation still use the baseline
+until a concrete implementation slice changes and verifies them. Do not install
+the fork over the existing user runtime implicitly.
+
 This repository is both the source repository and the distribution repository for King Sejong.
 
 This file is for agents working on this source repository. It is not part of the installed King Sejong skill contract and must not be copied into target repositories by `scripts/install-sejong.sh`.
